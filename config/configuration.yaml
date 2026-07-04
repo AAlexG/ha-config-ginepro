@@ -1,4 +1,4 @@
-# configuration_142.yaml
+# configuration_144.yaml
 
 default_config:
 
@@ -22,6 +22,7 @@ recorder:
 homeassistant:
   allowlist_external_dirs:
     - /sys
+    - /config
 
 http:
   use_x_forwarded_for: true
@@ -1933,3 +1934,13 @@ media_player:
       - media_player.google_home_sopra
       - media_player.salotto
       - media_player.googlehome8851
+
+#--- FOLDER WATCHER - Rileva modifiche ai file YAML in /config ---
+# Genera un evento folder_watcher (event_type: created/modified/deleted/moved)
+# usato dall'automazione di backup GitHub per lanciare l'export con debounce
+# di 5 minuti dopo l'ultima modifica, senza aspettare riavvio o notte.
+folder_watcher:
+  - folder: /config
+    patterns:
+      - "*.yaml"
+      - "*.py"
