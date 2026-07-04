@@ -1,4 +1,4 @@
-# automations_110.yaml
+# automations_111.yaml
 
 
 #==================================================================================
@@ -997,3 +997,23 @@
           priority: high
           ttl: 0
           persistent: "true"
+
+#==================================================================================
+# 38. BACKUP CONFIG SU GITHUB
+#
+# Avvia l'addon Home Assistant Git Exporter ogni notte alle 03:15 e ad ogni
+# riavvio del core (rapido o completo), per mantenere sincronizzato il
+# repository GitHub con la configurazione reale su /config.
+#==================================================================================
+- id: backup_config_su_github
+  alias: "Backup config su GitHub"
+  mode: single
+  triggers:
+    - platform: time
+      at: "03:15:00"
+    - platform: homeassistant
+      event: start
+  action:
+    - action: hassio.addon_start
+      data:
+        addon: "68413af6_git-exporter"
