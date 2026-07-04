@@ -1,0 +1,203 @@
+config:
+  title: Caldaia & OTGW
+  views:
+  - cards:
+    - entity: switch.shelly_box
+      features_position: bottom
+      name: Acceso->pompa/Spento->caldaia
+      type: tile
+      vertical: false
+    - cards:
+      - card:
+          icon: mdi:water-boiler-off
+          icon_height: 20px
+          name: Sanitaria OFF
+          show_state: false
+          tap_action:
+            action: perform-action
+            perform_action: script.caldaia_dhw_off
+          type: button
+        conditions:
+        - condition: state
+          entity: input_boolean.caldaia_dhw_override
+          state: 'on'
+        type: conditional
+      - card:
+          icon: mdi:water-boiler
+          icon_height: 20px
+          name: Sanitaria ON
+          show_state: false
+          tap_action:
+            action: perform-action
+            perform_action: script.caldaia_dhw_on
+          type: button
+        conditions:
+        - condition: state
+          entity: input_boolean.caldaia_dhw_override
+          state: 'off'
+        type: conditional
+      - icon: mdi:restart
+        icon_height: 20px
+        name: Reboot OTGW
+        show_icon: true
+        show_name: true
+        show_state: false
+        tap_action:
+          action: perform-action
+          perform_action: button.press
+          target:
+            entity_id: button.opentherm_gateway_otgw_reset_gateway
+        type: button
+      columns: 3
+      square: false
+      type: grid
+    - entities:
+      - entity: binary_sensor.opentherm_gateway_otgw_otgw_flame
+        icon: mdi:fire
+        name: Fiamma
+      - entity: binary_sensor.opentherm_gateway_otgw_otgw_central_heating
+        icon: mdi:radiator
+        name: Riscaldamento attivo
+      - entity: binary_sensor.opentherm_gateway_otgw_otgw_domestic_hot_water_enable
+        icon: mdi:water-boiler
+        name: Acqua calda sanitaria
+      - entity: sensor.opentherm_gateway_otgw_otgw_relative_modulation_level
+        icon: mdi:gauge
+        name: Livello modulazione
+      - entity: sensor.opentherm_gateway_otgw_otgw_max_rel_modulation_level_setting
+        icon: mdi:gauge-full
+        name: Modulazione massima
+      - entity: sensor.opentherm_gateway_otgw_otgw_max_ch_water_setpoint
+        icon: mdi:thermometer-high
+        name: Uscita target riscald
+      show_header_toggle: false
+      title: Caldaia - Stato
+      type: entities
+    - content: "{% set code = states('sensor.opentherm_gateway_otgw_otgw_oemfaultcode')\
+        \ | int(-1) %} {% set fault = states('binary_sensor.opentherm_gateway_otgw_otgw_fault')\
+        \ %} {% set faults = {\n  9:   ['E09', 'Errore collegamento valvola gas',\
+        \ 'Chiamare assistenza'],\n  10:  ['E10', 'Sensore sonda esterna guasto',\
+        \ 'Chiamare assistenza'],\n  12:  ['E12', 'Mancata commutazione pressostato\
+        \ differenziale idraulico', 'Chiamare assistenza'],\n  13:  ['E13', 'Contatti\
+        \ incollati pressostato differenziale idraulico', 'Chiamare assistenza'],\n\
+        \  15:  ['E15', 'Errore comando valvola gas', 'Chiamare assistenza'],\n  18:\
+        \  ['E18', 'Riempimento automatico circuito idraulico in corso', 'Attendere\
+        \ fine ciclo'],\n  19:  ['E19', 'Anomalia nella fase riempimento impianto',\
+        \ 'Premere tasto R per 2 secondi'],\n  20:  ['E20', 'Sensore NTC di mandata\
+        \ guasto', 'Chiamare assistenza'],\n  28:  ['E28', 'Sensore NTC fumi guasto',\
+        \ 'Chiamare assistenza'],\n  40:  ['E40', 'Sensore NTC di ritorno guasto',\
+        \ 'Chiamare assistenza'],\n  50:  ['E50', 'Sensore NTC sanitario guasto',\
+        \ 'Chiamare assistenza'],\n  53:  ['E53', 'Condotto fumi ostruito', 'Togliere\
+        \ alimentazione; se persiste chiamare assistenza'],\n  55:  ['E55', 'Scheda\
+        \ elettronica non tarata', 'Chiamare assistenza'],\n  83:  ['E83', 'Problema\
+        \ comunicazione scheda/unit\xE0 comando', 'Chiamare assistenza'],\n  84: \
+        \ ['E84', 'Problema comunicazione scheda/unit\xE0 comando', 'Chiamare assistenza'],\n\
+        \  85:  ['E85', 'Problema comunicazione scheda/unit\xE0 comando', 'Chiamare\
+        \ assistenza'],\n  86:  ['E86', 'Problema comunicazione scheda/unit\xE0 comando',\
+        \ 'Chiamare assistenza'],\n  87:  ['E87', 'Problema comunicazione scheda/unit\xE0\
+        \ comando', 'Chiamare assistenza'],\n  92:  ['E92', 'Anomalia fumi (probabile\
+        \ ricircolo fumi)', 'Chiamare assistenza'],\n  109: ['E109', 'Presenza aria\
+        \ nel circuito caldaia', 'Chiamare assistenza'],\n  110: ['E110', 'Sovratemperatura\
+        \ (probabile pompa bloccata o aria)', 'Premere tasto R per 2 secondi'],\n\
+        \  117: ['E117', 'Pressione circuito idraulico troppo alta (>2.7 bar)', 'Chiamare\
+        \ assistenza'],\n  118: ['E118', 'Pressione circuito idraulico troppo bassa',\
+        \ 'Verificare pressione impianto'],\n  125: ['E125', 'Mancanza circolazione\
+        \ (intervento sicurezza)', 'Premere tasto R per 2 secondi'],\n  128: ['E128',\
+        \ 'Perdita di fiamma', 'Premere tasto R per 2 secondi'],\n  129: ['E129',\
+        \ 'Perdita di fiamma in accensione', 'Chiamare assistenza'],\n  130: ['E130',\
+        \ 'Sovratemperatura sonda NTC fumi', 'Premere tasto R per 2 secondi'],\n \
+        \ 133: ['E133', 'Mancata accensione (5 tentativi)', 'Premere tasto R per 2\
+        \ secondi'],\n  134: ['E134', 'Valvola gas bloccata', 'Premere tasto R per\
+        \ 2 secondi'],\n  135: ['E135', 'Errore interno di scheda', 'Premere tasto\
+        \ R per 2 secondi'],\n  154: ['E154', 'Test controllo sonda mandata/ritorno',\
+        \ 'Chiamare assistenza'],\n  160: ['E160', 'Anomalia funzionamento ventilatore',\
+        \ 'Chiamare assistenza'],\n  178: ['E178', 'Sovratemperatura su impianto bassa\
+        \ temperatura', 'Chiamare assistenza'],\n  270: ['E270', 'Surriscaldamento\
+        \ scambiatore', 'Chiamare assistenza'],\n  317: ['E317', 'Frequenza di alimentazione\
+        \ elettrica errata', 'Chiamare assistenza'],\n  321: ['E321', 'Sensore NTC\
+        \ sanitario guasto', 'Chiamare assistenza'],\n  384: ['E384', 'Fiamma parassita\
+        \ (anomalia interna)', 'Premere tasto R per 2 secondi'],\n  385: ['E385',\
+        \ 'Tensione di alimentazione troppo bassa', 'Ripristino automatico >175V;\
+        \ se persiste chiamare assistenza'],\n  431: ['E431', 'Sensore scambiatore\
+        \ guasto', 'Chiamare assistenza']\n} %} {% if fault != 'on' or code == -1\
+        \ or states('sensor.opentherm_gateway_otgw_otgw_oemfaultcode') in ['unknown',\
+        \ 'unavailable'] %}\n  **Stato:** \u2705 Nessun fault attivo\n{% elif code\
+        \ in faults %}\n  **Errore {{ faults[code][0] }}:** {{ faults[code][1] }}\n\
+        \n  **Azione:** {{ faults[code][2] }}\n{% else %}\n  **Errore OEM {{ code\
+        \ }}:** Codice non in tabella | Consultare manuale tecnico Baxi Luna Duo-Tec+\n\
+        {% endif %}\n"
+      grid_options:
+        columns: full
+        rows: auto
+      type: markdown
+    - entities:
+      - entity: sensor.opentherm_gateway_otgw_otgw_water_pressure_in_ch_circuit
+        name: Uscita
+      hours_to_show: 24
+      title: Caldaia - Pressione acqua
+      type: history-graph
+    - entities:
+      - entity: sensor.opentherm_gateway_otgw_otgw_boiler_flow_water_temperature
+        name: Uscita
+      - entity: sensor.opentherm_gateway_otgw_otgw_return_water_temperature
+        name: Ingresso
+      - entity: sensor.opentherm_gateway_otgw_otgw_dhw_setpoint
+        name: Uscita Target Sanitaria
+      - entity: sensor.opentherm_gateway_otgw_otgw_control_setpoint
+        name: Uscita target riscaldam
+      hours_to_show: 24
+      title: Caldaia - Temperature
+      type: history-graph
+    - entities:
+      - entity: binary_sensor.opentherm_gateway_otgw_otgw_boiler_connected
+        icon: mdi:boiler
+        name: Caldaia connessa
+      - entity: binary_sensor.opentherm_gateway_otgw_otgw_thermostat_connected
+        icon: mdi:thermostat
+        name: Termostato connesso
+      - entity: sensor.opentherm_gateway_otgw_firmware_version
+        icon: mdi:chip
+        name: Firmware
+      - entity: sensor.opentherm_gateway_otgw_reboot_count
+        icon: mdi:restart
+        name: Numero riavvii
+      - entity: sensor.opentherm_gateway_otgw_reboot_reason
+        icon: mdi:alert-circle-outline
+        name: Causa ultimo riavvio
+      show_header_toggle: false
+      title: OTGW - Stato
+      type: entities
+    - entities:
+      - entity: sensor.opentherm_gateway_otgw_stats_fragmentation
+        icon: mdi:chart-pie
+        name: Frammentazione heap
+      - entity: sensor.opentherm_gateway_otgw_stats_enter_low
+        icon: mdi:alert-outline
+        name: Ingressi heap LOW
+      - entity: sensor.opentherm_gateway_otgw_stats_enter_warning
+        icon: mdi:alert
+        name: Ingressi heap WARNING
+      - entity: sensor.opentherm_gateway_otgw_stats_enter_critical
+        icon: mdi:alert-octagon
+        name: Ingressi heap CRITICAL
+      - entity: sensor.opentherm_gateway_otgw_stats_mqtt_drops
+        icon: mdi:wifi-off
+        name: Drop MQTT
+      - entity: sensor.opentherm_gateway_otgw_stats_ws_drops
+        icon: mdi:websocket
+        name: Drop WebSocket
+      show_header_toggle: false
+      title: OTGW - Stato ESP8266
+      type: entities
+    - entities:
+      - entity: sensor.opentherm_gateway_otgw_stats_free_heap
+        name: Heap libero
+      - entity: sensor.opentherm_gateway_otgw_stats_max_block
+        name: Blocco max
+      hours_to_show: 24
+      title: OTGW - stato heap
+      type: history-graph
+    icon: mdi:water-boiler
+    path: otgw
+    title: CALDAIA BAXI LUNA DUO-TEC+ & OTGW
+    type: masonry

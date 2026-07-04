@@ -1,0 +1,70 @@
+items:
+- icon: mdi:home-analytics
+  id: casa_ginepro
+  mode: storage
+  require_admin: false
+  show_in_sidebar: true
+  title: Casa Ginepro
+  url_path: casa-ginepro
+- icon: mdi:solar-panel-large
+  id: dashboard_fotovoltaico
+  mode: storage
+  require_admin: false
+  show_in_sidebar: true
+  title: 'fotovoltaico '
+  url_path: dashboard-fotovoltaico
+- icon: mdi:meteor
+  id: dashboard_meteo
+  mode: storage
+  require_admin: false
+  show_in_sidebar: true
+  title: Meteo
+  url_path: dashboard-meteo
+- icon: mdi:home
+  id: zone_casa
+  mode: storage
+  require_admin: false
+  show_in_sidebar: true
+  title: Zone Casa
+  url_path: zone-casa
+- icon: mdi:file-table
+  id: dashboard_consumi
+  mode: storage
+  require_admin: false
+  show_in_sidebar: true
+  title: Consumi
+  url_path: dashboard-consumi
+- icon: mdi:home-thermometer-outline
+  id: dashboard_panasonic
+  mode: storage
+  require_admin: false
+  show_in_sidebar: true
+  title: Panasonic & Heishamon
+  url_path: dashboard-panasonic
+- id: dashboard_clima
+  mode: storage
+  require_admin: false
+  show_in_sidebar: true
+  title: Clima
+  url_path: dashboard-clima
+- icon: mdi:water-boiler
+  id: otgw_caldaia
+  mode: storage
+  require_admin: false
+  show_in_sidebar: true
+  title: BAXI & OTGW
+  url_path: otgw-caldaia
+- icon: mdi:fan
+  id: dashboard_fancoil
+  mode: storage
+  require_admin: false
+  show_in_sidebar: true
+  title: Fancoil & Deumidificatori
+  url_path: dashboard-fancoil
+- icon: mdi:lock
+  id: dashboard_sicurezza
+  mode: storage
+  require_admin: false
+  show_in_sidebar: true
+  title: Sicurezza
+  url_path: dashboard-sicurezza

@@ -1,0 +1,367 @@
+# automations_sicurezza_14.yaml
+
+#==================================================================================
+# 1. ACCENSIONE LUCE (Faretto Intruso) - solo notte
+#==================================================================================
+- id: accensione_luce_intruso_immediata
+  alias: "Luce Intruso Immediata"
+  mode: restart
+  triggers:
+    - platform: state
+      entity_id: binary_sensor.179_camera_cancello_persona
+      to: "on"
+  condition:
+    - condition: state
+      entity_id: sun.sun
+      state: "below_horizon"
+  action:
+    - action: light.turn_on
+      target:
+        entity_id: light.179_camera_cancello_faretto
+      data:
+        brightness_pct: 60
+        transition: 0.2
+    - delay: "00:00:30"
+    - action: light.turn_off
+      target:
+        entity_id: light.179_camera_cancello_faretto
+      data:
+        transition: 1
+
+#==================================================================================
+# 2. NOTIFICA PERSONA RILEVATA - CANCELLO (due fasi)
+#==================================================================================
+- id: notifica_intruso_cancello
+  alias: "Notifica Intruso - Cancello"
+  mode: single
+  triggers:
+    - platform: state
+      entity_id: binary_sensor.179_camera_cancello_persona
+      to: "on"
+  condition:
+    - condition: state
+      entity_id: person.alex
+      state: "not_home"
+  action:
+    - action: notify.mobile_app_cph2653
+      data:
+        title: "🚨 INTRUSO RILEVATO!"
+        message: "SCONOSCIUTO AL CANCELLO."
+        data:
+          tag: "notifica_cancello"
+          clickAction: "intent:#Intent;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;package=com.mcu.reolink;component=com.mcu.reolink/com.android.bc.login.WelcomeActivity;end"
+          priority: high
+          ttl: 0
+          sticky: "true"
+          persistent: "true"
+          actions:
+            - action: "ATTIVA_SIRENA"
+              title: "🚨 ACCENDI SIRENA"
+    - delay: "00:00:02"
+    - variables:
+        ts: "{{ now().strftime('%Y%m%d%H%M%S') }}"
+    - action: camera.snapshot
+      target:
+        entity_id: camera.179_camera_cancello_lente_scorrevole_0
+      data:
+        filename: /config/www/snapshot_cancello.jpg
+    - action: notify.mobile_app_cph2653
+      data:
+        title: "🚨 INTRUSO RILEVATO!"
+        message: "SCONOSCIUTO AL CANCELLO."
+        data:
+          tag: "notifica_cancello"
+          image: "/local/snapshot_cancello.jpg?ts={{ ts }}"
+          clickAction: "intent:#Intent;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;package=com.mcu.reolink;component=com.mcu.reolink/com.android.bc.login.WelcomeActivity;end"
+          priority: high
+          ttl: 0
+          sticky: "true"
+          persistent: "true"
+          actions:
+            - action: "ATTIVA_SIRENA"
+              title: "🚨 ACCENDI SIRENA"
+
+#==================================================================================
+# 3. NOTIFICA PERSONA RILEVATA - BOX (due fasi)
+#==================================================================================
+- id: notifica_intruso_portone
+  alias: "Notifica Intruso - BOX"
+  mode: single
+  triggers:
+    - platform: state
+      entity_id: binary_sensor.camera_portone_reolink_lumus_persona
+      to: "on"
+  condition:
+    - condition: state
+      entity_id: person.alex
+      state: "not_home"
+  action:
+    - action: notify.mobile_app_cph2653
+      data:
+        title: "🚨 INTRUSO RILEVATO!"
+        message: "PERSONA RILEVATA AL BOX."
+        data:
+          tag: "notifica_portone"
+          clickAction: "intent:#Intent;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;package=com.mcu.reolink;component=com.mcu.reolink/com.android.bc.login.WelcomeActivity;end"
+          priority: high
+          ttl: 0
+          sticky: "true"
+          persistent: "true"
+          actions:
+            - action: "ATTIVA_SIRENA"
+              title: "🚨 ACCENDI SIRENA"
+    - delay: "00:00:02"
+    - variables:
+        ts: "{{ now().strftime('%Y%m%d%H%M%S') }}"
+    - action: camera.snapshot
+      target:
+        entity_id: camera.183_camera_portone_reolinklumus_scorrevole
+      data:
+        filename: /config/www/snapshot_portone.jpg
+    - action: notify.mobile_app_cph2653
+      data:
+        title: "🚨 INTRUSO RILEVATO!"
+        message: "PERSONA RILEVATA AL BOX."
+        data:
+          tag: "notifica_portone"
+          image: "/local/snapshot_portone.jpg?ts={{ ts }}"
+          clickAction: "intent:#Intent;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;package=com.mcu.reolink;component=com.mcu.reolink/com.android.bc.login.WelcomeActivity;end"
+          priority: high
+          ttl: 0
+          sticky: "true"
+          persistent: "true"
+          actions:
+            - action: "ATTIVA_SIRENA"
+              title: "🚨 ACCENDI SIRENA"
+
+#==================================================================================
+# 4. TIMER SPEGNIMENTO LUCE (30s)
+#==================================================================================
+- id: spegni_luce_camera_dopo_30s
+  alias: "Spegni luce camera dopo 30s"
+  mode: restart
+  triggers:
+    - platform: state
+      entity_id: light.179_camera_cancello_faretto
+      to: "on"
+  action:
+    - delay: "00:00:30"
+    - action: light.turn_off
+      target:
+        entity_id: light.179_camera_cancello_faretto
+      data:
+        transition: 1
+
+#==================================================================================
+# 5. ASCOLTO CLICK NOTIFICA - SIRENA ON
+#==================================================================================
+- id: gestione_click_sirena_notifica
+  alias: "Gestione Click Sirena Notifica"
+  mode: parallel
+  triggers:
+    - platform: event
+      event_type: mobile_app_notification_action
+      event_data:
+        action: "ATTIVA_SIRENA"
+  action:
+    - action: script.turn_on
+      target:
+        entity_id: script.sirena_on
+
+#==================================================================================
+# 6. SPEGNIMENTO AUTOMATICO SIRENA (60s)
+#==================================================================================
+- id: spegni_sirena_automatico
+  alias: "Spegni Sirena Automatico"
+  mode: restart
+  triggers:
+    - platform: state
+      entity_id: siren.179_camera_cancello_sirena
+      to: "on"
+  action:
+    - delay: "00:01:00"
+    - action: script.turn_on
+      target:
+        entity_id: script.sirena_off
+
+#================================================================================
+# 7. NOTIFICA PERSONA RILEVATA - BARBECUE (due fasi)
+#================================================================================
+- id: notifica_intruso_barbecue
+  alias: "Notifica Intruso - Barbecue"
+  mode: single
+  triggers:
+    - platform: state
+      entity_id: binary_sensor.192_camera_barbecue_reolink_persona
+      to: "on"
+  condition:
+    - condition: state
+      entity_id: person.alex
+      state: "not_home"
+  action:
+    - action: notify.mobile_app_cph2653
+      data:
+        title: "🚨 INTRUSO RILEVATO!"
+        message: "PERSONA RILEVATA AL BARBECUE."
+        data:
+          tag: "notifica_barbecue"
+          clickAction: "intent:#Intent;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;package=com.mcu.reolink;component=com.mcu.reolink/com.android.bc.login.WelcomeActivity;end"
+          priority: high
+          ttl: 0
+          sticky: "true"
+          persistent: "true"
+          actions:
+            - action: "ATTIVA_SIRENA"
+              title: "🚨 ACCENDI SIRENA"
+    - delay: "00:00:02"
+    - variables:
+        ts: "{{ now().strftime('%Y%m%d%H%M%S') }}"
+    - action: camera.snapshot
+      target:
+        entity_id: camera.192_camera_barbecue_reolink_scorrevole
+      data:
+        filename: /config/www/snapshot_barbecue.jpg
+    - action: notify.mobile_app_cph2653
+      data:
+        title: "🚨 INTRUSO RILEVATO!"
+        message: "PERSONA RILEVATA AL BARBECUE."
+        data:
+          tag: "notifica_barbecue"
+          image: "/local/snapshot_barbecue.jpg?ts={{ ts }}"
+          clickAction: "intent:#Intent;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;package=com.mcu.reolink;component=com.mcu.reolink/com.android.bc.login.WelcomeActivity;end"
+          priority: high
+          ttl: 0
+          sticky: "true"
+          persistent: "true"
+          actions:
+            - action: "ATTIVA_SIRENA"
+              title: "🚨 ACCENDI SIRENA"
+
+#==================================================================================
+# 8. NOTIFICA MOVIMENTO RILEVATO - C8W SOTTO PERGOLA (due fasi)
+#==================================================================================
+- id: notifica_intruso_c8w_pergola
+  alias: "Notifica Intruso - C8W Pergola"
+  mode: single
+  triggers:
+    - platform: state
+      entity_id: binary_sensor.sotto_pergola_ezviz_c8w_movimento
+      to: "on"
+  condition:
+    - condition: state
+      entity_id: person.alex
+      state: "not_home"
+  action:
+    - action: notify.mobile_app_cph2653
+      data:
+        title: "🚨 INTRUSO RILEVATO!"
+        message: "MOVIMENTO RILEVATO SOTTO PERGOLA."
+        data:
+          tag: "notifica_c8w_pergola"
+          clickAction: "intent:#Intent;package=com.ezviz;end"
+          priority: high
+          ttl: 0
+          sticky: "true"
+          persistent: "true"
+          actions:
+            - action: "ATTIVA_SIRENA"
+              title: "🚨 ACCENDI SIRENA"
+    - delay: "00:00:02"
+    - variables:
+        ts: "{{ now().strftime('%Y%m%d%H%M%S') }}"
+    - action: camera.snapshot
+      target:
+        entity_id: camera.sotto_pergola_ezviz_c8w
+      data:
+        filename: /config/www/snapshot_c8w_pergola.jpg
+    - action: notify.mobile_app_cph2653
+      data:
+        title: "🚨 INTRUSO RILEVATO!"
+        message: "MOVIMENTO RILEVATO SOTTO PERGOLA."
+        data:
+          tag: "notifica_c8w_pergola"
+          image: "/local/snapshot_c8w_pergola.jpg?ts={{ ts }}"
+          clickAction: "intent:#Intent;package=com.ezviz;end"
+          priority: high
+          ttl: 0
+          sticky: "true"
+          persistent: "true"
+          actions:
+            - action: "ATTIVA_SIRENA"
+              title: "🚨 ACCENDI SIRENA"
+
+#==================================================================================
+# 9. NOTIFICA CAMBIO STATO - PERSIANA GIARDINO (solo fuori casa)
+#==================================================================================
+- id: notifica_persiana_giardino
+  alias: "Notifica - Persiana Giardino"
+  mode: single
+  triggers:
+    - platform: state
+      entity_id: binary_sensor.0xa4c1380640bfffff_contact
+  condition:
+    - condition: state
+      entity_id: person.alex
+      state: "not_home"
+  action:
+    - action: notify.mobile_app_cph2653
+      data:
+        title: "🪟 Persiana Giardino"
+        message: "{{ 'APERTA' if states('binary_sensor.0xa4c1380640bfffff_contact') == 'on' else 'CHIUSA' }}"
+        data:
+          tag: "notifica_persiana_giardino"
+          priority: high
+          ttl: 0
+
+#==================================================================================
+# 10. NOTIFICA CAMBIO STATO - PERSIANA BOX (solo fuori casa)
+#==================================================================================
+- id: notifica_persiana_box
+  alias: "Notifica - Persiana Box"
+  mode: single
+  triggers:
+    - platform: state
+      entity_id: binary_sensor.0xa4c1380697d6ffff_contact
+  condition:
+    - condition: state
+      entity_id: person.alex
+      state: "not_home"
+  action:
+    - action: notify.mobile_app_cph2653
+      data:
+        title: "🪟 Persiana Box"
+        message: "{{ 'APERTA' if states('binary_sensor.0xa4c1380697d6ffff_contact') == 'on' else 'CHIUSA' }}"
+        data:
+          tag: "notifica_persiana_box"
+          priority: high
+          ttl: 0
+
+#==================================================================================
+# 11. CHIUSURA AUTOMATICA PORTONE BOX SE RIMANE APERTO > 10 MIN
+#     Nota: sensore binary_sensor.portone_box_sensore_zigbee_contact ha logica
+#     invertita -> stato "off" (chiuso) = portone APERTO, stato "on" (aperto) = portone CHIUSO
+#==================================================================================
+- id: chiusura_automatica_portone_box
+  alias: "Chiusura Automatica Portone Box - Timeout 10 min"
+  mode: restart
+  triggers:
+    - platform: state
+      entity_id: binary_sensor.portone_box_sensore_zigbee_contact
+      to: "off"
+      for: "00:10:00"
+  condition:
+    - condition: state
+      entity_id: binary_sensor.portone_box_sensore_zigbee_contact
+      state: "off"
+  action:
+    - action: notify.mobile_app_cph2653
+      data:
+        title: "🚪 Portone Box"
+        message: "Portone rimasto aperto da più di 10 minuti. Chiusura automatica in corso."
+        data:
+          tag: "notifica_portone_box_timeout"
+          priority: high
+          ttl: 0
+    - action: button.press
+      target:
+        entity_id: button.portone_telecomando

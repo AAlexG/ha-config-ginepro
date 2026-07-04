@@ -1,0 +1,461 @@
+config:
+  path: panasonic
+  title: Panasonic Aquarea
+  views:
+  - cards: []
+    icon: mdi:heat-pump
+    max_columns: 2
+    path: panasonic
+    sections:
+    - cards:
+      - entity: switch.shelly_box
+        features:
+        - type: toggle
+        features_position: bottom
+        grid_options:
+          columns: full
+          rows: auto
+        name: Accesso->pompa/Spento->caldaia
+        type: tile
+        vertical: false
+      - heading: HEISHAMON - stato
+        heading_style: title
+        type: heading
+      - entity: sensor.panasonic_heat_pump_stats_2
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        name: Uptime
+        type: tile
+        vertical: false
+      - entity: sensor.panasonic_heat_pump_stats
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        name: WiFi Heisha
+        type: tile
+        vertical: false
+      - entity: sensor.panasonic_heat_pump_stats_4
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        name: Good Reads
+        type: tile
+        vertical: false
+      - entity: sensor.panasonic_heat_pump_stats_13
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        name: MQTT Reconnects
+        type: tile
+        vertical: false
+      type: grid
+    - cards:
+      - heading: POMPA - stato
+        heading_style: title
+        icon: mdi:heat-pump
+        type: heading
+      - entity: switch.panasonic_heat_pump_main_heatpump_state
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        name: Stato Pompa
+        tap_action:
+          action: none
+        type: tile
+        vertical: false
+      - entity: binary_sensor.panasonic_heat_pump_lwt
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        name: Pompa Online
+        type: tile
+        vertical: false
+      - grid_options:
+          columns: 3
+          rows: auto
+        icon: mdi:heat-pump
+        icon_height: 20px
+        name: Pompa ON/OFF
+        show_icon: true
+        show_name: true
+        show_state: false
+        tap_action:
+          action: perform-action
+          perform_action: script.panasonic_toggle
+        type: button
+      - grid_options:
+          columns: 3
+          rows: auto
+        icon: mdi:restart
+        icon_height: 20px
+        name: Reboot HeishaMon
+        show_icon: true
+        show_name: true
+        show_state: false
+        tap_action:
+          action: perform-action
+          perform_action: script.heishamon_reboot
+        type: button
+      - grid_options:
+          columns: 3
+          rows: auto
+        icon: mdi:heat-pump
+        icon_height: 20px
+        name: Clima
+        show_icon: true
+        show_name: true
+        show_state: false
+        tap_action:
+          action: navigate
+          navigation_path: /dashboard-clima/clima
+        type: button
+      - entity: input_number.panasonic_target_mandata_manuale
+        features_position: bottom
+        grid_options:
+          columns: 9
+          rows: 1
+        name: Target TempOut Pompa Manuale
+        type: tile
+        vertical: false
+      - grid_options:
+          columns: 3
+          rows: auto
+        icon: mdi:send
+        icon_height: 20px
+        name: Invia
+        show_icon: true
+        show_name: true
+        show_state: false
+        tap_action:
+          action: perform-action
+          perform_action: script.panasonic_set_target_mandata
+        type: button
+      - entity: select.panasonic_heat_pump_main_operating_mode_state
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        name: "Modalit\xE0"
+        type: tile
+        vertical: false
+      - entity: sensor.panasonic_cop_calcolato
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        name: COP
+        type: tile
+        vertical: false
+      - entity: sensor.panasonic_potenza_consumata_calcolata
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        name: Consum.ora
+        type: tile
+        vertical: false
+      - entity: sensor.panasonic_potenza_prodotta_calcolata
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        name: Produz.ora
+        type: tile
+        vertical: false
+      - entity: sensor.panasonic_consumata_oggi
+        features_position: bottom
+        grid_options:
+          columns: 3
+          rows: 1
+        name: Consum.oggi
+        type: tile
+        vertical: false
+      - entity: sensor.panasonic_prodotta_oggi
+        features_position: bottom
+        grid_options:
+          columns: 3
+          rows: 1
+        name: Produz.oggi
+        type: tile
+        vertical: false
+      - entity: sensor.panasonic_consumata_mese
+        features_position: bottom
+        grid_options:
+          columns: 3
+          rows: 1
+        name: Consum.mese
+        type: tile
+        vertical: false
+      - entity: sensor.panasonic_prodotta_mese
+        features_position: bottom
+        grid_options:
+          columns: 3
+          rows: 1
+        name: Produz.Mese
+        type: tile
+        vertical: false
+      - entity: select.panasonic_heat_pump_main_powerful_mode_time
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        name: Max Potenza
+        type: tile
+        vertical: false
+      - entity: binary_sensor.panasonic_heat_pump_main_quiet_mode_schedule
+        features_position: bottom
+        name: Quite Mode
+        type: tile
+        vertical: false
+      - entity: sensor.panasonic_heat_pump_main_pump_speed
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        name: Giri pompa idraulica
+        type: tile
+        vertical: false
+      - entity: sensor.panasonic_heat_pump_main_error
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        name: Ultimo Errore
+        type: tile
+        vertical: false
+      - content: "{% set code = states('sensor.panasonic_heat_pump_main_error') |\
+          \ upper | trim %} {% set errors = {\n  'H00': '\u2705 Nessun guasto rilevato\
+          \ | Nessuna azione necessaria',\n  'H11': '\U0001F4E1 Errore comunicazione\
+          \ interno/esterno | Spegnere e riaccendere. Verificare cavo segnale S1/S2,\
+          \ continuit\xE0 e polarit\xE0. Se persiste: chiamare tecnico',\n  'H12':\
+          \ '\u2699\uFE0F Disallineamento capacit\xE0 interno/esterno | Verificare\
+          \ compatibilit\xE0 modelli. Compito da installatore',\n  'H14': '\U0001F321\
+          \uFE0F Sensore temperatura aria interna anomalo | Verificare connettore\
+          \ sensore su PCB. Misurare resistenza termistore. Sostituire se fuori specifica',\n\
+          \  'H15': '\U0001F321\uFE0F Sensore temperatura compressore anomalo | Verificare\
+          \ connessione sensore su PCB esterno. Chiamare tecnico se compressore surriscaldato',\n\
+          \  'H16': '\u26A1 Protezione corrente/inverter anomala | Solo tecnico: verificare\
+          \ alimentazione, modulo IPM, avvolgimenti compressore',\n  'H17': '\U0001F321\
+          \uFE0F Sensore temperatura aspirazione anomalo | Verificare connettore e\
+          \ resistenza termistore. Sostituire se necessario',\n  'H19': '\U0001F504\
+          \ Blocco ventilatore/pompa circolazione | Verificare che la pompa giri liberamente.\
+          \ Pulire filtro/strainer. Chiamare tecnico',\n  'H20': '\U0001F4A7 Pompa\
+          \ acqua anomala | Verificare alimentazione pompa, valvole aperte, sfiatare\
+          \ aria, pressione sistema adeguata',\n  'H21': '\U0001F4A7 Float switch/condensa\
+          \ anomalo | Verificare accumulo acqua, scarichi ostruiti, float bloccato',\n\
+          \  'H23': '\U0001F321\uFE0F Sensore scambiatore interno 1 anomalo | Verificare\
+          \ connettore e resistenza termistore',\n  'H24': '\U0001F321\uFE0F Sensore\
+          \ scambiatore interno 2 anomalo | Verificare connettore e resistenza termistore',\n\
+          \  'H27': '\U0001F321\uFE0F Sensore temperatura esterna anomalo | Sensore\
+          \ esterno disconnesso o guasto. Chiamare tecnico',\n  'H28': '\U0001F321\
+          \uFE0F Sensore scambiatore esterno 1 anomalo | Sensore bobina esterna guasto.\
+          \ Chiamare tecnico',\n  'H30': '\U0001F321\uFE0F Sensore temperatura scarico\
+          \ compressore anomalo | Verificare termistore su linea scarico. Chiamare\
+          \ tecnico',\n  'H32': '\U0001F321\uFE0F Sensore scambiatore esterno 2 anomalo\
+          \ | Sensore bobina esterna guasto. Chiamare tecnico',\n  'H33': '\U0001F50C\
+          \ Collegamento interno/esterno errato | Verificare compatibilit\xE0 unit\xE0\
+          \ e cablaggio. Compito da installatore',\n  'H34': '\U0001F321\uFE0F Sensore\
+          \ dissipatore calore anomalo | Sensore modulo inverter guasto. Chiamare\
+          \ tecnico',\n  'H38': '\u26A0\uFE0F Incompatibilit\xE0 interno/esterno (brand\
+          \ code) | Verificare compatibilit\xE0 modelli. Compito da installatore',\n\
+          \  'H45': '\U0001F321\uFE0F Sensore temperatura uscita acqua anomalo | Termistore\
+          \ acqua uscita guasto. Chiamare tecnico',\n  'H62': '\U0001F4A7 Errore flusso\
+          \ acqua/sensore flusso | Verificare pressione sistema, sfiatare aria, pulire\
+          \ filtro Y-strainer, aprire tutte le valvole, verificare pompa',\n  'H70':\
+          \ '\U0001F525 Protezione riscaldatore backup | Verificare cablaggio riscaldatore,\
+          \ contattori, protezione sovratemperatura e flusso acqua',\n  'H72': '\U0001F321\
+          \uFE0F Sensore serbatoio ACS anomalo | Sonda temperatura bollitore guasta\
+          \ o disconnessa. Chiamare tecnico',\n  'H74': '\U0001F4DF Errore comunicazione\
+          \ PCB | Errore comunicazione tra schede. Chiamare tecnico',\n  'H76': '\U0001F4DF\
+          \ Errore comunicazione interno/telecomando | Problema sul bus telecomando.\
+          \ Verificare cablaggio telecomando',\n  'H91': '\U0001F525 Sovraccarico\
+          \ riscaldatore serbatoio | Protezione sovratemperatura scattata. Chiamare\
+          \ tecnico',\n  'H95': '\u26A1 Tensione alimentazione anomala | Elettricista/tecnico:\
+          \ verificare tensione, fase, messa a terra',\n  'H97': '\U0001F300 Blocco\
+          \ ventilatore esterno | Verificare che ventilatore giri liberamente. Chiamare\
+          \ tecnico',\n  'H98': '\U0001F525 Protezione alta pressione interna | Pulire\
+          \ filtro aria, verificare circolazione. Chiamare tecnico',\n  'H99': '\u2744\
+          \uFE0F Protezione antigelo scambiatore interno | Pulire filtro aria, verificare\
+          \ carica refrigerante. Chiamare tecnico',\n  'F11': '\U0001F504 Anomalia\
+          \ valvola 4 vie / sensore tubo | Verificare valvola 4 vie, bobina e cablaggio.\
+          \ Chiamare tecnico',\n  'F27': '\U0001F4E1 Errore cablaggio interconnessione\
+          \ | Verificare cavi, schermatura e messa a terra tra unit\xE0',\n  'F30':\
+          \ '\U0001F4BE Errore memoria EEPROM PCB esterno | Scheda PCB esterna guasta.\
+          \ Chiamare tecnico',\n  'F90': '\u26A1 Protezione PFC (Power Factor Correction)\
+          \ | Solo tecnico: verificare carica refrigerante, flusso aria/acqua, elettronica\
+          \ inverter',\n  'F91': '\u26A1 Errore inverter/compressore | Solo tecnico:\
+          \ verificare carica refrigerante, valvola espansione, inverter',\n  'F95':\
+          \ '\U0001F525 Protezione alta pressione esterna | Solo tecnico: verificare\
+          \ carica refrigerante, flusso aria, scambiatore',\n  'F96': '\U0001F525\
+          \ Surriscaldamento modulo IPM/transistor | Solo tecnico: verificare flusso\
+          \ aria, modulo potenza',\n  'F97': '\U0001F525 Errore inverter/potenza correlato\
+          \ | Solo tecnico: chiamare tecnico autorizzato',\n  'P03': '\u26A1 Protezione\
+          \ transistor di potenza | Solo tecnico: chiamare tecnico autorizzato',\n\
+          \  'P05': '\u26A1 Problema alimentazione AC | Elettricista: verificare tensione,\
+          \ neutro, morsetti',\n  'P07': '\U0001F525 Surriscaldamento modulo inverter\
+          \ | Solo tecnico: chiamare tecnico autorizzato',\n  'U0':  '\u2744\uFE0F\
+          \ Carenza refrigerante/gas | Solo tecnico F-Gas: test perdite, analisi surriscaldamento,\
+          \ ricarica',\n} %} {% if code in ['', 'UNKNOWN', 'UNAVAILABLE', 'NONE',\
+          \ 'H00', '0', 'NO ERROR'] %}\n  **Stato:** \u2705 Nessun errore attivo\n\
+          {% elif code in errors %}\n  **Errore {{ code }}:** {{ errors[code].split('\
+          \ | ')[0] }}\n\n  **Azione:** {{ errors[code].split(' | ')[1] }}\n{% else\
+          \ %}\n  **Errore {{ code }}:** Codice non in tabella | Consultare manuale\
+          \ tecnico o chiamare tecnico Panasonic\n{% endif %}\n"
+        grid_options:
+          columns: full
+          rows: auto
+        type: markdown
+      - heading: POMPA -TEMPERATURE ORA
+        heading_style: title
+        icon: mdi:coolant-temperature
+        type: heading
+      - entity: sensor.panasonic_heat_pump_main_outside_pipe_temp
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        name: Tubo Esterno
+        type: tile
+        vertical: false
+      - entity: sensor.panasonic_heat_pump_main_room_thermostat_temp
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        name: Telecomando
+        type: tile
+        vertical: false
+      - entities:
+        - entity: sensor.panasonic_heat_pump_main_outside_temp
+          name: Esterna
+        - entity: sensor.panasonic_heat_pump_main_main_inlet_temp
+          name: Ingresso
+        - entity: sensor.panasonic_heat_pump_main_main_outlet_temp
+          name: Uscita
+        - entity: sensor.panasonic_heat_pump_main_main_target_temp
+          name: Target
+        grid_options:
+          columns: full
+          rows: auto
+        hours_to_show: 24
+        refresh_interval: 60
+        title: null
+        type: history-graph
+      type: grid
+    - cards:
+      - heading: POMPA- Ventilatore e pompa idravlica
+        heading_style: title
+        icon: mdi:hvac
+        type: heading
+      - chart_type: line
+        days_to_show: 1
+        entities:
+        - entity: sensor.panasonic_heat_pump_main_fan1_motor_speed
+          name: Numero giri ventilatore
+        hide_legend: false
+        logarithmic_scale: false
+        period: 5minute
+        stat_types:
+        - max
+        type: statistics-graph
+      - chart_type: line
+        days_to_show: 1
+        entities:
+        - entity: sensor.panasonic_heat_pump_main_pump_flow
+          name: Flusso pompa idraulica
+        hide_legend: false
+        logarithmic_scale: false
+        period: 5minute
+        stat_types:
+        - mean
+        type: statistics-graph
+      type: grid
+    - cards:
+      - heading: POMPA - Consumi
+        heading_style: title
+        type: heading
+      - heading: Consumato/prodotto 24H, kWh
+        heading_style: title
+        type: heading
+      - entities:
+        - entity: sensor.panasonic_cop_calcolato
+          name: COP
+        - entity: sensor.panasonic_potenza_prodotta_calcolata
+          name: Produzione ora
+        - entity: sensor.panasonic_potenza_consumata_calcolata
+          name: Consumo ora
+        grid_options:
+          columns: full
+          rows: auto
+        hours_to_show: 24
+        refresh_interval: 60
+        type: history-graph
+      - graph_span: 30d
+        grid_options:
+          columns: 30
+          rows: auto
+        header:
+          show: true
+          title: Consumato/Prodotto 30gg, kWh
+        series:
+        - entity: sensor.panasonic_prodotta_oggi
+          name: Prodotto oggi
+          statistics:
+            period: day
+            type: change
+          type: column
+          yaxis_id: kwh
+        - entity: sensor.panasonic_consumata_oggi
+          name: Consumo oggi
+          statistics:
+            period: day
+            type: change
+          type: column
+          yaxis_id: kwh
+        type: custom:apexcharts-card
+        yaxis:
+        - apex_config:
+            title:
+              text: kWh
+          decimals: 1
+          id: kwh
+      - graph_span: 365d
+        grid_options:
+          columns: 12
+          rows: auto
+        header:
+          show: true
+          title: Consumato/Prodotto 12 mesi, kWh
+        series:
+        - entity: sensor.panasonic_prodotta_mese
+          name: Prodoto mese
+          statistics:
+            period: month
+            type: change
+          type: column
+          yaxis_id: kwh
+        - entity: sensor.panasonic_consumata_mese
+          name: Consumo mese
+          statistics:
+            period: month
+            type: change
+          type: column
+          yaxis_id: kwh
+        type: custom:apexcharts-card
+        yaxis:
+        - apex_config:
+            title:
+              text: kWh
+          decimals: 1
+          id: kwh
+      type: grid
+    show_icon_and_title: true
+    title: Panasonic & Heishamon
+    type: sections

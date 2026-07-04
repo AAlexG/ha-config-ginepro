@@ -1,0 +1,61 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "SunSpec Modbus TCP pripojenie",
+        "description": "Zadajte hostiteľa, port a Unit ID pre pripojenie k zariadeniu SunSpec.",
+        "data": {
+          "host": "Meno hosťa/IP",
+          "port": "Port",
+          "unit_id": "Unit ID"
+        }
+      },
+      "settings": {
+        "title": "Možnosti snímača",
+        "description": "Zadajte voliteľnú predponu pre názvy snímačov a vyberte akékoľvek ďalšie modely SunSpec (údajové registre), pre ktoré chcete vytvoriť snímače. Toto je možné zmeniť aj neskôr v konfigurácii komponentov.",
+        "data": {
+          "models_enabled": "Čítať modely",
+          "prefix": "Predpona snímačov",
+          "scan_interval": "Interval skenovania (sekundy)"
+        }
+      }
+    },
+    "error": {
+      "connection": "Nepodarilo sa pripojiť, skontrolujte názov hostiteľa a port",
+      "device_error": "Spojenie dosiahlo zariadenie, ale inicializácia zlyhala. Podrobnosti nájdete v logoch Home Assistant.",
+      "timeout": "Časový limit spojenia vypršal. Skontrolujte, či je zariadenie online a odpovedá na nakonfigurovanom hostiteľovi, porte a Unit ID."
+    },
+    "abort": {
+      "single_instance_allowed": "Povolený je len jeden prípad."
+    }
+  },
+  "options": {
+    "step": {
+      "host_options": {
+        "title": "SunSpec Modbus TCP pripojenie",
+        "description": "Aktualizujte hostiteľa, port a Unit ID pre toto pripojenie SunSpec.",
+        "data": {
+          "host": "Meno hosťa/IP",
+          "port": "Port",
+          "unit_id": "Unit ID"
+        }
+      },
+      "model_options": {
+        "title": "Možnosti zariadenia",
+        "description": "Vyberte modely SunSpec (údajové registre), pre ktoré chcete vytvoriť senzory.",
+        "data": {
+          "host": "Meno hosťa/IP",
+          "port": "Port",
+          "unit_id": "Unit ID",
+          "models_enabled": "Čítať modely",
+          "scan_interval": "Interval skenovania (sekundy)"
+        }
+      }
+    },
+    "error": {
+      "connection": "Nepodarilo sa pripojiť, skontrolujte názov hostiteľa a port",
+      "device_error": "Spojenie dosiahlo zariadenie, ale inicializácia zlyhala. Podrobnosti nájdete v logoch Home Assistant.",
+      "timeout": "Časový limit spojenia vypršal. Skontrolujte, či je zariadenie online a odpovedá na nakonfigurovanom hostiteľovi, porte a Unit ID."
+    }
+  }
+}

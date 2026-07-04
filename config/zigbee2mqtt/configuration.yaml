@@ -1,0 +1,58 @@
+version: 5
+mqtt:
+  base_topic: zigbee2mqtt
+  server: mqtt://core-mosquitto:1883
+  user: zigbee2mqtt
+  password: zigbee
+serial:
+  port: >-
+    /dev/serial/by-id/usb-Itead_Sonoff_Zigbee_3.0_USB_Dongle_Plus_V2_84af0121abf3ef118e1dc21b6d9880ab-if00-port0
+  adapter: ember
+  baudrate: 115200
+  rtscts: false
+advanced:
+  log_level: info
+  channel: 25
+  network_key:
+    - 89
+    - 216
+    - 70
+    - 240
+    - 202
+    - 127
+    - 229
+    - 86
+    - 51
+    - 103
+    - 107
+    - 241
+    - 155
+    - 53
+    - 182
+    - 99
+  pan_id: 49188
+  ext_pan_id:
+    - 85
+    - 54
+    - 225
+    - 213
+    - 138
+    - 14
+    - 4
+    - 4
+  transmit_power: 20
+frontend:
+  enabled: true
+  port: 8099
+homeassistant:
+  enabled: true
+onboarding: false
+devices:
+  '0xa4c1380640bfffff':
+    friendly_name: Persiana Tania sensore zigbee
+    description: Sensore persiana giardino
+  '0xa4c1380697d6ffff':
+    friendly_name: Persiana box sensore zigbee
+    description: Sensore persiana box
+  '0xa4c138f820e17e6e':
+    friendly_name: Portone box sensore zigbee

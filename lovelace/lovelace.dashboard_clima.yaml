@@ -1,0 +1,401 @@
+config:
+  path: clima
+  title: Clima
+  views:
+  - max_columns: 2
+    path: clima
+    sections:
+    - cards:
+      - heading: STATO ATTUALE
+        heading_style: title
+        icon: mdi:thermometer-check
+        type: heading
+      - entity: switch.shelly_box
+        features_position: bottom
+        grid_options:
+          columns: full
+        name: Acceso>Pompa/Spento>Caldaia
+        type: tile
+        vertical: false
+      - entity: input_select.clima_modalita
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        name: "Modalit\xE0 Attiva"
+        type: tile
+        vertical: false
+      - entity: input_select.clima_stagione
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        name: Stagione
+        type: tile
+        vertical: false
+      - entity: input_boolean.clima_pid_attivo
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        name: PID Attivo
+        type: tile
+        vertical: false
+      - entity: input_number.clima_media_esterna_7gg
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        name: Media 7gg esterna
+        type: tile
+        vertical: false
+      - entities:
+        - entity: sensor.hp1000se_pro_pro_v1_6_4_indoor_temperature
+          name: Sala
+        - entity: sensor.sonoff_10008d119d_temperature
+          name: Georgi
+        - entity: sensor.panasonic_heat_pump_main_outside_temp
+          name: Esterna
+        grid_options:
+          columns: full
+          rows: auto
+        hours_to_show: 24
+        refresh_interval: 60
+        type: history-graph
+      - heading: Fancoil
+        heading_style: title
+        icon: mdi:heat-pump
+        type: heading
+      - entities:
+        - entity: switch.camerageorgi_shelly_fancoil_georgi
+          name: Tania
+        - entity: switch.camerageorgi_shelly_fancoil_georgi_2
+          name: Georgi
+        - entity: switch.sala_fancoil_sala_shelly_1gen4
+          name: Sala
+        grid_options:
+          columns: full
+          rows: auto
+        hours_to_show: 168
+        refresh_interval: 300
+        type: history-graph
+      - heading: Deumidificatori
+        heading_style: title
+        icon: mdi:heat-pump
+        type: heading
+      - entities:
+        - entity: switch.presa_deumidificatore_cantina
+          name: Cantina
+        grid_options:
+          columns: full
+          rows: auto
+        hours_to_show: 168
+        refresh_interval: 300
+        type: history-graph
+      - heading: Pompa
+        heading_style: title
+        icon: mdi:heat-pump
+        type: heading
+      - entity: select.panasonic_heat_pump_main_operating_mode_state
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        name: "Modalit\xE0 Pompa"
+        type: tile
+        vertical: false
+      - entity: switch.panasonic_heat_pump_main_heatpump_state
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        name: Pompa ON/OFF
+        type: tile
+        vertical: false
+      - entity: input_boolean.clima_boost_solare_attivo
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        name: Boost Solare
+        type: tile
+        vertical: false
+      - entities:
+        - entity: input_number.panasonic_pid_setpoint_mandata
+          name: Target TempOut estate
+        - entity: sensor.panasonic_heat_pump_main_main_target_temp
+          name: TempOUT ora
+        grid_options:
+          columns: full
+          rows: auto
+        hours_to_show: 24
+        refresh_interval: 60
+        type: history-graph
+      - heading: Caldaia
+        heading_style: title
+        icon: mdi:water-boiler
+        type: heading
+      - entities:
+        - entity: binary_sensor.opentherm_gateway_otgw_otgw_flame
+          icon: mdi:fire
+          name: Fiamma
+        - entity: binary_sensor.opentherm_gateway_otgw_otgw_central_heating
+          icon: mdi:radiator
+          name: Riscaldamento attivo
+        - entity: binary_sensor.opentherm_gateway_otgw_otgw_domestic_hot_water_enable
+          icon: mdi:water-boiler
+          name: Acqua calda sanitaria
+        show_header_toggle: false
+        type: entities
+      - entities:
+        - entity: sensor.opentherm_gateway_otgw_otgw_return_water_temperature
+          name: Entrata
+        - entity: sensor.opentherm_gateway_otgw_otgw_control_setpoint
+          name: Uscita target riscald.
+        - entity: sensor.opentherm_gateway_otgw_otgw_boiler_flow_water_temperature
+          name: Riscald.ora
+        - entity: input_number.caldaia_dhw_setpoint
+          name: Uscita Target sanitaria
+        - entity: sensor.opentherm_gateway_otgw_otgw_dhw_temperature
+          name: Sanitaria ora
+        grid_options:
+          columns: full
+          rows: auto
+        hours_to_show: 24
+        refresh_interval: 60
+        type: history-graph
+      type: grid
+    - cards:
+      - heading: MAX TEMP DA NON SUPERARE IN ESTATE
+        heading_style: title
+        icon: mdi:white-balance-sunny
+        type: heading
+      - heading: "Giorno 07:00 \u2013 23:00"
+        heading_style: subtitle
+        type: heading
+      - entity: input_number.maxtemp_giorno_estate_sala
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        name: Sala
+        type: tile
+        vertical: false
+      - entity: input_number.maxtemp_giorno_estate_letto
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        name: Georgi
+        type: tile
+        vertical: false
+      - heading: "Notte 23:00 \u2013 07:00"
+        heading_style: subtitle
+        type: heading
+      - entity: input_number.maxtemp_notte_estate_letto
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        name: Georgi
+        type: tile
+        vertical: false
+      - entity: input_number.maxtemp_notte_estate_sala
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        name: Sala
+        type: tile
+        vertical: false
+      type: grid
+    - cards:
+      - heading: MIN TEMP DA TENERE IN INVERNO
+        heading_style: title
+        icon: mdi:weather-snowy
+        type: heading
+      - heading: "Giorno 07:00 \u2013 23:00"
+        heading_style: subtitle
+        type: heading
+      - entity: input_number.mintemp_giorno_inverno_sala
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        name: Sala
+        type: tile
+        vertical: false
+      - entity: input_number.mintemp_giorno_inverno_letto
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        name: Georgi
+        type: tile
+        vertical: false
+      - heading: "Notte 23:00 \u2013 07:00"
+        heading_style: subtitle
+        type: heading
+      - entity: input_number.mintemp_notte_inverno_letto
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        name: Georgi
+        type: tile
+        vertical: false
+      - entity: input_number.mintemp_notte_inverno_sala
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        name: Sala
+        type: tile
+        vertical: false
+      type: grid
+    - cards:
+      - heading: PARAMETRI PID E SISTEMA
+        heading_style: title
+        icon: mdi:tune-vertical
+        type: heading
+      - entity: input_boolean.clima_autotune_attivo
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        name: Avvia Autotuning
+        type: tile
+        vertical: false
+      - heading: "Vacanze \u2013 Antigelo"
+        heading_style: subtitle
+        type: heading
+      - entity: input_number.clima_target_emergenza_antigelo
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        name: Soglia Antigelo Sala
+        type: tile
+        vertical: false
+      - heading: Cambio stagione
+        heading_style: subtitle
+        type: heading
+      - entity: input_number.clima_soglia_inverno
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        name: Soglia Inverno
+        type: tile
+        vertical: false
+      - entity: input_number.clima_media_esterna_7gg
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        name: Media 7gg OUT
+        type: tile
+        vertical: false
+      - heading: Boost solare
+        heading_style: subtitle
+        type: heading
+      - entity: input_number.clima_soglia_solare_boost
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        name: Soglia Solare
+        type: tile
+        vertical: false
+      - entity: input_number.clima_boost_solare_delta
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        name: Delta Boost
+        type: tile
+        vertical: false
+      - heading: Coefficienti PID (Cool e Heat)
+        heading_style: subtitle
+        type: heading
+      - entity: input_number.panasonic_pid_kp
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        name: Kp
+        type: tile
+        vertical: false
+      - entity: input_number.panasonic_pid_ki
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        name: Ki
+        type: tile
+        vertical: false
+      - entity: input_number.panasonic_pid_kd
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        name: Kd
+        type: tile
+        vertical: false
+      - heading: Stato interno PID Cooling
+        heading_style: subtitle
+        type: heading
+      - entity: input_number.panasonic_pid_setpoint_mandata
+        features_position: bottom
+        grid_options:
+          columns: 12
+          rows: 1
+        name: Target TempOut estate Calcolato
+        type: tile
+        vertical: false
+      - entity: input_number.panasonic_pid_integrale
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        name: Integrale Cool
+        type: tile
+        vertical: false
+      - entity: input_number.panasonic_pid_errore_prec
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        name: Errore Prec. Cool
+        type: tile
+        vertical: false
+      - heading: Stato interno PID Heating
+        heading_style: subtitle
+        type: heading
+      - entity: input_number.panasonic_pid_setpoint_heat
+        features_position: bottom
+        grid_options:
+          columns: 12
+          rows: 1
+        name: Target TempOut inverno Calcolato
+        type: tile
+        vertical: false
+      - entity: input_number.panasonic_pid_heat_integrale
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        name: Integrale Heat
+        type: tile
+        vertical: false
+      - entity: input_number.panasonic_pid_heat_errore_prec
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        name: Errore Prec. Heat
+        type: tile
+        vertical: false
+      type: grid
+    title: Clima
+    type: sections

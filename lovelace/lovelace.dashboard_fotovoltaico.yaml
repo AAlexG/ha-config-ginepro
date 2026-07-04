@@ -1,0 +1,481 @@
+config:
+  path: fotovoltaico
+  title: Fotovoltaico
+  views:
+  - max_columns: 2
+    path: fotovoltaico
+    sections:
+    - cards:
+      - heading: PRODUZIONE ELETTRICA
+        heading_style: title
+        type: heading
+      - grid_options:
+          columns: 6
+          rows: auto
+        icon: mdi:solar-panel-large
+        icon_height: 20px
+        name: Panel Analytics
+        show_icon: true
+        show_name: true
+        show_state: false
+        tap_action:
+          action: perform-action
+          data:
+            data:
+              package_name: appinventor.ai_aagorine.PanelAnalytics
+            message: command_launch_app
+          perform_action: notify.mobile_app_cph2653
+        type: button
+      - grid_options:
+          columns: 6
+          rows: auto
+        icon: mdi:file-table
+        icon_height: 20px
+        name: Consumi
+        show_icon: true
+        show_name: true
+        show_state: false
+        tap_action:
+          action: navigate
+          navigation_path: /dashboard-consumi/elettricita
+        type: button
+      - entity: sensor.produzione_anno
+        features_position: bottom
+        grid_options:
+          columns: 3
+          rows: 1
+        name: Totale anno
+        type: tile
+        vertical: false
+      - entity: sensor.produzione_mese
+        features_position: bottom
+        grid_options:
+          columns: 3
+          rows: 1
+        name: Totale mese
+        type: tile
+        vertical: false
+      - entity: sensor.inverter_uflex_today_production
+        features_position: bottom
+        grid_options:
+          columns: 3
+          rows: 1
+        name: Totale oggi
+        type: tile
+        vertical: false
+      - heading: Dal accensione impianto
+        heading_style: subtitle
+        type: heading
+      - entity: sensor.inverter_uflex_total_production
+        features_position: bottom
+        grid_options:
+          columns: full
+          rows: 1
+        name: Prodotto da panelli
+        type: tile
+        vertical: false
+      - entity: sensor.inverter_uflex_total_energy
+        features_position: bottom
+        grid_options:
+          columns: full
+          rows: 1
+        name: Da inverter (x perdite AC/DC)
+        type: tile
+        vertical: false
+      - entity: sensor.inverter_uflex_total_energy_export
+        features_position: bottom
+        grid_options:
+          columns: 3
+          rows: 1
+        name: A rete
+        type: tile
+        vertical: false
+      - entity: sensor.inverter_uflex_total_energy_import
+        features_position: bottom
+        grid_options:
+          columns: 3
+          rows: 1
+        name: Da rete
+        type: tile
+        vertical: false
+      - entity: sensor.inverter_uflex_total_load_consumption
+        features_position: bottom
+        grid_options:
+          columns: full
+          rows: auto
+        name: Consumo(da inverter-a rete+da rete)
+        type: tile
+        vertical: false
+      - entity: sensor.inverter_uflex_total_battery_charge
+        features_position: bottom
+        grid_options:
+          columns: 3
+          rows: 1
+        name: A batteria
+        type: tile
+        vertical: false
+      - entity: sensor.inverter_uflex_total_battery_discharge
+        features_position: bottom
+        grid_options:
+          columns: 3
+          rows: 1
+        name: Da batteria
+        type: tile
+        vertical: false
+      - heading: 'Risparmio fotovoltaico (storico):'
+        heading_style: subtitle
+        type: heading
+      - entity: input_number.pv_risparmio_euro
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        icon: mdi:solar-power
+        name: Autoconsumo
+        type: tile
+        vertical: false
+      - entity: input_number.pv_gse_euro
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        icon: mdi:cash-multiple
+        name: Da GSE
+        type: tile
+        vertical: false
+      - entity: input_number.pv_totale_euro
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        icon: mdi:piggy-bank
+        name: Risparmiato
+        type: tile
+        vertical: false
+      - entity: input_number.pv_recupero_pct
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        icon: mdi:percent
+        name: '% recupero'
+        type: tile
+        vertical: false
+      - heading: 'Riassunto mensile: FFV e consumi, kWh'
+        heading_style: subtitle
+        type: heading
+      - content: '{% set d = state_attr(''sensor.pv_tabella_mensile'', ''mesi'') %}
+          {%
+
+          if d is none %} _Dati non disponibili_ {% else %} {% set mesi = d
+
+          | reverse | list %} <div
+
+          style="overflow-x:auto;overflow-y:auto;max-height:400px;font-size:11px">
+
+          <table
+
+          style="border-collapse:collapse;width:100%;white-space:nowrap">
+
+          <thead><tr
+
+          style="position:sticky;top:0;background:#1a1a2e;color:#e0e0e0">
+
+          <th style="padding:4px 6px;border:1px solid #444">Mese</th> <th
+
+          style="padding:4px 6px;border:1px solid #444">Prod</th> <th
+
+          style="padding:4px 6px;border:1px solid #444">Consumo</th> <th
+
+          style="padding:4px 6px;border:1px solid #444">% Consumo</th>
+
+          <th style="padding:4px 6px;border:1px solid #444">Import</th> <th
+
+          style="padding:4px 6px;border:1px solid #444">Tot Consum</th> <th
+
+          style="padding:4px 6px;border:1px solid #444">Export</th> <th
+
+          style="padding:4px 6px;border:1px solid #444">Bat Carica</th> <th
+
+          style="padding:4px 6px;border:1px solid #444">Bat Scarica</th> <th
+
+          style="padding:4px 6px;border:1px solid #444">%Perd</th>
+
+          </tr></thead> <tbody> {% for r in mesi %} {% if loop.first or
+
+          loop.last %} <tr style="font-weight:bold;background:#2a2a3e"> {%
+
+          else %} <tr> {% endif %} <td style="padding:3px 6px;border:1px
+
+          solid #333">{{ r.mese }}</td> <td style="padding:3px
+
+          6px;border:1px solid #333;text-align:right">{{ r.produzione
+
+          }}</td> <td style="padding:3px 6px;border:1px solid
+
+          #333;text-align:right">{{ r.autoconsumo }}</td> <td
+
+          style="padding:3px 6px;border:1px solid #333;text-align:right">{{
+
+          r.pct_auto }}%</td> <td style="padding:3px 6px;border:1px solid
+
+          #333;text-align:right">{{ r.import }}</td> <td style="padding:3px
+
+          6px;border:1px solid #333;text-align:right">{{ r.consumo_tot
+
+          }}</td> <td style="padding:3px 6px;border:1px solid
+
+          #333;text-align:right">{{ r.export }}</td> <td style="padding:3px
+
+          6px;border:1px solid #333;text-align:right">{{ r.batt_carica
+
+          }}</td> <td style="padding:3px 6px;border:1px solid
+
+          #333;text-align:right">{{ r.batt_scarica }}</td> <td
+
+          style="padding:3px 6px;border:1px solid #333;text-align:right">{{
+
+          r.pct_batt_loss }}%</td> </tr> {% endfor %} </tbody></table></div>
+
+          {% endif %}
+
+          '
+        grid_options:
+          columns: full
+          rows: auto
+        type: markdown
+      type: grid
+    - cards:
+      - heading: PRODUZIONE
+        heading_style: title
+        type: heading
+      - card:
+          entities:
+          - entity: sensor.inverter_uflex_pv_power
+            name: Momentanea
+          header: null
+          hours_to_show: 24
+          refresh_interval: 60
+          show: true
+          title: Oggi, Watt
+          type: history-graph
+        conditions: []
+        type: conditional
+      - graph_span: 30d
+        grid_options:
+          columns: 12
+          rows: auto
+        header:
+          show: true
+          title: Ultimi 30gg, kWh
+        series:
+        - entity: sensor.inverter_uflex_today_production
+          name: production oggi
+          statistics:
+            period: day
+            type: state
+          type: column
+          yaxis_id: kwh
+        type: custom:apexcharts-card
+        yaxis:
+        - apex_config:
+            title:
+              text: kWh
+          decimals: 1
+          id: kwh
+      - graph_span: 365d
+        grid_options:
+          columns: 12
+          rows: auto
+        header:
+          show: true
+          title: Ultimi 12 mesi, kWh
+        series:
+        - entity: sensor.inverter_uflex_today_production
+          name: production oggi
+          statistics:
+            period: month
+            type: change
+          type: column
+          yaxis_id: kwh
+        type: custom:apexcharts-card
+        yaxis:
+        - apex_config:
+            title:
+              text: kWh
+          decimals: 1
+          id: kwh
+      type: grid
+    - cards:
+      - heading: PARAMETRI DEL SISTEMA ORA
+        heading_style: title
+        type: heading
+      - cards:
+        - entity: sensor.inverter_uflex_temperature
+          features_position: bottom
+          name: Temp scafale
+          type: tile
+          vertical: false
+        - entity: sensor.inverter_uflex_device_state
+          features_position: bottom
+          name: Inverter State
+          type: tile
+          vertical: false
+        - entity: sensor.inverter_uflex_battery_temperature
+          features_position: bottom
+          name: Temp condensatore
+          type: tile
+          vertical: false
+        - entity: sensor.inverter_uflex_dc_temperature
+          features_position: bottom
+          name: Temp Inverter
+          type: tile
+          vertical: false
+        columns: 2
+        square: false
+        type: grid
+      - graph_span: 30d
+        grid_options:
+          columns: 12
+          rows: auto
+        header:
+          show: true
+          title: "Temp entrata/uscita inventer \xB0C/gg"
+        series:
+        - entity: sensor.inverter_uflex_dc_temperature
+          name: Entrata DC
+          statistics:
+            period: day
+            type: max
+          type: column
+          yaxis_id: C
+        - entity: sensor.inverter_uflex_temperature
+          name: Uscita AC
+          statistics:
+            period: day
+            type: max
+          type: column
+          yaxis_id: C
+        type: custom:apexcharts-card
+        yaxis:
+        - apex_config:
+            title:
+              text: "\xB0C"
+          decimals: 2
+          id: C
+      - cards:
+        - entity: sensor.panel_max_power_summary
+          features_position: bottom
+          name: Max Potenza
+          type: tile
+          vertical: false
+        - entity: sensor.panel_min_power_summary
+          features_position: bottom
+          name: Min Potenza
+          type: tile
+          vertical: false
+        - entity: sensor.panel_max_strength_summary
+          features_position: bottom
+          name: Max Signal
+          type: tile
+          vertical: false
+        - entity: sensor.panel_min_strength_summary
+          features_position: bottom
+          name: Min Signal
+          type: tile
+          vertical: false
+        - entity: sensor.panels_zero_production
+          features_position: bottom
+          name: Pannelli 0 produzione
+          type: tile
+          vertical: false
+        columns: 1
+        grid_options:
+          columns: 6
+          rows: auto
+        square: false
+        type: grid
+      - alt_text: Schema pannelli Tigo
+        grid_options:
+          columns: 6
+          rows: auto
+        image: /local/schemaTigo.jpg
+        type: picture
+      - graph_span: 30d
+        grid_options:
+          columns: 12
+          rows: auto
+        header:
+          show: true
+          title: Segnale Min/Max pannelli /gg
+        series:
+        - entity: sensor.panel_max_strength_value
+          name: Max Signal
+          statistics:
+            period: day
+            type: max
+          type: line
+          yaxis_id: signal
+        - entity: sensor.panel_min_strength_value
+          name: Min Signal
+          statistics:
+            period: day
+            type: min
+          type: line
+          yaxis_id: signal
+        type: custom:apexcharts-card
+        yaxis:
+        - apex_config:
+            title:
+              text: dBm
+          decimals: 0
+          id: signal
+      type: grid
+    - cards:
+      - heading: "PANELLI: PRODUTTIVIT\xC0 E SEGNALE ORA"
+        heading_style: title
+        type: heading
+      - cards:
+        - content: "**\u2600\uFE0F Tetto vs Ovest**\n<small> A1={{ states('sensor.panel_a1_power_safe')\
+            \ }}W,{{ states('sensor.panel_a1_signal_strength') | int(0) }} &nbsp;\
+            \ A2={{ states('sensor.panel_a2_power_safe') }}W,{{ states('sensor.panel_a2_signal_strength')\
+            \ | int(0) }} &nbsp; A3={{ states('sensor.panel_a3_power_safe') }}W,{{\
+            \ states('sensor.panel_a3_signal_strength') | int(0) }}\nA4={{ states('sensor.panel_a4_power_safe')\
+            \ }}W,{{ states('sensor.panel_a4_signal_strength') | int(0) }} &nbsp;\
+            \ A5={{ states('sensor.panel_a5_power_safe') }}W,{{ states('sensor.panel_a5_signal_strength')\
+            \ | int(0) }} </small>\n"
+          type: markdown
+        - content: "**\u2600\uFE0F Tetto vs Mare**\n<small> A6={{ states('sensor.panel_a6_power_safe')\
+            \ }}W,{{ states('sensor.panel_a6_signal_strength') | int(0) }} &nbsp;\
+            \ A7={{ states('sensor.panel_a7_power_safe') }}W,{{ states('sensor.panel_a7_signal_strength')\
+            \ | int(0) }} &nbsp; A8={{ states('sensor.panel_a8_power_safe') }}W,{{\
+            \ states('sensor.panel_a8_signal_strength') | int(0) }}\nA9={{ states('sensor.panel_a9_power_safe')\
+            \ }}W,{{ states('sensor.panel_a9_signal_strength') | int(0) }} &nbsp;\
+            \ A10={{ states('sensor.panel_a10_power_safe') }}W,{{ states('sensor.panel_a10_signal_strength')\
+            \ | int(0) }} </small>\n"
+          type: markdown
+        - content: "**\U0001F3E0 Sopra Pergola**\n<small> B1={{ states('sensor.panel_b1_power_safe')\
+            \ }}W,{{ states('sensor.panel_b1_signal_strength') | int(0) }} &nbsp;\
+            \ B2={{ states('sensor.panel_b2_power_safe') }}W,{{ states('sensor.panel_b2_signal_strength')\
+            \ | int(0) }} &nbsp; B3={{ states('sensor.panel_b3_power_safe') }}W,{{\
+            \ states('sensor.panel_b3_signal_strength') | int(0) }}\nB4={{ states('sensor.panel_b4_power_safe')\
+            \ }}W,{{ states('sensor.panel_b4_signal_strength') | int(0) }} &nbsp;\
+            \ B5={{ states('sensor.panel_b5_power_safe') }}W,{{ states('sensor.panel_b5_signal_strength')\
+            \ | int(0) }} &nbsp; B10={{ states('sensor.panel_b10_power_safe') }}W,{{\
+            \ states('sensor.panel_b10_signal_strength') | int(0) }} </small>\n"
+          type: markdown
+        - content: "**\U0001F33F Tenda giardino**\n<small> B11={{ states('sensor.panel_b11_power_safe')\
+            \ }}W,{{ states('sensor.panel_b11_signal_strength') | int(0) }} &nbsp;\
+            \ B6={{ states('sensor.panel_b6_power_safe') }}W,{{ states('sensor.panel_b6_signal_strength')\
+            \ | int(0) }} &nbsp; B7={{ states('sensor.panel_b7_power_safe') }}W,{{\
+            \ states('sensor.panel_b7_signal_strength') | int(0) }}\nB8={{ states('sensor.panel_b8_power_safe')\
+            \ }}W,{{ states('sensor.panel_b8_signal_strength') | int(0) }} &nbsp;\
+            \ B9={{ states('sensor.panel_b9_power_safe') }}W,{{ states('sensor.panel_b9_signal_strength')\
+            \ | int(0) }} </small>\n"
+          type: markdown
+        columns: 2
+        square: false
+        type: grid
+      type: grid
+    title: Fotovoltaico
+    type: sections

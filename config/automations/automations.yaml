@@ -1,0 +1,999 @@
+# automations_110.yaml
+
+
+#==================================================================================
+# 1. BLOCCO IRRIGAZIONE - Orari fissi DST-aware
+#==================================================================================
+- id: smart_irrigation_dst
+  alias: Smart Irrigation Control
+  mode: single
+  triggers:
+    - platform: time
+      at: "08:25:00"
+    - platform: time
+      at: "20:25:00"
+    - platform: homeassistant
+      event: start
+  condition: []
+  action:
+    # --- Gestione manuale attiva: scrivi solo il messaggio e termina ---
+    - if:
+        - condition: state
+          entity_id: input_boolean.irrigazione_manuale_oggi
+          state: 'on'
+      then:
+        - action: input_text.set_value
+          target:
+            entity_id: input_text.irrigazione_motivo_blocco
+          data:
+            value: "🖐️ È stato scelto gestione manuale per oggi"
+        - stop: "Gestione manuale attiva – nessuna modifica automatica"
+
+    # Apre irrigazione (default permessa)
+    - action: switch.turn_off
+      target:
+        entity_id: switch.sonoff_irrigation_block
+    - delay: "00:00:02"
+
+    # Recupera previsioni meteo orarie
+    - action: weather.get_forecasts
+      target:
+        entity_id: weather.casa
+      data:
+        type: hourly
+      response_variable: previsioni
+
+    # --- Passo 1: lettura valori grezzi ---
+    - variables:
+        ora_esecuzione: "{{ now().strftime('%d/%m/%Y %H:%M') }}"
+        soglia: "{{ states('input_number.irrigazione_soglia_umidita') | float(40) }}"
+        s1: "{{ states('sensor.soil_moisture_1') | float(0) }}"
+        s2: "{{ states('sensor.soil_moisture_2') | float(0) }}"
+        vento: "{{ states('sensor.wind_speed_media_1h') | float(0) }}"
+        rain_rate: "{{ states('sensor.hp1000se_pro_pro_v1_6_4_hourly_rain') | float(0) }}"
+
+    # --- Passo 2: calcolo motivi di blocco e flag ---
+    - variables:
+        motivi: >
+          {% set ns = namespace(lista=[]) %}
+          {% if rain_rate > 0 %}
+            {% set ns.lista = ns.lista + ['🌧️ Pioggia: ' ~ (rain_rate | round(1) | string) ~ ' mm (1h)'] %}
+          {% endif %}
+          {% if s1 > soglia and s2 > soglia %}
+            {% set ns.lista = ns.lista + ['💧 Umidità S1=' ~ (s1 | round(0) | int | string) ~ '% S2=' ~ (s2 | round(0) | int | string) ~ '%'] %}
+          {% endif %}
+          {% if vento > 40 %}
+            {% set ns.lista = ns.lista + ['🌬️ Vento ' ~ (vento | round(1) | string) ~ ' km/h'] %}
+          {% endif %}
+          {% set f = previsioni['weather.casa'].forecast %}
+          {% if f[:5] | selectattr('condition', 'in', ['rainy','showers','pouring','hail']) | list | count > 0 %}
+            {% set ns.lista = ns.lista + ['🌦️ Prev. pioggia 5h'] %}
+          {% endif %}
+          {{ ns.lista | join('\n') }}
+        blocco: >
+          {{ rain_rate > 0
+             or (s1 > soglia and s2 > soglia)
+             or vento > 40
+             or (previsioni['weather.casa'].forecast[:5]
+                 | selectattr('condition', 'in', ['rainy','showers','pouring','hail'])
+                 | list | count > 0) }}
+
+    # --- Passo 3: composizione messaggio finale ---
+    - variables:
+        messaggio: >
+          {% if motivi | trim != '' %}
+          {{ '⛔ Bloccata ' ~ ora_esecuzione ~ '\n' ~ (motivi | trim) }}
+          {% else %}
+          ✅ Permessa {{ ora_esecuzione }}
+          {% endif %}
+
+    # --- Scrivi il messaggio nella plancia (sempre, qualunque sia l'esito) ---
+    - action: input_text.set_value
+      target:
+        entity_id: input_text.irrigazione_motivo_blocco
+      data:
+        value: "{{ messaggio | trim }}"
+
+    # --- Blocca irrigazione solo se necessario ---
+    - if:
+        - condition: template
+          value_template: "{{ blocco | bool }}"
+      then:
+        - action: switch.turn_on
+          target:
+            entity_id: switch.sonoff_irrigation_block
+
+#==================================================================================
+# 2. IRRIGAZIONE – RESET GESTIONE MANUALE A MEZZANOTTE
+#==================================================================================
+- id: irrigazione_reset_manuale_mezzanotte
+  alias: "Irrigazione - Reset gestione manuale a mezzanotte"
+  mode: single
+  triggers:
+    - platform: time
+      at: "23:59:00"
+  condition: []
+  action:
+    - action: input_boolean.turn_off
+      target:
+        entity_id: input_boolean.irrigazione_manuale_oggi
+
+#==================================================================================
+# 3. ALLERTA PANNELLO A 0 PER 1 ORA (SOLO DI GIORNO)
+#==================================================================================
+- id: tigo_alert_panel_zero_1h
+  alias: "Tigo - Pannello a 0 per 1h (solo giorno)"
+  mode: parallel
+  triggers:
+    - platform: state
+      entity_id:
+        - sensor.panel_a1_power
+        - sensor.panel_a2_power
+        - sensor.panel_a3_power
+        - sensor.panel_a4_power
+        - sensor.panel_a5_power
+        - sensor.panel_a6_power
+        - sensor.panel_a7_power
+        - sensor.panel_a8_power
+        - sensor.panel_a9_power
+        - sensor.panel_a10_power
+        - sensor.panel_b1_power
+        - sensor.panel_b2_power
+        - sensor.panel_b3_power
+        - sensor.panel_b4_power
+        - sensor.panel_b5_power
+        - sensor.panel_b6_power
+        - sensor.panel_b7_power
+        - sensor.panel_b8_power
+        - sensor.panel_b9_power
+        - sensor.panel_b10_power
+        - sensor.panel_b11_power
+      to: "0"
+      for: "01:00:00"
+  condition:
+    - condition: state
+      entity_id: sun.sun
+      state: "above_horizon"
+    - condition: template
+      value_template: "{{ states(trigger.entity_id) | float(0) == 0 }}"
+  action:
+    - action: notify.mobile_app_cph2653
+      data:
+        title: "⚠️ Pannello a 0 da 1h"
+        message: >-
+          Pannello {{ trigger.entity_id.split('.')[1].split('_')[1] | upper }} = 0 W da almeno 1 ora.
+        data:
+          clickAction: "/casa-ginepro/home"
+          priority: high
+          ttl: 0
+          persistent: "true"
+
+#==================================================================================
+# 5. UPS - BLACKOUT RILEVATO
+#==================================================================================
+- id: ups_blackout_rilevato
+  alias: "UPS - Blackout rilevato"
+  mode: single
+  triggers:
+    - platform: state
+      entity_id: sensor.ups_eaton_camera_georgii_stato
+      to: "On Battery"
+  action:
+    - action: notify.mobile_app_cph2653
+      data:
+        title: "🔴 BLACKOUT!"
+        message: "Mancanza di corrente! UPS Eaton in funzione su batteria."
+        data:
+          priority: high
+          ttl: 0
+          persistent: "true"
+
+#==================================================================================
+# 6. UPS - CORRENTE RIPRISTINATA
+#==================================================================================
+- id: ups_corrente_ripristinata
+  alias: "UPS - Corrente ripristinata"
+  mode: single
+  triggers:
+    - platform: state
+      entity_id: sensor.ups_eaton_camera_georgii_stato
+      to: "On Line"
+  action:
+    - action: notify.mobile_app_cph2653
+      data:
+        title: "✅ Corrente ripristinata"
+        message: "La rete elettrica è tornata online. UPS Eaton di nuovo in carica."
+        data:
+          priority: high
+          ttl: 0
+
+#==================================================================================
+# 7. RESET IRRIGATION BLOCK (OFF dopo 30 min da ON)
+#==================================================================================
+- id: irrigation_block_reset_30min
+  alias: "Irrigation Block - Reset OFF dopo 30 min"
+  mode: restart
+  triggers:
+    - platform: state
+      entity_id: switch.sonoff_irrigation_block
+      to: "on"
+  action:
+    - delay: "00:30:00"
+    - action: switch.turn_off
+      target:
+        entity_id: switch.sonoff_irrigation_block
+
+#==================================================================================
+# 8. CONTROLLO VELOCITÀ VENTOLA ARGON (CPU TEMP + LIMITE NOTTE)
+#==================================================================================
+- id: controllo_ventola_argon_cpu
+  alias: "Ventola Argon - Controllo velocità per CPU temp"
+  mode: single
+  triggers:
+    - platform: time_pattern
+      minutes: "/5"
+  condition: []
+  action:
+    - variables:
+        cpu_temp: "{{ states('sensor.rpi_cpu_temperature') | float(0) }}"
+        notte: "{{ now().hour + now().minute / 60 >= 23.5 or now().hour + now().minute / 60 < 8.5 }}"
+        velocita: "{{ 0 if cpu_temp | float < 15 else 10 if cpu_temp | float < 30 else 20 if cpu_temp | float < 45 else 40 if cpu_temp | float < 55 else (40 if notte else 70) if cpu_temp | float < 65 else (40 if notte else 100) }}"
+    - action: fan.set_percentage
+      target:
+        entity_id: fan.rpi_fan_controller_ventilatore_argon
+      data:
+        percentage: "{{ velocita | int }}"
+
+#==================================================================================
+# 9. NOTIFICA LEAK DETECTOR
+#==================================================================================
+- id: notifica_leak_detector
+  alias: "Notifica Leak Detector"
+  mode: single
+  triggers:
+    - platform: state
+      entity_id: binary_sensor.hp1000se_pro_pro_v1_6_4_leak_detection_4
+      from: "off"
+  action:
+    - action: notify.mobile_app_cph2653
+      data:
+        title: "💧 PERDITA D'ACQUA RILEVATA!"
+        message: "Il sensore leak detector ha rilevato presenza di acqua."
+        data:
+          priority: high
+          ttl: 0
+          persistent: "true"
+
+#==================================================================================
+# 10. NOTIFICA BATTERIA BASSA - LEAK DETECTOR
+#==================================================================================
+- id: notifica_batteria_leak_detector
+  alias: "Batteria bassa - Leak Detector"
+  mode: single
+  triggers:
+    - platform: state
+      entity_id: binary_sensor.hp1000se_pro_pro_v1_6_4_leak_detection_4_battery
+      to: "on"
+  condition: []
+  action:
+    - action: notify.mobile_app_cph2653
+      data:
+        title: "🔋 Batteria bassa - Meteo"
+        message: "Leak Detector: batteria bassa segnalata."
+
+#==================================================================================
+# 11. NOTIFICA BATTERIA BASSA - SOIL 1
+#==================================================================================
+- id: notifica_batteria_soil_1
+  alias: "Batteria bassa - Soil 1"
+  mode: single
+  triggers:
+    - platform: numeric_state
+      entity_id: sensor.hp1000se_pro_pro_v1_6_4_soil_battery_1
+      below: 1.1
+  condition: []
+  action:
+    - action: notify.mobile_app_cph2653
+      data:
+        title: "🔋 Batteria bassa - Meteo"
+        message: "Soil 1: batteria al {{ states('sensor.hp1000se_pro_pro_v1_6_4_soil_battery_1') }}V"
+
+#==================================================================================
+# 12. NOTIFICA BATTERIA BASSA - SOIL 2
+#==================================================================================
+- id: notifica_batteria_soil_2
+  alias: "Batteria bassa - Soil 2"
+  mode: single
+  triggers:
+    - platform: numeric_state
+      entity_id: sensor.hp1000se_pro_pro_v1_6_4_soil_battery_2
+      below: 1.1
+  condition: []
+  action:
+    - action: notify.mobile_app_cph2653
+      data:
+        title: "🔋 Batteria bassa - Meteo"
+        message: "Soil 2: batteria al {{ states('sensor.hp1000se_pro_pro_v1_6_4_soil_battery_2') }}V"
+
+#==================================================================================
+# 13. NOTIFICA BATTERIA BASSA - WH25 SENSOR INTERNO
+#==================================================================================
+- id: notifica_batteria_wh25
+  alias: "Batteria bassa - Sensor Interno WH25"
+  mode: single
+  triggers:
+    - platform: state
+      entity_id: binary_sensor.hp1000se_pro_pro_v1_6_4_wh25_battery
+      to: "on"
+  condition: []
+  action:
+    - action: notify.mobile_app_cph2653
+      data:
+        title: "🔋 Batteria bassa - Meteo"
+        message: "Sensor Interno (WH25): batteria bassa segnalata."
+
+#==================================================================================
+# 14. NOTIFICA BATTERIA BASSA - PIOVIMETRO WH40
+#==================================================================================
+- id: notifica_batteria_wh40
+  alias: "Batteria bassa - Piovimetro WH40"
+  mode: single
+  triggers:
+    - platform: numeric_state
+      entity_id: sensor.meteo_wh40_battery
+      below: 1.1
+  condition: []
+  action:
+    - action: notify.mobile_app_cph2653
+      data:
+        title: "🔋 Batteria bassa - Meteo"
+        message: "Piovimetro (WH40): batteria al {{ states('sensor.meteo_wh40_battery') }}V"
+
+#==================================================================================
+# 15. NOTIFICA BATTERIA BASSA - SENSOR ESTERNO WH80
+#==================================================================================
+- id: notifica_batteria_wh80
+  alias: "Batteria bassa - Sensor Esterno WH80"
+  mode: single
+  triggers:
+    - platform: numeric_state
+      entity_id: sensor.hp1000se_pro_pro_v1_6_4_wh80_battery
+      below: 2.6
+  condition: []
+  action:
+    - action: notify.mobile_app_cph2653
+      data:
+        title: "🔋 Batteria bassa - Meteo"
+        message: "Sensor Esterno (WH80): batteria al {{ states('sensor.hp1000se_pro_pro_v1_6_4_wh80_battery') }}V"
+
+
+
+
+
+#==================================================================================
+# 25. ACQUA – Conta sessioni irrigazione permesse
+#
+# Alle 08:31 e 20:31 (1 minuto dopo smart_irrigation_dst) controlla se
+# l'irrigazione è permessa e incrementa il contatore (C2 = T1 × C1 × n).
+# Funziona sia in modalità automatica che manuale:
+#   - Auto:    switch OFF (smart_irrigation_dst ha valutato e permesso)
+#   - Manuale: switch OFF (l'utente ha lasciato/impostato irrigazione permessa)
+# Se l'utente ha bloccato manualmente (switch ON) la sessione non viene contata.
+# Il counter viene azzerato ogni notte da acqua_reset_mezzanotte.
+#==================================================================================
+- id: acqua_conta_irrigazione
+  alias: "Acqua – Conta sessioni irrigazione permesse"
+  mode: single
+  triggers:
+    - platform: time
+      at: "08:31:00"
+    - platform: time
+      at: "20:31:00"
+  condition:
+    # Conta la sessione se il blocco è disattivo (switch OFF).
+    # Vale sia in modalità auto (decisa da smart_irrigation_dst)
+    # che in modalità manuale (decisa dall'utente).
+    - condition: state
+      entity_id: switch.sonoff_irrigation_block
+      state: "off"
+  action:
+    - action: counter.increment
+      target:
+        entity_id: counter.irrigazione_sessioni_oggi
+
+#==================================================================================
+# 26. ACQUA – Reset giornaliero mezzanotte
+#
+# Ogni notte alle 23:00:
+#   1. Legge sensor.acqua_oggi_euro e lo aggiunge all'accumulatore.
+#   2. Accumula m³ giornalieri.
+#   3. Azzera counter.irrigazione_sessioni_oggi.
+#   4. Azzera input_number.caldaia_dhw_durata_acc → ripartenza da 0 per il nuovo
+#      giorno (valido sia in estate che in inverno; in inverno il sensore non usa
+#      questo accumulatore, ma è corretto azzerarlo comunque per coerenza).
+#==================================================================================
+- id: acqua_reset_mezzanotte
+  alias: "Acqua – Reset giornaliero mezzanotte"
+  description: "Salva costo e m³ giornalieri negli accumulatori, azzera contatori"
+  mode: single
+  triggers:
+    - platform: time
+      at: "23:59:00"
+  action:
+    # 1. Accumula costo del giorno nell'accumulatore
+    - action: input_number.set_value
+      target:
+        entity_id: input_number.acqua_costo_acc
+      data:
+        value: >
+          {{ ([states('input_number.acqua_costo_acc') | float(0) +
+               states('sensor.acqua_oggi_euro') | float(0), 0] | max) | round(2) }}
+    # 2. Accumula m³ del giorno nell'accumulatore
+    - action: input_number.set_value
+      target:
+        entity_id: input_number.acqua_consumo_acc
+      data:
+        value: >
+          {{ ([states('input_number.acqua_consumo_acc') | float(0) +
+               states('sensor.acqua_oggi_mc') | float(0), 0] | max) | round(4) }}
+    # 3. Azzera sessioni irrigazione per il nuovo giorno
+    - action: counter.reset
+      target:
+        entity_id: counter.irrigazione_sessioni_oggi
+    # 4. Azzera accumulatore minuti DHW per il nuovo giorno
+    #    (in estate viene ricostruito dall'automazione caldaia_dhw_accumula_minuti;
+    #     in inverno il sensore usa il valore fisso e questo rimane a 0)
+    - action: input_number.set_value
+      target:
+        entity_id: input_number.caldaia_dhw_durata_acc
+      data:
+        value: "0"
+    # 5. C4 (acqua fredda manuale) NON viene azzerata:
+    #    il valore del giorno precedente resta come punto di partenza
+
+#==================================================================================
+# 27. RESET INIZIO MESE – ogni 1° del mese alle 00:00:30
+# Salva i valori correnti degli accumulatori come baseline del nuovo mese
+#==================================================================================
+- id: reset_inizio_mese
+  alias: "Reset inizio mese – aggiorna baseline accumulatori"
+  mode: single
+  triggers:
+    - platform: time
+      at: "00:00:30"
+  conditions:
+    - condition: template
+      value_template: "{{ now().day == 1 }}"
+  action:
+    - action: input_number.set_value
+      target:
+        entity_id: input_number.gas_inizio_mese
+      data:
+        value: "{{ states('input_number.caldaia_gas_totale_acc') | float(0) }}"
+    - action: input_number.set_value
+      target:
+        entity_id: input_number.elec_import_inizio_mese
+      data:
+        value: "{{ states('sensor.inverter_uflex_total_energy_import') | float(0) }}"
+    - action: input_number.set_value
+      target:
+        entity_id: input_number.acqua_costo_inizio_mese
+      data:
+        value: "{{ states('input_number.acqua_costo_acc') | float(0) }}"
+    - action: input_number.set_value
+      target:
+        entity_id: input_number.acqua_mc_inizio_mese
+      data:
+        value: "{{ states('input_number.acqua_consumo_acc') | float(0) }}"
+
+#==================================================================================
+# 28. BOLLETTE – Aggiorna lista mesi nel combo box
+#
+# All'avvio di HA e ogni 1° del mese aggiorna le opzioni di
+# input_select.bolletta_mese_sel con gli ultimi 12 mesi + placeholder.
+# Formato opzioni: "MM/YYYY" (es. "05/2026").
+#==================================================================================
+- id: aggiorna_bolletta_mese
+  alias: "Bollette – Aggiorna lista mesi"
+  mode: single
+  triggers:
+    - platform: homeassistant
+      event: start
+    - platform: time
+      at: "00:00:00"
+  condition:
+    - condition: template
+      value_template: >
+        {{ trigger.platform == 'homeassistant' or now().day == 1 }}
+  action:
+    - action: input_select.set_options
+      target:
+        entity_id: input_select.bolletta_mese_sel
+      data:
+        options: >
+          {% set ns = namespace(opts=["-- seleziona --"]) %}
+          {% for j in range(11, -1, -1) %}
+            {% set m = now().month - j %}
+            {% set y = now().year %}
+            {% if m <= 0 %}
+              {% set m = m + 12 %}
+              {% set y = y - 1 %}
+            {% endif %}
+            {% set ns.opts = ns.opts + ["%02d/%d" | format(m, y)] %}
+          {% endfor %}
+          {{ ns.opts }}
+
+#==================================================================================
+# 29. ACQUA – Reset dhw_durata_acc all'avvio di HA
+# Resetta SOLO il contatore minuti DHW senza toccare gli accumulatori mensili.
+# I sensori template ricalcolano automaticamente i valori al riavvio.
+#==================================================================================
+- id: acqua_reset_avvio_ha
+  alias: "Acqua – Reset dhw_durata_acc all'avvio HA"
+  mode: single
+  triggers:
+    - platform: homeassistant
+      event: start
+  action:
+    - delay: "00:00:30"
+    - action: input_number.set_value
+      target:
+        entity_id: input_number.caldaia_dhw_durata_acc
+      data:
+        value: "0"
+
+#==================================================================================
+# 30. TOTALI CONSUMI – Aggiorna input_number rilevato/bollette via script Python
+# Lo script stampa un JSON su stdout; response_variable lo legge e imposta
+# i 6 input_number con set_value – nessun token necessario.
+# Trigger: avvio HA (delay 60s per recorder pronto) + ogni ora.
+#==================================================================================
+- id: calcola_totali_consumi
+  alias: "Consumi – Aggiorna totali rilevato e bollette"
+  mode: single
+  triggers:
+    - platform: homeassistant
+      event: start
+    - platform: time_pattern
+      hours: "/1"
+  action:
+    - delay: "00:01:00"
+    - action: shell_command.calcola_totali_consumi
+      response_variable: totali
+    - action: input_number.set_value
+      target:
+        entity_id: input_number.gas_totale_rilevato_mc
+      data:
+        value: "{{ (totali.stdout | from_json).gas_rilevato }}"
+    - action: input_number.set_value
+      target:
+        entity_id: input_number.gas_totale_bollette_mc
+      data:
+        value: "{{ (totali.stdout | from_json).gas_bollette }}"
+    - action: input_number.set_value
+      target:
+        entity_id: input_number.elettricita_totale_rilevato_kwh
+      data:
+        value: "{{ (totali.stdout | from_json).elec_rilevato }}"
+    - action: input_number.set_value
+      target:
+        entity_id: input_number.elettricita_totale_bollette_kwh
+      data:
+        value: "{{ (totali.stdout | from_json).elec_bollette }}"
+    - action: input_number.set_value
+      target:
+        entity_id: input_number.acqua_totale_rilevato_mc
+      data:
+        value: "{{ (totali.stdout | from_json).acqua_rilevato }}"
+    - action: input_number.set_value
+      target:
+        entity_id: input_number.acqua_totale_bollette_mc
+      data:
+        value: "{{ (totali.stdout | from_json).acqua_bollette }}"
+    - action: input_number.set_value
+      target:
+        entity_id: input_number.pv_risparmio_euro
+      data:
+        value: "{{ (totali.stdout | from_json).pv_risparmio }}"
+    - action: input_number.set_value
+      target:
+        entity_id: input_number.pv_gse_euro
+      data:
+        value: "{{ (totali.stdout | from_json).pv_gse }}"
+    - action: input_number.set_value
+      target:
+        entity_id: input_number.pv_totale_euro
+      data:
+        value: "{{ (totali.stdout | from_json).pv_totale }}"
+    - action: input_number.set_value
+      target:
+        entity_id: input_number.pv_recupero_pct
+      data:
+        value: "{{ (totali.stdout | from_json).pv_recupero_pct }}"
+
+#==================================================================================
+# 31. YAMAHA WS-B1A KEEPALIVE – Suono uccelli via Google Mini
+#
+# Mantiene la Yamaha WS-B1A sempre accesa evitando l'Auto Standby (8h).
+# File audio locale: /config/www/birdssongs.mp3
+# Volume giorno  (08:30–00:00): 0.5 (50%)
+# Volume notte   (00:00–08:30): 0.01 (1%)
+# Entità: media_player.googlehome8851
+#==================================================================================
+
+# 31a. AVVIO MATTUTINO – 08:30
+- id: yamaha_keepalive_avvio_mattino
+  alias: "Yamaha Keepalive - Avvio mattino (08:30)"
+  mode: single
+  triggers:
+    - platform: time
+      at: "08:30:00"
+  condition:
+    - condition: template
+      value_template: "{{ state_attr('media_player.googlehome8851', 'media_title') is none }}"
+  action:
+    - if:
+        - condition: template
+          value_template: "{{ (state_attr('media_player.googlehome8851', 'volume_level') | float(0) * 100) | round(0) == 1 }}"
+      then:
+        - action: media_player.volume_set
+          target:
+            entity_id: media_player.googlehome8851
+          data:
+            volume_level: 0.20
+    - action: media_player.play_media
+      target:
+        entity_id: media_player.googlehome8851
+      data:
+        media_content_id: "http://192.168.1.77:8123/local/birdssongs.mp3"
+        media_content_type: "music"
+
+# 31b. TRANSIZIONE NOTTE – 00:00
+- id: yamaha_keepalive_transizione_notte
+  alias: "Yamaha Keepalive - Transizione notte (00:00)"
+  mode: single
+  triggers:
+    - platform: time
+      at: "00:00:00"
+  condition:
+    - condition: template
+      value_template: "{{ state_attr('media_player.googlehome8851', 'media_title') is none }}"
+  action:
+    - action: media_player.volume_set
+      target:
+        entity_id: media_player.googlehome8851
+      data:
+        volume_level: 0.01
+    - action: media_player.play_media
+      target:
+        entity_id: media_player.googlehome8851
+      data:
+        media_content_id: "http://192.168.1.77:8123/local/birdssongs.mp3"
+        media_content_type: "music"
+
+# 31c. RIPRISTINO DOPO STOP (es. "Ok Google, stop")
+- id: yamaha_keepalive_ripristino_dopo_stop
+  alias: "Yamaha Keepalive - Ripristino dopo stop"
+  mode: single
+  max_exceeded: silent
+  triggers:
+    - platform: state
+      entity_id: media_player.googlehome8851
+      to:
+        - "idle"
+        - "paused"
+      for: "00:00:30"
+  condition:
+    - condition: template
+      value_template: "{{ state_attr('media_player.googlehome8851', 'media_title') is none }}"
+  action:
+    - variables:
+        ora: "{{ now().hour + now().minute / 60 }}"
+        e_notte: "{{ not (ora >= 8.5 and ora < 24.0) }}"
+        vol_attuale: "{{ (state_attr('media_player.googlehome8851', 'volume_level') | float(0) * 100) | round(0) }}"
+    - if:
+        - condition: template
+          value_template: "{{ e_notte }}"
+      then:
+        - action: media_player.volume_set
+          target:
+            entity_id: media_player.googlehome8851
+          data:
+            volume_level: 0.01
+      else:
+        - if:
+            - condition: template
+              value_template: "{{ vol_attuale == 1 }}"
+          then:
+            - action: media_player.volume_set
+              target:
+                entity_id: media_player.googlehome8851
+              data:
+                volume_level: 0.20
+    - action: media_player.play_media
+      target:
+        entity_id: media_player.googlehome8851
+      data:
+        media_content_id: "http://192.168.1.77:8123/local/birdssongs.mp3"
+        media_content_type: "music"
+
+# 31d. REFRESH ANTI-STANDBY – ogni 7h25m
+- id: yamaha_keepalive_refresh_antistandby
+  alias: "Yamaha Keepalive - Refresh anti-standby (7h25m)"
+  mode: single
+  triggers:
+    - platform: time_pattern
+      hours: "/7"
+      minutes: "25"
+  condition:
+    - condition: state
+      entity_id: media_player.googlehome8851
+      state: "playing"
+    - condition: template
+      value_template: "{{ state_attr('media_player.googlehome8851', 'media_title') is none }}"
+  action:
+    - variables:
+        ora: "{{ now().hour + now().minute / 60 }}"
+        e_notte: "{{ not (ora >= 8.5 and ora < 24.0) }}"
+        vol_attuale: "{{ (state_attr('media_player.googlehome8851', 'volume_level') | float(0) * 100) | round(0) }}"
+    - action: media_player.media_stop
+      target:
+        entity_id: media_player.googlehome8851
+    - delay: "00:00:05"
+    - if:
+        - condition: template
+          value_template: "{{ e_notte }}"
+      then:
+        - action: media_player.volume_set
+          target:
+            entity_id: media_player.googlehome8851
+          data:
+            volume_level: 0.01
+      else:
+        - if:
+            - condition: template
+              value_template: "{{ vol_attuale == 1 }}"
+          then:
+            - action: media_player.volume_set
+              target:
+                entity_id: media_player.googlehome8851
+              data:
+                volume_level: 0.20
+    - action: media_player.play_media
+      target:
+        entity_id: media_player.googlehome8851
+      data:
+        media_content_id: "http://192.168.1.77:8123/local/birdssongs.mp3"
+        media_content_type: "music"
+# 31e. RESET ALTOPARLANTE PREDEFINITO – ogni 15 minuti
+- id: yamaha_keepalive_reset_speaker
+  alias: "Yamaha Keepalive - Reset altoparlante predefinito (15min)"
+  mode: single
+  triggers:
+    - platform: time_pattern
+      minutes: "/15"
+  condition:
+    - condition: time
+      after: "08:30:00"
+      before: "23:00:00"
+    - condition: state
+      entity_id: media_player.googlehome8851
+      state: "playing"
+    - condition: template
+      value_template: "{{ state_attr('media_player.googlehome8851', 'media_title') is none }}"
+  action:
+    - variables:
+        ora: "{{ now().hour + now().minute / 60 }}"
+        e_notte: "{{ not (ora >= 8.5 and ora < 24.0) }}"
+        vol_attuale: "{{ (state_attr('media_player.googlehome8851', 'volume_level') | float(0) * 100) | round(0) }}"
+    - action: media_player.media_stop
+      target:
+        entity_id: media_player.googlehome8851
+    - delay: "00:00:03"
+    - if:
+        - condition: template
+          value_template: "{{ e_notte }}"
+      then:
+        - action: media_player.volume_set
+          target:
+            entity_id: media_player.googlehome8851
+          data:
+            volume_level: 0.01
+      else:
+        - if:
+            - condition: template
+              value_template: "{{ vol_attuale == 1 }}"
+          then:
+            - action: media_player.volume_set
+              target:
+                entity_id: media_player.googlehome8851
+              data:
+                volume_level: 0.20
+    - action: media_player.play_media
+      target:
+        entity_id: media_player.googlehome8851
+      data:
+        media_content_id: "http://192.168.1.77:8123/local/birdssongs.mp3"
+        media_content_type: "music"
+
+#==================================================================================
+# 32. AVVIA VIVINO PROXY ALL'AVVIO DI HA
+#==================================================================================
+- id: avvia_vivino_proxy_avvio
+  alias: "Vivino Proxy - Avvia all'avvio di HA"
+  mode: single
+  triggers:
+    - platform: homeassistant
+      event: start
+  action:
+    - delay: "00:00:30"
+    - action: shell_command.avvia_vivino_proxy
+
+#==================================================================================
+# 33. TENDA – Chiusura automatica per vento pericoloso
+#
+# Soglia: 40 km/h (raffiche) – margine di sicurezza rispetto alla Classe 3
+# UNI EN 13561 (49 km/h). Coerente con soglia vento blocco irrigazione.
+# Sensore: sensor.hp1000se_pro_pro_v1_6_4_wind_gust
+# Attuatore: switch.sonoff_100132fd56_4 (ON = tenda chiusa)
+#
+# NOTA: la chiusura fisica avviene ad ogni raffica >40 km/h se la tenda
+# risulta aperta. La NOTIFICA invece è limitata a 1 al giorno tramite
+# input_boolean.tenda_notifica_vento_oggi (reset a mezzanotte, vedi 33b).
+#==================================================================================
+- id: tenda_chiusura_vento
+  alias: "Tenda – Chiusura automatica per raffiche di vento"
+  mode: single
+  max_exceeded: silent
+  triggers:
+    - platform: numeric_state
+      entity_id: sensor.hp1000se_pro_pro_v1_6_4_wind_gust
+      above: 40
+  condition:
+    - condition: state
+      entity_id: switch.sonoff_100132fd56_4
+      state: "off"
+  action:
+    - action: switch.turn_on
+      target:
+        entity_id: switch.sonoff_100132fd56_4
+    - if:
+        - condition: state
+          entity_id: input_boolean.tenda_notifica_vento_oggi
+          state: "off"
+      then:
+        - action: notify.mobile_app_cph2653
+          data:
+            title: "💨 Tenda chiusa – vento"
+            message: >-
+              Raffica di {{ states('sensor.hp1000se_pro_pro_v1_6_4_wind_gust') | round(1) }} km/h rilevata.
+              Tenda chiusa automaticamente.
+            data:
+              priority: high
+              ttl: 0
+        - action: input_boolean.turn_on
+          target:
+            entity_id: input_boolean.tenda_notifica_vento_oggi
+
+#==================================================================================
+# 33b. TENDA – Reset notifica giornaliera vento a mezzanotte
+#==================================================================================
+- id: tenda_reset_notifica_vento_mezzanotte
+  alias: "Tenda - Reset notifica vento a mezzanotte"
+  mode: single
+  triggers:
+    - platform: time
+      at: "23:59:30"
+  condition: []
+  action:
+    - action: input_boolean.turn_off
+      target:
+        entity_id: input_boolean.tenda_notifica_vento_oggi
+
+#==================================================================================
+# 34. CALCOLO TABELLA MENSILE FV – Avvio HA + ogni ora
+#==================================================================================
+- id: calcola_pv_tabella_mensile
+  alias: "PV – Calcola tabella mensile"
+  mode: single
+  triggers:
+    - platform: homeassistant
+      event: start
+    - platform: time_pattern
+      hours: "/1"
+  action:
+    - action: shell_command.calcola_pv_tabella
+
+
+#==================================================================================
+# 35. SISTEMA – Aggiornamenti automatici dopo il backup notturno
+#
+# Il backup giornaliero parte alle 05:00. L'installazione degli aggiornamenti
+# parte alle 05:30 per lasciare margine al completamento del backup.
+# La notifica con l'elenco viene inviata PRIMA dell'installazione, perché
+# gli aggiornamenti di Core/OS riavviano HA e interromperebbero l'automazione
+# prima dell'invio.
+#==================================================================================
+- id: sistema_aggiornamenti_automatici_notturni
+  alias: "Sistema - Aggiornamenti automatici dopo backup"
+  mode: single
+  triggers:
+    - platform: time
+      at: "05:30:00"
+  condition:
+    - condition: template
+      value_template: >
+        {{ states.update | selectattr('state', 'eq', 'on') | list | count > 0 }}
+  action:
+    - variables:
+        entita_da_aggiornare: >
+          {{ states.update | selectattr('state', 'eq', 'on')
+             | map(attribute='entity_id') | list }}
+        elenco_aggiornamenti: >-
+          {% for e in states.update | selectattr('state', 'eq', 'on') %}
+          • {{ e.name }}: {{ e.attributes.installed_version }} → {{ e.attributes.latest_version }}
+          {% endfor %}
+    - action: notify.mobile_app_cph2653
+      data:
+        title: "🔄 Installazione aggiornamenti ({{ entita_da_aggiornare | count }})"
+        message: "{{ elenco_aggiornamenti | trim }}"
+        data:
+          ttl: 0
+    - action: update.install
+      target:
+        entity_id: "{{ entita_da_aggiornare }}"
+      continue_on_error: true
+
+#==================================================================================
+#==================================================================================
+# 36. HEISHAMON - NESSUN DATO RICEVUTO DA 30 MINUTI
+#
+# Usa direttamente binary_sensor.panasonic_heat_pump_lwt, il sensore LWT
+# (Last Will and Testament) pubblicato da HeishaMon: passa a "off" quando
+# il broker MQTT rileva la disconnessione del dispositivo.
+#==================================================================================
+- id: heishamon_nessun_dato_30min
+  alias: "HeishaMon - Nessun dato ricevuto da 30 min"
+  mode: single
+  triggers:
+    - platform: state
+      entity_id: binary_sensor.panasonic_heat_pump_lwt
+      to: "off"
+      for: "00:30:00"
+  action:
+    - action: notify.mobile_app_cph2653
+      data:
+        title: "🛑 HeishaMon - Nessun dato da 30 min"
+        message: "HeishaMon risulta irraggiungibile (LWT offline) da almeno 30 minuti."
+        data:
+          priority: high
+          ttl: 0
+          persistent: "true"
+
+#==================================================================================
+# 37. OTGW - NESSUN DATO RICEVUTO DA 30 MINUTI
+#
+# Rileva se l'OTGW smette di pubblicare dati (MQTT interrotto, ESP
+# bloccato, WiFi caduto). Usa sensor.opentherm_gateway_otgw_stats_free_heap
+# come "battito cardiaco": HA lo marca "unavailable" quando il broker MQTT
+# rileva la disconnessione del dispositivo (LWT).
+# Diverso dall'automazione "OTGW - Notifica caldaia disconnessa" (n.18),
+# che rileva la sola disconnessione caldaia-OTGW, non del dispositivo OTGW.
+#==================================================================================
+- id: otgw_nessun_dato_30min
+  alias: "OTGW - Nessun dato ricevuto da 30 min"
+  mode: single
+  triggers:
+    - platform: state
+      entity_id: sensor.opentherm_gateway_otgw_stats_free_heap
+      to: "unavailable"
+      for: "00:30:00"
+  action:
+    - action: notify.mobile_app_cph2653
+      data:
+        title: "🛑 OTGW - Nessun dato da 30 min"
+        message: "L'OTGW risulta irraggiungibile (nessun dato MQTT) da almeno 30 minuti."
+        data:
+          priority: high
+          ttl: 0
+          persistent: "true"

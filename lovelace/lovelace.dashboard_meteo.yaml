@@ -1,0 +1,159 @@
+config:
+  path: meteo
+  views:
+  - max_columns: 2
+    path: meteo
+    sections:
+    - cards:
+      - heading: Meteo
+        heading_style: title
+        icon: mdi:weather-sunny
+        type: heading
+      - entity: sensor.hp1000se_pro_pro_v1_6_4_outdoor_temperature
+        features_position: bottom
+        name: Temp OUT
+        type: tile
+        vertical: false
+      - entity: sensor.hp1000se_pro_pro_v1_6_4_humidity
+        features_position: bottom
+        name: "Umidit\xE0 OUT"
+        type: tile
+        vertical: false
+      - entity: sensor.hp1000se_pro_pro_v1_6_4_max_daily_gust
+        features_position: bottom
+        name: Raffiche giorno
+        type: tile
+        vertical: false
+      - entity: sensor.hp1000se_pro_pro_v1_6_4_daily_rain
+        features_position: bottom
+        name: Pioggia giorno
+        type: tile
+        vertical: false
+      - entity: sensor.hp1000se_pro_pro_v1_6_4_solar_radiation
+        features_position: bottom
+        type: tile
+        vertical: false
+      - entity: sensor.hp1000se_pro_pro_v1_6_4_absolute_pressure
+        features_position: bottom
+        name: Pressione
+        type: tile
+        vertical: false
+      - entity: weather.casa
+        forecast_type: hourly
+        grid_options:
+          columns: full
+          rows: auto
+        secondary_info_attribute: humidity
+        show_current: false
+        show_forecast: true
+        type: weather-forecast
+      - heading: "Temperatura e Umidit\xE0 in dettaglio "
+        heading_style: subtitle
+        icon: mdi:coolant-temperature
+        type: heading
+      - entity: sensor.hp1000se_pro_pro_v1_6_4_indoor_temperature
+        features_position: bottom
+        name: Temp Sala
+        type: tile
+        vertical: false
+      - entity: sensor.hp1000se_pro_pro_v1_6_4_indoor_humidity
+        features_position: bottom
+        name: Umidita Sala
+        type: tile
+        vertical: false
+      - entity: sensor.sonoff_10008d119d_temperature
+        features_position: bottom
+        name: Temp Georgi
+        type: tile
+        vertical: false
+      - entity: sensor.sonoff_10008d119d_humidity
+        features_position: bottom
+        name: Umidita Georgi
+        type: tile
+        vertical: false
+      - entity: sensor.hp1000se_pro_pro_v1_6_4_outdoor_temperature
+        features_position: bottom
+        type: tile
+        vertical: false
+      - entity: sensor.hp1000se_pro_pro_v1_6_4_humidity
+        features_position: bottom
+        name: "Umidit\xE0 OUT"
+        type: tile
+        vertical: false
+      - heading: "Vento in dettagli\xF2 "
+        heading_style: subtitle
+        icon: mdi:wind-power
+        type: heading
+      - entity: sensor.hp1000se_pro_pro_v1_6_4_wind_speed
+        features_position: bottom
+        name: "Velocit\xE0 "
+        type: tile
+        vertical: false
+      - entity: sensor.hp1000se_pro_pro_v1_6_4_wind_direction
+        features_position: bottom
+        name: Direzione
+        type: tile
+        vertical: false
+      - entity: sensor.hp1000se_pro_pro_v1_6_4_max_daily_gust
+        features_position: bottom
+        name: Raffiche giorno
+        type: tile
+        vertical: false
+      - entity: sensor.wind_gust_max_annuale
+        features_position: bottom
+        name: Raffiche Annuale
+        type: tile
+        vertical: false
+      - entity: sensor.hp1000se_pro_pro_v1_6_4_daily_rain
+        features_position: bottom
+        name: Giorno
+        type: tile
+        vertical: false
+      - heading: Pioggia in dettaglio
+        heading_style: subtitle
+        icon: mdi:weather-rainy
+        type: heading
+      - entity: sensor.hp1000se_pro_pro_v1_6_4_hourly_rain
+        features_position: bottom
+        name: Ora
+        type: tile
+        vertical: false
+      - entity: sensor.hp1000se_pro_pro_v1_6_4_weekly_rain
+        features_position: bottom
+        name: Settimana
+        type: tile
+        vertical: false
+      - entity: sensor.hp1000se_pro_pro_v1_6_4_monthly_rain
+        features_position: bottom
+        name: Mese
+        type: tile
+        vertical: false
+      - entity: sensor.hp1000se_pro_pro_v1_6_4_yearly_rain
+        features_position: bottom
+        name: Anno
+        type: tile
+        vertical: false
+      - heading: Previsioni in dettaglio
+        heading_style: subtitle
+        icon: mdi:weather-cloudy-clock
+        type: heading
+      - entity: weather.casa
+        forecast_type: hourly
+        grid_options:
+          columns: full
+          rows: auto
+        secondary_info_attribute: humidity
+        show_current: false
+        show_forecast: true
+        type: weather-forecast
+      - entity: weather.casa
+        forecast_type: daily
+        grid_options:
+          columns: full
+          rows: auto
+        show_current: false
+        show_forecast: true
+        type: weather-forecast
+      type: grid
+    title: Meteo
+    type: sections

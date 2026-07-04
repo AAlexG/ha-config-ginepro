@@ -1,0 +1,1856 @@
+# automations_clima_31.yaml
+
+
+
+#==================================================================================
+# 1. PANASONIC – ACCUMULO ENERGIA OGNI MINUTO
+# Somma ogni minuto il contributo W/60/1000 kWh agli accumulatori input_number
+#==================================================================================
+- id: panasonic_accumulo_energia
+  alias: "Panasonic – Accumulo Energia Ogni Minuto"
+  description: "Aggiorna accumulatori kWh prodotta e consumata ogni minuto"
+  triggers:
+    - trigger: time_pattern
+      minutes: "/1"
+  conditions:
+    - condition: numeric_state
+      entity_id: sensor.panasonic_potenza_prodotta_calcolata
+      above: 0
+  actions:
+    - action: input_number.set_value
+      target:
+        entity_id: input_number.panasonic_energia_prodotta_acc
+      data:
+        value: >
+          {{ (states('input_number.panasonic_energia_prodotta_acc') | float(0) +
+              states('sensor.panasonic_potenza_prodotta_calcolata') | float(0) / 1000 / 60)
+             | round(4) }}
+    - action: input_number.set_value
+      target:
+        entity_id: input_number.panasonic_energia_consumata_acc
+      data:
+        value: >
+          {{ (states('input_number.panasonic_energia_consumata_acc') | float(0) +
+              states('sensor.panasonic_potenza_consumata_calcolata') | float(0) / 1000 / 60)
+             | round(4) }}
+
+
+#==================================================================================
+# 2. CLIMA – INIZIALIZZAZIONE VALORI DEFAULT
+# Imposta valori di default alla prima accensione o dopo riavvio
+#==================================================================================
+- id: clima_inizializzazione
+  alias: "Clima – Inizializzazione Valori Default"
+  description: "Imposta valori default PID e soglie al primo avvio"
+  triggers:
+    - trigger: homeassistant
+      event: start
+  actions:
+    - action: input_number.set_value
+      target:
+        entity_id: input_number.clima_target_comfort
+      data:
+        value: 25
+    - action: input_number.set_value
+      target:
+        entity_id: input_number.clima_target_eco
+      data:
+        value: 26
+    - action: input_number.set_value
+      target:
+        entity_id: input_number.clima_target_notte
+      data:
+        value: 27
+    - action: input_number.set_value
+      target:
+        entity_id: input_number.clima_target_assenza
+      data:
+        value: 29
+    - action: input_number.set_value
+      target:
+        entity_id: input_number.clima_soglia_solare_boost
+      data:
+        value: 2500
+    - action: input_number.set_value
+      target:
+        entity_id: input_number.clima_boost_solare_delta
+      data:
+        value: 2
+    - action: input_number.set_value
+      target:
+        entity_id: input_number.clima_soglia_inverno
+      data:
+        value: 13
+    - action: input_number.set_value
+      target:
+        entity_id: input_number.panasonic_pid_kp
+      data:
+        value: 2.0
+    - action: input_number.set_value
+      target:
+        entity_id: input_number.panasonic_pid_ki
+      data:
+        value: 0.05
+    - action: input_number.set_value
+      target:
+        entity_id: input_number.panasonic_pid_kd
+      data:
+        value: 1.0
+    # --- TARGET DUAL-ZONE estate (max) ---
+    - action: input_number.set_value
+      target:
+        entity_id: input_number.maxtemp_giorno_estate_sala
+      data:
+        value: 25
+    - action: input_number.set_value
+      target:
+        entity_id: input_number.maxtemp_giorno_estate_letto
+      data:
+        value: 29
+    - action: input_number.set_value
+      target:
+        entity_id: input_number.maxtemp_notte_estate_sala
+      data:
+        value: 29
+    - action: input_number.set_value
+      target:
+        entity_id: input_number.maxtemp_notte_estate_letto
+      data:
+        value: 25
+    # --- TARGET DUAL-ZONE inverno (min) ---
+    - action: input_number.set_value
+      target:
+        entity_id: input_number.mintemp_giorno_inverno_sala
+      data:
+        value: 22
+    - action: input_number.set_value
+      target:
+        entity_id: input_number.mintemp_giorno_inverno_letto
+      data:
+        value: 20
+    - action: input_number.set_value
+      target:
+        entity_id: input_number.mintemp_notte_inverno_sala
+      data:
+        value: 20
+    - action: input_number.set_value
+      target:
+        entity_id: input_number.mintemp_notte_inverno_letto
+      data:
+        value: 22
+    - action: input_number.set_value
+      target:
+        entity_id: input_number.clima_target_emergenza_antigelo
+      data:
+        value: 15
+    - action: input_number.set_value
+      target:
+        entity_id: input_number.panasonic_pid_heat_integrale
+      data:
+        value: 0
+    - action: input_number.set_value
+      target:
+        entity_id: input_number.panasonic_pid_heat_errore_prec
+      data:
+        value: 0
+    # --- FREE COOLING / FREE HEATING (naturale) ---
+    - action: input_number.set_value
+      target:
+        entity_id: input_number.clima_delta_naturale_base
+      data:
+        value: 3
+    - action: input_number.set_value
+      target:
+        entity_id: input_number.clima_delta_naturale_vento_bonus
+      data:
+        value: 2
+    - action: input_number.set_value
+      target:
+        entity_id: input_number.clima_soglia_vento_naturale
+      data:
+        value: 6
+    - action: input_number.set_value
+      target:
+        entity_id: input_number.clima_freecooling_setpoint_offset
+      data:
+        value: 5
+    - action: input_number.set_value
+      target:
+        entity_id: input_number.clima_freecooling_setpoint_max
+      data:
+        value: 22
+    - action: input_number.set_value
+      target:
+        entity_id: input_number.clima_freeheating_setpoint_offset
+      data:
+        value: 5
+    - action: input_number.set_value
+      target:
+        entity_id: input_number.clima_freeheating_setpoint_min
+      data:
+        value: 20
+
+#==================================================================================
+# 3. CLIMA – MEDIA TEMPERATURA ESTERNA 7 GIORNI
+#==================================================================================
+- id: clima_media_esterna_7gg
+  alias: "Clima – Aggiorna Media Esterna 7gg"
+  description: "Calcola EMA temperatura esterna ogni ora per soglia inverno/estate"
+  triggers:
+    - trigger: time_pattern
+      hours: "/1"
+  actions:
+    - action: input_number.set_value
+      target:
+        entity_id: input_number.clima_media_esterna_7gg
+      data:
+        value: >
+          {% set t = states('sensor.hp1000se_pro_pro_v1_6_4_outdoor_temperature') | float(15) %}
+          {% set media = states('input_number.clima_media_esterna_7gg') | float(15) %}
+          {{ (media * 0.979 + t * 0.021) | round(2) }}
+
+#==================================================================================
+# 4. FANCOIL - CLIMA – COMMUTAZIONE MODALITÀ GIORNALIERA
+# Comfort: 07:00-20:00 / Eco: 20:00-23:00 / Notte: 23:00-07:00
+# Solo se non in modalità assenza o manuale
+#==================================================================================
+- id: clima_modalita_giorno
+  alias: "Clima – Modalità Giorno (07:00)"
+  triggers:
+    - trigger: time
+      at: "07:00:00"
+  conditions:
+    - condition: not
+      conditions:
+        - condition: state
+          entity_id: input_select.clima_modalita
+          state: "assenza"
+        - condition: state
+          entity_id: input_select.clima_modalita
+          state: "manuale"
+  actions:
+    - action: input_select.select_option
+      target:
+        entity_id: input_select.clima_modalita
+      data:
+        option: "giorno"
+    # Alle 07:00 spegni fancoil_georgi_2 (quello notturno), sempre, senza flag
+    # fancoil_georgi era già spento alle 23:00
+    - action: switch.turn_off
+      target:
+        entity_id: switch.camerageorgi_shelly_fancoil_georgi_2
+    # Reset di tutti i blocchi manuali: ad ogni cambio giorno/notte si riparte sempre puliti
+    - action: input_boolean.turn_off
+      target:
+        entity_id:
+          - input_boolean.fancoil_georgi_manuale
+          - input_boolean.fancoil_georgi2_manuale
+          - input_boolean.fancoil_sala_manuale
+          - input_boolean.deumidificatore_cantina_manuale
+          - input_boolean.deumidificatore_armadio_manuale
+
+- id: clima_modalita_notte
+  alias: "Clima – Modalità Notte (23:00)"
+  triggers:
+    - trigger: time
+      at: "23:00:00"
+  conditions:
+    - condition: not
+      conditions:
+        - condition: state
+          entity_id: input_select.clima_modalita
+          state: "assenza"
+        - condition: state
+          entity_id: input_select.clima_modalita
+          state: "manuale"
+  actions:
+    - action: input_select.select_option
+      target:
+        entity_id: input_select.clima_modalita
+      data:
+        option: "notte"
+    # Alle 23:00 spegni fancoil_georgi (solo prelavoro 21-23), sempre, senza flag
+    # fancoil_georgi_2 resta acceso tutta la notte fino alle 07:00
+    - action: switch.turn_off
+      target:
+        entity_id: switch.camerageorgi_shelly_fancoil_georgi
+    # Reset di tutti i blocchi manuali: ad ogni cambio giorno/notte si riparte sempre puliti
+    - action: input_boolean.turn_off
+      target:
+        entity_id:
+          - input_boolean.fancoil_georgi_manuale
+          - input_boolean.fancoil_georgi2_manuale
+          - input_boolean.fancoil_sala_manuale
+          - input_boolean.deumidificatore_cantina_manuale
+          - input_boolean.deumidificatore_armadio_manuale
+
+#==================================================================================
+# GESTIONE MANUALE FANCOIL E DEUMIDIFICATORE
+# Il toggle in plancia fancoil su ogni switch reale chiama uno script dedicato
+# (es. script.fancoil_georgi_toggle_manuale) che fa solo due cose: inverte lo
+# switch fisico e attiva il relativo input_boolean.*_manuale. Quel boolean
+# blocca tutte le automazioni di controllo finché non viene resettato al
+# prossimo cambio giorno/notte (07:00/23:00). Nessun detector, nessun flag
+# "comando_automatico": il blocco è sempre il risultato esplicito di un'azione
+# dell'utente sul tile, mai dedotto.
+#==================================================================================
+
+- id: fancoil_georgi_prelavoro_sera
+  alias: "Fancoil Georgi – Prelavoro Serale (21:00)"
+  description: >
+    Alle 21:00 innesca il controllo periodico accendendo entrambi i fancoil
+    se le condizioni sono soddisfatte. Il controllo periodico fancoil_georgi_controllo
+    mantiene poi lo stato corretto ogni 5 minuti.
+  triggers:
+    - trigger: time
+      at: "21:00:00"
+  conditions:
+    - condition: not
+      conditions:
+        - condition: state
+          entity_id: input_select.clima_modalita
+          state: "assenza"
+        - condition: state
+          entity_id: input_select.clima_modalita
+          state: "manuale"
+    - condition: state
+      entity_id: switch.panasonic_heat_pump_main_heatpump_state
+      state: "on"
+  actions:
+    - action: automation.trigger
+      target:
+        entity_id: automation.fancoil_georgi_controllo
+      data:
+        skip_condition: false
+
+#==================================================================================
+# 6. FANCOIL - CAMERA GEORGI – CONTROLLO PERIODICO (ogni 5 minuti)
+# Unica automazione che gestisce accensione/spegnimento fancoil in base a:
+# - Orario (prelavoro 21-23 o notte 23-07)
+# - T_georgi vs target stagionale
+# - outlet_temp vs soglia efficacia acqua
+# Robusta: funziona anche dopo riavvii o eventi mancati
+#==================================================================================
+- id: fancoil_georgi_controllo
+  alias: "Fancoil Georgi – Controllo Periodico"
+  description: >
+    Ogni 5 minuti decide lo stato dei fancoil camera Georgi.
+    Prelavoro 21-23: controlla entrambi fancoil_georgi e fancoil_georgi_2.
+    Notte 23-07: controlla solo fancoil_georgi_2 (fancoil_georgi sempre spento).
+    Decisione basata su T_georgi vs target E outlet_temp vs soglia efficacia.
+  mode: single
+  triggers:
+    - trigger: time_pattern
+      minutes: "/5"
+  conditions:
+    - condition: not
+      conditions:
+        - condition: state
+          entity_id: input_select.clima_modalita
+          state: "assenza"
+        - condition: state
+          entity_id: input_select.clima_modalita
+          state: "manuale"
+    - condition: time
+      after: "21:00:00"
+      before: "07:00:00"
+  actions:
+    - variables:
+        mode: "{{ states('select.panasonic_heat_pump_main_operating_mode_state') }}"
+        t_georgi: "{{ states('sensor.sonoff_10008d119d_temperature') | float(25) }}"
+        outlet: "{{ states('sensor.panasonic_heat_pump_main_main_outlet_temp') | float(20) }}"
+        ora: "{{ now().hour }}"
+        # Prelavoro: 21:00-22:59 — entrambi i fancoil attivi
+        # Notte: 23:00-06:59 — solo fancoil_georgi_2
+        periodo_prelavoro: "{{ ora >= 21 and ora < 23 }}"
+        # Soglie estate
+        target_estate: "{{ states('input_number.maxtemp_notte_estate_letto') | float(25) }}"
+        soglia_acqua_estate: "{{ states('input_number.maxtemp_notte_estate_letto') | float(25) - 4 }}"
+        # Soglie inverno
+        target_inverno: "{{ states('input_number.mintemp_notte_inverno_letto') | float(22) }}"
+        soglia_acqua_inverno: "{{ states('input_number.mintemp_notte_inverno_letto') | float(22) + 6 }}"
+        # Calcolo condizione ON per ogni stagione
+        acqua_efficace_estate: "{{ outlet <= soglia_acqua_estate }}"
+        acqua_efficace_inverno: "{{ outlet >= soglia_acqua_inverno }}"
+        temp_fuori_target_estate: "{{ t_georgi > target_estate }}"
+        temp_fuori_target_inverno: "{{ t_georgi < target_inverno }}"
+        # Decisione finale: accendere i fancoil?
+        fancoil_on: >
+          {% if mode in ['Cool', 'Cool only'] %}
+            {{ temp_fuori_target_estate and acqua_efficace_estate }}
+          {% elif mode in ['Heat', 'Heat only'] %}
+            {{ temp_fuori_target_inverno and acqua_efficace_inverno }}
+          {% else %}
+            false
+          {% endif %}
+    - choose:
+        # --- ACCENSIONE ---
+        - conditions:
+            - condition: template
+              value_template: "{{ fancoil_on }}"
+          sequence:
+            # fancoil_georgi_2: sempre acceso se fancoil_on (prelavoro e notte)
+            # Solo se non in gestione manuale
+            - if:
+                - condition: state
+                  entity_id: input_boolean.fancoil_georgi2_manuale
+                  state: "off"
+              then:
+                - action: switch.turn_on
+                  target:
+                    entity_id: switch.camerageorgi_shelly_fancoil_georgi_2
+            # fancoil_georgi: solo nel prelavoro 21-23, solo se non in gestione manuale
+            - if:
+                - condition: template
+                  value_template: "{{ periodo_prelavoro }}"
+                - condition: state
+                  entity_id: input_boolean.fancoil_georgi_manuale
+                  state: "off"
+              then:
+                - action: switch.turn_on
+                  target:
+                    entity_id: switch.camerageorgi_shelly_fancoil_georgi
+        # --- SPEGNIMENTO ---
+        - conditions:
+            - condition: template
+              value_template: "{{ not fancoil_on }}"
+          sequence:
+            # Solo se non in gestione manuale
+            - if:
+                - condition: state
+                  entity_id: input_boolean.fancoil_georgi2_manuale
+                  state: "off"
+              then:
+                - action: switch.turn_off
+                  target:
+                    entity_id: switch.camerageorgi_shelly_fancoil_georgi_2
+            # fancoil_georgi: spegni solo se siamo in prelavoro (di notte è già spento)
+            # e non in gestione manuale
+            - if:
+                - condition: template
+                  value_template: "{{ periodo_prelavoro }}"
+                - condition: state
+                  entity_id: input_boolean.fancoil_georgi_manuale
+                  state: "off"
+              then:
+                - action: switch.turn_off
+                  target:
+                    entity_id: switch.camerageorgi_shelly_fancoil_georgi
+
+- id: fancoil_sala_accendi
+  alias: "Fancoil Sala – Accendi (fuori target)"
+  description: >
+    Accende il fancoil sala appena T_sala esce dal target E l'acqua e ancora
+    efficace. Attivo 07:00-23:00.
+  triggers:
+    - trigger: numeric_state
+      entity_id: sensor.hp1000se_pro_pro_v1_6_4_indoor_temperature
+      above: input_number.maxtemp_giorno_estate_sala
+      id: "estate"
+    - trigger: numeric_state
+      entity_id: sensor.hp1000se_pro_pro_v1_6_4_indoor_temperature
+      below: input_number.mintemp_giorno_inverno_sala
+      id: "inverno"
+  conditions:
+    - condition: time
+      after: "07:00:00"
+      before: "23:00:00"
+    - condition: not
+      conditions:
+        - condition: state
+          entity_id: input_select.clima_modalita
+          state: "assenza"
+        - condition: state
+          entity_id: input_select.clima_modalita
+          state: "manuale"
+    - condition: state
+      entity_id: switch.sala_fancoil_sala_shelly_1gen4
+      state: "off"
+    - condition: state
+      entity_id: input_boolean.fancoil_sala_manuale
+      state: "off"
+    - condition: template
+      value_template: >
+        {% set mode = states('select.panasonic_heat_pump_main_operating_mode_state') %}
+        {% set outlet = states('sensor.panasonic_heat_pump_main_main_outlet_temp') | float(20) %}
+        {% set tid = trigger.id %}
+        {% if tid == 'estate' and mode in ['Cool', 'Cool only'] %}
+          {{ outlet <= states('input_number.maxtemp_giorno_estate_sala') | float(25) - 4 }}
+        {% elif tid == 'inverno' and mode in ['Heat', 'Heat only'] %}
+          {{ outlet >= states('input_number.mintemp_giorno_inverno_sala') | float(22) + 6 }}
+        {% else %}
+          false
+        {% endif %}
+  actions:
+    - action: switch.turn_on
+      target:
+        entity_id: switch.sala_fancoil_sala_shelly_1gen4
+
+#==================================================================================
+# 6c. FANCOIL SALA – SPEGNIMENTO PER TARGET RAGGIUNTO (debounce 10 min)
+# Spegne solo se T_sala e rientrata nel target per 10 minuti consecutivi,
+# evitando cicli ON/OFF troppo frequenti vicino alla soglia.
+#==================================================================================
+- id: fancoil_sala_spegni_target_raggiunto
+  alias: "Fancoil Sala – Spegni (target raggiunto 10 min)"
+  description: >
+    Spegne il fancoil sala se T_sala e rientrata nel target per 10 minuti
+    consecutivi. Attivo 07:00-23:00.
+  triggers:
+    - trigger: numeric_state
+      entity_id: sensor.hp1000se_pro_pro_v1_6_4_indoor_temperature
+      below: input_number.maxtemp_giorno_estate_sala
+      for:
+        minutes: 10
+      id: "estate"
+    - trigger: numeric_state
+      entity_id: sensor.hp1000se_pro_pro_v1_6_4_indoor_temperature
+      above: input_number.mintemp_giorno_inverno_sala
+      for:
+        minutes: 10
+      id: "inverno"
+  conditions:
+    - condition: time
+      after: "07:00:00"
+      before: "23:00:00"
+    - condition: state
+      entity_id: switch.sala_fancoil_sala_shelly_1gen4
+      state: "on"
+    - condition: state
+      entity_id: input_boolean.fancoil_sala_manuale
+      state: "off"
+    - condition: template
+      value_template: >
+        {% set mode = states('select.panasonic_heat_pump_main_operating_mode_state') %}
+        {% set tid = trigger.id %}
+        {{ (tid == 'estate' and mode in ['Cool', 'Cool only'])
+           or (tid == 'inverno' and mode in ['Heat', 'Heat only']) }}
+  actions:
+    - action: switch.turn_off
+      target:
+        entity_id: switch.sala_fancoil_sala_shelly_1gen4
+
+#==================================================================================
+# 6d. FANCOIL SALA – CONTROLLO PERIODICO DI SICUREZZA (ogni 5 minuti)
+# Rete di sicurezza: riallinea lo stato anche se i trigger numeric_state
+# sopra hanno perso un evento (es. dopo riavvio HA).
+#==================================================================================
+- id: fancoil_sala_controllo
+  alias: "Fancoil Sala – Controllo Periodico Sicurezza"
+  description: >
+    Ogni 5 minuti verifica e corregge lo stato del fancoil sala in base a
+    T_sala vs target giorno e outlet_temp. Rete di sicurezza per riallineare
+    lo stato dopo riavvii o eventi mancati. Attivo 07:00-23:00.
+  mode: single
+  triggers:
+    - trigger: time_pattern
+      minutes: "/5"
+  conditions:
+    - condition: not
+      conditions:
+        - condition: state
+          entity_id: input_select.clima_modalita
+          state: "assenza"
+        - condition: state
+          entity_id: input_select.clima_modalita
+          state: "manuale"
+    - condition: time
+      after: "07:00:00"
+      before: "23:00:00"
+    - condition: state
+      entity_id: input_boolean.fancoil_sala_manuale
+      state: "off"
+  actions:
+    - variables:
+        mode: "{{ states('select.panasonic_heat_pump_main_operating_mode_state') }}"
+        t_sala: "{{ states('sensor.hp1000se_pro_pro_v1_6_4_indoor_temperature') | float(25) }}"
+        outlet: "{{ states('sensor.panasonic_heat_pump_main_main_outlet_temp') | float(20) }}"
+        target_sala_estate: "{{ states('input_number.maxtemp_giorno_estate_sala') | float(25) }}"
+        soglia_acqua_estate: "{{ states('input_number.maxtemp_giorno_estate_sala') | float(25) - 4 }}"
+        target_sala_inverno: "{{ states('input_number.mintemp_giorno_inverno_sala') | float(22) }}"
+        soglia_acqua_inverno: "{{ states('input_number.mintemp_giorno_inverno_sala') | float(22) + 6 }}"
+        acqua_efficace_estate: "{{ outlet <= soglia_acqua_estate }}"
+        acqua_efficace_inverno: "{{ outlet >= soglia_acqua_inverno }}"
+        temp_sala_fuori_target_estate: "{{ t_sala > target_sala_estate }}"
+        temp_sala_fuori_target_inverno: "{{ t_sala < target_sala_inverno }}"
+        fancoil_sala_on: >
+          {% if mode in ['Cool', 'Cool only'] %}
+            {{ temp_sala_fuori_target_estate and acqua_efficace_estate }}
+          {% elif mode in ['Heat', 'Heat only'] %}
+            {{ temp_sala_fuori_target_inverno and acqua_efficace_inverno }}
+          {% else %}
+            false
+          {% endif %}
+    - choose:
+        - conditions:
+            - condition: template
+              value_template: "{{ fancoil_sala_on }}"
+          sequence:
+            - action: switch.turn_on
+              target:
+                entity_id: switch.sala_fancoil_sala_shelly_1gen4
+        - conditions:
+            - condition: template
+              value_template: "{{ not fancoil_sala_on }}"
+          sequence:
+            - action: switch.turn_off
+              target:
+                entity_id: switch.sala_fancoil_sala_shelly_1gen4
+
+#==================================================================================
+# 6e. FANCOIL SALA – SPEGNIMENTO FORZATO ALLE 23:00
+# Garanzia di spegnimento anche se le altre automazioni hanno perso un evento.
+#==================================================================================
+- id: fancoil_sala_spegnimento_notte
+  alias: "Fancoil Sala – Spegnimento Notte (23:00)"
+  triggers:
+    - trigger: time
+      at: "23:00:00"
+  actions:
+    - action: switch.turn_off
+      target:
+        entity_id: switch.sala_fancoil_sala_shelly_1gen4
+
+
+#==================================================================================
+# DEUMIDIFICATORE CANTINA – CONTROLLO PERIODICO SU PRODUZIONE FV
+# Ogni 5 minuti verifica produzione FV e decide stato presa deumidificatore.
+# Soglia: 1000W. Robusto contro riavvii o eventi mancati.
+# L'umidità è gestita dall'igrostat interno del deumidificatore.
+# Rispetta input_boolean.deumidificatore_cantina_manuale.
+#==================================================================================
+- id: deumidificatore_cantina_controllo
+  alias: "Deumidificatore Cantina – Controllo Periodico FV"
+  description: >
+    Ogni 5 minuti accende switch.presa_deumidificatore_cantina se produzione FV
+    supera 1000W, spegne se sotto soglia. Bloccato se in gestione manuale.
+  mode: single
+  triggers:
+    - trigger: time_pattern
+      minutes: "/5"
+  conditions:
+    - condition: state
+      entity_id: input_boolean.deumidificatore_cantina_manuale
+      state: "off"
+  actions:
+    - variables:
+        fv: "{{ states('sensor.inverter_uflex_pv_power') | float(0) }}"
+        presa_on: "{{ is_state('switch.presa_deumidificatore_cantina', 'on') }}"
+    - choose:
+        - conditions:
+            - condition: template
+              value_template: "{{ fv >= 1000 and not presa_on }}"
+          sequence:
+            - action: switch.turn_on
+              target:
+                entity_id: switch.presa_deumidificatore_cantina
+        - conditions:
+            - condition: template
+              value_template: "{{ fv < 1000 and presa_on }}"
+          sequence:
+            - action: switch.turn_off
+              target:
+                entity_id: switch.presa_deumidificatore_cantina
+
+#==================================================================================
+# DEUMIDIFICATORE ARMADIO – CONTROLLO PERIODICO SU PRODUZIONE FV
+# Ogni 5 minuti verifica produzione FV e decide stato presa deumidificatore.
+# Soglia: 1000W. Robusto contro riavvii o eventi mancati.
+# L'umidità è gestita dall'igrostat interno del deumidificatore.
+# Rispetta input_boolean.deumidificatore_armadio_manuale.
+#==================================================================================
+- id: deumidificatore_armadio_controllo
+  alias: "Deumidificatore Armadio – Controllo Periodico FV"
+  description: >
+    Ogni 5 minuti accende switch.deumidificatore_armadio_sonoff_sonoff_1002a68db0_1
+    se produzione FV supera 1000W, spegne se sotto soglia. Bloccato se in gestione manuale.
+  mode: single
+  triggers:
+    - trigger: time_pattern
+      minutes: "/5"
+  conditions:
+    - condition: state
+      entity_id: input_boolean.deumidificatore_armadio_manuale
+      state: "off"
+  actions:
+    - variables:
+        fv: "{{ states('sensor.inverter_uflex_pv_power') | float(0) }}"
+        presa_on: "{{ is_state('switch.deumidificatore_armadio_sonoff_sonoff_1002a68db0_1', 'on') }}"
+    - choose:
+        - conditions:
+            - condition: template
+              value_template: "{{ fv >= 1000 and not presa_on }}"
+          sequence:
+            - action: switch.turn_on
+              target:
+                entity_id: switch.deumidificatore_armadio_sonoff_sonoff_1002a68db0_1
+        - conditions:
+            - condition: template
+              value_template: "{{ fv < 1000 and presa_on }}"
+          sequence:
+            - action: switch.turn_off
+              target:
+                entity_id: switch.deumidificatore_armadio_sonoff_sonoff_1002a68db0_1
+
+#==================================================================================
+# 7. PANSONIC - PID – RAFFRESCAMENTO COMPLETO (PID con D)
+#==================================================================================
+- id: panasonic_pid_cooling_completo
+  alias: "Panasonic – PID Cooling Dual-Zone"
+  description: >
+    Giorno (07-23): sensore sala vs maxtemp_giorno_estate_sala.
+    Notte (23-07): sensore camera vs maxtemp_notte_estate_letto.
+    Spegne pompa se temperatura gia sotto target (isteresi 0.5C al riavvio).
+  triggers:
+    - trigger: time_pattern
+      minutes: "/5"
+  conditions:
+    - condition: state
+      entity_id: switch.panasonic_heat_pump_main_heatpump_state
+      state: "on"
+    - condition: template
+      value_template: >
+        {{ states('select.panasonic_heat_pump_main_operating_mode_state')
+           in ['Cool', 'Cool only'] }}
+    - condition: not
+      conditions:
+        - condition: state
+          entity_id: input_select.clima_modalita
+          state: "manuale"
+        - condition: state
+          entity_id: input_select.clima_modalita
+          state: "assenza"
+  actions:
+    - variables:
+        mod: "{{ states('input_select.clima_modalita') }}"
+        t_attivo: >
+          {% if mod == 'notte' %}
+            {{ states('sensor.sonoff_10008d119d_temperature') | float(25) }}
+          {% else %}
+            {{ states('sensor.hp1000se_pro_pro_v1_6_4_indoor_temperature') | float(25) }}
+          {% endif %}
+        target: >
+          {% if mod == 'notte' %}
+            {{ states('input_number.maxtemp_notte_estate_letto') | float(25) }}
+          {% else %}
+            {{ states('input_number.maxtemp_giorno_estate_sala') | float(25) }}
+          {% endif %}
+        kp: "{{ states('input_number.panasonic_pid_kp') | float(2.0) }}"
+        ki: "{{ states('input_number.panasonic_pid_ki') | float(0.05) }}"
+        kd: "{{ states('input_number.panasonic_pid_kd') | float(1.0) }}"
+        integrale_prec: "{{ states('input_number.panasonic_pid_integrale') | float(0) }}"
+        errore_prec: "{{ states('input_number.panasonic_pid_errore_prec') | float(0) }}"
+        errore: "{{ t_attivo - target }}"
+        dt: 5
+        nuovo_integrale: >
+          {{ [[integrale_prec + errore * dt / 60, -8] | max, 8] | min }}
+        derivativo: "{{ (errore - errore_prec) / (dt / 60) }}"
+        boost_delta: >
+          {% set prod = states('sensor.inverter_uflex_pv_power') | float(0) %}
+          {% set soglia = states('input_number.clima_soglia_solare_boost') | float(2500) %}
+          {% if prod > soglia %}
+            {{ states('input_number.clima_boost_solare_delta') | float(2) }}
+          {% else %}
+            0
+          {% endif %}
+        freecooling_on: "{{ is_state('input_boolean.clima_freecooling_attivo', 'on') }}"
+        freecooling_offset: >
+          {{ states('input_number.clima_freecooling_setpoint_offset') | float(5) if freecooling_on else 0 }}
+        setpoint_max: >
+          {{ states('input_number.clima_freecooling_setpoint_max') | float(22) if freecooling_on else 18 }}
+        setpoint: >
+          {% set prod = states('sensor.inverter_uflex_pv_power') | float(0) %}
+          {% set soglia = states('input_number.clima_soglia_solare_boost') | float(2500) %}
+          {% set bd = states('input_number.clima_boost_solare_delta') | float(2) if prod > soglia else 0 %}
+          {% set fc = states('input_number.clima_freecooling_setpoint_offset') | float(5) if freecooling_on else 0 %}
+          {% set smax = states('input_number.clima_freecooling_setpoint_max') | float(22) if freecooling_on else 18 %}
+          {% set raw = 18 - (errore | float(0) * kp | float(2)) - (nuovo_integrale | float(0) * ki | float(0.05)) - (derivativo | float(0) * kd | float(1)) - bd + fc %}
+          {{ [[raw, 10] | max, smax] | min | round(0) | int }}
+    - if:
+        - condition: template
+          value_template: "{{ t_attivo <= target }}"
+      then:
+        - action: switch.turn_off
+          target:
+            entity_id: switch.panasonic_heat_pump_main_heatpump_state
+      else:
+        - action: input_number.set_value
+          target:
+            entity_id: input_number.panasonic_pid_integrale
+          data:
+            value: "{{ nuovo_integrale | round(3) }}"
+        - action: input_number.set_value
+          target:
+            entity_id: input_number.panasonic_pid_errore_prec
+          data:
+            value: "{{ errore | round(3) }}"
+        - action: input_number.set_value
+          target:
+            entity_id: input_number.panasonic_pid_setpoint_mandata
+          data:
+            value: "{{ setpoint }}"
+        - if:
+            - condition: template
+              value_template: >
+                {{ states('sensor.inverter_uflex_pv_power') | float(0) > states('input_number.clima_soglia_solare_boost') | float(2500) }}
+          then:
+            - action: input_boolean.turn_on
+              target:
+                entity_id: input_boolean.clima_boost_solare_attivo
+          else:
+            - action: input_boolean.turn_off
+              target:
+                entity_id: input_boolean.clima_boost_solare_attivo
+        - action: mqtt.publish
+          data:
+            topic: "panasonic_heat_pump/commands/SetZ1CoolRequestTemperature"
+            payload: "{{ setpoint }}"
+
+#==================================================================================
+# 7b. CLIMA – FREE COOLING NATURALE – ATTIVAZIONE (isteresi 10 min)
+# Se il delta T_esterna-target e' sotto soglia, o sotto soglia+bonus con vento
+# medio 1h >= soglia_vento, il raffrescamento naturale e' sufficiente:
+# ammorbidisce il PID (setpoint piu' alto = pompa meno aggressiva, non spenta).
+# Il setpoint mandata piu' alto fa salire anche la temperatura acqua, per cui
+# i fancoil (che si accendono solo se acqua "efficace") smettono da soli di
+# partire, senza bisogno di toccarne la logica.
+#==================================================================================
+- id: clima_freecooling_attiva
+  alias: "Clima – Free Cooling Naturale – Attiva"
+  triggers:
+    - trigger: template
+      value_template: >
+        {% set t_ext = states('sensor.hp1000se_pro_pro_v1_6_4_outdoor_temperature') | float(25) %}
+        {% set target = states('input_number.maxtemp_giorno_estate_sala') | float(25) %}
+        {% set vento = states('sensor.wind_speed_media_1h') | float(0) %}
+        {% set base = states('input_number.clima_delta_naturale_base') | float(3) %}
+        {% set bonus = states('input_number.clima_delta_naturale_vento_bonus') | float(2) %}
+        {% set soglia_vento = states('input_number.clima_soglia_vento_naturale') | float(6) %}
+        {% set delta = t_ext - target %}
+        {{ delta < base or (delta < (base + bonus) and vento >= soglia_vento) }}
+      for: "00:10:00"
+  conditions:
+    - condition: template
+      value_template: >
+        {{ states('select.panasonic_heat_pump_main_operating_mode_state')
+           in ['Cool', 'Cool only'] }}
+    - condition: state
+      entity_id: input_boolean.clima_freecooling_attivo
+      state: "off"
+  actions:
+    - action: input_boolean.turn_on
+      target:
+        entity_id: input_boolean.clima_freecooling_attivo
+    - if:
+        - condition: state
+          entity_id: input_boolean.clima_freecooling_notifica_oggi
+          state: "off"
+      then:
+        - action: notify.mobile_app_cph2653
+          data:
+            title: "🌬️ Free cooling attivo"
+            message: >
+              Temperatura esterna {{ states('sensor.hp1000se_pro_pro_v1_6_4_outdoor_temperature') | round(1) }}°C,
+              vento medio {{ states('sensor.wind_speed_media_1h') | round(1) }} km/h.
+              Pompa ammorbidita, fancoil in pausa: il raffrescamento naturale basta.
+        - action: input_boolean.turn_on
+          target:
+            entity_id: input_boolean.clima_freecooling_notifica_oggi
+
+#==================================================================================
+# 7c. CLIMA – FREE COOLING NATURALE – DISATTIVAZIONE (isteresi 10 min)
+#==================================================================================
+- id: clima_freecooling_disattiva
+  alias: "Clima – Free Cooling Naturale – Disattiva"
+  triggers:
+    - trigger: template
+      value_template: >
+        {% set t_ext = states('sensor.hp1000se_pro_pro_v1_6_4_outdoor_temperature') | float(25) %}
+        {% set target = states('input_number.maxtemp_giorno_estate_sala') | float(25) %}
+        {% set vento = states('sensor.wind_speed_media_1h') | float(0) %}
+        {% set base = states('input_number.clima_delta_naturale_base') | float(3) %}
+        {% set bonus = states('input_number.clima_delta_naturale_vento_bonus') | float(2) %}
+        {% set soglia_vento = states('input_number.clima_soglia_vento_naturale') | float(6) %}
+        {% set delta = t_ext - target %}
+        {{ not (delta < base or (delta < (base + bonus) and vento >= soglia_vento)) }}
+      for: "00:10:00"
+  conditions:
+    - condition: state
+      entity_id: input_boolean.clima_freecooling_attivo
+      state: "on"
+  actions:
+    - action: input_boolean.turn_off
+      target:
+        entity_id: input_boolean.clima_freecooling_attivo
+
+#==================================================================================
+# 8. PANASONIC - CLIMA – PRE-RAFFRESCAMENTO DA PREVISIONI METEO
+#==================================================================================
+- id: clima_preraffrescamento_meteo
+  alias: "Clima – Pre-raffrescamento Meteo"
+  description: "Anticipa raffrescamento se previsto caldo nelle prossime ore"
+  triggers:
+    - trigger: time
+      at: "07:30:00"
+    - trigger: time
+      at: "10:00:00"
+  conditions:
+    - condition: state
+      entity_id: switch.panasonic_heat_pump_main_heatpump_state
+      state: "on"
+    - condition: template
+      value_template: >
+        {{ states('select.panasonic_heat_pump_main_operating_mode_state')
+           in ['Cool', 'Cool only'] }}
+    - condition: template
+      value_template: >
+        {% set t_prev = state_attr('weather.casa', 'forecast') %}
+        {% if t_prev and t_prev | length > 0 %}
+          {{ t_prev[0].temperature | float(0) > 30 }}
+        {% else %}
+          false
+        {% endif %}
+  actions:
+    - action: input_boolean.turn_on
+      target:
+        entity_id: input_boolean.clima_preraffrescamento_attivo
+    - action: input_number.set_value
+      target:
+        entity_id: input_number.clima_target_comfort
+      data:
+        value: >
+          {{ (states('input_number.clima_target_comfort') | float(25) - 1) | round(1) }}
+    - delay: "02:00:00"
+    - action: input_boolean.turn_off
+      target:
+        entity_id: input_boolean.clima_preraffrescamento_attivo
+    - action: input_number.set_value
+      target:
+        entity_id: input_number.clima_target_comfort
+      data:
+        value: 25
+
+#==================================================================================
+# 9. PANASONIC - CLIMA – COMMUTAZIONE STAGIONALE AUTOMATICA
+#==================================================================================
+- id: clima_commutazione_stagionale
+  alias: "Clima – Commutazione Stagionale"
+  description: "Passa automaticamente estate/inverno basandosi su media 7gg"
+  triggers:
+    - trigger: time
+      at: "06:00:00"
+  actions:
+    - choose:
+        - conditions:
+            - condition: template
+              value_template: >
+                {{ states('input_number.clima_media_esterna_7gg') | float(15) < 
+                   states('input_number.clima_soglia_inverno') | float(13) }}
+            - condition: template
+              value_template: >
+                {{ states('select.panasonic_heat_pump_main_operating_mode_state')
+                   in ['Cool', 'Cool only'] }}
+          sequence:
+            - action: notify.mobile_app_cph2653
+              data:
+                title: "🌡️ Cambio Stagione"
+                message: >
+                  Media 7gg: {{ states('input_number.clima_media_esterna_7gg') | round(1) }}°C.
+                  Passaggio a modalità INVERNO. Panasonic cooling disattivato.
+            - action: input_select.select_option
+              target:
+                entity_id: input_select.clima_stagione
+              data:
+                option: "inverno"
+            - action: switch.turn_off
+              target:
+                entity_id: switch.panasonic_heat_pump_main_heatpump_state
+        - conditions:
+            - condition: template
+              value_template: >
+                {{ states('input_number.clima_media_esterna_7gg') | float(15) > 16 }}
+            - condition: template
+              value_template: >
+                {{ states('select.panasonic_heat_pump_main_operating_mode_state')
+                   not in ['Cool', 'Cool only'] }}
+          sequence:
+            - action: notify.mobile_app_cph2653
+              data:
+                title: "☀️ Cambio Stagione"
+                message: >
+                  Media 7gg: {{ states('input_number.clima_media_esterna_7gg') | round(1) }}°C.
+                  Passaggio a modalità ESTATE. Panasonic cooling disponibile.
+            - action: input_select.select_option
+              target:
+                entity_id: input_select.clima_stagione
+              data:
+                option: "estate"
+
+#==================================================================================
+# 10. PANASONIC - PID – RESET INTEGRALE PID
+#==================================================================================
+- id: clima_reset_pid
+  alias: "Clima – Reset PID (Cool + Heat)"
+  description: "Azzera stato PID cooling e heating quando sistema si ferma o cambia"
+  triggers:
+    - trigger: state
+      entity_id: switch.panasonic_heat_pump_main_heatpump_state
+      to: "off"
+    - trigger: state
+      entity_id: select.panasonic_heat_pump_main_operating_mode_state
+      from: "Cool"
+    - trigger: state
+      entity_id: select.panasonic_heat_pump_main_operating_mode_state
+      from: "Cool only"
+    - trigger: state
+      entity_id: select.panasonic_heat_pump_main_operating_mode_state
+      from: "Heat"
+    - trigger: state
+      entity_id: select.panasonic_heat_pump_main_operating_mode_state
+      from: "Heat only"
+    - trigger: state
+      entity_id: input_select.clima_modalita
+      to: "manuale"
+  actions:
+    - action: input_number.set_value
+      target:
+        entity_id: input_number.panasonic_pid_integrale
+      data:
+        value: 0
+    - action: input_number.set_value
+      target:
+        entity_id: input_number.panasonic_pid_errore_prec
+      data:
+        value: 0
+    - action: input_number.set_value
+      target:
+        entity_id: input_number.panasonic_pid_heat_integrale
+      data:
+        value: 0
+    - action: input_number.set_value
+      target:
+        entity_id: input_number.panasonic_pid_heat_errore_prec
+      data:
+        value: 0
+
+#==================================================================================
+# 11. PANASONIC - PID – AUTOTUNING PID (METODO RELAY)
+#==================================================================================
+- id: clima_autotune_pid
+  alias: "Clima – Autotuning PID"
+  description: "Calcola Kp/Ki/Kd ottimali con metodo relay (Ziegler-Nichols)"
+  mode: single
+  triggers:
+    - trigger: state
+      entity_id: input_boolean.clima_autotune_attivo
+      to: "on"
+  conditions:
+    - condition: state
+      entity_id: switch.panasonic_heat_pump_main_heatpump_state
+      state: "on"
+    - condition: template
+      value_template: >
+        {{ states('select.panasonic_heat_pump_main_operating_mode_state')
+           in ['Cool', 'Cool only'] }}
+  actions:
+    - action: notify.mobile_app_cph2653
+      data:
+        title: "🔧 Autotuning PID Avviato"
+        message: "Misurazione risposta sistema. Durata ~2 ore. Non modificare setpoint."
+    - variables:
+        t_iniziale: "{{ states('sensor.hp1000se_pro_pro_v1_6_4_indoor_temperature') | float(25) }}"
+    - action: mqtt.publish
+      data:
+        topic: "panasonic_heat_pump/commands/SetZ1CoolRequestTemperature"
+        payload: "10"
+    - delay: "01:00:00"
+    - variables:
+        t_minima: "{{ states('sensor.hp1000se_pro_pro_v1_6_4_indoor_temperature') | float(25) }}"
+    - action: mqtt.publish
+      data:
+        topic: "panasonic_heat_pump/commands/SetZ1CoolRequestTemperature"
+        payload: "18"
+    - delay: "01:00:00"
+    - variables:
+        t_massima: "{{ states('sensor.hp1000se_pro_pro_v1_6_4_indoor_temperature') | float(25) }}"
+        ampiezza: "{{ ((t_massima - t_minima) | abs) / 2 }}"
+        ku: >
+          {% if ampiezza > 0 %}
+            {{ (4 * 4) / (3.14159 * ampiezza) | round(3) }}
+          {% else %}
+            2.0
+          {% endif %}
+        tu: 120
+        kp_new: "{{ (0.6 * ku) | round(3) }}"
+        ki_new: "{{ (1.2 * ku / tu) | round(4) }}"
+        kd_new: "{{ (0.075 * ku * tu) | round(3) }}"
+    - action: input_number.set_value
+      target:
+        entity_id: input_number.panasonic_pid_kp
+      data:
+        value: "{{ kp_new }}"
+    - action: input_number.set_value
+      target:
+        entity_id: input_number.panasonic_pid_ki
+      data:
+        value: "{{ ki_new }}"
+    - action: input_number.set_value
+      target:
+        entity_id: input_number.panasonic_pid_kd
+      data:
+        value: "{{ kd_new }}"
+    - action: input_boolean.turn_off
+      target:
+        entity_id: input_boolean.clima_autotune_attivo
+    - action: notify.mobile_app_cph2653
+      data:
+        title: "✅ Autotuning Completato"
+        message: >
+          Kp={{ kp_new }}, Ki={{ ki_new }}, Kd={{ kd_new }}.
+          Parametri applicati automaticamente.
+
+#==================================================================================
+# 12. PANASONIC – SINCRONIZZA TARGET MANDATA MANUALE
+#==================================================================================
+- id: panasonic_sync_target_mandata
+  alias: "Panasonic – Sincronizza Target Mandata"
+  description: "Mantiene input_number allineato al target mandata attuale della pompa"
+  triggers:
+    - trigger: state
+      entity_id: sensor.panasonic_heat_pump_main_main_target_temp
+    - trigger: homeassistant
+      event: start
+  conditions:
+    - condition: template
+      value_template: >
+        {{ states('sensor.panasonic_heat_pump_main_main_target_temp') not in ['unknown', 'unavailable'] }}
+  actions:
+    - action: input_number.set_value
+      target:
+        entity_id: input_number.panasonic_target_mandata_manuale
+      data:
+        value: "{{ states('sensor.panasonic_heat_pump_main_main_target_temp') | float(12) | round(0) | int }}"
+
+#==================================================================================
+# 13. PANASONIC - PID RISCALDAMENTO DUAL-ZONE
+#==================================================================================
+- id: panasonic_pid_heating_completo
+  alias: "Panasonic - PID Heating Dual-Zone"
+  description: >
+    Giorno: sala vs mintemp_giorno_inverno_sala.
+    Notte: camera vs mintemp_notte_inverno_letto.
+    Isteresi 0.5C, topic SetZ1HeatRequestTemperature.
+  triggers:
+    - trigger: time_pattern
+      minutes: "/5"
+  conditions:
+    - condition: template
+      value_template: >
+        {{ states('select.panasonic_heat_pump_main_operating_mode_state')
+           in ['Heat', 'Heat only'] }}
+    - condition: not
+      conditions:
+        - condition: state
+          entity_id: input_select.clima_modalita
+          state: "manuale"
+        - condition: state
+          entity_id: input_select.clima_modalita
+          state: "assenza"
+  actions:
+    - variables:
+        mod: "{{ states('input_select.clima_modalita') }}"
+        t_attivo: >
+          {% if mod == 'notte' %}
+            {{ states('sensor.sonoff_10008d119d_temperature') | float(20) }}
+          {% else %}
+            {{ states('sensor.hp1000se_pro_pro_v1_6_4_indoor_temperature') | float(20) }}
+          {% endif %}
+        target: >
+          {% if mod == 'notte' %}
+            {{ states('input_number.mintemp_notte_inverno_letto') | float(22) }}
+          {% else %}
+            {{ states('input_number.mintemp_giorno_inverno_sala') | float(22) }}
+          {% endif %}
+        pompa_accesa: "{{ is_state('switch.panasonic_heat_pump_main_heatpump_state', 'on') }}"
+        kp: "{{ states('input_number.panasonic_pid_kp') | float(2.0) }}"
+        ki: "{{ states('input_number.panasonic_pid_ki') | float(0.05) }}"
+        kd: "{{ states('input_number.panasonic_pid_kd') | float(1.0) }}"
+        integrale_prec: "{{ states('input_number.panasonic_pid_heat_integrale') | float(0) }}"
+        errore_prec: "{{ states('input_number.panasonic_pid_heat_errore_prec') | float(0) }}"
+        errore: "{{ target - t_attivo }}"
+        dt: 5
+        nuovo_integrale: >
+          {{ [[integrale_prec + errore * dt / 60, -8] | max, 8] | min }}
+        derivativo: "{{ (errore - errore_prec) / (dt / 60) }}"
+        freeheating_on: "{{ is_state('input_boolean.clima_freeheating_attivo', 'on') }}"
+        freeheating_offset: >
+          {{ states('input_number.clima_freeheating_setpoint_offset') | float(5) if freeheating_on else 0 }}
+        setpoint_min: >
+          {{ states('input_number.clima_freeheating_setpoint_min') | float(20) if freeheating_on else 25 }}
+        setpoint_raw: >
+          {% set fh = states('input_number.clima_freeheating_setpoint_offset') | float(5) if freeheating_on else 0 %}
+          {{ 35 + (errore * kp) + (nuovo_integrale * ki) + (derivativo * kd) - fh }}
+        setpoint: >
+          {% set smin = states('input_number.clima_freeheating_setpoint_min') | float(20) if freeheating_on else 25 %}
+          {{ [[setpoint_raw, smin] | max, 55] | min | round(0) | int }}
+    - choose:
+        - conditions:
+            - condition: template
+              value_template: "{{ t_attivo >= target and pompa_accesa }}"
+          sequence:
+            - action: switch.turn_off
+              target:
+                entity_id: switch.panasonic_heat_pump_main_heatpump_state
+        - conditions:
+            - condition: template
+              value_template: "{{ t_attivo < (target - 0.5) }}"
+          sequence:
+            - if:
+                - condition: template
+                  value_template: "{{ not pompa_accesa }}"
+              then:
+                - action: switch.turn_on
+                  target:
+                    entity_id: switch.panasonic_heat_pump_main_heatpump_state
+                - delay: "00:00:30"
+            - action: input_number.set_value
+              target:
+                entity_id: input_number.panasonic_pid_heat_integrale
+              data:
+                value: "{{ nuovo_integrale | round(3) }}"
+            - action: input_number.set_value
+              target:
+                entity_id: input_number.panasonic_pid_heat_errore_prec
+              data:
+                value: "{{ errore | round(3) }}"
+            - action: input_number.set_value
+              target:
+                entity_id: input_number.panasonic_pid_setpoint_heat
+              data:
+                value: "{{ setpoint }}"
+            - action: mqtt.publish
+              data:
+                topic: "panasonic_heat_pump/commands/SetZ1HeatRequestTemperature"
+                payload: "{{ setpoint }}"
+
+#==================================================================================
+# 13b. CLIMA – FREE HEATING NATURALE – ATTIVAZIONE (isteresi 10 min)
+# Speculare al free cooling estivo, ma SOLO in temperatura: il vento in
+# inverno peggiora la dispersione, quindi non viene considerato.
+#==================================================================================
+- id: clima_freeheating_attiva
+  alias: "Clima – Free Heating Naturale – Attiva"
+  triggers:
+    - trigger: template
+      value_template: >
+        {% set t_ext = states('sensor.hp1000se_pro_pro_v1_6_4_outdoor_temperature') | float(15) %}
+        {% set target = states('input_number.mintemp_giorno_inverno_sala') | float(22) %}
+        {% set base = states('input_number.clima_delta_naturale_base') | float(3) %}
+        {{ (target - t_ext) < base }}
+      for: "00:10:00"
+  conditions:
+    - condition: template
+      value_template: >
+        {{ states('select.panasonic_heat_pump_main_operating_mode_state')
+           in ['Heat', 'Heat only'] }}
+    - condition: state
+      entity_id: input_boolean.clima_freeheating_attivo
+      state: "off"
+  actions:
+    - action: input_boolean.turn_on
+      target:
+        entity_id: input_boolean.clima_freeheating_attivo
+    - if:
+        - condition: state
+          entity_id: input_boolean.clima_freeheating_notifica_oggi
+          state: "off"
+      then:
+        - action: notify.mobile_app_cph2653
+          data:
+            title: "☀️ Free heating attivo"
+            message: >
+              Temperatura esterna {{ states('sensor.hp1000se_pro_pro_v1_6_4_outdoor_temperature') | round(1) }}°C,
+              vicina al target. Pompa ammorbidita: il riscaldamento naturale/passivo basta.
+        - action: input_boolean.turn_on
+          target:
+            entity_id: input_boolean.clima_freeheating_notifica_oggi
+
+#==================================================================================
+# 13c. CLIMA – FREE HEATING NATURALE – DISATTIVAZIONE (isteresi 10 min)
+#==================================================================================
+- id: clima_freeheating_disattiva
+  alias: "Clima – Free Heating Naturale – Disattiva"
+  triggers:
+    - trigger: template
+      value_template: >
+        {% set t_ext = states('sensor.hp1000se_pro_pro_v1_6_4_outdoor_temperature') | float(15) %}
+        {% set target = states('input_number.mintemp_giorno_inverno_sala') | float(22) %}
+        {% set base = states('input_number.clima_delta_naturale_base') | float(3) %}
+        {{ not ((target - t_ext) < base) }}
+      for: "00:10:00"
+  conditions:
+    - condition: state
+      entity_id: input_boolean.clima_freeheating_attivo
+      state: "on"
+  actions:
+    - action: input_boolean.turn_off
+      target:
+        entity_id: input_boolean.clima_freeheating_attivo
+
+#==================================================================================
+# 13d. CLIMA – RESET NOTIFICHE FREE COOLING/HEATING A MEZZANOTTE
+#==================================================================================
+- id: clima_freecooling_freeheating_reset_notifica
+  alias: "Clima – Reset Notifiche Free Cooling/Heating (mezzanotte)"
+  triggers:
+    - trigger: time
+      at: "00:00:00"
+  actions:
+    - action: input_boolean.turn_off
+      target:
+        entity_id:
+          - input_boolean.clima_freecooling_notifica_oggi
+          - input_boolean.clima_freeheating_notifica_oggi
+
+#==================================================================================
+# 14. PANASONIC - ANTIGELO VACANZE INVERNO
+#==================================================================================
+- id: panasonic_antigelo_vacanze
+  alias: "Panasonic - Antigelo Vacanze Inverno"
+  triggers:
+    - trigger: time_pattern
+      minutes: "/30"
+  conditions:
+    - condition: state
+      entity_id: input_select.clima_modalita
+      state: "assenza"
+    - condition: template
+      value_template: >
+        {{ states('select.panasonic_heat_pump_main_operating_mode_state')
+           in ['Heat', 'Heat only'] }}
+  actions:
+    - variables:
+        t_sala: "{{ states('sensor.hp1000se_pro_pro_v1_6_4_indoor_temperature') | float(20) }}"
+        soglia: "{{ states('input_number.clima_target_emergenza_antigelo') | float(15) }}"
+        pompa_accesa: "{{ is_state('switch.panasonic_heat_pump_main_heatpump_state', 'on') }}"
+    - choose:
+        - conditions:
+            - condition: template
+              value_template: "{{ t_sala < soglia and not pompa_accesa }}"
+          sequence:
+            - action: switch.turn_on
+              target:
+                entity_id: switch.panasonic_heat_pump_main_heatpump_state
+            - delay: "00:00:30"
+            - action: mqtt.publish
+              data:
+                topic: "panasonic_heat_pump/commands/SetZ1HeatRequestTemperature"
+                payload: "35"
+            - action: notify.mobile_app_cph2653
+              data:
+                title: "Antigelo attivato"
+                message: "Sala a {{ t_sala | round(1) }}C, sotto soglia {{ soglia }}C. Pompa accesa."
+        - conditions:
+            - condition: template
+              value_template: "{{ t_sala >= (soglia + 2) and pompa_accesa }}"
+          sequence:
+            - action: switch.turn_off
+              target:
+                entity_id: switch.panasonic_heat_pump_main_heatpump_state
+            - action: notify.mobile_app_cph2653
+              data:
+                title: "Antigelo disattivato"
+                message: "Sala risalita a {{ t_sala | round(1) }}C. Pompa spenta."
+
+#==================================================================================
+# 15. PANASONIC - RIACCENSIONE COOLING (ISTERESI)
+#==================================================================================
+- id: panasonic_cooling_riaccensione
+  alias: "Panasonic - Riaccensione Cooling (isteresi)"
+  mode: single
+  triggers:
+    - trigger: state
+      entity_id: sensor.hp1000se_pro_pro_v1_6_4_indoor_temperature
+    - trigger: state
+      entity_id: sensor.sonoff_10008d119d_temperature
+  conditions:
+    - condition: state
+      entity_id: switch.panasonic_heat_pump_main_heatpump_state
+      state: "off"
+    - condition: template
+      value_template: >
+        {{ states('select.panasonic_heat_pump_main_operating_mode_state')
+           in ['Cool', 'Cool only'] }}
+    - condition: not
+      conditions:
+        - condition: state
+          entity_id: input_select.clima_modalita
+          state: "manuale"
+        - condition: state
+          entity_id: input_select.clima_modalita
+          state: "assenza"
+    - condition: template
+      value_template: >
+        {% set mod = states('input_select.clima_modalita') %}
+        {% if mod == 'notte' %}
+          {% set t = states('sensor.sonoff_10008d119d_temperature') | float(25) %}
+          {% set target = states('input_number.maxtemp_notte_estate_letto') | float(25) %}
+        {% else %}
+          {% set t = states('sensor.hp1000se_pro_pro_v1_6_4_indoor_temperature') | float(25) %}
+          {% set target = states('input_number.maxtemp_giorno_estate_sala') | float(25) %}
+        {% endif %}
+        {{ t > (target + 0.5) }}
+  actions:
+    - action: switch.turn_on
+      target:
+        entity_id: switch.panasonic_heat_pump_main_heatpump_state
+
+#==================================================================================
+# 16. CLIMA - SINCRONIZZA SAT CON TARGET SALA INVERNO
+#==================================================================================
+- id: clima_sync_sat_target
+  alias: "Clima – Sincronizza SAT con Target Sala Inverno"
+  description: >
+    Aggiorna il setpoint SAT ogni volta che cambia il target sala inverno
+    o la modalita giorno/notte. Solo in inverno.
+  triggers:
+    - trigger: state
+      entity_id: input_number.mintemp_giorno_inverno_sala
+    - trigger: state
+      entity_id: input_number.mintemp_notte_inverno_sala
+    - trigger: state
+      entity_id: input_select.clima_modalita
+    - trigger: state
+      entity_id: input_select.clima_stagione
+  conditions:
+    - condition: state
+      entity_id: input_select.clima_stagione
+      state: "inverno"
+    - condition: state
+      entity_id: climate.smart_autotune_thermostat_living_room
+      state: "heat"
+  actions:
+    - variables:
+        target_sala: >
+          {% if states('input_select.clima_modalita') == 'notte' %}
+            {{ states('input_number.mintemp_notte_inverno_sala') | float(20) }}
+          {% else %}
+            {{ states('input_number.mintemp_giorno_inverno_sala') | float(22) }}
+          {% endif %}
+    - action: climate.set_temperature
+      target:
+        entity_id: climate.smart_autotune_thermostat_living_room
+      data:
+        temperature: "{{ target_sala }}"
+
+#==================================================================================
+# 17. CALDAIA - OTGW – NOTIFICA FAULT CALDAIA
+#==================================================================================
+- id: notify_otgw_fault_caldaia
+  alias: "OTGW - Notifica fault caldaia"
+  description: "Notifica una sola volta se fault caldaia persiste per 10 minuti"
+  triggers:
+    - trigger: state
+      entity_id: binary_sensor.opentherm_gateway_otgw_otgw_fault
+      to: "on"
+      for:
+        minutes: 10
+  conditions:
+    - condition: not
+      conditions:
+        - condition: state
+          entity_id: sensor.opentherm_gateway_otgw_otgw_oemfaultcode
+          state: "unknown"
+        - condition: state
+          entity_id: sensor.opentherm_gateway_otgw_otgw_oemfaultcode
+          state: "unavailable"
+    - condition: state
+      entity_id: input_boolean.caldaia_fault_notificato
+      state: "off"
+  actions:
+    - action: input_boolean.turn_on
+      target:
+        entity_id: input_boolean.caldaia_fault_notificato
+    - action: notify.mobile_app_cph2653
+      data:
+        title: "⚠️ Fault Caldaia"
+        message: >
+          La caldaia Baxi riporta un fault da oltre 10 minuti.
+          Codice fault: {{ states('sensor.opentherm_gateway_otgw_otgw_application_specific_fault') }}
+          Codice OEM: {{ states('sensor.opentherm_gateway_otgw_otgw_oemfaultcode') }}
+
+- id: reset_otgw_fault_notificato
+  alias: "OTGW - Reset flag fault notificato"
+  description: "Resetta il flag quando il fault sparisce"
+  triggers:
+    - trigger: state
+      entity_id: binary_sensor.opentherm_gateway_otgw_otgw_fault
+      to: "off"
+  actions:
+    - action: input_boolean.turn_off
+      target:
+        entity_id: input_boolean.caldaia_fault_notificato
+
+#==================================================================================
+# 18. ACLDAIA - OTGW – NOTIFICA CALDAIA DISCONNESSA
+#==================================================================================
+- id: notify_otgw_offline
+  alias: "OTGW - Notifica caldaia disconnessa"
+  description: "Notifica se la caldaia risulta disconnessa per 10 minuti"
+  triggers:
+    - trigger: state
+      entity_id: binary_sensor.opentherm_gateway_otgw_otgw_boiler_connected
+      to: "off"
+      for:
+        minutes: 10
+  actions:
+    - action: notify.mobile_app_cph2653
+      data:
+        title: "🔌 OTGW - Caldaia disconnessa"
+        message: "La caldaia non risulta connessa all'OTGW da oltre 10 minuti."
+
+#==================================================================================
+# 19. ACLDAIA - OTGW – NOTIFICA HEAP BASSO
+#==================================================================================
+- id: notify_otgw_heap_low
+  alias: "OTGW - Notifica heap basso"
+  description: "Notifica se heap libero scende sotto 8000 bytes per 10 minuti"
+  triggers:
+    - trigger: numeric_state
+      entity_id: sensor.opentherm_gateway_otgw_stats_free_heap
+      below: 8000
+      for:
+        minutes: 10
+  actions:
+    - action: notify.mobile_app_cph2653
+      data:
+        title: "🧠 OTGW - Memoria bassa"
+        message: >
+          Heap libero OTGW sotto soglia da oltre 10 minuti.
+          Heap libero: {{ states('sensor.opentherm_gateway_otgw_stats_free_heap') }} B
+          Frammentazione: {{ states('sensor.opentherm_gateway_otgw_stats_fragmentation') }}%
+          Rischio riavvio imminente.
+
+#==================================================================================
+# 20. CALDAIA - OTGW – NOTIFICA RIAVVIO IMPREVISTO
+#==================================================================================
+- id: notify_otgw_reboot
+  alias: "OTGW - Notifica riavvio imprevisto"
+  description: "Notifica solo se il contatore riavvii aumenta realmente"
+  triggers:
+    - trigger: state
+      entity_id: sensor.opentherm_gateway_otgw_reboot_count
+  conditions:
+    - condition: template
+      value_template: >
+        {{ trigger.from_state.state | int(-1) >= 0
+           and trigger.to_state.state | int(-1) >= 0
+           and trigger.to_state.state | int(0) > trigger.from_state.state | int(0) }}
+  actions:
+    - action: notify.mobile_app_cph2653
+      data:
+        title: "🔄 OTGW - Riavvio rilevato"
+        message: >
+          L'OTGW si è riavviato.
+          Causa: {{ states('sensor.opentherm_gateway_otgw_reboot_reason') }}
+          Totale riavvii: {{ states('sensor.opentherm_gateway_otgw_reboot_count') }}
+
+
+#==================================================================================
+# 21. CALDAIA - OTGW - DHW OVERRIDE ON ALL'AVVIO DI HA
+#==================================================================================
+- id: otgw_dhw_override_on_avvio
+  alias: "OTGW - DHW Override ON all'avvio"
+  mode: single
+  triggers:
+    - platform: homeassistant
+      event: start
+  action:
+    - delay: "00:00:30"
+    - action: mqtt.publish
+      data:
+        topic: "OTGW/set/otgw-84CCA8ADE1AD/command"
+        payload: "HW=1"
+
+#==================================================================================
+# 22. CALDAIA - OTGW - DHW SETPOINT da slider
+#==================================================================================
+- id: otgw_dhw_setpoint_cambio
+  alias: "OTGW - DHW Setpoint da slider"
+  mode: single
+  triggers:
+    - platform: state
+      entity_id: input_number.caldaia_dhw_setpoint
+  action:
+    - action: mqtt.publish
+      data:
+        topic: "OTGW/set/otgw-84CCA8ADE1AD/command"
+        payload: "SW={{ states('input_number.caldaia_dhw_setpoint') | float }}"
+
+#==================================================================================
+# 23. CALDAIA - Accumula consumo gas ogni minuto
+#
+# Formula basata su dati ufficiali Baxi (manuale 7710414, sez. 22, mod. 24 GA):
+#   Qmin (G20) = 0,37 m³/h  (portata termica ridotta 3,5 kW)
+#   Qmax (G20) = 2,61 m³/h  (portata termica nominale sanitario 24,7 kW)
+#   Qmax riscaldamento = 2,61 × 20,6/24,7 = 2,177 m³/h (nominale risc. 20,6 kW)
+# La modulazione relativa OpenTherm (ID 17) è la % tra livello MINIMO e MASSIMO:
+#   0% = caldaia al minimo (0,37 m³/h), NON a zero. Si accumula quindi ogni
+#   minuto con fiamma ON, anche a modulazione 0%.
+#   consumo m³/h = Qmin + (Qmax − Qmin) × mod/100
+#   Qmax scelto in base alla modalità: DHW attivo → 2,61 / riscaldamento → 2,177
+#==================================================================================
+- id: caldaia_accumula_gas
+  alias: "Caldaia - Accumula consumo gas"
+  mode: single
+  triggers:
+    - platform: time_pattern
+      minutes: "/1"
+  action:
+    - variables:
+        fiamma: "{{ is_state('binary_sensor.opentherm_gateway_otgw_otgw_flame', 'on') }}"
+        dhw: "{{ is_state('binary_sensor.opentherm_gateway_otgw_otgw_domestic_hot_water', 'on') }}"
+        mod: "{{ states('sensor.opentherm_gateway_otgw_otgw_relative_modulation_level') | float(0) }}"
+        precedente: "{{ states('input_number.caldaia_gas_totale_acc') | float(0) }}"
+        q_min: 0.37
+        q_max: "{{ 2.61 if dhw else 2.177 }}"
+    - if:
+        - condition: template
+          value_template: "{{ fiamma }}"
+      then:
+        - action: input_number.set_value
+          target:
+            entity_id: input_number.caldaia_gas_totale_acc
+          data:
+            value: "{{ (precedente + (q_min + (q_max - q_min) * (mod / 100)) / 60) | round(4) }}"
+
+#==================================================================================
+# 24. CALDAIA - Accumula minuti DHW acqua sanitaria
+#
+# Logica:
+#   - Riscaldamento OFF → ogni minuto in cui binary_sensor.opentherm_gateway_otgw_otgw_domestic_hot_water
+#     è ON viene conteggiato come minuto di produzione acqua sanitaria.
+#     Il valore si accumula in input_number.caldaia_dhw_durata_acc.
+#   - Riscaldamento ON → il sensore sensor.caldaia_dhw_durata_oggi_minuti restituisce
+#     direttamente il valore fisso input_number.caldaia_dhw_durata_invernale (default 3 min),
+#     quindi questa automazione non deve accumulare nulla in inverno.
+#==================================================================================
+- id: caldaia_dhw_accumula_minuti
+  alias: "Caldaia - Accumula minuti DHW (solo riscaldamento spento)"
+  mode: single
+  triggers:
+    - platform: time_pattern
+      minutes: "/1"
+  condition:
+    # Solo quando il riscaldamento è spento (estate / sanitaria pura)
+    - condition: state
+      entity_id: climate.smart_autotune_thermostat_living_room
+      state: "off"
+    # Il sensore DHW indica produzione acqua calda sanitaria
+    - condition: state
+      entity_id: binary_sensor.opentherm_gateway_otgw_otgw_domestic_hot_water
+      state: "on"
+    # OBBLIGATORIO: fiamma reale accesa.
+    # Filtra i falsi positivi del bug firmware OTGW v1.4.1 che fa lampeggiare
+    # il bit DHW ON durante i reboot (~30s ogni ciclo) anche con gas spento.
+    - condition: state
+      entity_id: binary_sensor.opentherm_gateway_otgw_otgw_flame
+      state: "on"
+  action:
+    - action: input_number.set_value
+      target:
+        entity_id: input_number.caldaia_dhw_durata_acc
+      data:
+        value: >
+          {{ (states('input_number.caldaia_dhw_durata_acc') | float(0) + 1) | round(0) }}
+
+#==================================================================================
+# 25. CALDAIA - SAT - RISCALDAMENTO - Rientro vacanza 
+#==================================================================================
+- id: riscaldamento_rientro_vacanza
+  alias: "Riscaldamento rientro vacanza"
+  description: >
+    Alle 15:00 del giorno di fine vacanza, accende tutto.
+  trigger:
+    - platform: time
+      at: "15:00:00"
+  condition:
+    - condition: template
+      value_template: >
+        {% set cal = 'calendar.aagorine_gmail_com' %}
+        {% set title = state_attr(cal, 'message') | default('') %}
+        {% set desc = state_attr(cal, 'description') | default('') %}
+        {% set end = state_attr(cal, 'end_time') %}
+        
+        {% if end %}
+          {% set end_dt = strptime(end, '%Y-%m-%d %H:%M:%S') %}
+          {% set oggi = now().date() %}
+          
+          {# Oggi deve essere esattamente il giorno di fine evento #}
+          {% set è_giorno_di_rientro = (end_dt.date() == oggi) %}
+          
+          {# La parola chiave deve essere nel titolo o descrizione #}
+          {% set è_vacanza = 'vacanza' in (title ~ desc) | lower %}
+          
+          {{ è_giorno_di_rientro and è_vacanza }}
+        {% else %}
+          false
+        {% endif %}
+    - condition: numeric_state
+      entity_id: sensor.hp1000se_pro_pro_v1_6_4_outdoor_temperature
+      below: 17
+  action:
+    - action: climate.set_hvac_mode
+      target:
+        entity_id: climate.smart_autotune_thermostat_living_room
+      data:
+        hvac_mode: "heat"
+    - action: climate.set_preset_mode
+      target:
+        entity_id: climate.smart_autotune_thermostat_living_room
+      data:
+        preset_mode: "home"
+    - action: climate.set_temperature
+      target:
+        entity_id: climate.smart_autotune_thermostat_living_room
+      data:
+        temperature: 22
+    - action: mqtt.publish
+      data:
+        topic: "OTGW/set/otgw-84CCA8ADE1AD/command"
+        payload: "HW=1"
+    - action: input_select.select_option
+      target:
+        entity_id: input_select.clima_modalita
+      data:
+        option: "giorno"
+    - if:
+        - condition: state
+          entity_id: select.panasonic_heat_pump_main_operating_mode_state
+          state: "Heat"
+      then:
+        - action: switch.turn_on
+          target:
+            entity_id: switch.panasonic_heat_pump_main_heatpump_state
+        - action: notify.mobile_app_cph2653
+          data:
+            title: "Rientro vacanza"
+            message: "Caldaia e pompa di calore riaccese. Benvenuti a casa!"
+        
+#==================================================================================
+# 26. CALDAIA - SAT - RISCALDAMENTO - Spegnimento inizio vacanza 
+#==================================================================================
+- id: spegnimento_inizio_vacanza
+  alias: "Spegnimento riscaldamento inizio vacanza"
+  description: >
+    1 ora dopo l'inizio di un evento con 'Vacanza' nel titolo
+    (durato più di 1 giorno), spegne riscaldamento (away) e acqua sanitaria.
+    Il controllo sull'evento è nell'action (if/then) così il lancio manuale
+    funziona sempre; il filtro blocca solo trigger da eventi non-vacanza.
+  trigger:
+    - platform: calendar
+      event: start
+      offset: "01:00:00"
+      entity_id: calendar.aagorine_gmail_com
+  action:
+    - if:
+        - condition: template
+          value_template: >
+            {% set event = trigger.calendar_event | default(none) %}
+            {% if event is none or event is not mapping %}
+              true
+            {% else %}
+              {% set title = event.summary | default('') %}
+              {% set start_str = event.start | string %}
+              {% set end_str = event.end | string %}
+              {% if start_str not in ['None',''] and end_str not in ['None',''] %}
+                {% if 'T' in start_str %}
+                  {% set start_dt = strptime(start_str[:19], '%Y-%m-%dT%H:%M:%S') %}
+                  {% set end_dt   = strptime(end_str[:19],   '%Y-%m-%dT%H:%M:%S') %}
+                {% else %}
+                  {% set start_dt = strptime(start_str[:10], '%Y-%m-%d') %}
+                  {% set end_dt   = strptime(end_str[:10],   '%Y-%m-%d') %}
+                {% endif %}
+                {% set duration_days = ((end_dt - start_dt).total_seconds() / 86400) | round(1) %}
+                {{ duration_days > 1 and 'vacanza' in title | lower }}
+              {% else %}
+                false
+              {% endif %}
+            {% endif %}
+      then:
+        - action: climate.set_hvac_mode
+          target:
+            entity_id: climate.smart_autotune_thermostat_living_room
+          data:
+            hvac_mode: "off"
+        - action: climate.set_preset_mode
+          target:
+            entity_id: climate.smart_autotune_thermostat_living_room
+          data:
+            preset_mode: "away"
+        - action: mqtt.publish
+          data:
+            topic: "OTGW/set/otgw-84CCA8ADE1AD/command"
+            payload: "HW=0"
+        - action: input_select.select_option
+          target:
+            entity_id: input_select.clima_modalita
+          data:
+            option: "assenza"
+        - action: switch.turn_off
+          target:
+            entity_id: switch.panasonic_heat_pump_main_heatpump_state
+        # Spegni tutti i fancoil (camera + sala), sempre, anche se in gestione manuale
+        - action: switch.turn_off
+          target:
+            entity_id:
+              - switch.camerageorgi_shelly_fancoil_georgi
+              - switch.camerageorgi_shelly_fancoil_georgi_2
+              - switch.sala_fancoil_sala_shelly_1gen4
+        - action: notify.mobile_app_cph2653
+          data:
+            title: "✈️ Vacanza iniziata"
+            message: >
+              Riscaldamento away, acqua sanitaria spenta, pompa di calore spenta,
+              fancoil camera e sala spenti.
+              Evento: {{ state_attr('calendar.aagorine_gmail_com', 'message') }}
+              Buona vacanza!
+#==================================================================================
+# 27. CALDAIA - OTGW – PRESSIONE CIRCUITO CH FUORI RANGE
+#
+# Soglie: < 0.8 atm (pressione bassa) o > 1.5 atm (pressione alta)
+# Sensore: sensor.opentherm_gateway_otgw_otgw_water_pressure_in_ch_circuit
+# Notifica con valore attuale e tipo di anomalia
+#==================================================================================
+- id: otgw_pressione_ch_fuori_range
+  alias: "OTGW – Pressione circuito CH fuori range"
+  mode: restart
+  triggers:
+    - platform: numeric_state
+      entity_id: sensor.opentherm_gateway_otgw_otgw_water_pressure_in_ch_circuit
+      below: 0.8
+      for: "00:05:00"
+      id: pressione_bassa
+    - platform: numeric_state
+      entity_id: sensor.opentherm_gateway_otgw_otgw_water_pressure_in_ch_circuit
+      above: 1.5
+      for: "00:05:00"
+      id: pressione_alta
+  action:
+    - variables:
+        pressione: "{{ states('sensor.opentherm_gateway_otgw_otgw_water_pressure_in_ch_circuit') | float(0) | round(2) }}"
+        tipo: >-
+          {% if trigger.id == 'pressione_bassa' %}bassa{% else %}alta{% endif %}
+        emoji: >-
+          {% if trigger.id == 'pressione_bassa' %}🔽{% else %}🔼{% endif %}
+    - action: notify.mobile_app_cph2653
+      data:
+        title: "{{ emoji }} Pressione CH {{ tipo }}"
+        message: >-
+          Pressione circuito riscaldamento {{ tipo }}: {{ pressione }} atm
+          (fuori range da almeno 5 minuti).
+          {% if tipo == 'bassa' %}Soglia minima: 0.8 atm.{% else %}Soglia massima: 1.5 atm.{% endif %}
+        data:
+          priority: high
+          ttl: 0
+          persistent: "true"

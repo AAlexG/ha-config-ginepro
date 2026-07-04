@@ -1,0 +1,83 @@
+config:
+  views:
+  - sections:
+    - cards:
+      - heading: Sottotetto
+        heading_style: title
+        type: heading
+      - area: sottotetto
+        tap_action:
+          action: navigate
+          navigation_path: /home/areas-sottotetto
+        type: area
+      - heading: Piano entrata
+        heading_style: title
+        type: heading
+      - cards:
+        - area: soggiorno
+          tap_action:
+            action: navigate
+            navigation_path: /home/areas-soggiorno
+          type: area
+        - area: cucina
+          tap_action:
+            action: navigate
+            navigation_path: /home/areas-cucina
+          type: area
+        - area: terazza
+          tap_action:
+            action: navigate
+            navigation_path: /home/areas-terazza
+          type: area
+        - area: caldaia
+          tap_action:
+            action: navigate
+            navigation_path: /home/areas-caldaia
+          type: area
+        - area: giardino_sopra
+          tap_action:
+            action: navigate
+            navigation_path: /home/areas-giardino_sopra
+          type: area
+        columns: 3
+        square: false
+        type: grid
+      - heading: Piano giardino
+        heading_style: title
+        type: heading
+      - cards:
+        - area: camera_da_letto
+          tap_action:
+            action: navigate
+            navigation_path: /home/areas-camera_da_letto
+          type: area
+        - area: box
+          tap_action:
+            action: navigate
+            navigation_path: /home/areas-box
+          type: area
+        - area: cameranati
+          tap_action:
+            action: navigate
+            navigation_path: /home/areas-cameranati
+          type: area
+        - area: cameratania
+          tap_action:
+            action: navigate
+            navigation_path: /home/areas-cameratania
+          type: area
+        - area: fotovoltaico_scafale
+          tap_action:
+            action: navigate
+            navigation_path: /home/areas-fotovoltaico_scafale
+          type: area
+        - area: giardino_sotto
+          tap_action:
+            action: navigate
+            navigation_path: /home/areas-giardino_sotto
+          type: area
+        columns: 3
+        square: false
+        type: grid
+      type: grid
+    type: sections

@@ -1,0 +1,1484 @@
+config:
+  views:
+  - max_columns: 2
+    path: home
+    sections:
+    - cards:
+      - heading: APRI CANCELLI & ALARMI
+        heading_style: title
+        icon: mdi:security
+        type: heading
+      - grid_options:
+          columns: 2
+          rows: auto
+        icon: mdi:gate-arrow-right
+        name: Canc ello
+        show_icon: true
+        show_name: true
+        show_state: false
+        tap_action:
+          action: perform-action
+          perform_action: script.apri_cancello_casa
+        type: button
+      - grid_options:
+          columns: 2
+          rows: auto
+        icon: mdi:boom-gate-up
+        name: Moto
+        show_icon: true
+        show_name: true
+        show_state: false
+        tap_action:
+          action: perform-action
+          perform_action: button.press
+          target:
+            entity_id: button.10007c3b31_0
+        type: button
+      - grid_options:
+          columns: 2
+          rows: auto
+        icon: mdi:garage-open
+        name: Box
+        show_state: false
+        tap_action:
+          action: perform-action
+          perform_action: script.apri_box_combo
+        type: button
+      - grid_options:
+          columns: 3
+          rows: auto
+        icon: mdi:garage
+        name: Portone Box
+        show_state: false
+        tap_action:
+          action: perform-action
+          perform_action: button.press
+          target:
+            entity_id: button.portone_telecomando
+        type: button
+      - grid_options:
+          columns: 3
+          rows: auto
+        icon: mdi:gate
+        name: Grande Cancello
+        show_state: false
+        tap_action:
+          action: perform-action
+          perform_action: script.apri_grande_cancello
+        type: button
+      - entity: input_boolean.alarme_esterno
+        grid_options:
+          columns: 3
+          rows: 2
+        name: Allarme Esterno
+        show_state: true
+        type: button
+      - cards:
+        - icon: mdi:alarm-light
+          name: Sirena ON
+          tap_action:
+            action: perform-action
+            perform_action: script.sirena_on
+          type: button
+        - icon: mdi:alarm-light-off
+          name: Sirena OFF
+          tap_action:
+            action: perform-action
+            perform_action: script.sirena_off
+          type: button
+        - icon: mdi:volume-high
+          name: Speaker ON
+          show_icon: true
+          show_name: true
+          tap_action:
+            action: perform-action
+            perform_action: script.speaker_allarme
+          type: button
+        columns: 3
+        grid_options:
+          columns: 9
+          rows: 2
+        square: false
+        type: grid
+      - entity: binary_sensor.hp1000se_pro_pro_v1_6_4_leak_detection_4
+        features_position: bottom
+        type: tile
+        vertical: false
+      - grid_options:
+          columns: 3
+          rows: auto
+        icon: mdi:camera
+        icon_height: 20px
+        name: Sicu rezza
+        show_icon: true
+        show_name: true
+        show_state: false
+        tap_action:
+          action: navigate
+          navigation_path: /dashboard-sicurezza/sicurezza
+        type: button
+      - heading: SCORCIATOIE
+        heading_style: subtitle
+        icon: mdi:water
+        type: heading
+      - grid_options:
+          columns: 3
+          rows: auto
+        icon: mdi:solar-power-variant-outline
+        icon_height: 20px
+        name: Foto voltaico
+        show_icon: true
+        show_name: true
+        show_state: false
+        tap_action:
+          action: navigate
+          navigation_path: /dashboard-fotovoltaico/fotovoltaico
+        type: button
+      - grid_options:
+          columns: 3
+          rows: auto
+        icon: mdi:heat-pump
+        icon_height: 20px
+        name: Pompa
+        show_icon: true
+        show_name: true
+        show_state: false
+        tap_action:
+          action: navigate
+          navigation_path: /dashboard-panasonic/panasonic
+        type: button
+      - grid_options:
+          columns: 3
+          rows: auto
+        icon: mdi:thermostat-box
+        icon_height: 20px
+        name: Caldaia
+        show_icon: true
+        show_name: true
+        show_state: false
+        tap_action:
+          action: navigate
+          navigation_path: /otgw-caldaia/otgw
+        type: button
+      - grid_options:
+          columns: 3
+          rows: auto
+        icon: mdi:weather-partly-cloudy
+        icon_height: 20px
+        name: Fancoil Deum
+        show_icon: true
+        show_name: true
+        show_state: false
+        tap_action:
+          action: navigate
+          navigation_path: /dashboard-fancoil/fancoil
+        type: button
+      - grid_options:
+          columns: 3
+          rows: auto
+        icon: mdi:heat-pump
+        icon_height: 20px
+        name: Clima
+        show_icon: true
+        show_name: true
+        show_state: false
+        tap_action:
+          action: navigate
+          navigation_path: /dashboard-clima/clima
+        type: button
+      - grid_options:
+          columns: 3
+          rows: auto
+        icon: mdi:home
+        icon_height: 20px
+        name: Zone
+        show_icon: true
+        show_name: true
+        show_state: false
+        tap_action:
+          action: navigate
+          navigation_path: /zone-casa
+        type: button
+      - grid_options:
+          columns: 3
+          rows: auto
+        icon: mdi:file-table
+        icon_height: 20px
+        name: Consumi
+        show_icon: true
+        show_name: true
+        show_state: false
+        tap_action:
+          action: navigate
+          navigation_path: /dashboard-consumi/gas
+        type: button
+      - grid_options:
+          columns: 3
+          rows: auto
+        icon: mdi:weather-partly-cloudy
+        icon_height: 20px
+        name: Meteo
+        show_icon: true
+        show_name: true
+        show_state: false
+        tap_action:
+          action: navigate
+          navigation_path: /dashboard-meteo/meteo
+        type: button
+      - grid_options:
+          columns: 6
+          rows: auto
+        icon: mdi:solar-panel-large
+        icon_height: 20px
+        name: Panel Analytics
+        show_icon: true
+        show_name: true
+        show_state: false
+        tap_action:
+          action: perform-action
+          data:
+            data:
+              package_name: appinventor.ai_aagorine.PanelAnalytics
+            message: command_launch_app
+          perform_action: notify.mobile_app_cph2653
+        type: button
+      - entity: switch.shelly_box
+        features:
+        - type: toggle
+        features_position: bottom
+        grid_options:
+          columns: full
+          rows: auto
+        name: Accesso->pompa/Spento->caldaia
+        type: tile
+        vertical: false
+      - entity: switch.panasonic_heat_pump_main_heatpump_state
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        name: Pompa
+        tap_action:
+          action: none
+        type: tile
+        vertical: false
+      - grid_options:
+          columns: 6
+        icon: mdi:heat-pump
+        icon_height: 20px
+        name: Pompa ON/OFF
+        show_icon: true
+        show_name: true
+        show_state: false
+        tap_action:
+          action: perform-action
+          perform_action: script.panasonic_toggle
+        type: button
+      - entity: binary_sensor.panasonic_heat_pump_lwt
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        name: Pompa Online
+        type: tile
+        vertical: false
+      - entity: sensor.panasonic_heat_pump_main_main_outlet_temp
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        name: OUT Acqua
+        type: tile
+        vertical: false
+      - entity: binary_sensor.opentherm_gateway_otgw_otgw_flame
+        features_position: bottom
+        grid_options:
+          columns: 3
+          rows: 1
+        name: Caldaia Fiamma
+        type: tile
+        vertical: false
+      - card:
+          grid_options:
+            columns: 3
+            rows: 1
+          icon: mdi:radiator
+          name: Caldaia ON
+          tap_action:
+            action: perform-action
+            data:
+              hvac_mode: heat
+            perform_action: climate.set_hvac_mode
+            target:
+              entity_id: climate.smart_autotune_thermostat_living_room
+          type: button
+        conditions:
+        - condition: state
+          entity: climate.smart_autotune_thermostat_living_room
+          state: 'off'
+        grid_options:
+          columns: 3
+          rows: auto
+        type: conditional
+      - card:
+          grid_options:
+            columns: 3
+            rows: 1
+          icon: mdi:radiator-off
+          name: Caldaia OFF
+          tap_action:
+            action: perform-action
+            data:
+              hvac_mode: 'off'
+            perform_action: climate.set_hvac_mode
+            target:
+              entity_id: climate.smart_autotune_thermostat_living_room
+          type: button
+        conditions:
+        - condition: state
+          entity: climate.smart_autotune_thermostat_living_room
+          state: heat
+        grid_options:
+          columns: 3
+          rows: auto
+        type: conditional
+      - card:
+          grid_options:
+            columns: 3
+            rows: 1
+          icon: mdi:water-boiler-off
+          name: Sanitaria OFF
+          tap_action:
+            action: perform-action
+            perform_action: script.caldaia_dhw_off
+          type: button
+        conditions:
+        - condition: state
+          entity: input_boolean.caldaia_dhw_override
+          state: 'on'
+        grid_options:
+          columns: 3
+          rows: auto
+        type: conditional
+      - card:
+          grid_options:
+            columns: 3
+            rows: 1
+          icon: mdi:water-boiler
+          name: Sanitaria ON
+          tap_action:
+            action: perform-action
+            perform_action: script.caldaia_dhw_on
+          type: button
+        conditions:
+        - condition: state
+          entity: input_boolean.caldaia_dhw_override
+          state: 'off'
+        grid_options:
+          columns: 3
+          rows: auto
+        type: conditional
+      - entity: switch.solo_auto_contattore_interruttore
+        features:
+        - type: toggle
+        features_position: bottom
+        name: Auto contattore
+        type: tile
+        vertical: false
+      - color: blue
+        entity: sensor.irrigazione_attiva
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        name: Irrigazione
+        tap_action:
+          action: perform-action
+          perform_action: script.irrigazione_toggle_manuale
+        type: tile
+        vertical: false
+      type: grid
+    - cards:
+      - heading: MUSICA
+        heading_style: title
+        icon: mdi:music
+        type: heading
+      - entity: media_player.googlehome8851
+        features:
+        - step: 5
+          type: media-player-volume-buttons
+        features_position: bottom
+        grid_options:
+          rows: auto
+        name: Yamaha Volume
+        type: tile
+        vertical: false
+      - content: "{% set st = states('media_player.googlehome8851') %} {% set t =\
+          \ state_attr('media_player.googlehome8851', 'media_title') %} {% set a =\
+          \ state_attr('media_player.googlehome8851', 'media_artist') %} {% if t %}\U0001F3B5\
+          \ **{{ t }}**{% if a %}  \\n\U0001F464 {{ a }}{% endif %}{% elif st == 'playing'\
+          \ %}\U0001F426 _Canto degli uccelli_{% else %}\u23F9\uFE0F _Niente in riproduzione_{%\
+          \ endif %}"
+        grid_options:
+          columns: 6
+          rows: auto
+        type: markdown
+      - entity: media_player.salotto
+        features:
+        - step: 5
+          type: media-player-volume-buttons
+        features_position: bottom
+        grid_options:
+          rows: auto
+        name: Salotto Volume
+        type: tile
+        vertical: false
+      - grid_options:
+          columns: 3
+          rows: auto
+        icon: mdi:bird
+        icon_height: 20px
+        name: Uccelli
+        show_icon: true
+        show_name: true
+        show_state: false
+        tap_action:
+          action: perform-action
+          perform_action: script.riaggancia_yamaha
+        type: button
+      - grid_options:
+          columns: 3
+          rows: auto
+        icon: mdi:spotify
+        icon_height: 20px
+        name: Spotify
+        show_icon: true
+        show_name: true
+        show_state: false
+        tap_action:
+          action: perform-action
+          data:
+            data:
+              package_name: com.spotify.music
+            message: command_launch_app
+          perform_action: notify.mobile_app_cph2653
+        type: button
+      type: grid
+    - cards:
+      - heading: ELETTRICITA'
+        heading_style: title
+        icon: mdi:electron-framework
+        type: heading
+      - battery:
+          energy: 5120
+          show_daily: true
+          shutdown_soc: 1
+        card_height: 100%
+        card_width: 100%
+        cardstyle: lite
+        center_no_grid: false
+        decimal_places: 2
+        decimal_places_energy: 1
+        dynamic_line_width: true
+        entities:
+          battery_current_191: sensor.inverter_uflex_battery_current
+          battery_power_190: sensor.inverter_uflex_battery_power
+          battery_soc_184: sensor.inverter_uflex_battery
+          battery_voltage_183: sensor.inverter_uflex_battery_voltage
+          day_battery_charge_70: sensor.inverter_uflex_today_battery_charge
+          day_battery_discharge_71: sensor.inverter_uflex_today_battery_discharge
+          day_grid_export_77: sensor.inverter_uflex_today_energy_export
+          day_grid_import_76: sensor.inverter_uflex_today_energy_import
+          day_load_energy_84: sensor.inverter_uflex_today_load_consumption
+          day_pv_energy_108: sensor.inverter_uflex_today_production
+          essential_power: sensor.inverter_uflex_load_power
+          grid_ct_power_172: sensor.inverter_uflex_external_ct1_power
+          grid_power_169: sensor.inverter_uflex_external_power
+          inverter_status_59: sensor.inverter_uflex_device_state
+          inverter_voltage_154: sensor.inverter_uflex_grid_l1_voltage
+          load_frequency_192: sensor.inverter_uflex_grid_frequency
+          pv1_current_110: sensor.inverter_uflex_pv1_current
+          pv1_power_186: sensor.inverter_uflex_pv1_power
+          pv1_voltage_109: sensor.inverter_uflex_pv1_voltage
+          pv2_current_112: sensor.inverter_uflex_pv2_current
+          pv2_power_187: sensor.inverter_uflex_pv2_power
+          pv2_voltage_111: sensor.inverter_uflex_pv2_voltage
+          pv_total_power: sensor.inverter_uflex_pv_power
+        grid:
+          show_daily_buy: true
+          show_daily_sell: true
+          show_nonessential: true
+        inverter:
+          autarky: power
+          auto_scale: true
+          colour: '#9e9e9e'
+          model: sunsynk
+          modern: true
+          three_phase: false
+        large_font: false
+        load:
+          show_daily: true
+        max_line_width: 4
+        min_line_width: 1
+        show_battery: true
+        show_grid: true
+        show_solar: true
+        solar:
+          mppts: 2
+          show_daily: true
+        type: custom:sunsynk-power-flow-card
+        wide: false
+      - entity: sensor.sauna_energia_oggi
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        icon: mdi:spa-outline
+        name: Sauna oggi
+        type: tile
+        vertical: false
+      - entity: sensor.panasonic_consumata_oggi
+        features_position: bottom
+        grid_options:
+          columns: 3
+          rows: 1
+        name: Pompa Oggi
+        type: tile
+        vertical: false
+      - entity: sensor.auto_energia_oggi
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        icon: mdi:flash-auto
+        name: Auto oggi
+        type: tile
+        vertical: false
+      - entity: sensor.consumo_fancoil_totale_oggi
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        hide_state: false
+        name: Fancoil oggi
+        show_entity_picture: false
+        type: tile
+        vertical: false
+      - entity: sensor.consumo_deumidificatori_oggi
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: auto
+        name: Deumidif. oggi
+        type: tile
+        vertical: false
+      - entity: sensor.produzione_mese
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        icon: mdi:solar-power
+        name: Produz. mese
+        type: tile
+        vertical: false
+      - entity: sensor.elettricita_mese_kwh
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        icon: mdi:transmission-tower-import
+        name: Da rete mese
+        type: tile
+        vertical: false
+      - entity: sensor.a_rete_mese
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        icon: mdi:transmission-tower-export
+        name: A rete mese
+        type: tile
+        vertical: false
+      - entity: sensor.panasonic_consumata_mese
+        features_position: bottom
+        grid_options:
+          columns: 3
+          rows: 1
+        name: Pompa mese
+        type: tile
+        vertical: false
+      - entity: sensor.auto_energia_mese
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        icon: mdi:flash-auto
+        name: Auto mese
+        type: tile
+        vertical: false
+      - entity: input_number.pv_totale_euro
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        icon: mdi:piggy-bank
+        name: Risparmiato
+        type: tile
+        vertical: false
+      - entity: input_number.pv_recupero_pct
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        icon: mdi:percent
+        name: '% recupero'
+        type: tile
+        vertical: false
+      - entity: input_number.pv_gse_euro
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        icon: mdi:cash-multiple
+        name: Da GSE
+        type: tile
+        vertical: false
+      - grid_options:
+          columns: 3
+          rows: auto
+        icon: mdi:solar-power-variant-outline
+        icon_height: 20px
+        name: Foto voltaico
+        show_icon: true
+        show_name: true
+        show_state: false
+        tap_action:
+          action: navigate
+          navigation_path: /dashboard-fotovoltaico/fotovoltaico
+        type: button
+      - grid_options:
+          columns: 3
+          rows: auto
+        icon: mdi:heat-pump
+        icon_height: 20px
+        name: Pompa
+        show_icon: true
+        show_name: true
+        show_state: false
+        tap_action:
+          action: navigate
+          navigation_path: /dashboard-panasonic/panasonic
+        type: button
+      - grid_options:
+          columns: 3
+          rows: auto
+        icon: mdi:weather-partly-cloudy
+        icon_height: 20px
+        name: Fancoil Deum
+        show_icon: true
+        show_name: true
+        show_state: false
+        tap_action:
+          action: navigate
+          navigation_path: /dashboard-fancoil/fancoil
+        type: button
+      - grid_options:
+          columns: 3
+          rows: auto
+        icon: mdi:file-table
+        icon_height: 20px
+        name: Consumi
+        show_icon: true
+        show_name: true
+        show_state: false
+        tap_action:
+          action: navigate
+          navigation_path: /dashboard-consumi/elettricita
+        type: button
+      - grid_options:
+          columns: 3
+          rows: auto
+        icon: mdi:solar-panel-large
+        icon_height: 20px
+        name: Panel Analytics
+        show_icon: true
+        show_name: true
+        show_state: false
+        tap_action:
+          action: perform-action
+          data:
+            data:
+              package_name: appinventor.ai_aagorine.PanelAnalytics
+            message: command_launch_app
+          perform_action: notify.mobile_app_cph2653
+        type: button
+      type: grid
+    - cards:
+      - heading: TEMPERATURE ATTUALI E DESIDERATE
+        heading_style: title
+        type: heading
+      - entities:
+        - entity: sensor.hp1000se_pro_pro_v1_6_4_indoor_temperature
+          name: Sala
+        - entity: sensor.sonoff_10008d119d_temperature
+          name: Georgi
+        - entity: sensor.panasonic_heat_pump_main_outside_temp
+          name: Esterna
+        grid_options:
+          columns: full
+          rows: auto
+        hours_to_show: 24
+        refresh_interval: 60
+        type: history-graph
+      - content: "{% set mod = states('input_select.clima_modalita') %} {% set stagione\
+          \ = states('input_select.clima_stagione') %} {% if stagione == 'estate'\
+          \ %}\n  {% if mod == 'notte' %}\n    **Sala max disiderata:** {{ states('input_number.maxtemp_notte_estate_sala')\
+          \ }}\xB0C\n    **Georgi max disiderata:** {{ states('input_number.maxtemp_notte_estate_letto')\
+          \ }}\xB0C\n  {% else %}\n    **Sala max disiderata:** {{ states('input_number.maxtemp_giorno_estate_sala')\
+          \ }}\xB0C\n    **Georgi max disiderata:** {{ states('input_number.maxtemp_giorno_estate_letto')\
+          \ }}\xB0C\n  {% endif %}\n{% else %}\n  {% if mod == 'notte' %}\n    **Sala\
+          \ min disiderata:** {{ states('input_number.mintemp_notte_inverno_sala')\
+          \ }}\xB0C\n    **Georgi min disiderata:** {{ states('input_number.mintemp_notte_inverno_letto')\
+          \ }}\xB0C\n  {% else %}\n    **Sala min disiderata:** {{ states('input_number.mintemp_giorno_inverno_sala')\
+          \ }}\xB0C\n    **Georgi min disiderata:** {{ states('input_number.mintemp_giorno_inverno_letto')\
+          \ }}\xB0C\n  {% endif %}\n{% endif %} &nbsp;&nbsp; *({{ stagione }} / {{\
+          \ mod }})*\n"
+        grid_options:
+          columns: 9
+          rows: auto
+        type: markdown
+      - grid_options:
+          columns: 3
+          rows: auto
+        icon: mdi:heat-pump
+        icon_height: 20px
+        name: Clima
+        show_icon: true
+        show_name: true
+        show_state: false
+        tap_action:
+          action: navigate
+          navigation_path: /dashboard-clima/clima
+        type: button
+      type: grid
+    - cards:
+      - heading: 'CALDAIA A GAS - Baxi '
+        heading_style: title
+        icon: mdi:gas-burner
+        type: heading
+      - card:
+          grid_options:
+            columns: 3
+            rows: 1
+          icon: mdi:water-boiler-off
+          name: Sanitaria OFF
+          tap_action:
+            action: perform-action
+            perform_action: script.caldaia_dhw_off
+          type: button
+        conditions:
+        - condition: state
+          entity: input_boolean.caldaia_dhw_override
+          state: 'on'
+        grid_options:
+          columns: 3
+          rows: auto
+        type: conditional
+      - card:
+          grid_options:
+            columns: 3
+            rows: 1
+          icon: mdi:water-boiler
+          name: Sanitaria ON
+          tap_action:
+            action: perform-action
+            perform_action: script.caldaia_dhw_on
+          type: button
+        conditions:
+        - condition: state
+          entity: input_boolean.caldaia_dhw_override
+          state: 'off'
+        grid_options:
+          columns: 3
+          rows: auto
+        type: conditional
+      - card:
+          grid_options:
+            columns: 3
+            rows: 1
+          icon: mdi:radiator
+          name: Caldaia ON
+          tap_action:
+            action: perform-action
+            data:
+              hvac_mode: heat
+            perform_action: climate.set_hvac_mode
+            target:
+              entity_id: climate.smart_autotune_thermostat_living_room
+          type: button
+        conditions:
+        - condition: state
+          entity: climate.smart_autotune_thermostat_living_room
+          state: 'off'
+        grid_options:
+          columns: 3
+          rows: auto
+        type: conditional
+      - card:
+          grid_options:
+            columns: 3
+            rows: 1
+          icon: mdi:radiator-off
+          name: Caldaia OFF
+          tap_action:
+            action: perform-action
+            data:
+              hvac_mode: 'off'
+            perform_action: climate.set_hvac_mode
+            target:
+              entity_id: climate.smart_autotune_thermostat_living_room
+          type: button
+        conditions:
+        - condition: state
+          entity: climate.smart_autotune_thermostat_living_room
+          state: heat
+        grid_options:
+          columns: 3
+          rows: auto
+        type: conditional
+      - entity: sensor.smart_autotune_thermostat_heating_curve_living_room
+        features_position: bottom
+        grid_options:
+          columns: 3
+          rows: auto
+        name: Riscaldamento calcolata
+        type: tile
+        vertical: false
+      - entities:
+        - entity: sensor.opentherm_gateway_otgw_otgw_boiler_flow_water_temperature
+          name: Sanitaria ora
+        grid_options:
+          columns: 6
+          rows: 3
+        hours_to_show: 24
+        refresh_interval: 60
+        type: history-graph
+      - entity: input_number.caldaia_dhw_setpoint
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        name: Sanitaria desiderata
+        type: tile
+        vertical: false
+      - entity: binary_sensor.opentherm_gateway_otgw_otgw_flame
+        features_position: bottom
+        grid_options:
+          columns: 3
+          rows: 1
+        name: Fiamma
+        type: tile
+        vertical: false
+      - entity: sensor.opentherm_gateway_otgw_otgw_relative_modulation_level
+        features_position: bottom
+        grid_options:
+          columns: 3
+          rows: 1
+        name: Modulazione
+        type: tile
+        vertical: false
+      - entity: sensor.gas_oggi_mc
+        features_position: bottom
+        grid_options:
+          columns: 3
+          rows: 1
+        name: Gas oggi
+        type: tile
+        vertical: false
+      - entity: sensor.gas_mese_mc
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        name: Gas mese
+        type: tile
+        vertical: false
+      - grid_options:
+          columns: 3
+          rows: auto
+        icon: mdi:thermostat-box
+        icon_height: 20px
+        name: Caldaia
+        show_icon: true
+        show_name: true
+        show_state: false
+        tap_action:
+          action: navigate
+          navigation_path: /otgw-caldaia/otgw
+        type: button
+      - grid_options:
+          columns: 3
+          rows: auto
+        icon: mdi:file-table
+        icon_height: 20px
+        name: Consumi
+        show_icon: true
+        show_name: true
+        show_state: false
+        tap_action:
+          action: navigate
+          navigation_path: /dashboard-consumi/gas
+        type: button
+      - grid_options:
+          columns: 3
+          rows: auto
+        icon: mdi:heat-pump
+        icon_height: 20px
+        name: Clima
+        show_icon: true
+        show_name: true
+        show_state: false
+        tap_action:
+          action: navigate
+          navigation_path: /dashboard-clima/clima
+        type: button
+      - content: "{% set code = states('sensor.opentherm_gateway_otgw_otgw_oemfaultcode')\
+          \ | int(-1) %} {% set fault = states('binary_sensor.opentherm_gateway_otgw_otgw_fault')\
+          \ %} {% set faults = {\n  9:   ['E09', 'Errore collegamento valvola gas',\
+          \ 'Chiamare assistenza'],\n  10:  ['E10', 'Sensore sonda esterna guasto',\
+          \ 'Chiamare assistenza'],\n  12:  ['E12', 'Mancata commutazione pressostato\
+          \ differenziale idraulico', 'Chiamare assistenza'],\n  13:  ['E13', 'Contatti\
+          \ incollati pressostato differenziale idraulico', 'Chiamare assistenza'],\n\
+          \  15:  ['E15', 'Errore comando valvola gas', 'Chiamare assistenza'],\n\
+          \  18:  ['E18', 'Riempimento automatico circuito idraulico in corso', 'Attendere\
+          \ fine ciclo'],\n  19:  ['E19', 'Anomalia nella fase riempimento impianto',\
+          \ 'Premere tasto R per 2 secondi'],\n  20:  ['E20', 'Sensore NTC di mandata\
+          \ guasto', 'Chiamare assistenza'],\n  28:  ['E28', 'Sensore NTC fumi guasto',\
+          \ 'Chiamare assistenza'],\n  40:  ['E40', 'Sensore NTC di ritorno guasto',\
+          \ 'Chiamare assistenza'],\n  50:  ['E50', 'Sensore NTC sanitario guasto',\
+          \ 'Chiamare assistenza'],\n  53:  ['E53', 'Condotto fumi ostruito', 'Togliere\
+          \ alimentazione; se persiste chiamare assistenza'],\n  55:  ['E55', 'Scheda\
+          \ elettronica non tarata', 'Chiamare assistenza'],\n  83:  ['E83', 'Problema\
+          \ comunicazione scheda/unit\xE0 comando', 'Chiamare assistenza'],\n  84:\
+          \  ['E84', 'Problema comunicazione scheda/unit\xE0 comando', 'Chiamare assistenza'],\n\
+          \  85:  ['E85', 'Problema comunicazione scheda/unit\xE0 comando', 'Chiamare\
+          \ assistenza'],\n  86:  ['E86', 'Problema comunicazione scheda/unit\xE0\
+          \ comando', 'Chiamare assistenza'],\n  87:  ['E87', 'Problema comunicazione\
+          \ scheda/unit\xE0 comando', 'Chiamare assistenza'],\n  92:  ['E92', 'Anomalia\
+          \ fumi (probabile ricircolo fumi)', 'Chiamare assistenza'],\n  109: ['E109',\
+          \ 'Presenza aria nel circuito caldaia', 'Chiamare assistenza'],\n  110:\
+          \ ['E110', 'Sovratemperatura (probabile pompa bloccata o aria)', 'Premere\
+          \ tasto R per 2 secondi'],\n  117: ['E117', 'Pressione circuito idraulico\
+          \ troppo alta (>2.7 bar)', 'Chiamare assistenza'],\n  118: ['E118', 'Pressione\
+          \ circuito idraulico troppo bassa', 'Verificare pressione impianto'],\n\
+          \  125: ['E125', 'Mancanza circolazione (intervento sicurezza)', 'Premere\
+          \ tasto R per 2 secondi'],\n  128: ['E128', 'Perdita di fiamma', 'Premere\
+          \ tasto R per 2 secondi'],\n  129: ['E129', 'Perdita di fiamma in accensione',\
+          \ 'Chiamare assistenza'],\n  130: ['E130', 'Sovratemperatura sonda NTC fumi',\
+          \ 'Premere tasto R per 2 secondi'],\n  133: ['E133', 'Mancata accensione\
+          \ (5 tentativi)', 'Premere tasto R per 2 secondi'],\n  134: ['E134', 'Valvola\
+          \ gas bloccata', 'Premere tasto R per 2 secondi'],\n  135: ['E135', 'Errore\
+          \ interno di scheda', 'Premere tasto R per 2 secondi'],\n  154: ['E154',\
+          \ 'Test controllo sonda mandata/ritorno', 'Chiamare assistenza'],\n  160:\
+          \ ['E160', 'Anomalia funzionamento ventilatore', 'Chiamare assistenza'],\n\
+          \  178: ['E178', 'Sovratemperatura su impianto bassa temperatura', 'Chiamare\
+          \ assistenza'],\n  270: ['E270', 'Surriscaldamento scambiatore', 'Chiamare\
+          \ assistenza'],\n  317: ['E317', 'Frequenza di alimentazione elettrica errata',\
+          \ 'Chiamare assistenza'],\n  321: ['E321', 'Sensore NTC sanitario guasto',\
+          \ 'Chiamare assistenza'],\n  384: ['E384', 'Fiamma parassita (anomalia interna)',\
+          \ 'Premere tasto R per 2 secondi'],\n  385: ['E385', 'Tensione di alimentazione\
+          \ troppo bassa', 'Ripristino automatico >175V; se persiste chiamare assistenza'],\n\
+          \  431: ['E431', 'Sensore scambiatore guasto', 'Chiamare assistenza']\n\
+          } %} {% if fault != 'on' or code == -1 or states('sensor.opentherm_gateway_otgw_otgw_oemfaultcode')\
+          \ in ['unknown', 'unavailable'] %}\n  **Stato:** \u2705 Nessun fault attivo\n\
+          {% elif code in faults %}\n  **Errore {{ faults[code][0] }}:** {{ faults[code][1]\
+          \ }}\n\n  **Azione:** {{ faults[code][2] }}\n{% else %}\n  **Errore OEM\
+          \ {{ code }}:** Codice non in tabella | Consultare manuale tecnico Baxi\
+          \ Luna Duo-Tec+\n{% endif %}\n"
+        grid_options:
+          columns: full
+          rows: auto
+        type: markdown
+      type: grid
+    - cards:
+      - heading: POMPA DI CALORE - Panasonic
+        heading_style: title
+        icon: mdi:heat-pump
+        type: heading
+      - entities:
+        - entity: sensor.panasonic_heat_pump_main_outside_temp
+          name: Esterna
+        - entity: sensor.panasonic_heat_pump_main_main_inlet_temp
+          name: Ingresso
+        - entity: sensor.panasonic_heat_pump_main_main_outlet_temp
+          name: Uscita
+        - entity: sensor.panasonic_heat_pump_main_main_target_temp
+          name: Target
+        grid_options:
+          columns: full
+          rows: auto
+        hours_to_show: 24
+        refresh_interval: 60
+        type: history-graph
+      - entity: select.panasonic_heat_pump_main_operating_mode_state
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        name: "Modalit\xE0"
+        type: tile
+        vertical: false
+      - entity: sensor.panasonic_heat_pump_cop
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        name: COP
+        type: tile
+        vertical: false
+      - entity: sensor.panasonic_potenza_consumata_calcolata
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        name: Consum.ora
+        type: tile
+        vertical: false
+      - entity: sensor.panasonic_potenza_prodotta_calcolata
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        name: Produz.ora
+        type: tile
+        vertical: false
+      - entity: sensor.panasonic_consumata_oggi
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        name: Consu.oggi
+        type: tile
+        vertical: false
+      - entity: sensor.panasonic_prodotta_oggi
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        name: Produ.oggi
+        type: tile
+        vertical: false
+      - grid_options:
+          columns: 3
+          rows: auto
+        icon: mdi:heat-pump
+        icon_height: 20px
+        name: Pompa
+        show_icon: true
+        show_name: true
+        show_state: false
+        tap_action:
+          action: navigate
+          navigation_path: /dashboard-panasonic/panasonic
+        type: button
+      - grid_options:
+          columns: 3
+          rows: auto
+        icon: mdi:heat-pump
+        icon_height: 20px
+        name: Clima
+        show_icon: true
+        show_name: true
+        show_state: false
+        tap_action:
+          action: navigate
+          navigation_path: /dashboard-clima/clima
+        type: button
+      - content: "{% set code = states('sensor.panasonic_heat_pump_main_error') |\
+          \ upper | trim %} {% set errors = {\n  'H00': '\u2705 Nessun guasto rilevato\
+          \ | Nessuna azione necessaria',\n  'H11': '\U0001F4E1 Errore comunicazione\
+          \ interno/esterno | Spegnere e riaccendere. Verificare cavo segnale S1/S2,\
+          \ continuit\xE0 e polarit\xE0. Se persiste: chiamare tecnico',\n  'H12':\
+          \ '\u2699\uFE0F Disallineamento capacit\xE0 interno/esterno | Verificare\
+          \ compatibilit\xE0 modelli. Compito da installatore',\n  'H14': '\U0001F321\
+          \uFE0F Sensore temperatura aria interna anomalo | Verificare connettore\
+          \ sensore su PCB. Misurare resistenza termistore. Sostituire se fuori specifica',\n\
+          \  'H15': '\U0001F321\uFE0F Sensore temperatura compressore anomalo | Verificare\
+          \ connessione sensore su PCB esterno. Chiamare tecnico se compressore surriscaldato',\n\
+          \  'H16': '\u26A1 Protezione corrente/inverter anomala | Solo tecnico: verificare\
+          \ alimentazione, modulo IPM, avvolgimenti compressore',\n  'H17': '\U0001F321\
+          \uFE0F Sensore temperatura aspirazione anomalo | Verificare connettore e\
+          \ resistenza termistore. Sostituire se necessario',\n  'H19': '\U0001F504\
+          \ Blocco ventilatore/pompa circolazione | Verificare che la pompa giri liberamente.\
+          \ Pulire filtro/strainer. Chiamare tecnico',\n  'H20': '\U0001F4A7 Pompa\
+          \ acqua anomala | Verificare alimentazione pompa, valvole aperte, sfiatare\
+          \ aria, pressione sistema adeguata',\n  'H21': '\U0001F4A7 Float switch/condensa\
+          \ anomalo | Verificare accumulo acqua, scarichi ostruiti, float bloccato',\n\
+          \  'H23': '\U0001F321\uFE0F Sensore scambiatore interno 1 anomalo | Verificare\
+          \ connettore e resistenza termistore',\n  'H24': '\U0001F321\uFE0F Sensore\
+          \ scambiatore interno 2 anomalo | Verificare connettore e resistenza termistore',\n\
+          \  'H27': '\U0001F321\uFE0F Sensore temperatura esterna anomalo | Sensore\
+          \ esterno disconnesso o guasto. Chiamare tecnico',\n  'H28': '\U0001F321\
+          \uFE0F Sensore scambiatore esterno 1 anomalo | Sensore bobina esterna guasto.\
+          \ Chiamare tecnico',\n  'H30': '\U0001F321\uFE0F Sensore temperatura scarico\
+          \ compressore anomalo | Verificare termistore su linea scarico. Chiamare\
+          \ tecnico',\n  'H32': '\U0001F321\uFE0F Sensore scambiatore esterno 2 anomalo\
+          \ | Sensore bobina esterna guasto. Chiamare tecnico',\n  'H33': '\U0001F50C\
+          \ Collegamento interno/esterno errato | Verificare compatibilit\xE0 unit\xE0\
+          \ e cablaggio. Compito da installatore',\n  'H34': '\U0001F321\uFE0F Sensore\
+          \ dissipatore calore anomalo | Sensore modulo inverter guasto. Chiamare\
+          \ tecnico',\n  'H38': '\u26A0\uFE0F Incompatibilit\xE0 interno/esterno (brand\
+          \ code) | Verificare compatibilit\xE0 modelli. Compito da installatore',\n\
+          \  'H45': '\U0001F321\uFE0F Sensore temperatura uscita acqua anomalo | Termistore\
+          \ acqua uscita guasto. Chiamare tecnico',\n  'H62': '\U0001F4A7 Errore flusso\
+          \ acqua/sensore flusso | Verificare pressione sistema, sfiatare aria, pulire\
+          \ filtro Y-strainer, aprire tutte le valvole, verificare pompa',\n  'H70':\
+          \ '\U0001F525 Protezione riscaldatore backup | Verificare cablaggio riscaldatore,\
+          \ contattori, protezione sovratemperatura e flusso acqua',\n  'H72': '\U0001F321\
+          \uFE0F Sensore serbatoio ACS anomalo | Sonda temperatura bollitore guasta\
+          \ o disconnessa. Chiamare tecnico',\n  'H74': '\U0001F4DF Errore comunicazione\
+          \ PCB | Errore comunicazione tra schede. Chiamare tecnico',\n  'H76': '\U0001F4DF\
+          \ Errore comunicazione interno/telecomando | Problema sul bus telecomando.\
+          \ Verificare cablaggio telecomando',\n  'H91': '\U0001F525 Sovraccarico\
+          \ riscaldatore serbatoio | Protezione sovratemperatura scattata. Chiamare\
+          \ tecnico',\n  'H95': '\u26A1 Tensione alimentazione anomala | Elettricista/tecnico:\
+          \ verificare tensione, fase, messa a terra',\n  'H97': '\U0001F300 Blocco\
+          \ ventilatore esterno | Verificare che ventilatore giri liberamente. Chiamare\
+          \ tecnico',\n  'H98': '\U0001F525 Protezione alta pressione interna | Pulire\
+          \ filtro aria, verificare circolazione. Chiamare tecnico',\n  'H99': '\u2744\
+          \uFE0F Protezione antigelo scambiatore interno | Pulire filtro aria, verificare\
+          \ carica refrigerante. Chiamare tecnico',\n  'F11': '\U0001F504 Anomalia\
+          \ valvola 4 vie / sensore tubo | Verificare valvola 4 vie, bobina e cablaggio.\
+          \ Chiamare tecnico',\n  'F27': '\U0001F4E1 Errore cablaggio interconnessione\
+          \ | Verificare cavi, schermatura e messa a terra tra unit\xE0',\n  'F30':\
+          \ '\U0001F4BE Errore memoria EEPROM PCB esterno | Scheda PCB esterna guasta.\
+          \ Chiamare tecnico',\n  'F90': '\u26A1 Protezione PFC (Power Factor Correction)\
+          \ | Solo tecnico: verificare carica refrigerante, flusso aria/acqua, elettronica\
+          \ inverter',\n  'F91': '\u26A1 Errore inverter/compressore | Solo tecnico:\
+          \ verificare carica refrigerante, valvola espansione, inverter',\n  'F95':\
+          \ '\U0001F525 Protezione alta pressione esterna | Solo tecnico: verificare\
+          \ carica refrigerante, flusso aria, scambiatore',\n  'F96': '\U0001F525\
+          \ Surriscaldamento modulo IPM/transistor | Solo tecnico: verificare flusso\
+          \ aria, modulo potenza',\n  'F97': '\U0001F525 Errore inverter/potenza correlato\
+          \ | Solo tecnico: chiamare tecnico autorizzato',\n  'P03': '\u26A1 Protezione\
+          \ transistor di potenza | Solo tecnico: chiamare tecnico autorizzato',\n\
+          \  'P05': '\u26A1 Problema alimentazione AC | Elettricista: verificare tensione,\
+          \ neutro, morsetti',\n  'P07': '\U0001F525 Surriscaldamento modulo inverter\
+          \ | Solo tecnico: chiamare tecnico autorizzato',\n  'U0':  '\u2744\uFE0F\
+          \ Carenza refrigerante/gas | Solo tecnico F-Gas: test perdite, analisi surriscaldamento,\
+          \ ricarica',\n} %} {% if code in ['', 'UNKNOWN', 'UNAVAILABLE', 'NONE',\
+          \ 'H00', '0', 'NO ERROR'] %}\n  **Stato:** \u2705 Nessun errore attivo\n\
+          {% elif code in errors %}\n  **Errore {{ code }}:** {{ errors[code].split('\
+          \ | ')[0] }}\n\n  **Azione:** {{ errors[code].split(' | ')[1] }}\n{% else\
+          \ %}\n  **Errore {{ code }}:** Codice non in tabella | Consultare manuale\
+          \ tecnico o chiamare tecnico Panasonic\n{% endif %}\n"
+        grid_options:
+          columns: 12
+          rows: auto
+        type: markdown
+      type: grid
+    - cards:
+      - heading: ACQUA / IRRIGAZIONE
+        heading_style: title
+        icon: mdi:water
+        type: heading
+      - color: blue
+        entity: sensor.irrigazione_attiva
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        name: Irrigazione
+        tap_action:
+          action: perform-action
+          perform_action: script.irrigazione_toggle_manuale
+        type: tile
+        vertical: false
+      - entity: input_number.irrigazione_soglia_umidita
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        name: "Umidit\xE0 max"
+        type: tile
+        vertical: false
+      - entity: sensor.soil_moisture_2
+        features_position: bottom
+        grid_options:
+          columns: 3
+          rows: 1
+        name: "Gi\xF9 prima umidit\xE0 S2"
+        type: tile
+        vertical: false
+      - entity: sensor.soil_moisture_1
+        features_position: bottom
+        grid_options:
+          columns: 3
+          rows: 1
+        name: "Gi\xF9 mezzo umidit\xE0 S1"
+        type: tile
+        vertical: false
+      - entity: sensor.acqua_oggi_mc
+        features_position: bottom
+        grid_options:
+          columns: 3
+          rows: 1
+        name: Acqua oggi
+        type: tile
+        vertical: false
+      - entity: sensor.acqua_mese_mc
+        features_position: bottom
+        grid_options:
+          columns: 3
+          rows: 1
+        name: Acqua mese
+        type: tile
+        vertical: false
+      - content: '{{ states(''input_text.irrigazione_motivo_blocco'') }}'
+        grid_options:
+          columns: 12
+          rows: auto
+        type: markdown
+      - grid_options:
+          columns: 3
+          rows: auto
+        icon: mdi:file-table
+        icon_height: 20px
+        name: Consumi
+        show_icon: true
+        show_name: true
+        show_state: false
+        tap_action:
+          action: navigate
+          navigation_path: /dashboard-consumi/acqua
+        type: button
+      - grid_options:
+          columns: 3
+          rows: auto
+        icon: mdi:weather-partly-cloudy
+        icon_height: 20px
+        name: Meteo
+        show_icon: true
+        show_name: true
+        show_state: false
+        tap_action:
+          action: navigate
+          navigation_path: /dashboard-meteo/meteo
+        type: button
+      - heading: Solo Irrigazione oggi
+        heading_style: subtitle
+        type: heading
+      - entity: counter.irrigazione_sessioni_oggi
+        features_position: bottom
+        grid_options:
+          columns: 3
+          rows: 1
+        name: N irrigazioni
+        type: tile
+        vertical: false
+      - entity: sensor.acqua_irrigazione_oggi
+        features_position: bottom
+        grid_options:
+          columns: 3
+          rows: 1
+        name: Consumo Irrigazione
+        type: tile
+        vertical: false
+      - entity: input_number.acqua_durata_irrigazione
+        grid_options:
+          columns: 9
+          rows: auto
+        name: ' Durata 1 sessione'
+        type: entity
+        visibility:
+        - condition: screen
+          media_query: '(min-width: 768px) and (max-width: 1023px)'
+      - entity: input_number.acqua_consumo_per_minuto
+        grid_options:
+          columns: 9
+          rows: auto
+        name: Flusso irrigazione
+        type: entity
+        visibility:
+        - condition: screen
+          media_query: '(min-width: 768px) and (max-width: 1023px)'
+      - heading: Solo Acqua Sanitaria oggi
+        heading_style: subtitle
+        type: heading
+      - entity: sensor.caldaia_dhw_durata_oggi_minuti
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        name: Durata caldaia
+        type: tile
+        vertical: false
+      - entity: sensor.acqua_sanitaria_calda_stimata
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        name: Acqua calda
+        type: tile
+        vertical: false
+      - entity: sensor.acqua_sanitaria_totale
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        name: 'Sanitaria totale '
+        type: tile
+        vertical: false
+      - entity: input_number.acqua_sanitaria_manuale
+        grid_options:
+          columns: 12
+          rows: auto
+        name: Consumo Acqua fredda al giorno
+        type: entity
+      - entity: input_number.caldaia_dhw_durata_invernale
+        grid_options:
+          columns: 12
+          rows: auto
+        name: Durata caldaia x sanitaria al giorno in inverno
+        type: entity
+        visibility:
+        - condition: screen
+          media_query: '(min-width: 768px) and (max-width: 1023px)'
+      - entity: input_number.acqua_flusso_doccia
+        grid_options:
+          columns: 9
+          rows: auto
+        name: Flusso acqua calda
+        type: entity
+        visibility:
+        - condition: screen
+          media_query: '(min-width: 768px) and (max-width: 1023px)'
+      type: grid
+    - cards:
+      - heading: STATO
+        heading_style: title
+        icon: mdi:state-machine
+        type: heading
+      - heading: RAPSBERRY
+        heading_style: subtitle
+        type: heading
+      - entity: sensor.system_monitor_processor_use
+        features_position: bottom
+        name: CPU usage
+        type: tile
+        vertical: false
+      - entity: sensor.system_monitor_memory_usage
+        features_position: bottom
+        name: Memory usage
+        type: tile
+        vertical: false
+      - entity: sensor.rpi_cpu_temperature
+        features_position: bottom
+        name: CPU Temp
+        type: tile
+        vertical: false
+      - entity: sensor.system_monitor_disk_usage
+        features_position: bottom
+        name: DIsk usage
+        type: tile
+        vertical: false
+      - entity: sensor.rpi_fan_controller_rpm_ventilatore
+        features_position: bottom
+        name: External fan
+        type: tile
+        vertical: false
+      - attribute: percentage
+        entity: fan.rpi_fan_controller_ventilatore_argon
+        name: External Fan
+        type: entity
+      - entity: sensor.rpi_fan_speed
+        features_position: bottom
+        name: Internal Fan
+        type: tile
+        vertical: false
+      - heading: BATTERIE
+        heading_style: subtitle
+        type: heading
+      - entity: sensor.hp1000se_pro_pro_v1_6_4_wh80_battery
+        features_position: bottom
+        name: SensorStrada
+        type: tile
+        vertical: false
+      - entity: sensor.meteo_wh40_battery
+        features_position: bottom
+        name: Piovimetro
+        type: tile
+        vertical: false
+      - entity: sensor.leak_detector_battery_status
+        features_position: bottom
+        name: Leak Detector
+        type: tile
+        vertical: false
+      - entity: binary_sensor.hp1000se_pro_pro_v1_6_4_wh25_battery
+        features_position: bottom
+        name: SensorCasa
+        type: tile
+        vertical: false
+      - entity: sensor.hp1000se_pro_pro_v1_6_4_soil_battery_1
+        features_position: bottom
+        name: Soil Hum 1
+        type: tile
+        vertical: false
+      - entity: sensor.hp1000se_pro_pro_v1_6_4_soil_battery_2
+        features_position: bottom
+        name: Soil Hum 2
+        type: tile
+        vertical: false
+      - entity: sensor.persiana_box_sensore_zigbee_battery
+        features_position: bottom
+        name: Box persiana
+        type: tile
+        vertical: false
+      - entity: sensor.portone_box_sensore_zigbee_battery
+        features_position: bottom
+        name: Box portone
+        type: tile
+        vertical: false
+      - entity: sensor.persiana_tania_sensore_zigbee_battery
+        features_position: bottom
+        name: Tania persiana
+        type: tile
+        vertical: false
+      - heading: UPS
+        heading_style: subtitle
+        type: heading
+      - entity: sensor.ups_eaton_camera_georgii_dati_di_stato
+        features_position: bottom
+        grid_options:
+          columns: 3
+          rows: 1
+        name: Dati di Stato
+        type: tile
+        vertical: false
+      - entity: sensor.ups_eaton_camera_georgii_carica_batterie
+        features_position: bottom
+        grid_options:
+          columns: 3
+          rows: 1
+        name: Capacita Ups
+        type: tile
+        vertical: false
+      - entity: sensor.ups_eaton_camera_georgii_carico
+        features_position: bottom
+        grid_options:
+          columns: 3
+          rows: 1
+        name: Carico da UPS
+        type: tile
+        vertical: false
+      - color: green
+        entity: sensor.ups_eaton_camera_georgii_stato
+        grid_options:
+          columns: 6
+          rows: 1
+        name: Stato UPS
+        type: tile
+        vertical: false
+      type: grid
+    title: Casa
+    type: sections

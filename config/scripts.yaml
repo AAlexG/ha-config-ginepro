@@ -1,0 +1,504 @@
+# scripts_36.yaml
+
+#==================================================================================
+# SCRIPT: APRI CANCELLO CASA
+#==================================================================================
+apri_cancello_casa:
+  alias: "Cancello Casa - Apri/Chiudi"
+  mode: single
+  sequence:
+    - action: remote.send_command
+      target:
+        entity_id: remote.055_broadlink_salotto
+      data:
+        device: emylo
+        command: cancello_casa
+
+
+#==================================================================================
+# SCRIPT: APRI GRANDE CANCELLO
+#==================================================================================
+apri_grande_cancello:
+  alias: "Grande Cancello - Apri/Chiudi"
+  mode: single
+  sequence:
+    - action: button.press
+      target:
+        entity_id: button.10007c3b31_1
+    - if:
+        - condition: state
+          entity_id: input_boolean.grande_cancello_status_helper
+          state: "off"
+      then:
+        - action: input_boolean.turn_on
+          target:
+            entity_id: input_boolean.grande_cancello_status_helper
+      else:
+        - action: input_boolean.turn_off
+          target:
+            entity_id: input_boolean.grande_cancello_status_helper
+
+#==================================================================================
+# SCRIPT: APRI BOX COMBO
+#==================================================================================
+apri_box_combo:
+  alias: "Box - Portone + Grande Cancello"
+  mode: single
+  sequence:
+    - action: button.press
+      target:
+        entity_id: button.portone_telecomando
+    - action: button.press
+      target:
+        entity_id: button.10007c3b31_1
+    - if:
+        - condition: state
+          entity_id: input_boolean.grande_cancello_status_helper
+          state: "off"
+      then:
+        - action: input_boolean.turn_on
+          target:
+            entity_id: input_boolean.grande_cancello_status_helper
+      else:
+        - action: input_boolean.turn_off
+          target:
+            entity_id: input_boolean.grande_cancello_status_helper
+
+#==================================================================================
+# SCRIPT: SIRENA ON
+# - Accende tutte le 6 sirene
+# - Attiva input_boolean.sirena_attiva (usato come flag per interrompere il loop)
+# - Ripete messaggio vocale su tutti i Google Home x10 (interrompibile)
+#==================================================================================
+sirena_on:
+  alias: "Sirena ON - Tutte + Google Home"
+  mode: single
+  sequence:
+    - action: input_boolean.turn_on
+      target:
+        entity_id: input_boolean.sirena_attiva
+    - action: siren.turn_on
+      target:
+        entity_id:
+          - siren.179_camera_cancello_sirena
+          - siren.camera_georgi_reolink_sirena
+          - siren.170_camera_cucina_5mp_sirena
+          - siren.177_camera_nata_reolink_zoom_sirena
+          - siren.camera_box_reolink_sirena
+          - siren.184_camera_tania_sirena
+    - variables:
+        vol_salotto: "{{ state_attr('media_player.salotto', 'volume_level') | float(0.5) }}"
+        vol_cromecast_sotto: "{{ state_attr('media_player.cromecast_sotto', 'volume_level') | float(0.5) }}"
+        vol_google_home_georgi: "{{ state_attr('media_player.google_home_georgi', 'volume_level') | float(0.5) }}"
+        vol_google_home_sopra: "{{ state_attr('media_player.google_home_sopra', 'volume_level') | float(0.5) }}"
+        vol_googlehome8851: "{{ state_attr('media_player.googlehome8851', 'volume_level') | float(0.5) }}"
+    - action: media_player.turn_on
+      target:
+        entity_id: media_player.tutti_gli_speaker
+    - delay: "00:00:01"
+    - action: media_player.volume_set
+      target:
+        entity_id:
+          - media_player.salotto
+          - media_player.cromecast_sotto
+          - media_player.google_home_georgi
+          - media_player.google_home_sopra
+          - media_player.googlehome8851
+      data:
+        volume_level: 1.0
+    - repeat:
+        count: 10
+        sequence:
+          - condition: state
+            entity_id: input_boolean.sirena_attiva
+            state: "on"
+          - action: tts.speak
+            target:
+              entity_id: tts.google_translate_en_com
+            data:
+              media_player_entity_id: media_player.tutti_gli_speaker
+              message: "Chiamata preregistrata a carabinieri è partita. Ladri in casa"
+              language: it
+              cache: true
+              options:
+                preferred_format: mp3
+                preferred_sample_rate: "44100"
+          - delay: "00:00:15"
+    - action: media_player.volume_set
+      target:
+        entity_id: media_player.salotto
+      data:
+        volume_level: "{{ vol_salotto }}"
+    - action: media_player.volume_set
+      target:
+        entity_id: media_player.cromecast_sotto
+      data:
+        volume_level: "{{ vol_cromecast_sotto }}"
+    - action: media_player.volume_set
+      target:
+        entity_id: media_player.google_home_georgi
+      data:
+        volume_level: "{{ vol_google_home_georgi }}"
+    - action: media_player.volume_set
+      target:
+        entity_id: media_player.google_home_sopra
+      data:
+        volume_level: "{{ vol_google_home_sopra }}"
+    - action: media_player.volume_set
+      target:
+        entity_id: media_player.googlehome8851
+      data:
+        volume_level: "{{ vol_googlehome8851 }}"
+
+
+#==================================================================================
+# SCRIPT: SIRENA OFF
+# - Disattiva flag (interrompe loop messaggi)
+# - Spegne tutte le 6 sirene
+# - Ferma audio su tutti i Google Home
+#==================================================================================
+sirena_off:
+  alias: "Sirena OFF - Tutte + Stop Google Home"
+  mode: single
+  sequence:
+    - action: input_boolean.turn_off
+      target:
+        entity_id: input_boolean.sirena_attiva
+    - action: siren.turn_off
+      target:
+        entity_id:
+          - siren.179_camera_cancello_sirena
+          - siren.camera_georgi_reolink_sirena
+          - siren.170_camera_cucina_5mp_sirena
+          - siren.177_camera_nata_reolink_zoom_sirena
+          - siren.camera_box_reolink_sirena
+          - siren.184_camera_tania_sirena
+
+
+#==================================================================================
+# SCRIPT: SPEAKER ALLARME (solo messaggio vocale, senza sirene)
+#==================================================================================
+speaker_allarme:
+  alias: "Speaker Allarme - Solo voce"
+  mode: single
+  sequence:
+    - action: input_boolean.turn_on
+      target:
+        entity_id: input_boolean.sirena_attiva
+    - variables:
+        vol_salotto: "{{ state_attr('media_player.salotto', 'volume_level') | float(0.5) }}"
+        vol_cromecast_sotto: "{{ state_attr('media_player.cromecast_sotto', 'volume_level') | float(0.5) }}"
+        vol_google_home_georgi: "{{ state_attr('media_player.google_home_georgi', 'volume_level') | float(0.5) }}"
+        vol_google_home_sopra: "{{ state_attr('media_player.google_home_sopra', 'volume_level') | float(0.5) }}"
+        vol_googlehome8851: "{{ state_attr('media_player.googlehome8851', 'volume_level') | float(0.5) }}"
+    - action: media_player.turn_on
+      target:
+        entity_id: media_player.tutti_gli_speaker
+    - delay: "00:00:01"
+    - action: media_player.volume_set
+      target:
+        entity_id:
+          - media_player.salotto
+          - media_player.cromecast_sotto
+          - media_player.google_home_georgi
+          - media_player.google_home_sopra
+          - media_player.googlehome8851
+      data:
+        volume_level: 1.0
+    - repeat:
+        count: 5
+        sequence:
+          - condition: state
+            entity_id: input_boolean.sirena_attiva
+            state: "on"
+          - action: tts.speak
+            target:
+              entity_id: tts.google_translate_en_com
+            data:
+              media_player_entity_id: media_player.tutti_gli_speaker
+              message: "Chiamata preregistrata a carabinieri è partita. Ladri in casa"
+              language: it
+              cache: true
+              options:
+                preferred_format: mp3
+                preferred_sample_rate: "44100"
+          - delay: "00:00:15"
+    - action: media_player.volume_set
+      target:
+        entity_id: media_player.salotto
+      data:
+        volume_level: "{{ vol_salotto }}"
+    - action: media_player.volume_set
+      target:
+        entity_id: media_player.cromecast_sotto
+      data:
+        volume_level: "{{ vol_cromecast_sotto }}"
+    - action: media_player.volume_set
+      target:
+        entity_id: media_player.google_home_georgi
+      data:
+        volume_level: "{{ vol_google_home_georgi }}"
+    - action: media_player.volume_set
+      target:
+        entity_id: media_player.google_home_sopra
+      data:
+        volume_level: "{{ vol_google_home_sopra }}"
+    - action: media_player.volume_set
+      target:
+        entity_id: media_player.googlehome8851
+      data:
+        volume_level: "{{ vol_googlehome8851 }}"
+
+
+#==================================================================================
+# SCRIPT: SALVA BOLLETTA
+# Chiama shell_command.salva_bolletta (Python -> SQLite). Lo script Python
+# salva i valori bolletta E ricalcola:
+#   input_number.elettricita_prezzo_kwh (€ bollette elettriche / kWh bollette)
+#   input_number.gas_prezzo_mc          (€ bollette gas / m³ bollette)
+# restituendo il risultato come JSON su stdout. Entrambi i campi restano
+# comunque modificabili a mano in qualsiasi momento – vengono solo
+# aggiornati ad ogni nuovo salvataggio bolletta.
+#==================================================================================
+salva_bolletta:
+  alias: "Bollette – Salva nel DB"
+  mode: single
+  sequence:
+    - action: shell_command.salva_bolletta
+      response_variable: risultato
+    - variables:
+        dati: "{{ risultato.stdout | from_json }}"
+    - if:
+        - condition: template
+          value_template: "{{ dati.ok }}"
+      then:
+        - action: input_number.set_value
+          target:
+            entity_id: input_number.elettricita_prezzo_kwh
+          data:
+            value: "{{ dati.prezzo_kwh }}"
+        - action: input_number.set_value
+          target:
+            entity_id: input_number.gas_prezzo_mc
+          data:
+            value: "{{ dati.prezzo_mc_gas }}"
+        - action: notify.mobile_app_cph2653
+          data:
+            title: "💾 Bolletta salvata"
+            message: >
+              Dati salvati per {{ states('input_select.bolletta_mese_sel') }}.
+              Prezzo €/kWh: {{ dati.prezzo_kwh }} – Prezzo €/m³ gas: {{ dati.prezzo_mc_gas }}
+              Dettagli in /config/bolletta_log.txt
+      else:
+        - action: notify.mobile_app_cph2653
+          data:
+            title: "⚠️ Errore salvataggio bolletta"
+            message: >-
+              {{ dati.errore | default('errore sconosciuto') }} – vedi /config/bolletta_log.txt
+
+#==================================================================================
+# SCRIPT: IRRIGAZIONE TOGGLE MANUALE
+# Chiamato dal tap_action del tile Irrigazione in plancia ginepro.
+# Esegue: toggle switch + attiva flag manuale + scrive messaggio nel campo testo.
+# Approccio diretto: nessuna dipendenza dal context del trigger.
+#==================================================================================
+irrigazione_toggle_manuale:
+  alias: "Irrigazione – Toggle Manuale"
+  mode: single
+  sequence:
+    - action: switch.toggle
+      target:
+        entity_id: switch.sonoff_irrigation_block
+    - action: input_boolean.turn_on
+      target:
+        entity_id: input_boolean.irrigazione_manuale_oggi
+    - action: input_text.set_value
+      target:
+        entity_id: input_text.irrigazione_motivo_blocco
+      data:
+        value: "🖐️ È stato scelto gestione manuale per oggi"
+
+#==================================================================================
+# SCRIPT: RIAGGANCIA YAMAHA
+# - Forza il Google Home Mini a riprendere lo stream verso la cassa Yamaha BT
+# - stop -> attesa -> ripristino volume (notte 1% / giorno 20% solo se era 1%) -> play file uccelli
+# - Non interferisce se è in corso musica vera (media_title valorizzato)
+#==================================================================================
+riaggancia_yamaha:
+  alias: "Uccelli"
+  mode: single
+  sequence:
+    - action: media_player.volume_set
+      target:
+        entity_id: media_player.googlehome8851
+      data:
+        volume_level: 0.20
+    - action: media_player.play_media
+      target:
+        entity_id: media_player.googlehome8851
+      data:
+        media_content_id: "http://192.168.1.77:8123/local/birdssongs.mp3"
+        media_content_type: "music"
+
+#==================================================================================
+# SCRIPT: PANASONIC TOGGLE ON/OFF
+# Invia comando diretto via MQTT a HeishaMon
+#==================================================================================
+panasonic_toggle:
+  alias: "Panasonic – Toggle ON/OFF"
+  mode: single
+  sequence:
+    - action: mqtt.publish
+      data:
+        topic: "panasonic_heat_pump/commands/SetHeatpump"
+        payload: >
+          {% if states('switch.panasonic_heat_pump_main_heatpump_state') == 'on' %}
+            0
+          {% else %}
+            1
+          {% endif %}
+
+#==================================================================================
+# SCRIPT: HEISHAMON REBOOT VIA MQTT
+#==================================================================================
+heishamon_reboot:
+  alias: "HeishaMon – Reboot via MQTT"
+  mode: single
+  sequence:
+    - action: mqtt.publish
+      data:
+        topic: "panasonic_heat_pump/commands/SetReboot"
+        payload: "1"
+
+#==================================================================================
+# SCRIPT: PANASONIC SET TARGET TEMPERATURA MANDATA
+# Legge il valore da input_number.panasonic_target_mandata_manuale e lo invia
+#==================================================================================
+panasonic_set_target_mandata:
+  alias: "Panasonic – Imposta Target Mandata Manuale"
+  mode: single
+  sequence:
+    - action: mqtt.publish
+      data:
+        topic: "panasonic_heat_pump/commands/SetZ1CoolRequestTemperature"
+        payload: "{{ states('input_number.panasonic_target_mandata_manuale') | int }}"
+
+#==================================================================================
+# SCRIPT: CALDAIA DHW ON
+# Invia HW=1 via MQTT e aggiorna helper di stato
+#==================================================================================
+caldaia_dhw_on:
+  alias: "Caldaia – Sanitaria ON"
+  mode: single
+  sequence:
+    - action: mqtt.publish
+      data:
+        topic: "OTGW/set/otgw-84CCA8ADE1AD/command"
+        payload: "HW=1"
+    - action: input_boolean.turn_on
+      target:
+        entity_id: input_boolean.caldaia_dhw_override
+
+#==================================================================================
+# SCRIPT: CALDAIA DHW OFF
+# Invia HW=0 via MQTT e aggiorna helper di stato
+#==================================================================================
+caldaia_dhw_off:
+  alias: "Caldaia – Sanitaria OFF"
+  mode: single
+  sequence:
+    - action: mqtt.publish
+      data:
+        topic: "OTGW/set/otgw-84CCA8ADE1AD/command"
+        payload: "HW=0"
+    - action: input_boolean.turn_off
+      target:
+        entity_id: input_boolean.caldaia_dhw_override
+
+#==================================================================================
+# SCRIPT: FANCOIL TANIA – TOGGLE MANUALE
+# Inverte input_boolean.fancoil_georgi_manuale (gestione manuale ON/OFF) e
+# specchia lo stesso stato sullo switch reale: boolean ON -> switch ON,
+# boolean OFF -> switch OFF. Chiamato dal toggle del tile in plancia.
+#==================================================================================
+fancoil_georgi_toggle_manuale:
+  alias: "Fancoil Tania – Toggle Manuale"
+  mode: single
+  sequence:
+    - condition: template
+      value_template: >
+        {{ states('switch.camerageorgi_shelly_fancoil_georgi') in ['on', 'off'] }}
+    - action: switch.toggle
+      target:
+        entity_id: switch.camerageorgi_shelly_fancoil_georgi
+    - action: input_boolean.turn_on
+      target:
+        entity_id: input_boolean.fancoil_georgi_manuale
+
+#==================================================================================
+# SCRIPT: FANCOIL GEORGI – TOGGLE MANUALE
+#==================================================================================
+fancoil_georgi2_toggle_manuale:
+  alias: "Fancoil Georgi – Toggle Manuale"
+  mode: single
+  sequence:
+    - condition: template
+      value_template: >
+        {{ states('switch.camerageorgi_shelly_fancoil_georgi_2') in ['on', 'off'] }}
+    - action: switch.toggle
+      target:
+        entity_id: switch.camerageorgi_shelly_fancoil_georgi_2
+    - action: input_boolean.turn_on
+      target:
+        entity_id: input_boolean.fancoil_georgi2_manuale
+
+#==================================================================================
+# SCRIPT: FANCOIL SALA – TOGGLE MANUALE
+#==================================================================================
+fancoil_sala_toggle_manuale:
+  alias: "Fancoil Sala – Toggle Manuale"
+  mode: single
+  sequence:
+    - condition: template
+      value_template: >
+        {{ states('switch.sala_fancoil_sala_shelly_1gen4') in ['on', 'off'] }}
+    - action: switch.toggle
+      target:
+        entity_id: switch.sala_fancoil_sala_shelly_1gen4
+    - action: input_boolean.turn_on
+      target:
+        entity_id: input_boolean.fancoil_sala_manuale
+
+#==================================================================================
+# SCRIPT: DEUMIDIFICATORE CANTINA – TOGGLE MANUALE
+#==================================================================================
+deumidificatore_cantina_toggle_manuale:
+  alias: "Deumidificatore Cantina – Toggle Manuale"
+  mode: single
+  sequence:
+    - condition: template
+      value_template: >
+        {{ states('switch.presa_deumidificatore_cantina') in ['on', 'off'] }}
+    - action: switch.toggle
+      target:
+        entity_id: switch.presa_deumidificatore_cantina
+    - action: input_boolean.turn_on
+      target:
+        entity_id: input_boolean.deumidificatore_cantina_manuale
+
+#==================================================================================
+# SCRIPT: DEUMIDIFICATORE ARMADIO – TOGGLE MANUALE
+#==================================================================================
+deumidificatore_armadio_toggle_manuale:
+  alias: "Deumidificatore Armadio – Toggle Manuale"
+  mode: single
+  sequence:
+    - condition: template
+      value_template: >
+        {{ states('switch.deumidificatore_armadio_sonoff_sonoff_1002a68db0_1') in ['on', 'off'] }}
+    - action: switch.toggle
+      target:
+        entity_id: switch.deumidificatore_armadio_sonoff_sonoff_1002a68db0_1
+    - action: input_boolean.turn_on
+      target:
+        entity_id: input_boolean.deumidificatore_armadio_manuale

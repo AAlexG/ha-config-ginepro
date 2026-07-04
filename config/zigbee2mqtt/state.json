@@ -1,0 +1,23 @@
+{
+    "0xa4c1380640bfffff": {
+        "battery": 100,
+        "voltage": 3000,
+        "contact": false,
+        "battery_low": false,
+        "linkquality": 92
+    },
+    "0xa4c1380697d6ffff": {
+        "battery": 100,
+        "voltage": 3200,
+        "contact": false,
+        "battery_low": false,
+        "linkquality": 44
+    },
+    "0xa4c138f820e17e6e": {
+        "voltage": 3000,
+        "battery": 100,
+        "contact": false,
+        "tamper": false,
+        "battery_low": false
+    }
+}

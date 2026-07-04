@@ -1,0 +1,288 @@
+config:
+  path: sicurezza
+  views:
+  - max_columns: 4
+    path: meteo
+    sections:
+    - cards:
+      - heading: Apperture Porte/Cancelli/Persiane
+        heading_style: title
+        type: heading
+      - grid_options:
+          columns: 2
+          rows: auto
+        icon: mdi:gate-arrow-right
+        name: Canc ello
+        show_icon: true
+        show_name: true
+        show_state: false
+        tap_action:
+          action: perform-action
+          perform_action: script.apri_cancello_casa
+        type: button
+      - grid_options:
+          columns: 2
+          rows: auto
+        icon: mdi:boom-gate-up
+        name: Moto
+        show_icon: true
+        show_name: true
+        show_state: false
+        tap_action:
+          action: perform-action
+          perform_action: button.press
+          target:
+            entity_id: button.10007c3b31_0
+        type: button
+      - grid_options:
+          columns: 2
+          rows: auto
+        icon: mdi:garage-open
+        name: Box
+        show_state: false
+        tap_action:
+          action: perform-action
+          perform_action: script.apri_box_combo
+        type: button
+      - grid_options:
+          columns: 3
+          rows: auto
+        icon: mdi:garage
+        name: Portone Box
+        show_state: false
+        tap_action:
+          action: perform-action
+          perform_action: button.press
+          target:
+            entity_id: button.portone_telecomando
+        type: button
+      - grid_options:
+          columns: 3
+          rows: auto
+        icon: mdi:gate
+        name: Grande Cancello
+        show_state: false
+        tap_action:
+          action: perform-action
+          perform_action: script.apri_grande_cancello
+        type: button
+      - entity: binary_sensor.portone_box_stato
+        features_position: bottom
+        name: Portone box
+        type: tile
+        vertical: false
+      - entity: binary_sensor.persiana_tania_sensore_zigbee_contact
+        features_position: bottom
+        name: Tania pers
+        type: tile
+        vertical: false
+      - entity: binary_sensor.persiana_box_sensore_zigbee_contact
+        features_position: bottom
+        name: Box Persiana
+        type: tile
+        vertical: false
+      type: grid
+    - cards:
+      - heading: Persiana Tania
+        heading_style: title
+        icon: mdi:door-open
+        type: heading
+      - entity: binary_sensor.persiana_tania_sensore_zigbee_contact
+        features_position: bottom
+        name: Persiana
+        type: tile
+        vertical: false
+      - entity: sensor.persiana_tania_sensore_zigbee_battery
+        features_position: bottom
+        name: Batteria
+        type: tile
+        vertical: false
+      - entity: sensor.persiana_tania_sensore_zigbee_linkquality
+        features_position: bottom
+        name: "connettivit\xE0"
+        type: tile
+        vertical: false
+      type: grid
+    - cards:
+      - heading: Persiana Box
+        heading_style: title
+        icon: mdi:door-open
+        type: heading
+      - entity: binary_sensor.persiana_box_sensore_zigbee_contact
+        features_position: bottom
+        name: Persiana
+        type: tile
+        vertical: false
+      - entity: sensor.persiana_box_sensore_zigbee_battery
+        features_position: bottom
+        name: Batteria
+        type: tile
+        vertical: false
+      - entity: sensor.persiana_box_sensore_zigbee_linkquality
+        features_position: bottom
+        name: "Connettivit\xE0"
+        type: tile
+        vertical: false
+      type: grid
+    - cards:
+      - heading: Portone Box
+        heading_style: title
+        icon: mdi:door-open
+        type: heading
+      - entity: binary_sensor.portone_box_stato
+        features_position: bottom
+        name: Portone
+        type: tile
+        vertical: false
+      - entity: sensor.portone_box_sensore_zigbee_battery
+        features_position: bottom
+        name: Batteria
+        type: tile
+        vertical: false
+      - entity: sensor.0xa4c138f820e17e6e_linkquality
+        features_position: bottom
+        name: "Connettivit\xE0"
+        type: tile
+        vertical: false
+      type: grid
+    - cards:
+      - heading: Camere
+        heading_style: title
+        icon: mdi:camera
+        type: heading
+      - camera_view: live
+        entity: camera.179_camera_cancello_lente_scorrevole_0
+        fit_mode: cover
+        grid_options:
+          columns: 6
+          rows: auto
+        show_name: true
+        show_state: false
+        tap_action:
+          action: navigate
+          navigation_path: /media-browser
+        type: picture-entity
+      - camera_view: live
+        entity: camera.sotto_pergola_ezviz_c8w
+        fit_mode: cover
+        grid_options:
+          columns: 6
+          rows: auto
+        show_name: true
+        show_state: false
+        tap_action:
+          action: navigate
+          navigation_path: /media-browser
+        type: picture-entity
+      - camera_view: live
+        entity: camera.170_camera_cucina_5mp_scorrevole
+        fit_mode: cover
+        grid_options:
+          columns: 6
+          rows: auto
+        show_name: true
+        show_state: false
+        tap_action:
+          action: navigate
+          navigation_path: /media-browser
+        type: picture-entity
+      - camera_view: live
+        entity: camera.192_camera_barbecue_reolink_scorrevole
+        fit_mode: cover
+        grid_options:
+          columns: 6
+          rows: auto
+        show_name: true
+        show_state: false
+        tap_action:
+          action: navigate
+          navigation_path: /media-browser
+        type: picture-entity
+      - camera_view: live
+        entity: camera.camera_box_reolink_scorrevole
+        fit_mode: cover
+        grid_options:
+          columns: 6
+          rows: auto
+        show_entity_picture: true
+        show_name: true
+        show_state: false
+        tap_action:
+          action: navigate
+          navigation_path: /media-browser
+        type: picture-entity
+      - camera_view: live
+        entity: camera.183_camera_portone_reolinklumus_scorrevole
+        fit_mode: cover
+        grid_options:
+          columns: 6
+          rows: auto
+        show_name: true
+        show_state: false
+        tap_action:
+          action: navigate
+          navigation_path: /media-browser
+        type: picture-entity
+      - camera_view: live
+        entity: camera.184_camera_tania_scorrevole
+        fit_mode: cover
+        grid_options:
+          columns: 6
+          rows: auto
+        show_name: true
+        show_state: false
+        tap_action:
+          action: navigate
+          navigation_path: /media-browser
+        type: picture-entity
+      - camera_view: live
+        entity: camera.camera_georgi_reolink_scorrevole
+        fit_mode: cover
+        grid_options:
+          columns: 6
+          rows: auto
+        show_name: true
+        show_state: false
+        tap_action:
+          action: navigate
+          navigation_path: /media-browser
+        type: picture-entity
+      - camera_view: live
+        entity: camera.177_camera_nata_reolink_zoom_scorrevole
+        fit_mode: cover
+        grid_options:
+          columns: 6
+          rows: auto
+        show_name: true
+        show_state: false
+        tap_action:
+          action: navigate
+          navigation_path: /media-browser
+        type: picture-entity
+      - camera_view: live
+        entity: camera.186_camera_sopra_8k_scorrevole
+        fit_mode: cover
+        grid_options:
+          columns: 6
+          rows: 3
+        show_name: true
+        show_state: false
+        tap_action:
+          action: navigate
+          navigation_path: /media-browser
+        type: picture-entity
+      - camera_view: live
+        entity: camera.191_camera_sopra_gambe_ctronics_mainstreamprofile
+        fit_mode: cover
+        grid_options:
+          columns: 6
+          rows: auto
+        show_name: true
+        show_state: false
+        tap_action:
+          action: navigate
+          navigation_path: /media-browser
+        type: picture-entity
+      type: grid
+    title: Sicurezza
+    type: sections

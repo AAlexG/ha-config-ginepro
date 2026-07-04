@@ -1,0 +1,61 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "SunSpec Modbus TCP connection",
+        "description": "Enter the device host, port, and Unit ID to connect to your SunSpec device.",
+        "data": {
+          "host": "Hostname/IP",
+          "port": "Port",
+          "unit_id": "Unit ID"
+        }
+      },
+      "settings": {
+        "title": "Sensor options",
+        "description": "Enter an optional prefix for sensor names and select any additional SunSpec models (data registers) you would like to create sensors for. This can also be changed later in the component configuration.",
+        "data": {
+          "models_enabled": "Read models",
+          "prefix": "Sensors prefix",
+          "scan_interval": "Scan interval (seconds)"
+        }
+      }
+    },
+    "error": {
+      "connection": "Failed to connect, check hostname and port",
+      "device_error": "Connection reached the device, but initialization failed. Check the Home Assistant logs for details.",
+      "timeout": "Connection timed out. Check that the device is online and responding on the configured host, port, and Unit ID."
+    },
+    "abort": {
+      "single_instance_allowed": "Only a single instance is allowed."
+    }
+  },
+  "options": {
+    "step": {
+      "host_options": {
+        "title": "SunSpec Modbus TCP connection",
+        "description": "Update the device host, port, and Unit ID for this SunSpec connection.",
+        "data": {
+          "host": "Hostname/IP",
+          "port": "Port",
+          "unit_id": "Unit ID"
+        }
+      },
+      "model_options": {
+        "title": "Device Options",
+        "description": "Select what SunSpec models (data registers) you would like to create sensors for.",
+        "data": {
+          "host": "Hostname/IP",
+          "port": "Port",
+          "unit_id": "Unit ID",
+          "models_enabled": "Read models",
+          "scan_interval": "Scan interval (seconds)"
+        }
+      }
+    },
+    "error": {
+      "connection": "Failed to connect, check hostname and port",
+      "device_error": "Connection reached the device, but initialization failed. Check the Home Assistant logs for details.",
+      "timeout": "Connection timed out. Check that the device is online and responding on the configured host, port, and Unit ID."
+    }
+  }
+}

@@ -1,0 +1,22 @@
+items:
+- id: 37dfa00ffa94464285ab1908e5b05662
+  type: module
+  url: /hacsfiles/sunsynk-power-flow-card/sunsynk-power-flow-card.js?hacstag=613588535733
+- id: 0d73d327191849528449180974826699
+  type: module
+  url: /hacsfiles/advanced-camera-card/advanced-camera-card.js?hacstag=3940825527274
+- id: 93288a54164d4c2a842b2876fc9fb8c8
+  type: module
+  url: /hacsfiles/lovelace-auto-entities/auto-entities.js?hacstag=1677445841161
+- id: 9b72a3a992fc44148dd5c4c1d45164a1
+  type: module
+  url: /hacsfiles/lovelace-card-mod/card-mod.js?hacstag=190927524421
+- id: fe0b05411ddf4807bd5107310ccfe8e2
+  type: module
+  url: /hacsfiles/apexcharts-card/apexcharts-card.js?hacstag=331701152223
+- id: e8705e82d12d4e069840fd2100d2a52e
+  type: module
+  url: /hacsfiles/lovelace-plotly-graph-card/plotly-graph-card.js?hacstag=413812496335
+- id: 7cc6627d038d4760a817de48a8a148e9
+  type: module
+  url: /hacsfiles/lovelace-plotly-graph-card/plotly-graph-card.js

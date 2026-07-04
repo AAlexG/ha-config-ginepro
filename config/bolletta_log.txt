@@ -1,0 +1,150 @@
+[2026-05-13 21:15:21] Bolletta 2026-05
+  Elettricità kWh: 0 – saltato
+  Elettricità €: 0 – saltato
+  Gas m³: 0 – saltato
+  Gas €: 0 – saltato
+  Acqua m³: 0 – saltato
+  Acqua €: 0 – saltato
+Nessun valore >0 – nulla scritto nel DB.
+[2026-05-13 21:15:54] Bolletta 2026-05
+  Elettricità kWh: 0.001 kWh  [id=344]
+  Elettricità €: 0.01 €  [id=345]
+  Gas m³: 0 – saltato
+  Gas €: 0 – saltato
+  Acqua m³: 0 – saltato
+  Acqua €: 0 – saltato
+OK – 2 valori salvati per 2026-05. Riavvio rapido HA consigliato.
+[2026-05-13 21:30:22] Bolletta 2026-05
+  Elettricità kWh: 0.001 kWh  [id=344]
+  Elettricità €: 0.01 €  [id=345]
+  Gas m³: 0.001 m³  [id=346]
+  Gas €: 0.01 €  [id=347]
+  Acqua m³: 0.001 m³  [id=348]
+  Acqua €: 0.01 €  [id=349]
+OK – 6 valori salvati per 2026-05. Riavvio rapido HA consigliato.
+[2026-05-14 14:51:12] Bolletta 2026-04
+  Elettricità kWh: 0 – saltato
+  Elettricità €: 0 – saltato
+  Gas m³: 0 – saltato
+  Gas €: 0 – saltato
+  Acqua m³: 0 – saltato
+  Acqua €: 0 – saltato
+Nessun valore >0 – nulla scritto nel DB.
+[2026-05-14 14:51:24] Bolletta 2026-05
+  Elettricità kWh: 0 – saltato
+  Elettricità €: 0 – saltato
+  Gas m³: 0 – saltato
+  Gas €: 0 – saltato
+  Acqua m³: 0 – saltato
+  Acqua €: 0 – saltato
+Nessun valore >0 – nulla scritto nel DB.
+[2026-05-14 14:52:07] Bolletta 2026-05
+  Elettricità kWh: 0.001 kWh  [id=344]
+  Elettricità €: 0.01 €  [id=345]
+  Gas m³: 0 – saltato
+  Gas €: 0 – saltato
+  Acqua m³: 0 – saltato
+  Acqua €: 0 – saltato
+OK – 2 valori salvati per 2026-05. Riavvio rapido HA consigliato.
+[2026-05-14 16:59:55] Bolletta 2026-05
+  Elettricità kWh: 0.001 kWh  [id=344]
+  Elettricità €: 0.01 €  [id=345]
+  Gas m³: 0 – saltato
+  Gas €: 0 – saltato
+  Acqua m³: 0 – saltato
+  Acqua €: 0 – saltato
+OK – 2 valori salvati per 2026-05. Riavvio rapido HA consigliato.
+[2026-06-08 15:01:48] Bolletta 2026-04
+  Elettricità kWh: 0.001 kWh  [id=344]
+  Elettricità €: 0.01 €  [id=345]
+  Gas m³: 0 – saltato
+  Gas €: 0 – saltato
+  Acqua m³: 0 – saltato
+  Acqua €: 0 – saltato
+  [meta CREATO id=369] input_number.bolletta_gse_euro
+  GSE pagato €: 21.32 €  [id=369]
+OK – 3 valori salvati per 2026-04. Riavvio rapido HA consigliato.
+[2026-06-08 15:02:33] Bolletta 2026-03
+  Elettricità kWh: 0.001 kWh  [id=344]
+  Elettricità €: 0.01 €  [id=345]
+  Gas m³: 0 – saltato
+  Gas €: 0 – saltato
+  Acqua m³: 0 – saltato
+  Acqua €: 0 – saltato
+  GSE pagato €: 21.32 €  [id=369]
+OK – 3 valori salvati per 2026-03. Riavvio rapido HA consigliato.
+[2026-06-08 15:16:37] Bolletta 2026-03
+  Elettricità kWh: 0.001 kWh  [id=344]
+  Elettricità €: 0.01 €  [id=345]
+  Gas m³: 0 – saltato
+  Gas €: 0 – saltato
+  Acqua m³: 0 – saltato
+  Acqua €: 0 – saltato
+  GSE pagato €: 16.72 €  [id=369]
+OK – 3 valori salvati per 2026-03. Riavvio rapido HA consigliato.
+[2026-06-13 15:40:14] Bolletta 2025-06
+  Elettricità kWh: 0 – saltato
+  Elettricità €: 0 – saltato
+  Gas m³: 0 – saltato
+  Gas €: 0 – saltato
+  Acqua m³: 0 – saltato
+  Acqua €: 0 – saltato
+  GSE pagato €: 0 – saltato
+Nessun valore >0 – nulla scritto nel DB.
+[2026-07-01 20:27:34] Bolletta 2026-06
+  Elettricità kWh: 0 – saltato
+  Elettricità €: 0 – saltato
+  Gas m³: 0 – saltato
+  Gas €: 0 – saltato
+  Acqua m³: 0 – saltato
+  Acqua €: 0 – saltato
+  GSE pagato €: 32.06 €  [id=369]
+OK – 1 valori salvati per 2026-06. Riavvio rapido HA consigliato.
+[2026-07-03 17:32:48] Bolletta 2026-05
+  Elettricità kWh: 0 – saltato
+  Elettricità €: 0 – saltato
+  Gas m³: 0 – saltato
+  Gas €: 0 – saltato
+  Acqua m³: 0 – saltato
+  Acqua €: 0 – saltato
+  GSE pagato €: 32.06 €  [id=369]
+OK – 1 valori salvati per 2026-05. Riavvio rapido HA consigliato.
+[2026-07-03 17:34:48] Bolletta 2026-04
+  Elettricità kWh: 27.0 kWh  [id=344]
+  Elettricità €: 31.24 €  [id=345]
+  Gas m³: 30.0 m³  [id=346]
+  Gas €: 59.13 €  [id=347]
+  Acqua m³: 0 – saltato
+  Acqua €: 0 – saltato
+  GSE pagato €: 0 – saltato
+OK – 4 valori salvati per 2026-04. Riavvio rapido HA consigliato.
+[2026-07-03 17:36:10] Bolletta 2026-05
+  Elettricità kWh: 34.0 kWh  [id=344]
+  Elettricità €: 32.98 €  [id=345]
+  Gas m³: 4.0 m³  [id=346]
+  Gas €: 24.67 €  [id=347]
+  Acqua m³: 0 – saltato
+  Acqua €: 0 – saltato
+  GSE pagato €: 0 – saltato
+OK – 4 valori salvati per 2026-05. Riavvio rapido HA consigliato.
+[2026-07-03 18:04:21] Bolletta 2026-05
+[2026-07-03 18:04:21]   Elettricità kWh: 34.0 kWh  [id=344]
+[2026-07-03 18:04:21]   Elettricità €: 32.98 €  [id=345]
+[2026-07-03 18:04:21]   Gas m³: 4.0 m³  [id=346]
+[2026-07-03 18:04:21]   Gas €: 24.67 €  [id=347]
+[2026-07-03 18:04:21]   Acqua m³: 0 – saltato
+[2026-07-03 18:04:21]   Acqua €: 0 – saltato
+[2026-07-03 18:04:21]   GSE pagato €: 0 – saltato
+[2026-07-03 18:04:21] OK – 4 valori salvati per 2026-05.
+[2026-07-03 18:04:21] Prezzo €/kWh ricalcolato: 0.3336 (tot €=2501.47, tot kWh=7499.0)
+[2026-07-03 18:09:18] Bolletta 2026-05
+[2026-07-03 18:09:18]   Elettricità kWh: 34.0 kWh  [id=344]
+[2026-07-03 18:09:18]   Elettricità €: 32.98 €  [id=345]
+[2026-07-03 18:09:18]   Gas m³: 4.0 m³  [id=346]
+[2026-07-03 18:09:18]   Gas €: 24.67 €  [id=347]
+[2026-07-03 18:09:18]   Acqua m³: 0 – saltato
+[2026-07-03 18:09:18]   Acqua €: 0 – saltato
+[2026-07-03 18:09:18]   GSE pagato €: 0 – saltato
+[2026-07-03 18:09:18] OK – 4 valori salvati per 2026-05.
+[2026-07-03 18:09:18] Prezzo €/kWh ricalcolato: 0.3336 (tot €=2501.47, tot kWh=7499.0)
+[2026-07-03 18:09:18] Prezzo €/m³ gas ricalcolato: 1.2706 (tot €=2327.81, tot m³=1832.0)
