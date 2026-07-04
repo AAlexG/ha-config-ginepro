@@ -1,1 +1,3 @@
-
+config/www/*.mp3
+config/www/snapshot_*.jpg
+config/www/community_disabled/
