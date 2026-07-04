@@ -1,4 +1,4 @@
-# configuration_144.yaml
+# configuration_145.yaml
 
 default_config:
 
@@ -1935,12 +1935,5 @@ media_player:
       - media_player.salotto
       - media_player.googlehome8851
 
-#--- FOLDER WATCHER - Rileva modifiche ai file YAML in /config ---
-# Genera un evento folder_watcher (event_type: created/modified/deleted/moved)
-# usato dall'automazione di backup GitHub per lanciare l'export con debounce
-# di 5 minuti dopo l'ultima modifica, senza aspettare riavvio o notte.
-folder_watcher:
-  - folder: /config
-    patterns:
-      - "*.yaml"
-      - "*.py"
+#--- FOLDER WATCHER - configurato via interfaccia (Impostazioni → Dispositivi
+# e servizi → Aggiungi integrazione), non supporta YAML in questa versione ---
