@@ -1,4 +1,4 @@
-# automations_112.yaml
+# automations_114.yaml
 
 
 #==================================================================================
@@ -1005,8 +1005,8 @@
 # riavvio del core (rapido o completo), per mantenere sincronizzato il
 # repository GitHub con la configurazione reale su /config.
 #==================================================================================
-- id: backup_config_su_github
-  alias: "Backup config su GitHub"
+- id: copy_config_su_github
+  alias: "Copia su GitHub alle 3:15"
   mode: single
   triggers:
     - platform: time
@@ -1017,27 +1017,26 @@
     - action: hassio.addon_start
       data:
         addon: "68413af6_git-exporter"
+
 #==================================================================================
-# 39. BACKUP CONFIG SU GITHUB - DOPO MODIFICA (DEBOUNCE)
-#
-# Ogni volta che un file .yaml in /config viene modificato (evento
-# folder_watcher, richiede il blocco folder_watcher in configuration.yaml),
-# aspetta 5 minuti prima di lanciare l'export. Se arriva un'altra modifica
-# nel frattempo, mode: restart azzera l'attesa: l'export parte quindi
-# solo 5 minuti dopo l'ULTIMA modifica di una serie, catturandole tutte
-# in un solo giro. Complementa l'automazione 38 (notte/riavvio), che
-# resta invariata come rete di sicurezza indipendente.
+# 39. BACKUP CONFIG SU GITHUB - DOPO MODIFICA (DEBOUNCE 5 MIN)
 #==================================================================================
-- id: backup_config_su_github_debounce
-  alias: "Backup config su GitHub - dopo modifica"
+- id: copy_config_su_github_debounce
+  alias: "Copia su GitHub dopo modifica"
   mode: restart
   triggers:
-    - platform: event
-      event_type: folder_watcher
-      event_data:
-        event_type: modified
-  action:
-    - delay: "00:05:00"
+    - platform: state
+      entity_id: sensor.ultima_modifica_configurazione
+  conditions:
+    - condition: template
+      value_template: >-
+        {{ trigger.from_state is not none 
+           and trigger.from_state.state not in ['unknown', 'unavailable'] 
+           and trigger.to_state.state not in ['unknown', 'unavailable']
+           and trigger.to_state.state | int > trigger.from_state.state | int }}
+  actions:
+    - delay: "00:05:00" # <--- Attende 5 minuti dall'ultimo cambio di stato del sensore
     - action: hassio.addon_start
       data:
         addon: "68413af6_git-exporter"
+

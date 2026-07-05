@@ -1,4 +1,4 @@
-# automations_clima_31.yaml
+# automations_clima_32.yaml
 
 
 
@@ -374,12 +374,16 @@
         acqua_efficace_inverno: "{{ outlet >= soglia_acqua_inverno }}"
         temp_fuori_target_estate: "{{ t_georgi > target_estate }}"
         temp_fuori_target_inverno: "{{ t_georgi < target_inverno }}"
+        # Free cooling/heating naturale attivo: fancoil sempre spenti,
+        # in ogni fascia oraria (prelavoro 21-23 e notte 23-07)
+        freecooling_on: "{{ is_state('input_boolean.clima_freecooling_attivo', 'on') }}"
+        freeheating_on: "{{ is_state('input_boolean.clima_freeheating_attivo', 'on') }}"
         # Decisione finale: accendere i fancoil?
         fancoil_on: >
           {% if mode in ['Cool', 'Cool only'] %}
-            {{ temp_fuori_target_estate and acqua_efficace_estate }}
+            {{ temp_fuori_target_estate and acqua_efficace_estate and not freecooling_on }}
           {% elif mode in ['Heat', 'Heat only'] %}
-            {{ temp_fuori_target_inverno and acqua_efficace_inverno }}
+            {{ temp_fuori_target_inverno and acqua_efficace_inverno and not freeheating_on }}
           {% else %}
             false
           {% endif %}
@@ -475,9 +479,11 @@
         {% set outlet = states('sensor.panasonic_heat_pump_main_main_outlet_temp') | float(20) %}
         {% set tid = trigger.id %}
         {% if tid == 'estate' and mode in ['Cool', 'Cool only'] %}
-          {{ outlet <= states('input_number.maxtemp_giorno_estate_sala') | float(25) - 4 }}
+          {{ outlet <= states('input_number.maxtemp_giorno_estate_sala') | float(25) - 4
+             and is_state('input_boolean.clima_freecooling_attivo', 'off') }}
         {% elif tid == 'inverno' and mode in ['Heat', 'Heat only'] %}
-          {{ outlet >= states('input_number.mintemp_giorno_inverno_sala') | float(22) + 6 }}
+          {{ outlet >= states('input_number.mintemp_giorno_inverno_sala') | float(22) + 6
+             and is_state('input_boolean.clima_freeheating_attivo', 'off') }}
         {% else %}
           false
         {% endif %}
@@ -573,11 +579,14 @@
         acqua_efficace_inverno: "{{ outlet >= soglia_acqua_inverno }}"
         temp_sala_fuori_target_estate: "{{ t_sala > target_sala_estate }}"
         temp_sala_fuori_target_inverno: "{{ t_sala < target_sala_inverno }}"
+        # Free cooling/heating naturale attivo: fancoil sempre spento
+        freecooling_on: "{{ is_state('input_boolean.clima_freecooling_attivo', 'on') }}"
+        freeheating_on: "{{ is_state('input_boolean.clima_freeheating_attivo', 'on') }}"
         fancoil_sala_on: >
           {% if mode in ['Cool', 'Cool only'] %}
-            {{ temp_sala_fuori_target_estate and acqua_efficace_estate }}
+            {{ temp_sala_fuori_target_estate and acqua_efficace_estate and not freecooling_on }}
           {% elif mode in ['Heat', 'Heat only'] %}
-            {{ temp_sala_fuori_target_inverno and acqua_efficace_inverno }}
+            {{ temp_sala_fuori_target_inverno and acqua_efficace_inverno and not freeheating_on }}
           {% else %}
             false
           {% endif %}
@@ -811,9 +820,9 @@
 # Se il delta T_esterna-target e' sotto soglia, o sotto soglia+bonus con vento
 # medio 1h >= soglia_vento, il raffrescamento naturale e' sufficiente:
 # ammorbidisce il PID (setpoint piu' alto = pompa meno aggressiva, non spenta).
-# Il setpoint mandata piu' alto fa salire anche la temperatura acqua, per cui
-# i fancoil (che si accendono solo se acqua "efficace") smettono da soli di
-# partire, senza bisogno di toccarne la logica.
+# Il target usato per il delta segue clima_modalita (notte -> letto, altrimenti
+# sala). I controlli periodici fancoil (Georgi e Sala) leggono il flag e
+# spengono entro 5 minuti, in ogni fascia oraria (giorno, prelavoro 21-23, notte).
 #==================================================================================
 - id: clima_freecooling_attiva
   alias: "Clima – Free Cooling Naturale – Attiva"
@@ -821,7 +830,9 @@
     - trigger: template
       value_template: >
         {% set t_ext = states('sensor.hp1000se_pro_pro_v1_6_4_outdoor_temperature') | float(25) %}
-        {% set target = states('input_number.maxtemp_giorno_estate_sala') | float(25) %}
+        {% set target = states('input_number.maxtemp_notte_estate_letto') | float(25)
+           if states('input_select.clima_modalita') == 'notte'
+           else states('input_number.maxtemp_giorno_estate_sala') | float(25) %}
         {% set vento = states('sensor.wind_speed_media_1h') | float(0) %}
         {% set base = states('input_number.clima_delta_naturale_base') | float(3) %}
         {% set bonus = states('input_number.clima_delta_naturale_vento_bonus') | float(2) %}
@@ -866,7 +877,9 @@
     - trigger: template
       value_template: >
         {% set t_ext = states('sensor.hp1000se_pro_pro_v1_6_4_outdoor_temperature') | float(25) %}
-        {% set target = states('input_number.maxtemp_giorno_estate_sala') | float(25) %}
+        {% set target = states('input_number.maxtemp_notte_estate_letto') | float(25)
+           if states('input_select.clima_modalita') == 'notte'
+           else states('input_number.maxtemp_giorno_estate_sala') | float(25) %}
         {% set vento = states('sensor.wind_speed_media_1h') | float(0) %}
         {% set base = states('input_number.clima_delta_naturale_base') | float(3) %}
         {% set bonus = states('input_number.clima_delta_naturale_vento_bonus') | float(2) %}
@@ -1244,7 +1257,9 @@
     - trigger: template
       value_template: >
         {% set t_ext = states('sensor.hp1000se_pro_pro_v1_6_4_outdoor_temperature') | float(15) %}
-        {% set target = states('input_number.mintemp_giorno_inverno_sala') | float(22) %}
+        {% set target = states('input_number.mintemp_notte_inverno_letto') | float(22)
+           if states('input_select.clima_modalita') == 'notte'
+           else states('input_number.mintemp_giorno_inverno_sala') | float(22) %}
         {% set base = states('input_number.clima_delta_naturale_base') | float(3) %}
         {{ (target - t_ext) < base }}
       for: "00:10:00"
@@ -1284,7 +1299,9 @@
     - trigger: template
       value_template: >
         {% set t_ext = states('sensor.hp1000se_pro_pro_v1_6_4_outdoor_temperature') | float(15) %}
-        {% set target = states('input_number.mintemp_giorno_inverno_sala') | float(22) %}
+        {% set target = states('input_number.mintemp_notte_inverno_letto') | float(22)
+           if states('input_select.clima_modalita') == 'notte'
+           else states('input_number.mintemp_giorno_inverno_sala') | float(22) %}
         {% set base = states('input_number.clima_delta_naturale_base') | float(3) %}
         {{ not ((target - t_ext) < base) }}
       for: "00:10:00"
