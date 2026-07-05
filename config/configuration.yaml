@@ -1938,8 +1938,10 @@ media_player:
 command_line:
   - sensor:
       name: "Ultima Modifica Configurazione"
-      # Controlla solo i file reali (.yaml e .py) escludendo i file nascosti/temporanei
-      command: "find /config -maxdepth 3 -type f \\( -name '*.yaml' -o -name '*.py' \\) ! -name '.*' -printf '%T@\\n' | sort -n | tail -1"
-      scan_interval: 120 # <--- Modificato a 2 minuti (120 secondi)
+      # Usando '>' scriviamo il comando in modo pulito senza impazzire con i caratteri di escape
+      command: >
+        find /config -maxdepth 3 -type f \( -name "*.yaml" -o -name "*.py" \) ! -name ".*" -printf '%T@\n' | sort -n | tail -1
+      scan_interval: 120
       value_template: "{{ value | int }}"
+      
 
