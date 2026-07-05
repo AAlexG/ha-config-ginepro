@@ -65,7 +65,12 @@ command_line:
       value_template: "{{ value_json.mesi | length }}"
       json_attributes:
         - mesi
-
+  - sensor:
+      name: "Ultima Modifica Configurazione"
+      command: "find . -maxdepth 2 -name '*.yaml' -exec stat -c '%Y' {} + | sort -n | tail -1"
+      scan_interval: 120
+      value_template: "{{ value | int }}"
+      
 
 #--- TIGO / PANNELLI (TEMPLATE SENSOR) ---
 template:
@@ -1934,14 +1939,4 @@ media_player:
       - media_player.salotto
       - media_player.googlehome8851
 
-#--- Verifica timestamp file *.yaml e *.py per copiarlo in github----
-command_line:
-  - sensor:
-      name: "Ultima Modifica Configurazione"
-      # Usando '>' scriviamo il comando in modo pulito senza impazzire con i caratteri di escape
-      command: >
-        find /config -maxdepth 3 -type f \( -name "*.yaml" -o -name "*.py" \) ! -name ".*" -printf '%T@\n' | sort -n | tail -1
-      scan_interval: 120
-      value_template: "{{ value | int }}"
-      
 
