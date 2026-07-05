@@ -1,0 +1,18 @@
+# automations_heishamon_1.yaml
+- id: heishamon_log_su_file
+  alias: HeishaMon - Log MQTT su file
+  description: >-
+    Scrive ogni messaggio del topic panasonic_heat_pump/log su
+    /config/heishamon_log.txt (tramite notify.file) per diagnosticare
+    i freeze del HeishaMon. Da disattivare a diagnosi conclusa.
+  mode: queued
+  max: 500
+  triggers:
+    - trigger: mqtt
+      topic: panasonic_heat_pump/log
+  actions:
+    - action: notify.send_message
+      target:
+        entity_id: notify.file
+      data:
+        message: "{{ trigger.payload }}"
