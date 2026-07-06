@@ -1,4 +1,4 @@
-# configuration_147.yaml
+# configuration_148.yaml
 default_config:
 
 #==================================================================================
@@ -1874,6 +1874,21 @@ input_boolean:
     name: "Deumidificatore Armadio - Gestione Manuale"
     initial: false
     icon: mdi:hand-back-right
+
+  # --- GESTIONE MANUALE PERGOLA ---
+  # Si attiva quando l'utente tocca il toggle manuale in plancia (script.pergola_toggle_manuale).
+  # Blocca l'inseguimento solare e la sicurezza meteo fino al prossimo cambio giorno/notte (07:00/23:00).
+  pergola_blocco_manuale:
+    name: "Pergola - Gestione Manuale"
+    initial: false
+    icon: mdi:hand-back-left
+
+  # Si attiva quando l'automazione pergola_meteo_chiusura chiude per vento/pioggia/scarsa radiazione.
+  # Si disattiva da sola dopo 20 minuti con tutte le condizioni meteo rientrate.
+  pergola_meteo_chiusura:
+    name: "Pergola - Chiusura Sicurezza Meteo"
+    initial: false
+    icon: mdi:weather-windy
 
   grande_cancello_status_helper:
     name: Timer grande cancello aperto

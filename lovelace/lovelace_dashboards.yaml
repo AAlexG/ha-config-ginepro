@@ -68,3 +68,10 @@ items:
   show_in_sidebar: true
   title: Sicurezza
   url_path: dashboard-sicurezza
+- icon: mdi:train-car-hopper-covered
+  id: dashboard_tende
+  mode: storage
+  require_admin: false
+  show_in_sidebar: true
+  title: Tende
+  url_path: dashboard-tende

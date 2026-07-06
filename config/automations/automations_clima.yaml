@@ -1,4 +1,4 @@
-# automations_clima_32.yaml
+# automations_clima_33.yaml
 
 
 
@@ -248,6 +248,7 @@
           - input_boolean.fancoil_sala_manuale
           - input_boolean.deumidificatore_cantina_manuale
           - input_boolean.deumidificatore_armadio_manuale
+          - input_boolean.pergola_blocco_manuale
 
 - id: clima_modalita_notte
   alias: "Clima – Modalità Notte (23:00)"
@@ -283,6 +284,7 @@
           - input_boolean.fancoil_sala_manuale
           - input_boolean.deumidificatore_cantina_manuale
           - input_boolean.deumidificatore_armadio_manuale
+          - input_boolean.pergola_blocco_manuale
 
 #==================================================================================
 # GESTIONE MANUALE FANCOIL E DEUMIDIFICATORE

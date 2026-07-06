@@ -1,4 +1,4 @@
-# automations_114.yaml
+# automations_115.yaml
 #prova
 #==================================================================================
 # 1. BLOCCO IRRIGAZIONE - Orari fissi DST-aware
@@ -828,66 +828,6 @@
     - delay: "00:00:30"
     - action: shell_command.avvia_vivino_proxy
 
-#==================================================================================
-# 33. TENDA – Chiusura automatica per vento pericoloso
-#
-# Soglia: 40 km/h (raffiche) – margine di sicurezza rispetto alla Classe 3
-# UNI EN 13561 (49 km/h). Coerente con soglia vento blocco irrigazione.
-# Sensore: sensor.hp1000se_pro_pro_v1_6_4_wind_gust
-# Attuatore: switch.sonoff_100132fd56_4 (ON = tenda chiusa)
-#
-# NOTA: la chiusura fisica avviene ad ogni raffica >40 km/h se la tenda
-# risulta aperta. La NOTIFICA invece è limitata a 1 al giorno tramite
-# input_boolean.tenda_notifica_vento_oggi (reset a mezzanotte, vedi 33b).
-#==================================================================================
-- id: tenda_chiusura_vento
-  alias: "Tenda – Chiusura automatica per raffiche di vento"
-  mode: single
-  max_exceeded: silent
-  triggers:
-    - platform: numeric_state
-      entity_id: sensor.hp1000se_pro_pro_v1_6_4_wind_gust
-      above: 40
-  condition:
-    - condition: state
-      entity_id: switch.sonoff_100132fd56_4
-      state: "off"
-  action:
-    - action: switch.turn_on
-      target:
-        entity_id: switch.sonoff_100132fd56_4
-    - if:
-        - condition: state
-          entity_id: input_boolean.tenda_notifica_vento_oggi
-          state: "off"
-      then:
-        - action: notify.mobile_app_cph2653
-          data:
-            title: "💨 Tenda chiusa – vento"
-            message: >-
-              Raffica di {{ states('sensor.hp1000se_pro_pro_v1_6_4_wind_gust') | round(1) }} km/h rilevata.
-              Tenda chiusa automaticamente.
-            data:
-              priority: high
-              ttl: 0
-        - action: input_boolean.turn_on
-          target:
-            entity_id: input_boolean.tenda_notifica_vento_oggi
-
-#==================================================================================
-# 33b. TENDA – Reset notifica giornaliera vento a mezzanotte
-#==================================================================================
-- id: tenda_reset_notifica_vento_mezzanotte
-  alias: "Tenda - Reset notifica vento a mezzanotte"
-  mode: single
-  triggers:
-    - platform: time
-      at: "23:59:30"
-  condition: []
-  action:
-    - action: input_boolean.turn_off
-      target:
-        entity_id: input_boolean.tenda_notifica_vento_oggi
 
 #==================================================================================
 # 34. CALCOLO TABELLA MENSILE FV – Avvio HA + ogni ora

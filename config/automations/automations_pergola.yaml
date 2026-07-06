@@ -1,0 +1,204 @@
+# automations_pergola_2.yaml
+
+#==================================================================================
+# PERGOLA – INSEGUIMENTO SOLARE (1 giugno – 1 novembre, dalle 08:30 al tramonto)
+# Geometria: asse lamelle lungo la facciata (145°/325°), lamelle che si aprono
+# verso est e si chiudono verso ovest. Formula "profile angle" standard per
+# schermature orientate, calcolata su sun.sun (azimuth/elevation).
+# Parametri dichiarati (verificare sul campo, vedi nota in chat):
+#   corsa totale lamelle 0-100% = 135°, margine di sicurezza ombra = 20°,
+#   quantizzazione a scalini di 20 punti (per difetto = più chiuso = più sicuro).
+# Quando il sole è troppo radente rispetto al piano lamelle (geometria degenere,
+# tipicamente da metà-tarda pomeriggio in poi) il target è forzato a 0% (chiuso).
+# Rispetta sia il blocco manuale sia la chiusura di sicurezza meteo.
+#==================================================================================
+- id: pergola_inseguimento_solare
+  alias: "Pergola – Inseguimento Solare"
+  triggers:
+    - trigger: time_pattern
+      minutes: "/10"
+  conditions:
+    - condition: state
+      entity_id: input_boolean.pergola_blocco_manuale
+      state: "off"
+    - condition: state
+      entity_id: input_boolean.pergola_meteo_chiusura
+      state: "off"
+    - condition: template
+      value_template: "{{ '06-01' <= now().strftime('%m-%d') <= '11-01' }}"
+    - condition: time
+      after: "08:30:00"
+    - condition: numeric_state
+      entity_id: sun.sun
+      attribute: elevation
+      above: 0.5
+  actions:
+    - variables:
+        normal: 145
+        travel: 135
+        margin: 20
+        step: 20
+        az: "{{ state_attr('sun.sun','azimuth') | float(180) }}"
+        el: "{{ state_attr('sun.sun','elevation') | float(0) }}"
+        c: "{{ cos((az - normal) * pi / 180) }}"
+        pct_grezzo: "{{ (((atan(tan(el * pi / 180) / c) * 180 / pi) - margin) / travel) * 100 if c > 0.01 else 0 }}"
+        pct: "{{ [[pct_grezzo, 0] | max, 100] | min }}"
+        target: "{{ ((pct / step) | int) * step }}"
+        attuale: "{{ state_attr('cover.terrazzo_pergola_terrazza','current_position') | int(0) }}"
+    - condition: template
+      value_template: "{{ target != attuale }}"
+    - action: cover.set_cover_position
+      target:
+        entity_id: cover.terrazzo_pergola_terrazza
+      data:
+        position: "{{ target }}"
+
+#==================================================================================
+# PERGOLA – CHIUSURA SICUREZZA METEO
+# Chiude a 0% se: vento medio > 10 km/h per 3 minuti, raffica > 20 km/h,
+# pioggia in corso, radiazione solare < 150 W/m² per 30 minuti, oppure
+# previsione pioggia >= 50% nelle prossime 3 ore (weather.casa).
+# Rispetta solo il blocco manuale: la sicurezza meteo ha sempre priorità
+# sull'inseguimento solare.
+#==================================================================================
+- id: pergola_meteo_chiusura
+  alias: "Pergola – Chiusura Sicurezza Meteo"
+  triggers:
+    - trigger: numeric_state
+      entity_id: sensor.hp1000se_pro_pro_v1_6_4_wind_speed
+      above: 10
+      for: "00:03:00"
+    - trigger: numeric_state
+      entity_id: sensor.hp1000se_pro_pro_v1_6_4_wind_gust
+      above: 20
+    - trigger: numeric_state
+      entity_id: sensor.hp1000se_pro_pro_v1_6_4_hourly_rain
+      above: 0
+    - trigger: numeric_state
+      entity_id: sensor.hp1000se_pro_pro_v1_6_4_solar_radiation
+      below: 150
+      for: "00:30:00"
+    - trigger: time_pattern
+      minutes: "/10"
+  conditions:
+    - condition: state
+      entity_id: input_boolean.pergola_blocco_manuale
+      state: "off"
+  actions:
+    - action: weather.get_forecasts
+      target:
+        entity_id: weather.casa
+      data:
+        type: hourly
+      response_variable: previsione
+    - variables:
+        pioggia_prevista: >-
+          {{ previsione['weather.casa'].forecast[0:3]
+             | map(attribute='precipitation_probability')
+             | map('float', 0) | max(default=0) >= 50 }}
+        emergenza: >-
+          {{ (states('sensor.hp1000se_pro_pro_v1_6_4_wind_speed') | float(0) > 10)
+             or (states('sensor.hp1000se_pro_pro_v1_6_4_wind_gust') | float(0) > 20)
+             or (states('sensor.hp1000se_pro_pro_v1_6_4_hourly_rain') | float(0) > 0)
+             or (states('sensor.hp1000se_pro_pro_v1_6_4_solar_radiation') | float(9999) < 150)
+             or pioggia_prevista }}
+    - condition: template
+      value_template: "{{ emergenza }}"
+    - action: cover.close_cover
+      target:
+        entity_id: cover.terrazzo_pergola_terrazza
+    - action: input_boolean.turn_on
+      target:
+        entity_id: input_boolean.pergola_meteo_chiusura
+
+#==================================================================================
+# PERGOLA – RILASCIO SICUREZZA METEO
+# Rilascia il blocco meteo solo dopo 20 minuti consecutivi con tutte le
+# condizioni di sicurezza rientrate (vento, raffica, pioggia in corso,
+# radiazione solare). La previsione pioggia non è ricontrollata qui: verrà
+# rivalutata dal prossimo ciclio dell'automazione di chiusura sopra.
+#==================================================================================
+- id: pergola_meteo_rilascio
+  alias: "Pergola – Rilascio Sicurezza Meteo"
+  triggers:
+    - trigger: template
+      value_template: >-
+        {{ (states('sensor.hp1000se_pro_pro_v1_6_4_wind_speed') | float(0) <= 10)
+           and (states('sensor.hp1000se_pro_pro_v1_6_4_wind_gust') | float(0) <= 20)
+           and (states('sensor.hp1000se_pro_pro_v1_6_4_hourly_rain') | float(0) <= 0)
+           and (states('sensor.hp1000se_pro_pro_v1_6_4_solar_radiation') | float(0) >= 150) }}
+      for: "00:20:00"
+  conditions:
+    - condition: state
+      entity_id: input_boolean.pergola_meteo_chiusura
+      state: "on"
+  actions:
+    - action: input_boolean.turn_off
+      target:
+        entity_id: input_boolean.pergola_meteo_chiusura
+
+#==================================================================================
+# TENDA GIARDINO – Chiusura automatica per vento pericoloso
+# (spostata da automations.yaml v114 - era la n.33, id invariato)
+#
+# Soglia: 40 km/h (raffiche) - margine di sicurezza rispetto alla Classe 3
+# UNI EN 13561 (49 km/h). Coerente con soglia vento blocco irrigazione.
+# Sensore: sensor.hp1000se_pro_pro_v1_6_4_wind_gust
+# Attuatore: PRIMA switch.sonoff_100132fd56_4 (Sonoff smontato da Alex),
+# ORA cover.all_house_tenda_terrazzo (integrazione nativa in HA).
+#
+# NOTA: la chiusura fisica avviene ad ogni raffica >40 km/h se la tenda
+# risulta non completamente chiusa. La NOTIFICA e' limitata a 1 al giorno
+# tramite input_boolean.tenda_notifica_vento_oggi (reset a mezzanotte,
+# vedi automazione successiva).
+#==================================================================================
+- id: tenda_chiusura_vento
+  alias: "Tenda Giardino - Chiusura automatica per raffiche di vento"
+  mode: single
+  max_exceeded: silent
+  triggers:
+    - trigger: numeric_state
+      entity_id: sensor.hp1000se_pro_pro_v1_6_4_wind_gust
+      above: 40
+  conditions:
+    - condition: numeric_state
+      entity_id: cover.all_house_tenda_terrazzo
+      attribute: current_position
+      above: 0
+  actions:
+    - action: cover.close_cover
+      target:
+        entity_id: cover.all_house_tenda_terrazzo
+    - if:
+        - condition: state
+          entity_id: input_boolean.tenda_notifica_vento_oggi
+          state: "off"
+      then:
+        - action: notify.mobile_app_cph2653
+          data:
+            title: "💨 Tenda giardino chiusa - vento"
+            message: >-
+              Raffica di {{ states('sensor.hp1000se_pro_pro_v1_6_4_wind_gust') | round(1) }} km/h rilevata.
+              Tenda giardino chiusa automaticamente.
+            data:
+              priority: high
+              ttl: 0
+        - action: input_boolean.turn_on
+          target:
+            entity_id: input_boolean.tenda_notifica_vento_oggi
+
+#==================================================================================
+# TENDA GIARDINO – Reset notifica giornaliera vento a mezzanotte
+# (spostata da automations.yaml v114 - era la n.33b, id invariato)
+#==================================================================================
+- id: tenda_reset_notifica_vento_mezzanotte
+  alias: "Tenda Giardino - Reset notifica vento a mezzanotte"
+  mode: single
+  triggers:
+    - trigger: time
+      at: "23:59:30"
+  conditions: []
+  actions:
+    - action: input_boolean.turn_off
+      target:
+        entity_id: input_boolean.tenda_notifica_vento_oggi

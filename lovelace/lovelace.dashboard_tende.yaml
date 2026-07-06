@@ -1,0 +1,8 @@
+config:
+  views:
+  - sections:
+    - cards:
+      - heading: Nuova sezione
+        type: heading
+      type: grid
+    type: sections
