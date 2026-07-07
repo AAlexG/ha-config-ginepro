@@ -1,4 +1,4 @@
-# automations_pergola_4.yaml
+# automations_pergola_5.yaml
 
 #==================================================================================
 # PERGOLA – INSEGUIMENTO SOLARE (1 giugno – 1 novembre, dalle 08:30 al tramonto)
@@ -60,7 +60,7 @@
 # PERGOLA – CHIUSURA SICUREZZA METEO
 # Chiude a 0% se: vento medio > 10 km/h per 3 minuti, raffica > 20 km/h,
 # pioggia in corso, radiazione solare < 150 W/m² per 30 minuti, oppure
-# previsione pioggia >= 50% nelle prossime 3 ore (weather.casa).
+# previsione pioggia > 0 mm nelle prossime 3 ore (weather.casa).
 # Rispetta solo il blocco manuale: la sicurezza meteo ha sempre priorità
 # sull'inseguimento solare.
 #==================================================================================
@@ -79,7 +79,7 @@
       above: 0
     - trigger: numeric_state
       entity_id: sensor.hp1000se_pro_pro_v1_6_4_solar_radiation
-      below: 150
+      below: 30
       for: "00:30:00"
     - trigger: time_pattern
       minutes: "/10"
@@ -99,20 +99,22 @@
       response_variable: previsione
     - variables:
         pioggia_prevista: >-
-          {{ previsione['weather.casa'].forecast[0:3]
-             | map(attribute='precipitation_probability')
-             | map('float', 0) | max(default=0) >= 50 }}
+          {{ (previsione['weather.casa'].forecast[0:3]
+             | map(attribute='precipitation')
+             | map('float', 0) | list) | max | default(0) > 0 }}
         emergenza: >-
           {{ (states('sensor.hp1000se_pro_pro_v1_6_4_wind_speed') | float(0) > 10)
              or (states('sensor.hp1000se_pro_pro_v1_6_4_wind_gust') | float(0) > 20)
              or (states('sensor.hp1000se_pro_pro_v1_6_4_hourly_rain') | float(0) > 0)
-             or (states('sensor.hp1000se_pro_pro_v1_6_4_solar_radiation') | float(9999) < 150)
+             or (states('sensor.hp1000se_pro_pro_v1_6_4_solar_radiation') | float(9999) < 30)
              or pioggia_prevista }}
     - condition: template
       value_template: "{{ emergenza }}"
-    - action: cover.close_cover
+    - action: cover.set_cover_tilt_position
       target:
         entity_id: cover.terrazzo_pergola_terrazza
+      data:
+        tilt_position: 0
     - action: input_boolean.turn_on
       target:
         entity_id: input_boolean.pergola_meteo_chiusura
@@ -132,7 +134,7 @@
         {{ (states('sensor.hp1000se_pro_pro_v1_6_4_wind_speed') | float(0) <= 10)
            and (states('sensor.hp1000se_pro_pro_v1_6_4_wind_gust') | float(0) <= 20)
            and (states('sensor.hp1000se_pro_pro_v1_6_4_hourly_rain') | float(0) <= 0)
-           and (states('sensor.hp1000se_pro_pro_v1_6_4_solar_radiation') | float(0) >= 150) }}
+           and (states('sensor.hp1000se_pro_pro_v1_6_4_solar_radiation') | float(0) >= 30) }}
       for: "00:20:00"
   conditions:
     - condition: state
@@ -211,3 +213,4 @@
     - action: input_boolean.turn_off
       target:
         entity_id: input_boolean.tenda_notifica_vento_oggi
+        

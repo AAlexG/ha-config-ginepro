@@ -148,3 +148,19 @@ OK – 4 valori salvati per 2026-05. Riavvio rapido HA consigliato.
 [2026-07-03 18:09:18] OK – 4 valori salvati per 2026-05.
 [2026-07-03 18:09:18] Prezzo €/kWh ricalcolato: 0.3336 (tot €=2501.47, tot kWh=7499.0)
 [2026-07-03 18:09:18] Prezzo €/m³ gas ricalcolato: 1.2706 (tot €=2327.81, tot m³=1832.0)
+[2026-07-07 13:46:04] Bolletta 2026-06
+[2026-07-07 13:46:04]   Elettricità kWh: 0 – saltato
+[2026-07-07 13:46:04]   Elettricità €: 0 – saltato
+[2026-07-07 13:46:04]   Gas m³: 0 – saltato
+[2026-07-07 13:46:04]   Gas €: 0 – saltato
+[2026-07-07 13:46:04]   Acqua m³: 0 – saltato
+[2026-07-07 13:46:04]   Acqua €: 0 – saltato
+[2026-07-07 13:46:04]   GSE pagato €: 5.0 €  [id=369]
+[2026-07-07 13:46:04] OK – 1 valori salvati per 2026-06.
+[2026-07-07 13:46:04] Prezzo €/kWh ricalcolato: 0.3336 (tot €=2501.47, tot kWh=7499.0)
+[2026-07-07 13:46:04] Prezzo €/m³ gas ricalcolato: 1.2706 (tot €=2327.81, tot m³=1832.0)
+[2026-07-07 13:46:04]   GSE 2026-03: pagato 16.72 € ma kWh a rete = 0.0 – saltato
+[2026-07-07 13:46:04]   GSE 2026-04: 21.32 € / 642.9 kWh = 0.0332 €/kWh
+[2026-07-07 13:46:04]   GSE 2026-05: 32.06 € / 356.9 kWh = 0.0898 €/kWh
+[2026-07-07 13:46:04]   GSE 2026-06: 5.0 € / 561.4 kWh = 0.0089 €/kWh
+[2026-07-07 13:46:04] Prezzi GSE ricalcolati per 3 mesi: {'2026-04': 0.0332, '2026-05': 0.0898, '2026-06': 0.0089}
