@@ -103,7 +103,7 @@ config:
           id: euro
           opposite: true
       - chart_type: bar
-        days_to_show: 730
+        days_to_show: 90
         entities:
         - entity: sensor.gas_mese_mc
           name: "m\xB3 rilevato"
@@ -118,7 +118,7 @@ config:
         title: "Gas, m\xB3/mese"
         type: statistics-graph
       - chart_type: bar
-        days_to_show: 730
+        days_to_show: 90
         entities:
         - entity: sensor.gas_mese_euro
           name: "\u20AC rilevato"
@@ -517,7 +517,7 @@ config:
         heading_style: title
         type: heading
       - chart_type: bar
-        days_to_show: 730
+        days_to_show: 365
         entities:
         - entity: sensor.elettricita_mese_kwh
           name: kWh rilevato
@@ -532,7 +532,7 @@ config:
         title: Da rete, kWh/mese
         type: statistics-graph
       - chart_type: bar
-        days_to_show: 730
+        days_to_show: 365
         entities:
         - entity: sensor.elettricita_mese_euro
           name: "\u20AC rilevato"

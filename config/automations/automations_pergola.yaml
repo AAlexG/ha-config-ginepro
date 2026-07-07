@@ -1,4 +1,4 @@
-# automations_pergola_3.yaml
+# automations_pergola_4.yaml
 
 #==================================================================================
 # PERGOLA – INSEGUIMENTO SOLARE (1 giugno – 1 novembre, dalle 08:30 al tramonto)
@@ -47,14 +47,14 @@
         pct_grezzo: "{{ (((atan(tan(el * pi / 180) / c) * 180 / pi) - margin) / travel) * 100 if c > 0.01 else 0 }}"
         pct: "{{ [[pct_grezzo, 0] | max, 100] | min }}"
         target: "{{ ((pct / step) | int) * step }}"
-        attuale: "{{ state_attr('cover.terrazzo_pergola_terrazza','current_position') | int(0) }}"
+        attuale: "{{ state_attr('cover.terrazzo_pergola_terrazza','current_tilt_position') | int(0) }}"
     - condition: template
       value_template: "{{ target != attuale }}"
-    - action: cover.set_cover_position
+    - action: cover.set_cover_tilt_position
       target:
         entity_id: cover.terrazzo_pergola_terrazza
       data:
-        position: "{{ target }}"
+        tilt_position: "{{ target }}"
 
 #==================================================================================
 # PERGOLA – CHIUSURA SICUREZZA METEO
