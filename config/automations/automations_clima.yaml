@@ -1,4 +1,4 @@
-# automations_clima_34.yaml
+# automations_clima_35.yaml
 
 
 
@@ -818,85 +818,84 @@
             payload: "{{ setpoint }}"
 
 #==================================================================================
-# 7b. CLIMA – FREE COOLING NATURALE – ATTIVAZIONE (isteresi 10 min)
+# 7b. CLIMA – FREE COOLING NATURALE – CONTROLLO PERIODICO (ogni 5 minuti)
 # Se il delta T_esterna-target e' sotto soglia, o sotto soglia+bonus con vento
 # medio 1h >= soglia_vento, il raffrescamento naturale e' sufficiente:
-# ammorbidisce il PID (setpoint piu' alto = pompa meno aggressiva, non spenta).
+# ammorbidisce il PID (setpoint piu' alto = pompa meno aggressiva, non spenta)
+# e i controlli periodici fancoil leggono il flag e spengono entro 5 minuti,
+# in ogni fascia oraria (giorno, prelavoro 21-23, notte).
 # Il target usato per il delta segue clima_modalita (notte -> letto, altrimenti
-# sala). I controlli periodici fancoil (Georgi e Sala) leggono il flag e
-# spengono entro 5 minuti, in ogni fascia oraria (giorno, prelavoro 21-23, notte).
+# sala). Controllo periodico (non a fronte): robusto contro riavvii, freeze
+# HeishaMon e trigger persi. Isteresi 0.5 C al posto del vecchio for: 10 min.
+# Se il mode Panasonic e' unavailable/unknown il flag non viene toccato.
 #==================================================================================
-- id: clima_freecooling_attiva
-  alias: "Clima – Free Cooling Naturale – Attiva"
+- id: clima_freecooling_controllo
+  alias: "Clima – Free Cooling Naturale – Controllo Periodico"
+  description: >
+    Ogni 5 minuti allinea input_boolean.clima_freecooling_attivo alla condizione
+    di raffrescamento naturale. Attiva se delta < base (o < base+bonus con vento),
+    disattiva solo oltre 0.5 C di isteresi. Notifica una volta al giorno.
+  mode: single
   triggers:
-    - trigger: template
-      value_template: >
-        {% set t_ext = states('sensor.hp1000se_pro_pro_v1_6_4_outdoor_temperature') | float(25) %}
-        {% set target = states('input_number.maxtemp_notte_estate_letto') | float(25)
-           if states('input_select.clima_modalita') == 'notte'
-           else states('input_number.maxtemp_giorno_estate_sala') | float(25) %}
-        {% set vento = states('sensor.wind_speed_media_1h') | float(0) %}
-        {% set base = states('input_number.clima_delta_naturale_base') | float(3) %}
-        {% set bonus = states('input_number.clima_delta_naturale_vento_bonus') | float(2) %}
-        {% set soglia_vento = states('input_number.clima_soglia_vento_naturale') | float(6) %}
-        {% set delta = t_ext - target %}
-        {{ delta < base or (delta < (base + bonus) and vento >= soglia_vento) }}
-      for: "00:10:00"
-  conditions:
-    - condition: template
-      value_template: >
-        {{ states('select.panasonic_heat_pump_main_operating_mode_state')
-           in ['Cool', 'Cool only'] }}
-    - condition: state
-      entity_id: input_boolean.clima_freecooling_attivo
-      state: "off"
+    - trigger: time_pattern
+      minutes: "/5"
   actions:
-    - action: input_boolean.turn_on
-      target:
-        entity_id: input_boolean.clima_freecooling_attivo
-    - if:
-        - condition: state
-          entity_id: input_boolean.clima_freecooling_notifica_oggi
-          state: "off"
-      then:
-        - action: notify.mobile_app_cph2653
-          data:
-            title: "🌬️ Free cooling attivo"
-            message: >
-              Temperatura esterna {{ states('sensor.hp1000se_pro_pro_v1_6_4_outdoor_temperature') | round(1) }}°C,
-              vento medio {{ states('sensor.wind_speed_media_1h') | round(1) }} km/h.
-              Pompa ammorbidita, fancoil in pausa: il raffrescamento naturale basta.
-        - action: input_boolean.turn_on
-          target:
-            entity_id: input_boolean.clima_freecooling_notifica_oggi
-
-#==================================================================================
-# 7c. CLIMA – FREE COOLING NATURALE – DISATTIVAZIONE (isteresi 10 min)
-#==================================================================================
-- id: clima_freecooling_disattiva
-  alias: "Clima – Free Cooling Naturale – Disattiva"
-  triggers:
-    - trigger: template
-      value_template: >
-        {% set t_ext = states('sensor.hp1000se_pro_pro_v1_6_4_outdoor_temperature') | float(25) %}
-        {% set target = states('input_number.maxtemp_notte_estate_letto') | float(25)
-           if states('input_select.clima_modalita') == 'notte'
-           else states('input_number.maxtemp_giorno_estate_sala') | float(25) %}
-        {% set vento = states('sensor.wind_speed_media_1h') | float(0) %}
-        {% set base = states('input_number.clima_delta_naturale_base') | float(3) %}
-        {% set bonus = states('input_number.clima_delta_naturale_vento_bonus') | float(2) %}
-        {% set soglia_vento = states('input_number.clima_soglia_vento_naturale') | float(6) %}
-        {% set delta = t_ext - target %}
-        {{ not (delta < base or (delta < (base + bonus) and vento >= soglia_vento)) }}
-      for: "00:10:00"
-  conditions:
-    - condition: state
-      entity_id: input_boolean.clima_freecooling_attivo
-      state: "on"
-  actions:
-    - action: input_boolean.turn_off
-      target:
-        entity_id: input_boolean.clima_freecooling_attivo
+    - variables:
+        mode: "{{ states('select.panasonic_heat_pump_main_operating_mode_state') }}"
+        t_ext: "{{ states('sensor.hp1000se_pro_pro_v1_6_4_outdoor_temperature') | float(25) }}"
+        target: >
+          {{ states('input_number.maxtemp_notte_estate_letto') | float(25)
+             if states('input_select.clima_modalita') == 'notte'
+             else states('input_number.maxtemp_giorno_estate_sala') | float(25) }}
+        vento: "{{ states('sensor.wind_speed_media_1h') | float(0) }}"
+        base: "{{ states('input_number.clima_delta_naturale_base') | float(3) }}"
+        bonus: "{{ states('input_number.clima_delta_naturale_vento_bonus') | float(2) }}"
+        soglia_vento: "{{ states('input_number.clima_soglia_vento_naturale') | float(6) }}"
+        delta: "{{ t_ext - target }}"
+        flag_on: "{{ is_state('input_boolean.clima_freecooling_attivo', 'on') }}"
+        # Condizione di attivazione (soglie base)
+        cond_on: >
+          {{ delta < base or (delta < (base + bonus) and vento >= soglia_vento) }}
+        # Condizione di disattivazione: fuori soglia con margine 0.5 C di isteresi
+        cond_off: >
+          {{ not (delta < (base + 0.5)
+                  or (delta < (base + bonus + 0.5) and vento >= soglia_vento)) }}
+    - choose:
+        # --- ATTIVA: solo in Cool, condizione soddisfatta, flag spento ---
+        - conditions:
+            - condition: template
+              value_template: "{{ mode in ['Cool', 'Cool only'] and cond_on and not flag_on }}"
+          sequence:
+            - action: input_boolean.turn_on
+              target:
+                entity_id: input_boolean.clima_freecooling_attivo
+            - if:
+                - condition: state
+                  entity_id: input_boolean.clima_freecooling_notifica_oggi
+                  state: "off"
+              then:
+                - action: notify.mobile_app_cph2653
+                  data:
+                    title: "🌬️ Free cooling attivo"
+                    message: >
+                      Temperatura esterna {{ states('sensor.hp1000se_pro_pro_v1_6_4_outdoor_temperature') | round(1) }}°C,
+                      vento medio {{ states('sensor.wind_speed_media_1h') | round(1) }} km/h.
+                      Pompa ammorbidita, fancoil in pausa: il raffrescamento naturale basta.
+                - action: input_boolean.turn_on
+                  target:
+                    entity_id: input_boolean.clima_freecooling_notifica_oggi
+        # --- DISATTIVA: flag acceso e condizione uscita (con isteresi) in Cool,
+        #     oppure mode noto diverso da Cool (mai su unavailable/unknown) ---
+        - conditions:
+            - condition: template
+              value_template: >
+                {{ flag_on and
+                   ((mode in ['Cool', 'Cool only'] and cond_off)
+                    or (mode not in ['Cool', 'Cool only', 'unavailable', 'unknown', 'none'])) }}
+          sequence:
+            - action: input_boolean.turn_off
+              target:
+                entity_id: input_boolean.clima_freecooling_attivo
 
 #==================================================================================
 # 8. PANASONIC - CLIMA – PRE-RAFFRESCAMENTO DA PREVISIONI METEO
@@ -1249,72 +1248,72 @@
                 payload: "{{ setpoint }}"
 
 #==================================================================================
-# 13b. CLIMA – FREE HEATING NATURALE – ATTIVAZIONE (isteresi 10 min)
+# 13b. CLIMA – FREE HEATING NATURALE – CONTROLLO PERIODICO (ogni 5 minuti)
 # Speculare al free cooling estivo, ma SOLO in temperatura: il vento in
 # inverno peggiora la dispersione, quindi non viene considerato.
+# Il target usato per il delta segue clima_modalita (notte -> letto, altrimenti
+# sala). Controllo periodico (non a fronte): robusto contro riavvii, freeze
+# HeishaMon e trigger persi. Isteresi 0.5 C al posto del vecchio for: 10 min.
 #==================================================================================
-- id: clima_freeheating_attiva
-  alias: "Clima – Free Heating Naturale – Attiva"
+- id: clima_freeheating_controllo
+  alias: "Clima – Free Heating Naturale – Controllo Periodico"
+  description: >
+    Ogni 5 minuti allinea input_boolean.clima_freeheating_attivo alla condizione
+    di riscaldamento naturale/passivo. Attiva se (target - T_ext) < base,
+    disattiva solo oltre 0.5 C di isteresi. Notifica una volta al giorno.
+  mode: single
   triggers:
-    - trigger: template
-      value_template: >
-        {% set t_ext = states('sensor.hp1000se_pro_pro_v1_6_4_outdoor_temperature') | float(15) %}
-        {% set target = states('input_number.mintemp_notte_inverno_letto') | float(22)
-           if states('input_select.clima_modalita') == 'notte'
-           else states('input_number.mintemp_giorno_inverno_sala') | float(22) %}
-        {% set base = states('input_number.clima_delta_naturale_base') | float(3) %}
-        {{ (target - t_ext) < base }}
-      for: "00:10:00"
-  conditions:
-    - condition: template
-      value_template: >
-        {{ states('select.panasonic_heat_pump_main_operating_mode_state')
-           in ['Heat', 'Heat only'] }}
-    - condition: state
-      entity_id: input_boolean.clima_freeheating_attivo
-      state: "off"
+    - trigger: time_pattern
+      minutes: "/5"
   actions:
-    - action: input_boolean.turn_on
-      target:
-        entity_id: input_boolean.clima_freeheating_attivo
-    - if:
-        - condition: state
-          entity_id: input_boolean.clima_freeheating_notifica_oggi
-          state: "off"
-      then:
-        - action: notify.mobile_app_cph2653
-          data:
-            title: "☀️ Free heating attivo"
-            message: >
-              Temperatura esterna {{ states('sensor.hp1000se_pro_pro_v1_6_4_outdoor_temperature') | round(1) }}°C,
-              vicina al target. Pompa ammorbidita: il riscaldamento naturale/passivo basta.
-        - action: input_boolean.turn_on
-          target:
-            entity_id: input_boolean.clima_freeheating_notifica_oggi
-
-#==================================================================================
-# 13c. CLIMA – FREE HEATING NATURALE – DISATTIVAZIONE (isteresi 10 min)
-#==================================================================================
-- id: clima_freeheating_disattiva
-  alias: "Clima – Free Heating Naturale – Disattiva"
-  triggers:
-    - trigger: template
-      value_template: >
-        {% set t_ext = states('sensor.hp1000se_pro_pro_v1_6_4_outdoor_temperature') | float(15) %}
-        {% set target = states('input_number.mintemp_notte_inverno_letto') | float(22)
-           if states('input_select.clima_modalita') == 'notte'
-           else states('input_number.mintemp_giorno_inverno_sala') | float(22) %}
-        {% set base = states('input_number.clima_delta_naturale_base') | float(3) %}
-        {{ not ((target - t_ext) < base) }}
-      for: "00:10:00"
-  conditions:
-    - condition: state
-      entity_id: input_boolean.clima_freeheating_attivo
-      state: "on"
-  actions:
-    - action: input_boolean.turn_off
-      target:
-        entity_id: input_boolean.clima_freeheating_attivo
+    - variables:
+        mode: "{{ states('select.panasonic_heat_pump_main_operating_mode_state') }}"
+        t_ext: "{{ states('sensor.hp1000se_pro_pro_v1_6_4_outdoor_temperature') | float(15) }}"
+        target: >
+          {{ states('input_number.mintemp_notte_inverno_letto') | float(22)
+             if states('input_select.clima_modalita') == 'notte'
+             else states('input_number.mintemp_giorno_inverno_sala') | float(22) }}
+        base: "{{ states('input_number.clima_delta_naturale_base') | float(3) }}"
+        delta: "{{ target - t_ext }}"
+        flag_on: "{{ is_state('input_boolean.clima_freeheating_attivo', 'on') }}"
+        cond_on: "{{ delta < base }}"
+        # Disattivazione: fuori soglia con margine 0.5 C di isteresi
+        cond_off: "{{ delta >= (base + 0.5) }}"
+    - choose:
+        # --- ATTIVA: solo in Heat, condizione soddisfatta, flag spento ---
+        - conditions:
+            - condition: template
+              value_template: "{{ mode in ['Heat', 'Heat only'] and cond_on and not flag_on }}"
+          sequence:
+            - action: input_boolean.turn_on
+              target:
+                entity_id: input_boolean.clima_freeheating_attivo
+            - if:
+                - condition: state
+                  entity_id: input_boolean.clima_freeheating_notifica_oggi
+                  state: "off"
+              then:
+                - action: notify.mobile_app_cph2653
+                  data:
+                    title: "☀️ Free heating attivo"
+                    message: >
+                      Temperatura esterna {{ states('sensor.hp1000se_pro_pro_v1_6_4_outdoor_temperature') | round(1) }}°C,
+                      vicina al target. Pompa ammorbidita: il riscaldamento naturale/passivo basta.
+                - action: input_boolean.turn_on
+                  target:
+                    entity_id: input_boolean.clima_freeheating_notifica_oggi
+        # --- DISATTIVA: flag acceso e condizione uscita (con isteresi) in Heat,
+        #     oppure mode noto diverso da Heat (mai su unavailable/unknown) ---
+        - conditions:
+            - condition: template
+              value_template: >
+                {{ flag_on and
+                   ((mode in ['Heat', 'Heat only'] and cond_off)
+                    or (mode not in ['Heat', 'Heat only', 'unavailable', 'unknown', 'none'])) }}
+          sequence:
+            - action: input_boolean.turn_off
+              target:
+                entity_id: input_boolean.clima_freeheating_attivo
 
 #==================================================================================
 # 13d. CLIMA – RESET NOTIFICHE FREE COOLING/HEATING A MEZZANOTTE
@@ -1689,13 +1688,7 @@
 - id: riscaldamento_rientro_vacanza
   alias: "Riscaldamento rientro vacanza"
   description: >
-    Alle 15:00 del giorno di fine vacanza ripristina la casa, con qualsiasi
-    temperatura: spegne il flag vacanza, modalita' clima "giorno", riattiva
-    acqua sanitaria e canto degli uccelli. Riscaldamento acceso solo se
-    T esterna < 17; in alternativa riattiva il cooling se la PdC e' in Cool.
-    Fancoil e pergola NON vengono comandati direttamente: ripartono da soli
-    dalle rispettive automazioni una volta spento il flag e tornata la
-    modalita' "giorno".
+    Alle 15:00 del giorno di fine vacanza, accende tutto.
   trigger:
     - platform: time
       at: "15:00:00"
@@ -1706,86 +1699,62 @@
         {% set title = state_attr(cal, 'message') | default('') %}
         {% set desc = state_attr(cal, 'description') | default('') %}
         {% set end = state_attr(cal, 'end_time') %}
-
+        
         {% if end %}
           {% set end_dt = strptime(end, '%Y-%m-%d %H:%M:%S') %}
           {% set oggi = now().date() %}
-
+          
           {# Oggi deve essere esattamente il giorno di fine evento #}
-          {% set e_giorno_di_rientro = (end_dt.date() == oggi) %}
-
+          {% set è_giorno_di_rientro = (end_dt.date() == oggi) %}
+          
           {# La parola chiave deve essere nel titolo o descrizione #}
-          {% set e_vacanza = 'vacanza' in (title ~ desc) | lower %}
-
-          {{ e_giorno_di_rientro and e_vacanza }}
+          {% set è_vacanza = 'vacanza' in (title ~ desc) | lower %}
+          
+          {{ è_giorno_di_rientro and è_vacanza }}
         {% else %}
           false
         {% endif %}
+    - condition: numeric_state
+      entity_id: sensor.hp1000se_pro_pro_v1_6_4_outdoor_temperature
+      below: 17
   action:
-    # Ripristini incondizionati (con qualsiasi temperatura)
-    - action: input_boolean.turn_off
+    - action: climate.set_hvac_mode
       target:
-        entity_id: input_boolean.vacanza
+        entity_id: climate.smart_autotune_thermostat_living_room
+      data:
+        hvac_mode: "heat"
+    - action: climate.set_preset_mode
+      target:
+        entity_id: climate.smart_autotune_thermostat_living_room
+      data:
+        preset_mode: "home"
+    - action: climate.set_temperature
+      target:
+        entity_id: climate.smart_autotune_thermostat_living_room
+      data:
+        temperature: 22
+    - action: mqtt.publish
+      data:
+        topic: "OTGW/set/otgw-84CCA8ADE1AD/command"
+        payload: "HW=1"
     - action: input_select.select_option
       target:
         entity_id: input_select.clima_modalita
       data:
         option: "giorno"
-    - action: mqtt.publish
-      data:
-        topic: "OTGW/set/otgw-84CCA8ADE1AD/command"
-        payload: "HW=1"
-    # Riavvia canto uccelli (volume 20% + play)
-    - action: script.riaggancia_yamaha
-    # Ramo riscaldamento: solo se fa freddo
     - if:
-        - condition: numeric_state
-          entity_id: sensor.hp1000se_pro_pro_v1_6_4_outdoor_temperature
-          below: 17
+        - condition: state
+          entity_id: select.panasonic_heat_pump_main_operating_mode_state
+          state: "Heat"
       then:
-        - action: climate.set_hvac_mode
+        - action: switch.turn_on
           target:
-            entity_id: climate.smart_autotune_thermostat_living_room
+            entity_id: switch.panasonic_heat_pump_main_heatpump_state
+        - action: notify.mobile_app_cph2653
           data:
-            hvac_mode: "heat"
-        - action: climate.set_preset_mode
-          target:
-            entity_id: climate.smart_autotune_thermostat_living_room
-          data:
-            preset_mode: "home"
-        - action: climate.set_temperature
-          target:
-            entity_id: climate.smart_autotune_thermostat_living_room
-          data:
-            temperature: 22
-        - if:
-            - condition: state
-              entity_id: select.panasonic_heat_pump_main_operating_mode_state
-              state: "Heat"
-          then:
-            - action: switch.turn_on
-              target:
-                entity_id: switch.panasonic_heat_pump_main_heatpump_state
-      # Ramo raffrescamento: se la PdC e' in modalita' Cool la riaccende;
-      # poi la normale automazione a isteresi riprende il controllo.
-      else:
-        - if:
-            - condition: template
-              value_template: >
-                {{ states('select.panasonic_heat_pump_main_operating_mode_state')
-                   in ['Cool', 'Cool only'] }}
-          then:
-            - action: switch.turn_on
-              target:
-                entity_id: switch.panasonic_heat_pump_main_heatpump_state
-    - action: notify.mobile_app_cph2653
-      data:
-        title: "Rientro vacanza"
-        message: >
-          Casa ripristinata: modalita' giorno, acqua sanitaria riattivata,
-          canto uccelli riavviato. Clima riattivato in base alla stagione.
-          Fancoil e pergola ripartono dalle loro automazioni. Benvenuti a casa!
-
+            title: "Rientro vacanza"
+            message: "Caldaia e pompa di calore riaccese. Benvenuti a casa!"
+        
 #==================================================================================
 # 26. CALDAIA - SAT - RISCALDAMENTO - Spegnimento inizio vacanza 
 #==================================================================================
@@ -1793,9 +1762,7 @@
   alias: "Spegnimento riscaldamento inizio vacanza"
   description: >
     1 ora dopo l'inizio di un evento con 'Vacanza' nel titolo
-    (durato più di 1 giorno), spegne riscaldamento (away), acqua sanitaria,
-    pompa di calore e fancoil; accende input_boolean.vacanza; chiude pergola
-    e tenda giardino; ferma il canto degli uccelli.
+    (durato più di 1 giorno), spegne riscaldamento (away) e acqua sanitaria.
     Il controllo sull'evento è nell'action (if/then) così il lancio manuale
     funziona sempre; il filtro blocca solo trigger da eventi non-vacanza.
   trigger:
@@ -1858,32 +1825,12 @@
               - switch.camerageorgi_shelly_fancoil_georgi
               - switch.camerageorgi_shelly_fancoil_georgi_2
               - switch.sala_fancoil_sala_shelly_1gen4
-        # Flag vacanza: ferma pergola, tenda giardino e canto uccelli
-        - action: input_boolean.turn_on
-          target:
-            entity_id: input_boolean.vacanza
-        # Pulizia flag pergola (il blocco manuale non deve sopravvivere alla partenza)
-        - action: input_boolean.turn_off
-          target:
-            entity_id:
-              - input_boolean.pergola_blocco_manuale
-              - input_boolean.pergola_meteo_chiusura
-        # Chiusura pergola e tenda giardino
-        - action: cover.close_cover
-          target:
-            entity_id:
-              - cover.terrazzo_pergola_terrazza
-              - cover.all_house_tenda_terrazzo
-        # Stop canto uccelli (la Yamaha andra' in auto-standby dopo 8h: voluto)
-        - action: media_player.media_stop
-          target:
-            entity_id: media_player.googlehome8851
         - action: notify.mobile_app_cph2653
           data:
             title: "✈️ Vacanza iniziata"
             message: >
               Riscaldamento away, acqua sanitaria spenta, pompa di calore spenta,
-              fancoil spenti, pergola e tenda giardino chiuse, canto uccelli fermato.
+              fancoil camera e sala spenti.
               Evento: {{ state_attr('calendar.aagorine_gmail_com', 'message') }}
               Buona vacanza!
 #==================================================================================
