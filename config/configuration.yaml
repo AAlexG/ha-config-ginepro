@@ -1,4 +1,4 @@
-# configuration_149.yaml
+# configuration_150.yaml
 default_config:
 
 #==================================================================================
@@ -526,25 +526,13 @@ template:
         state_class: measurement
         icon: mdi:transmission-tower-export
 
-      # Prezzo implicito €/kWh pagato da GSE per il mese corrente.
-      # Calcolato come bolletta_gse_euro / sensor.a_rete_mese.
-      # Attivo SOLO se il mese selezionato coincide con il mese reale corrente.
-      # Restituisce 0 se kwh < 0.1 (protezione divisione) o mese non corrente.
-      - name: "GSE Prezzo KWh"
-        unique_id: "gse_prezzo_kwh"
-        state: >-
-          {% set mese_sel = states('input_select.bolletta_mese_sel') %}
-          {% set mese_now = now().strftime('%m/%Y') %}
-          {% set kwh = states('sensor.a_rete_mese') | float(0) %}
-          {% set pagato = states('input_number.bolletta_gse_euro') | float(0) %}
-          {% if mese_sel == mese_now and kwh >= 0.1 %}
-            {{ (pagato / kwh) | round(4) }}
-          {% else %}
-            0
-          {% endif %}
-        unit_of_measurement: "€/kWh"
-        state_class: measurement
-        icon: mdi:currency-eur
+      # NOTA: il sensore template "GSE Prezzo KWh" è stato RIMOSSO.
+      # Il calcolo del prezzo €/kWh pagato dal GSE avviene ora in
+      # salva_bolletta.py, che inietta le statistiche mensili sotto
+      # lo statistic_id sensor.gse_prezzo_kwh (mese pagamento ÷ kWh
+      # a rete di quel mese, da statistiche di sensor.a_rete_mese).
+      # Il grafico "Prezzo GSE €/kWh" della dashboard continua a
+      # leggere le stesse statistiche.
 
   # ============================================================
   # CALDAIA: binary_sensor DHW effettivo (NUOVO – configuration_54)
@@ -1606,7 +1594,8 @@ input_number:
 
   # Importo mensile pagato dal GSE per l'energia ceduta alla rete.
   # Da inserire manualmente quando arriva il bonifico GSE.
-  # Usato per calcolare sensor.gse_prezzo_kwh e nei grafici GSE.
+  # Storicizzato da salva_bolletta.py, che ricalcola anche il prezzo
+  # €/kWh GSE per ogni mese (statistiche sensor.gse_prezzo_kwh).
   bolletta_gse_euro:
     name: "GSE – Pagato mese (€)"
     min: 0
@@ -1963,5 +1952,3 @@ media_player:
       - media_player.google_home_sopra
       - media_player.salotto
       - media_player.googlehome8851
-
-

@@ -14,51 +14,51 @@ FROM (
     SELECT (IFNULL(MAX(max), 0) - IFNULL(MIN(min), 0)) AS v
     FROM statistics
     WHERE metadata_id=(SELECT id FROM statistics_meta WHERE statistic_id='{entity}')
-    GROUP BY strftime('%Y-%m', datetime(start_ts,'unixepoch','localtime'))
+    GROUP BY strftime('%Y-%m', datetime(start_ts, 'unixepoch', 'localtime'))
     HAVING v >= 0
 ) x
 """
 
-# Query specifica per l'Acqua (Rilevato e Bollette): somma i massimi mensili consolidati
+# Query specifica per l'Acqua (Rilevato): somma i massimi mensili consolidati
 RILEVATO_ACQUA_SQL = """
 SELECT ROUND(COALESCE(SUM(x.v), 0), {decimals})
 FROM (
     SELECT IFNULL(MAX(max), 0) AS v
     FROM statistics
     WHERE metadata_id=(SELECT id FROM statistics_meta WHERE statistic_id='{entity}')
-    GROUP BY strftime('%Y-%m', datetime(start_ts,'unixepoch','localtime'))
+    GROUP BY strftime('%Y-%m', datetime(start_ts, 'unixepoch', 'localtime'))
 ) x
 """
 
 BOLLETTE_SQL = """
 SELECT ROUND(COALESCE(SUM(b.v), 0), {decimals})
 FROM (
-    SELECT strftime('%Y-%m', datetime(start_ts,'unixepoch','localtime')) AS ym
+    SELECT strftime('%Y-%m', datetime(start_ts, 'unixepoch', 'localtime')) AS ym
     FROM statistics
     WHERE metadata_id=(SELECT id FROM statistics_meta WHERE statistic_id='{rilevato_entity}')
     GROUP BY ym
 ) m
 LEFT JOIN (
-    SELECT strftime('%Y-%m', datetime(start_ts,'unixepoch','localtime')) AS ym, IFNULL(MAX(max), 0) AS v
+    SELECT strftime('%Y-%m', datetime(start_ts, 'unixepoch', 'localtime')) AS ym, IFNULL(MAX(max), 0) AS v
     FROM statistics
     WHERE metadata_id=(SELECT id FROM statistics_meta WHERE statistic_id='{bolletta_entity}')
     GROUP BY ym
 ) b ON m.ym = b.ym
 """
 
-# Mantenuta la query originale per le bollette dell'acqua se si desidera usare la stessa logica diretta di verifica del terminale
+# Query specifica per le bollette dell'acqua (somma diretta)
 BOLLETTE_ACQUA_SQL = """
 SELECT ROUND(COALESCE(SUM(x.v), 0), {decimals})
 FROM (
     SELECT IFNULL(MAX(max), 0) AS v
     FROM statistics
     WHERE metadata_id=(SELECT id FROM statistics_meta WHERE statistic_id='{bolletta_entity}')
-    GROUP BY strftime('%Y-%m', datetime(start_ts,'unixepoch','localtime'))
+    GROUP BY strftime('%Y-%m', datetime(start_ts, 'unixepoch', 'localtime'))
 ) x
 """
 
 PV_RISPARMIO_PROD_SQL = """
-SELECT strftime('%Y-%m', datetime(start_ts,'unixepoch','localtime')) AS ym,
+SELECT strftime('%Y-%m', datetime(start_ts, 'unixepoch', 'localtime')) AS ym,
        (IFNULL(MAX(max), 0) - IFNULL(MIN(min), 0)) AS prod
 FROM statistics
 WHERE metadata_id=(SELECT id FROM statistics_meta WHERE statistic_id='sensor.inverter_uflex_total_production')
@@ -66,7 +66,7 @@ GROUP BY ym
 """
 
 PV_RISPARMIO_RETE_SQL = """
-SELECT strftime('%Y-%m', datetime(start_ts,'unixepoch','localtime')) AS ym,
+SELECT strftime('%Y-%m', datetime(start_ts, 'unixepoch', 'localtime')) AS ym,
        (IFNULL(MAX(max), 0) - IFNULL(MIN(min), 0)) AS rete
 FROM statistics
 WHERE metadata_id=(SELECT id FROM statistics_meta WHERE statistic_id='sensor.inverter_uflex_total_from_grid')
@@ -79,11 +79,10 @@ FROM (
     SELECT IFNULL(MAX(max), 0) AS v
     FROM statistics
     WHERE metadata_id=(SELECT id FROM statistics_meta WHERE statistic_id='sensor.gse_totale_contributi')
-    GROUP BY strftime('%Y-%m', datetime(start_ts,'unixepoch','localtime'))
+    GROUP BY strftime('%Y-%m', datetime(start_ts, 'unixepoch', 'localtime'))
 ) x
 """
 
-# Configurazione mappata con le entità e le query verificate in terminale
 CONFIGS = [
     {
         "key": "gas_rilevato",
@@ -139,7 +138,7 @@ def calc_pv_risparmio(cur):
         r_boll = cur.execute(
             "SELECT IFNULL(MAX(max), 0) FROM statistics WHERE "
             "metadata_id=(SELECT id FROM statistics_meta WHERE statistic_id='sensor.energia_bolletta_kwh') "
-            "AND strftime('%Y-%m',datetime(start_ts,'unixepoch','localtime'))=?",
+            "AND strftime('%Y-%m', datetime(start_ts, 'unixepoch', 'localtime'))=?",
             (ym,)
         ).fetchone()
         bolletta = float(r_boll[0]) if r_boll else 0.0
@@ -147,7 +146,7 @@ def calc_pv_risparmio(cur):
         r_prc = cur.execute(
             "SELECT IFNULL(MAX(max), 0) FROM statistics WHERE "
             "metadata_id=(SELECT id FROM statistics_meta WHERE statistic_id='sensor.prezzo_kwh') "
-            "AND strftime('%Y-%m',datetime(start_ts,'unixepoch','localtime'))=?",
+            "AND strftime('%Y-%m', datetime(start_ts, 'unixepoch', 'localtime'))=?",
             (ym,)
         ).fetchone()
         prezzo = float(r_prc[0]) if r_prc else 0.0
@@ -157,7 +156,7 @@ def calc_pv_risparmio(cur):
         if mid_exp:
             r = cur.execute(
                 "SELECT (IFNULL(MAX(max), 0) - IFNULL(MIN(min), 0)) FROM statistics WHERE metadata_id=? "
-                "AND strftime('%Y-%m',datetime(start_ts,'unixepoch','localtime'))=?",
+                "AND strftime('%Y-%m', datetime(start_ts, 'unixepoch', 'localtime'))=?",
                 (mid_exp[0], ym)
             ).fetchone()
             if r and r[0] is not None:

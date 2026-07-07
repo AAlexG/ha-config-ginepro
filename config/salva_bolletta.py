@@ -1,9 +1,18 @@
-# salva_bolletta_4.py
+# salva_bolletta_5.py
 # Legge mese selezionato e valori bolletta da HA DB, inietta statistiche mensili.
 # Ricalcola inoltre:
 #   input_number.elettricita_prezzo_kwh = somma € bollette elettriche / somma kWh bollette
 #   input_number.gas_prezzo_mc          = somma € bollette gas / somma m³ bollette
 # (solo mesi con entrambi i valori storicizzati > 0, per ciascuna utenza).
+#
+# NUOVO (v5): ricalcola il prezzo €/kWh pagato dal GSE per OGNI mese con
+# pagamento storicizzato:
+#   prezzo(mese) = bolletta_gse_euro(mese) / kWh a rete(mese)
+# I kWh a rete mensili vengono letti dalle statistiche di sensor.a_rete_mese
+# (Solarman, contatore mensile). Le statistiche esistenti dello statistic_id
+# sensor.gse_prezzo_kwh vengono cancellate e reinserite integralmente ad ogni
+# esecuzione: i mesi passati si correggono retroattivamente. Il sensore
+# template omonimo è stato rimosso da configuration.yaml.
 #
 # Chiamato da shell_command.salva_bolletta tramite script HA (script.salva_bolletta).
 # Log diagnostico scritto direttamente su /config/bolletta_log.txt (funzione log()).
@@ -95,6 +104,56 @@ def calcola_prezzo(cur, entity_qty, entity_euro, entity_prezzo_attuale):
     return attuale, tot_euro, tot_qty
 
 
+def valori_mensili(cur, sid):
+    """Restituisce dict {YYYY-MM: valore} dalle statistiche di uno statistic_id.
+    Usa MAX(max) se disponibile (sensori measurement / statistiche iniettate),
+    altrimenti MAX(state) (contatori total_increasing a reset mensile,
+    come sensor.a_rete_mese di Solarman)."""
+    rows = cur.execute("""
+        SELECT strftime('%Y-%m', datetime(start_ts,'unixepoch','localtime')) AS ym,
+               IFNULL(MAX(max), MAX(state)) AS v
+        FROM statistics
+        WHERE metadata_id=(SELECT id FROM statistics_meta WHERE statistic_id=?)
+        GROUP BY ym
+    """, (sid,)).fetchall()
+    out = {}
+    for ym, v in rows:
+        try:
+            out[ym] = float(v)
+        except (TypeError, ValueError):
+            pass
+    return out
+
+
+def calcola_prezzi_gse(cur, now_s, now_ts):
+    """Per ogni mese con pagamento GSE storicizzato > 0, calcola
+    prezzo = € GSE / kWh a rete del mese e inietta la statistica mensile
+    sotto sensor.gse_prezzo_kwh. Cancella prima TUTTE le statistiche
+    esistenti di quello statistic_id (long e short term), così i valori
+    residui del vecchio sensore template non inquinano i grafici."""
+    euro = valori_mensili(cur, "input_number.bolletta_gse_euro")
+    kwh  = valori_mensili(cur, "sensor.a_rete_mese")
+
+    mid = get_or_create_meta(cur, "sensor.gse_prezzo_kwh", "€/kWh", None, 1, 0)
+    cur.execute("DELETE FROM statistics WHERE metadata_id=?", (mid,))
+    cur.execute("DELETE FROM statistics_short_term WHERE metadata_id=?", (mid,))
+
+    inseriti = {}
+    for ym in sorted(euro):
+        pagato = euro[ym]
+        rete   = kwh.get(ym, 0.0)
+        if pagato <= 0:
+            continue
+        if rete < 0.1:
+            log(f"  GSE {ym}: pagato {pagato} € ma kWh a rete = {rete} – saltato")
+            continue
+        prezzo = round(pagato / rete, 4)
+        ins(cur, mid, ym, prezzo, now_s, now_ts)
+        inseriti[ym] = prezzo
+        log(f"  GSE {ym}: {pagato} € / {rete} kWh = {prezzo} €/kWh")
+    return inseriti
+
+
 def main():
     conn = sqlite3.connect(DB, timeout=30)
     conn.execute("PRAGMA journal_mode=WAL")
@@ -161,6 +220,10 @@ def main():
         "input_number.gas_prezzo_mc")
     log(f"Prezzo €/m³ gas ricalcolato: {prezzo_mc} (tot €={tot_euro_gas}, tot m³={tot_mc})")
 
+    prezzi_gse = calcola_prezzi_gse(cur, now_s, now_ts)
+    conn.commit()
+    log(f"Prezzi GSE ricalcolati per {len(prezzi_gse)} mesi: {prezzi_gse}")
+
     conn.close()
     return {
         "ok": True,
@@ -172,6 +235,7 @@ def main():
         "prezzo_mc_gas": prezzo_mc,
         "tot_euro_gas": tot_euro_gas,
         "tot_mc_gas": tot_mc,
+        "prezzi_gse": prezzi_gse,
     }
 
 
