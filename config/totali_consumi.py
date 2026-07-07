@@ -1,25 +1,32 @@
 #!/usr/bin/env python3
-# totali_consumi_9.py
+# totali_consumi 10.py
 # Calcola totali storici rilevato/bollette dalla tabella statistics del DB HA.
-# Stampa un JSON su stdout con i valori (pattern identico a totali_consumi_2.py).
-# Aggiunge tre nuovi campi per risparmio fotovoltaico:
-#   - pv_risparmio : somma mensile di (da_rete_kwh - bolletta_kwh) * prezzo_kwh
-#                    solo per mesi con produzione solare > 0
-#   - pv_gse       : somma di tutti i pagamenti GSE registrati nel DB
-#   - pv_totale    : pv_risparmio + pv_gse
+# Stampa un JSON su stdout con i valori.
 
 import sqlite3, json, sys
 
 DB = "/config/home-assistant_v2.db"
 
+# Query standard per Gas ed Elettricità: calcola la differenza reale (MAX - MIN) di ogni mese
 RILEVATO_SQL = """
+SELECT ROUND(COALESCE(SUM(x.v), 0), {decimals})
+FROM (
+    SELECT (IFNULL(MAX(max), 0) - IFNULL(MIN(min), 0)) AS v
+    FROM statistics
+    WHERE metadata_id=(SELECT id FROM statistics_meta WHERE statistic_id='{entity}')
+    GROUP BY strftime('%Y-%m', datetime(start_ts,'unixepoch','localtime'))
+    HAVING v >= 0
+) x
+"""
+
+# Query specifica per l'Acqua (Rilevato e Bollette): somma i massimi mensili consolidati
+RILEVATO_ACQUA_SQL = """
 SELECT ROUND(COALESCE(SUM(x.v), 0), {decimals})
 FROM (
     SELECT IFNULL(MAX(max), 0) AS v
     FROM statistics
     WHERE metadata_id=(SELECT id FROM statistics_meta WHERE statistic_id='{entity}')
     GROUP BY strftime('%Y-%m', datetime(start_ts,'unixepoch','localtime'))
-    HAVING v > 0
 ) x
 """
 
@@ -29,123 +36,127 @@ FROM (
     SELECT strftime('%Y-%m', datetime(start_ts,'unixepoch','localtime')) AS ym
     FROM statistics
     WHERE metadata_id=(SELECT id FROM statistics_meta WHERE statistic_id='{rilevato_entity}')
-    GROUP BY ym HAVING IFNULL(MAX(max),0) > 0
-) r
-JOIN (
-    SELECT strftime('%Y-%m', datetime(start_ts,'unixepoch','localtime')) AS ym,
-           IFNULL(MAX(max),0) AS v
+    GROUP BY ym
+) m
+LEFT JOIN (
+    SELECT strftime('%Y-%m', datetime(start_ts,'unixepoch','localtime')) AS ym, IFNULL(MAX(max), 0) AS v
     FROM statistics
     WHERE metadata_id=(SELECT id FROM statistics_meta WHERE statistic_id='{bolletta_entity}')
-    GROUP BY ym HAVING v > 0
-) b ON r.ym = b.ym
+    GROUP BY ym
+) b ON m.ym = b.ym
 """
 
-# Risparmio FV per mese:
-#   autoconsumo = (produzione_mese - esportato_rete_mese) * prezzo_kwh
-# produzione_mese  = MAX(sum)-MIN(sum) di sensor.inverter_uflex_today_production
-# esportato_mese   = MAX(sum)-MIN(sum) di sensor.inverter_uflex_today_energy_export
-# Solo mesi con produzione > 0, clampato a 0 se negativo
-PV_RISPARMIO_SQL = """
-SELECT
-    ROUND(
-        COALESCE(SUM(
-            MAX(0, (prod.produzione - IFNULL(exp.esportato, 0)) * IFNULL(p.prezzo, 0))
-        ), 0),
-    2)
+# Mantenuta la query originale per le bollette dell'acqua se si desidera usare la stessa logica diretta di verifica del terminale
+BOLLETTE_ACQUA_SQL = """
+SELECT ROUND(COALESCE(SUM(x.v), 0), {decimals})
 FROM (
-    -- produzione mensile: MAX(sum)-MIN(sum) di sensor.inverter_uflex_today_production
-    SELECT strftime('%Y-%m', datetime(start_ts,'unixepoch','localtime')) AS ym,
-           MAX(sum) - MIN(sum) AS produzione
+    SELECT IFNULL(MAX(max), 0) AS v
     FROM statistics
-    WHERE metadata_id=(SELECT id FROM statistics_meta WHERE statistic_id='sensor.inverter_uflex_today_production')
-    GROUP BY ym
-    HAVING produzione > 0
-) prod
-LEFT JOIN (
-    -- esportato in rete mensile: MAX(sum)-MIN(sum) di sensor.inverter_uflex_today_energy_export
-    SELECT strftime('%Y-%m', datetime(start_ts,'unixepoch','localtime')) AS ym,
-           MAX(sum) - MIN(sum) AS esportato
-    FROM statistics
-    WHERE metadata_id=(SELECT id FROM statistics_meta WHERE statistic_id='sensor.inverter_uflex_today_energy_export')
-    GROUP BY ym
-) exp ON exp.ym = prod.ym
-JOIN (
-    -- prezzo kWh attuale
-    SELECT IFNULL(MAX(max), 0) AS prezzo
-    FROM statistics
-    WHERE metadata_id=(SELECT id FROM statistics_meta WHERE statistic_id='input_number.elettricita_prezzo_kwh')
-) p
+    WHERE metadata_id=(SELECT id FROM statistics_meta WHERE statistic_id='{bolletta_entity}')
+    GROUP BY strftime('%Y-%m', datetime(start_ts,'unixepoch','localtime'))
+) x
 """
 
-# GSE totale: somma di tutti i pagamenti GSE > 0 nel DB
+PV_RISPARMIO_PROD_SQL = """
+SELECT strftime('%Y-%m', datetime(start_ts,'unixepoch','localtime')) AS ym,
+       (IFNULL(MAX(max), 0) - IFNULL(MIN(min), 0)) AS prod
+FROM statistics
+WHERE metadata_id=(SELECT id FROM statistics_meta WHERE statistic_id='sensor.inverter_uflex_total_production')
+GROUP BY ym
+"""
+
+PV_RISPARMIO_RETE_SQL = """
+SELECT strftime('%Y-%m', datetime(start_ts,'unixepoch','localtime')) AS ym,
+       (IFNULL(MAX(max), 0) - IFNULL(MIN(min), 0)) AS rete
+FROM statistics
+WHERE metadata_id=(SELECT id FROM statistics_meta WHERE statistic_id='sensor.inverter_uflex_total_from_grid')
+GROUP BY ym
+"""
+
 PV_GSE_SQL = """
 SELECT ROUND(COALESCE(SUM(x.v), 0), 2)
 FROM (
     SELECT IFNULL(MAX(max), 0) AS v
     FROM statistics
-    WHERE metadata_id=(SELECT id FROM statistics_meta WHERE statistic_id='input_number.bolletta_gse_euro')
+    WHERE metadata_id=(SELECT id FROM statistics_meta WHERE statistic_id='sensor.gse_totale_contributi')
     GROUP BY strftime('%Y-%m', datetime(start_ts,'unixepoch','localtime'))
-    HAVING v > 0
 ) x
 """
 
+# Configurazione mappata con le entità e le query verificate in terminale
 CONFIGS = [
-    {"key": "gas_rilevato",
-     "sql": RILEVATO_SQL, "entity": "sensor.gas_mese_mc", "decimals": 3},
-    {"key": "gas_bollette",
-     "sql": BOLLETTE_SQL, "rilevato_entity": "sensor.gas_mese_mc",
-     "bolletta_entity": "input_number.bolletta_gas_mc", "decimals": 3},
-    {"key": "elec_rilevato",
-     "sql": RILEVATO_SQL, "entity": "sensor.elettricita_mese_kwh", "decimals": 2},
-    {"key": "elec_bollette",
-     "sql": BOLLETTE_SQL, "rilevato_entity": "sensor.elettricita_mese_kwh",
-     "bolletta_entity": "input_number.bolletta_elec_kwh", "decimals": 2},
-    {"key": "acqua_rilevato",
-     "sql": RILEVATO_SQL, "entity": "sensor.acqua_mese_mc", "decimals": 3},
-    {"key": "acqua_bollette",
-     "sql": BOLLETTE_SQL, "rilevato_entity": "sensor.acqua_mese_mc",
-     "bolletta_entity": "input_number.bolletta_acqua_mc", "decimals": 3},
+    {
+        "key": "gas_rilevato",
+        "entity": "sensor.contatore_gas_corretto",
+        "decimals": 2,
+        "sql": RILEVATO_SQL
+    },
+    {
+        "key": "gas_bollette",
+        "rilevato_entity": "sensor.contatore_gas_corretto",
+        "bolletta_entity": "sensor.gas_bolletta_m3",
+        "decimals": 2,
+        "sql": BOLLETTE_SQL
+    },
+    {
+        "key": "elec_rilevato",
+        "entity": "sensor.inverter_uflex_total_from_grid",
+        "decimals": 1,
+        "sql": RILEVATO_SQL
+    },
+    {
+        "key": "elec_bollette",
+        "rilevato_entity": "sensor.inverter_uflex_total_from_grid",
+        "bolletta_entity": "sensor.energia_bolletta_kwh",
+        "decimals": 1,
+        "sql": BOLLETTE_SQL
+    },
+    {
+        "key": "acqua_rilevato",
+        "entity": "sensor.acqua_storico_mc_mensile",
+        "decimals": 2,
+        "sql": RILEVATO_ACQUA_SQL
+    },
+    {
+        "key": "acqua_bollette",
+        "bolletta_entity": "input_number.bolletta_acqua_mc",
+        "decimals": 2,
+        "sql": BOLLETTE_ACQUA_SQL
+    }
 ]
 
 def calc_pv_risparmio(cur):
-    # Legge prezzo kWh da states (non storicizzato in statistics)
-    mid = cur.execute(
-        "SELECT metadata_id FROM states_meta WHERE entity_id='input_number.elettricita_prezzo_kwh'"
-    ).fetchone()
-    if not mid:
-        return 0.0
-    row = cur.execute(
-        "SELECT state FROM states WHERE metadata_id=? AND state NOT IN ('unknown','unavailable') ORDER BY last_updated_ts DESC LIMIT 1",
-        (mid[0],)
-    ).fetchone()
-    if not row:
-        return 0.0
-    prezzo = float(row[0])
-
-    # Produzione mensile: MAX(sum)-MIN(sum) per mese
-    mid_prod = cur.execute(
-        "SELECT id FROM statistics_meta WHERE statistic_id='sensor.inverter_uflex_today_production'"
-    ).fetchone()
-    if not mid_prod:
-        return 0.0
-
-    # Export mensile: MAX(sum)-MIN(sum) per mese
-    mid_exp = cur.execute(
-        "SELECT id FROM statistics_meta WHERE statistic_id='sensor.inverter_uflex_today_energy_export'"
-    ).fetchone()
-
-    prod_rows = cur.execute(
-        "SELECT strftime('%Y-%m',datetime(start_ts,'unixepoch','localtime')) as ym, MAX(sum)-MIN(sum) as produzione "
-        "FROM statistics WHERE metadata_id=? AND sum IS NOT NULL GROUP BY ym HAVING produzione > 0 ORDER BY ym",
-        (mid_prod[0],)
-    ).fetchall()
-
+    prod_map = {r[0]: r[1] for r in cur.execute(PV_RISPARMIO_PROD_SQL).fetchall()}
+    rete_map = {r[0]: r[1] for r in cur.execute(PV_RISPARMIO_RETE_SQL).fetchall()}
+    
     totale = 0.0
-    for ym, produzione in prod_rows:
+    for ym, produzione in prod_map.items():
+        if produzione <= 0:
+            continue
+            
+        da_rete = rete_map.get(ym, 0.0)
+        
+        r_boll = cur.execute(
+            "SELECT IFNULL(MAX(max), 0) FROM statistics WHERE "
+            "metadata_id=(SELECT id FROM statistics_meta WHERE statistic_id='sensor.energia_bolletta_kwh') "
+            "AND strftime('%Y-%m',datetime(start_ts,'unixepoch','localtime'))=?",
+            (ym,)
+        ).fetchone()
+        bolletta = float(r_boll[0]) if r_boll else 0.0
+        
+        r_prc = cur.execute(
+            "SELECT IFNULL(MAX(max), 0) FROM statistics WHERE "
+            "metadata_id=(SELECT id FROM statistics_meta WHERE statistic_id='sensor.prezzo_kwh') "
+            "AND strftime('%Y-%m',datetime(start_ts,'unixepoch','localtime'))=?",
+            (ym,)
+        ).fetchone()
+        prezzo = float(r_prc[0]) if r_prc else 0.0
+        
+        mid_exp = cur.execute("SELECT id FROM statistics_meta WHERE statistic_id='sensor.inverter_uflex_total_to_grid'").fetchone()
         esportato = 0.0
         if mid_exp:
             r = cur.execute(
-                "SELECT MAX(sum)-MIN(sum) FROM statistics WHERE metadata_id=? AND sum IS NOT NULL "
+                "SELECT (IFNULL(MAX(max), 0) - IFNULL(MIN(min), 0)) FROM statistics WHERE metadata_id=? "
                 "AND strftime('%Y-%m',datetime(start_ts,'unixepoch','localtime'))=?",
                 (mid_exp[0], ym)
             ).fetchone()
@@ -163,16 +174,13 @@ def main():
         cur  = conn.cursor()
         out  = {}
 
-        # Calcoli esistenti (gas, elettricità, acqua)
         for cfg in CONFIGS:
             query  = cfg["sql"].format(**{k:v for k,v in cfg.items() if k not in ("sql","key")})
             result = cur.execute(query).fetchone()
             out[cfg["key"]] = float(result[0]) if result and result[0] is not None else 0.0
 
-        # Risparmio FV (calcolato in Python)
         pv_risparmio = calc_pv_risparmio(cur)
 
-        # GSE totale
         r = cur.execute(PV_GSE_SQL).fetchone()
         pv_gse = float(r[0]) if r and r[0] is not None else 0.0
 
@@ -183,11 +191,13 @@ def main():
         out["pv_totale"]    = round(pv_risparmio + pv_gse, 2)
         out["pv_recupero_pct"] = round((out["pv_totale"] / COSTO_IMPIANTO) * 100, 2)
 
-        conn.close()
         print(json.dumps(out))
+
     except Exception as e:
-        print(f"ERRORE: {e}", file=sys.stderr)
-        sys.exit(1)
+        print(json.dumps({"error": str(e)}))
+    finally:
+        if 'conn' in locals():
+            conn.close()
 
 if __name__ == "__main__":
     main()
