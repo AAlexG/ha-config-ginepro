@@ -176,6 +176,19 @@ config:
       - grid_options:
           columns: 3
           rows: auto
+        icon: mdi:train-car-hopper-covered
+        icon_height: 20px
+        name: Tende
+        show_icon: true
+        show_name: true
+        show_state: false
+        tap_action:
+          action: navigate
+          navigation_path: /dashboard-tende/tende
+        type: button
+      - grid_options:
+          columns: 3
+          rows: auto
         icon: mdi:heat-pump
         icon_height: 20px
         name: Clima
