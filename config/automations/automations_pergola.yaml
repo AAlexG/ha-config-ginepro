@@ -169,9 +169,6 @@
       entity_id: sensor.hp1000se_pro_pro_v1_6_4_wind_gust
       above: 40
   conditions:
-    - condition: state
-      entity_id: input_boolean.vacanza
-      state: "off"
     - condition: numeric_state
       entity_id: cover.all_house_tenda_terrazzo
       attribute: current_position
