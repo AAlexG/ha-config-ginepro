@@ -1,4 +1,4 @@
-# automations_pergola_2.yaml
+# automations_pergola_3.yaml
 
 #==================================================================================
 # PERGOLA – INSEGUIMENTO SOLARE (1 giugno – 1 novembre, dalle 08:30 al tramonto)
@@ -10,7 +10,7 @@
 #   quantizzazione a scalini di 20 punti (per difetto = più chiuso = più sicuro).
 # Quando il sole è troppo radente rispetto al piano lamelle (geometria degenere,
 # tipicamente da metà-tarda pomeriggio in poi) il target è forzato a 0% (chiuso).
-# Rispetta sia il blocco manuale sia la chiusura di sicurezza meteo.
+# Rispetta il flag vacanza, il blocco manuale e la chiusura di sicurezza meteo.
 #==================================================================================
 - id: pergola_inseguimento_solare
   alias: "Pergola – Inseguimento Solare"
@@ -18,6 +18,9 @@
     - trigger: time_pattern
       minutes: "/10"
   conditions:
+    - condition: state
+      entity_id: input_boolean.vacanza
+      state: "off"
     - condition: state
       entity_id: input_boolean.pergola_blocco_manuale
       state: "off"
@@ -81,6 +84,9 @@
     - trigger: time_pattern
       minutes: "/10"
   conditions:
+    - condition: state
+      entity_id: input_boolean.vacanza
+      state: "off"
     - condition: state
       entity_id: input_boolean.pergola_blocco_manuale
       state: "off"
@@ -161,6 +167,9 @@
       entity_id: sensor.hp1000se_pro_pro_v1_6_4_wind_gust
       above: 40
   conditions:
+    - condition: state
+      entity_id: input_boolean.vacanza
+      state: "off"
     - condition: numeric_state
       entity_id: cover.all_house_tenda_terrazzo
       attribute: current_position

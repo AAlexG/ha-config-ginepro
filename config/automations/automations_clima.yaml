@@ -1,4 +1,4 @@
-# automations_clima_33.yaml
+# automations_clima_34.yaml
 
 
 
@@ -1689,7 +1689,13 @@
 - id: riscaldamento_rientro_vacanza
   alias: "Riscaldamento rientro vacanza"
   description: >
-    Alle 15:00 del giorno di fine vacanza, accende tutto.
+    Alle 15:00 del giorno di fine vacanza ripristina la casa, con qualsiasi
+    temperatura: spegne il flag vacanza, modalita' clima "giorno", riattiva
+    acqua sanitaria e canto degli uccelli. Riscaldamento acceso solo se
+    T esterna < 17; in alternativa riattiva il cooling se la PdC e' in Cool.
+    Fancoil e pergola NON vengono comandati direttamente: ripartono da soli
+    dalle rispettive automazioni una volta spento il flag e tornata la
+    modalita' "giorno".
   trigger:
     - platform: time
       at: "15:00:00"
@@ -1700,62 +1706,86 @@
         {% set title = state_attr(cal, 'message') | default('') %}
         {% set desc = state_attr(cal, 'description') | default('') %}
         {% set end = state_attr(cal, 'end_time') %}
-        
+
         {% if end %}
           {% set end_dt = strptime(end, '%Y-%m-%d %H:%M:%S') %}
           {% set oggi = now().date() %}
-          
+
           {# Oggi deve essere esattamente il giorno di fine evento #}
-          {% set è_giorno_di_rientro = (end_dt.date() == oggi) %}
-          
+          {% set e_giorno_di_rientro = (end_dt.date() == oggi) %}
+
           {# La parola chiave deve essere nel titolo o descrizione #}
-          {% set è_vacanza = 'vacanza' in (title ~ desc) | lower %}
-          
-          {{ è_giorno_di_rientro and è_vacanza }}
+          {% set e_vacanza = 'vacanza' in (title ~ desc) | lower %}
+
+          {{ e_giorno_di_rientro and e_vacanza }}
         {% else %}
           false
         {% endif %}
-    - condition: numeric_state
-      entity_id: sensor.hp1000se_pro_pro_v1_6_4_outdoor_temperature
-      below: 17
   action:
-    - action: climate.set_hvac_mode
+    # Ripristini incondizionati (con qualsiasi temperatura)
+    - action: input_boolean.turn_off
       target:
-        entity_id: climate.smart_autotune_thermostat_living_room
-      data:
-        hvac_mode: "heat"
-    - action: climate.set_preset_mode
-      target:
-        entity_id: climate.smart_autotune_thermostat_living_room
-      data:
-        preset_mode: "home"
-    - action: climate.set_temperature
-      target:
-        entity_id: climate.smart_autotune_thermostat_living_room
-      data:
-        temperature: 22
-    - action: mqtt.publish
-      data:
-        topic: "OTGW/set/otgw-84CCA8ADE1AD/command"
-        payload: "HW=1"
+        entity_id: input_boolean.vacanza
     - action: input_select.select_option
       target:
         entity_id: input_select.clima_modalita
       data:
         option: "giorno"
+    - action: mqtt.publish
+      data:
+        topic: "OTGW/set/otgw-84CCA8ADE1AD/command"
+        payload: "HW=1"
+    # Riavvia canto uccelli (volume 20% + play)
+    - action: script.riaggancia_yamaha
+    # Ramo riscaldamento: solo se fa freddo
     - if:
-        - condition: state
-          entity_id: select.panasonic_heat_pump_main_operating_mode_state
-          state: "Heat"
+        - condition: numeric_state
+          entity_id: sensor.hp1000se_pro_pro_v1_6_4_outdoor_temperature
+          below: 17
       then:
-        - action: switch.turn_on
+        - action: climate.set_hvac_mode
           target:
-            entity_id: switch.panasonic_heat_pump_main_heatpump_state
-        - action: notify.mobile_app_cph2653
+            entity_id: climate.smart_autotune_thermostat_living_room
           data:
-            title: "Rientro vacanza"
-            message: "Caldaia e pompa di calore riaccese. Benvenuti a casa!"
-        
+            hvac_mode: "heat"
+        - action: climate.set_preset_mode
+          target:
+            entity_id: climate.smart_autotune_thermostat_living_room
+          data:
+            preset_mode: "home"
+        - action: climate.set_temperature
+          target:
+            entity_id: climate.smart_autotune_thermostat_living_room
+          data:
+            temperature: 22
+        - if:
+            - condition: state
+              entity_id: select.panasonic_heat_pump_main_operating_mode_state
+              state: "Heat"
+          then:
+            - action: switch.turn_on
+              target:
+                entity_id: switch.panasonic_heat_pump_main_heatpump_state
+      # Ramo raffrescamento: se la PdC e' in modalita' Cool la riaccende;
+      # poi la normale automazione a isteresi riprende il controllo.
+      else:
+        - if:
+            - condition: template
+              value_template: >
+                {{ states('select.panasonic_heat_pump_main_operating_mode_state')
+                   in ['Cool', 'Cool only'] }}
+          then:
+            - action: switch.turn_on
+              target:
+                entity_id: switch.panasonic_heat_pump_main_heatpump_state
+    - action: notify.mobile_app_cph2653
+      data:
+        title: "Rientro vacanza"
+        message: >
+          Casa ripristinata: modalita' giorno, acqua sanitaria riattivata,
+          canto uccelli riavviato. Clima riattivato in base alla stagione.
+          Fancoil e pergola ripartono dalle loro automazioni. Benvenuti a casa!
+
 #==================================================================================
 # 26. CALDAIA - SAT - RISCALDAMENTO - Spegnimento inizio vacanza 
 #==================================================================================
@@ -1763,7 +1793,9 @@
   alias: "Spegnimento riscaldamento inizio vacanza"
   description: >
     1 ora dopo l'inizio di un evento con 'Vacanza' nel titolo
-    (durato più di 1 giorno), spegne riscaldamento (away) e acqua sanitaria.
+    (durato più di 1 giorno), spegne riscaldamento (away), acqua sanitaria,
+    pompa di calore e fancoil; accende input_boolean.vacanza; chiude pergola
+    e tenda giardino; ferma il canto degli uccelli.
     Il controllo sull'evento è nell'action (if/then) così il lancio manuale
     funziona sempre; il filtro blocca solo trigger da eventi non-vacanza.
   trigger:
@@ -1826,12 +1858,32 @@
               - switch.camerageorgi_shelly_fancoil_georgi
               - switch.camerageorgi_shelly_fancoil_georgi_2
               - switch.sala_fancoil_sala_shelly_1gen4
+        # Flag vacanza: ferma pergola, tenda giardino e canto uccelli
+        - action: input_boolean.turn_on
+          target:
+            entity_id: input_boolean.vacanza
+        # Pulizia flag pergola (il blocco manuale non deve sopravvivere alla partenza)
+        - action: input_boolean.turn_off
+          target:
+            entity_id:
+              - input_boolean.pergola_blocco_manuale
+              - input_boolean.pergola_meteo_chiusura
+        # Chiusura pergola e tenda giardino
+        - action: cover.close_cover
+          target:
+            entity_id:
+              - cover.terrazzo_pergola_terrazza
+              - cover.all_house_tenda_terrazzo
+        # Stop canto uccelli (la Yamaha andra' in auto-standby dopo 8h: voluto)
+        - action: media_player.media_stop
+          target:
+            entity_id: media_player.googlehome8851
         - action: notify.mobile_app_cph2653
           data:
             title: "✈️ Vacanza iniziata"
             message: >
               Riscaldamento away, acqua sanitaria spenta, pompa di calore spenta,
-              fancoil camera e sala spenti.
+              fancoil spenti, pergola e tenda giardino chiuse, canto uccelli fermato.
               Evento: {{ state_attr('calendar.aagorine_gmail_com', 'message') }}
               Buona vacanza!
 #==================================================================================

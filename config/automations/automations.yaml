@@ -1,4 +1,4 @@
-# automations_115.yaml
+# automations_116.yaml
 #prova
 #==================================================================================
 # 1. BLOCCO IRRIGAZIONE - Orari fissi DST-aware
@@ -628,6 +628,9 @@
     - platform: time
       at: "08:30:00"
   condition:
+    - condition: state
+      entity_id: input_boolean.vacanza
+      state: "off"
     - condition: template
       value_template: "{{ state_attr('media_player.googlehome8851', 'media_title') is none }}"
   action:
@@ -655,6 +658,9 @@
     - platform: time
       at: "00:00:00"
   condition:
+    - condition: state
+      entity_id: input_boolean.vacanza
+      state: "off"
     - condition: template
       value_template: "{{ state_attr('media_player.googlehome8851', 'media_title') is none }}"
   action:
@@ -683,6 +689,9 @@
         - "paused"
       for: "00:00:30"
   condition:
+    - condition: state
+      entity_id: input_boolean.vacanza
+      state: "off"
     - condition: template
       value_template: "{{ state_attr('media_player.googlehome8851', 'media_title') is none }}"
   action:
@@ -725,6 +734,9 @@
       hours: "/7"
       minutes: "25"
   condition:
+    - condition: state
+      entity_id: input_boolean.vacanza
+      state: "off"
     - condition: state
       entity_id: media_player.googlehome8851
       state: "playing"
@@ -772,6 +784,9 @@
     - platform: time_pattern
       minutes: "/15"
   condition:
+    - condition: state
+      entity_id: input_boolean.vacanza
+      state: "off"
     - condition: time
       after: "08:30:00"
       before: "23:00:00"

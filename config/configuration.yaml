@@ -1,4 +1,4 @@
-# configuration_148.yaml
+# configuration_149.yaml
 default_config:
 
 #==================================================================================
@@ -1889,6 +1889,16 @@ input_boolean:
     name: "Pergola - Chiusura Sicurezza Meteo"
     initial: false
     icon: mdi:weather-windy
+
+  # --- FLAG VACANZA ---
+  # Acceso da spegnimento_inizio_vacanza (analisi calendario), spento da riscaldamento_rientro_vacanza.
+  # Con flag acceso restano ferme: pergola, tenda giardino, canto uccelli
+  # (fancoil gia' coperti da clima_modalita = assenza).
+  # Girano comunque: sicurezza, deumidificatori, irrigazione, antigelo, notifiche, sistema.
+  # NOTA: niente "initial" di proposito - lo stato deve sopravvivere a un riavvio di HA in vacanza.
+  vacanza:
+    name: "Vacanza"
+    icon: mdi:beach
 
   grande_cancello_status_helper:
     name: Timer grande cancello aperto
