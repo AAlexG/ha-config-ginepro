@@ -1,4 +1,4 @@
-# scripts_36.yaml
+# scripts_37.yaml
 
 #==================================================================================
 # SCRIPT: APRI CANCELLO CASA
@@ -502,3 +502,36 @@ deumidificatore_armadio_toggle_manuale:
     - action: input_boolean.turn_on
       target:
         entity_id: input_boolean.deumidificatore_armadio_manuale
+
+#==================================================================================
+# SCRIPT: PERGOLA – TOGGLE MANUALE ("Chiudere fino notte")
+# Richiamato dalla card in plancia Tende (tap sul tile del blocco manuale).
+#  - Blocco OFF → attiva input_boolean.pergola_blocco_manuale e chiude le
+#    lamelle (tilt 0); inseguimento solare e sicurezza meteo restano fermi.
+#  - Blocco ON  → disattiva il flag; l'inseguimento solare riprende al
+#    prossimo ciclo (max 10 minuti).
+# Il flag viene comunque rilasciato alle 07:00/23:00 dall'automazione
+# pergola_blocco_manuale_rilascio e alla partenza per vacanza.
+#==================================================================================
+pergola_toggle_manuale:
+  alias: "Pergola – Toggle Manuale"
+  mode: single
+  sequence:
+    - choose:
+        - conditions:
+            - condition: state
+              entity_id: input_boolean.pergola_blocco_manuale
+              state: "off"
+          sequence:
+            - action: input_boolean.turn_on
+              target:
+                entity_id: input_boolean.pergola_blocco_manuale
+            - action: cover.set_cover_tilt_position
+              target:
+                entity_id: cover.terrazzo_pergola_terrazza
+              data:
+                tilt_position: 0
+      default:
+        - action: input_boolean.turn_off
+          target:
+            entity_id: input_boolean.pergola_blocco_manuale

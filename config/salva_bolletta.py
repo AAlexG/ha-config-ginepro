@@ -1,4 +1,4 @@
-# salva_bolletta_5.py
+# salva_bolletta_6.py
 # Legge mese selezionato e valori bolletta da HA DB, inietta statistiche mensili.
 # Ricalcola inoltre:
 #   input_number.elettricita_prezzo_kwh = somma € bollette elettriche / somma kWh bollette
@@ -180,13 +180,13 @@ def main():
 
     # ── Definizione entità: (entity_id, unit, unit_class, has_mean, has_sum, label)
     ENTITIES = [
-        ("input_number.bolletta_elec_kwh",  "kWh", "energy", None, 1, "Elettricità kWh"),
-        ("input_number.bolletta_elec_euro", "€",   None,     0,    1, "Elettricità €"  ),
-        ("input_number.bolletta_gas_mc",    "m³",  "volume", None, 1, "Gas m³"         ),
-        ("input_number.bolletta_gas_euro",  "€",   None,     0,    1, "Gas €"          ),
-        ("input_number.bolletta_acqua_mc",  "m³",  "volume", None, 1, "Acqua m³"       ),
-        ("input_number.bolletta_acqua_euro","€",   None,     0,    1, "Acqua €"        ),
-        ("input_number.bolletta_gse_euro",  "€",   None,     0,    1, "GSE pagato €"   ),
+        ("input_number.bolletta_elec_kwh",  "kWh", "energy", None, 0, "Elettricità kWh"),
+        ("input_number.bolletta_elec_euro", "€",   None,     0,    0, "Elettricità €"  ),
+        ("input_number.bolletta_gas_mc",    "m³",  "volume", None, 0, "Gas m³"         ),
+        ("input_number.bolletta_gas_euro",  "€",   None,     0,    0, "Gas €"          ),
+        ("input_number.bolletta_acqua_mc",  "m³",  "volume", None, 0, "Acqua m³"       ),
+        ("input_number.bolletta_acqua_euro","€",   None,     0,    0, "Acqua €"        ),
+        ("input_number.bolletta_gse_euro",  "€",   None,     0,    0, "GSE pagato €"   ),
     ]
 
     saved = 0
