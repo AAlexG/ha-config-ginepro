@@ -737,6 +737,10 @@ config:
           name: Georgi
         - entity: sensor.panasonic_heat_pump_main_outside_temp
           name: Esterna
+        - entity: sensor.panasonic_heat_pump_main_main_outlet_temp
+          name: Pompa Out
+        - entity: sensor.opentherm_gateway_otgw_otgw_boiler_flow_water_temperature
+          name: Caldaia OUT
         grid_options:
           columns: full
           rows: auto
