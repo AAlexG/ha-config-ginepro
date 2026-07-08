@@ -1,4 +1,4 @@
-# configuration_153.yaml
+# configuration_155.yaml
 default_config:
 
 #==================================================================================
@@ -493,16 +493,6 @@ template:
         state_class: measurement
         icon: mdi:transmission-tower
 
-      - name: "Rete Energia Mese Euro"
-        unique_id: "rete_energia_mese_euro"
-        state: >-
-          {{ (states('sensor.rete_energia_mese') | float(0) *
-              states('input_number.elettricita_prezzo_kwh') | float(0)) | round(2) }}
-        unit_of_measurement: "€"
-        device_class: monetary
-        state_class: total
-        icon: mdi:currency-eur
-
       - name: "Elettricita Mese KWh"
         unique_id: "elettricita_mese_kwh"
         state: >-
@@ -655,24 +645,6 @@ template:
         state_class: measurement
         icon: mdi:currency-eur
 
-      # Accumulatore costo acqua – total_increasing
-      - name: "Acqua Costo Acc Sensor"
-        unique_id: "acqua_costo_acc_sensor"
-        state: "{{ states('input_number.acqua_costo_acc') | float(0) | round(2) }}"
-        unit_of_measurement: "€"
-        state_class: measurement
-        icon: mdi:currency-eur
-
-      # Accumulatore m³ acqua – total_increasing
-      # Aggiornato ogni notte dall'automazione acqua_reset_mezzanotte
-      - name: "Acqua Consumo Acc Sensor"
-        unique_id: "acqua_consumo_acc_sensor"
-        state: "{{ states('input_number.acqua_consumo_acc') | float(0) | round(4) }}"
-        unit_of_measurement: "m³"
-        device_class: water
-        state_class: total_increasing
-        icon: mdi:water
-
 
       - name: "Panasonic Energia Prodotta Acc Sensor"
         unique_id: "panasonic_energia_prodotta_acc_sensor"
@@ -680,6 +652,7 @@ template:
         device_class: energy
         state_class: total_increasing
         icon: mdi:heat-pump
+        availability: "{{ has_value('input_number.panasonic_energia_prodotta_acc') }}"
         state: "{{ states('input_number.panasonic_energia_prodotta_acc') | float(0) | round(4) }}"
 
       - name: "Panasonic Energia Consumata Acc Sensor"
@@ -688,16 +661,8 @@ template:
         device_class: energy
         state_class: total_increasing
         icon: mdi:lightning-bolt
+        availability: "{{ has_value('input_number.panasonic_energia_consumata_acc') }}"
         state: "{{ states('input_number.panasonic_energia_consumata_acc') | float(0) | round(4) }}"
-
-      - name: "Clima Temperatura Sala"
-        unique_id: "clima_temperatura_sala_pesata"
-        unit_of_measurement: "°C"
-        device_class: temperature
-        state_class: measurement
-        icon: mdi:thermometer
-        state: >-
-          {{ states('sensor.hp1000se_pro_pro_v1_6_4_indoor_temperature') | float(25) | round(2) }}
 
       - name: "Clima Media Esterna 7gg"
         unique_id: "clima_media_esterna_7gg"
@@ -832,6 +797,9 @@ template:
         device_class: energy
         state_class: total_increasing
         icon: mdi:water-percent
+        availability: >-
+          {{ has_value('sensor.deumidificatore_cantina_oggi')
+             and has_value('sensor.deumidificatore_armadio_sonoff_sonoff_1002a68db0_energy_day') }}
         state: >-
           {{ (states('sensor.deumidificatore_cantina_oggi') | float(0) +
               states('sensor.deumidificatore_armadio_sonoff_sonoff_1002a68db0_energy_day') | float(0))
@@ -854,6 +822,7 @@ template:
         device_class: energy
         state_class: total_increasing
         icon: mdi:fan
+        availability: "{{ has_value('sensor.fancoil_tania_durata_oggi') }}"
         state: >-
           {{ (states('sensor.fancoil_tania_durata_oggi') | float(0) * 0.03) | round(3) }}
 
@@ -863,6 +832,7 @@ template:
         device_class: energy
         state_class: total_increasing
         icon: mdi:fan
+        availability: "{{ has_value('sensor.fancoil_georgi_durata_oggi') }}"
         state: >-
           {{ (states('sensor.fancoil_georgi_durata_oggi') | float(0) * 0.03) | round(3) }}
 
@@ -872,6 +842,7 @@ template:
         device_class: energy
         state_class: total_increasing
         icon: mdi:fan-alert
+        availability: "{{ has_value('sensor.fancoil_sala_durata_oggi') }}"
         state: >-
           {{ (states('sensor.fancoil_sala_durata_oggi') | float(0) * 0.05) | round(3) }}
 
@@ -881,6 +852,10 @@ template:
         device_class: energy
         state_class: total_increasing
         icon: mdi:fan
+        availability: >-
+          {{ has_value('sensor.consumo_fancoil_tania_oggi_stimato')
+             and has_value('sensor.consumo_fancoil_georgi_oggi_stimato')
+             and has_value('sensor.consumo_fancoil_sala_oggi_stimato_non_verificato') }}
         state: >-
           {{ (states('sensor.consumo_fancoil_tania_oggi_stimato') | float(0) +
               states('sensor.consumo_fancoil_georgi_oggi_stimato') | float(0) +
@@ -1167,23 +1142,6 @@ input_number:
     mode: box
     icon: mdi:thermometer-water
 
-  # --- AUTOTUNING ---
-  panasonic_autotune_step_risposta:
-    name: "Autotuning Step Risposta"
-    min: -20
-    max: 20
-    step: 0.001
-    mode: box
-    icon: mdi:chart-bell-curve
-
-  panasonic_autotune_cicli:
-    name: "Autotuning Cicli Completati"
-    min: 0
-    max: 100
-    step: 1
-    mode: box
-    icon: mdi:counter
-
   # --- SOGLIE SISTEMA ---
   clima_soglia_solare_boost:
     name: "Soglia Solare Boost W"
@@ -1284,18 +1242,6 @@ input_number:
     unit_of_measurement: "°C"
     mode: box
     icon: mdi:thermometer-chevron-down
-
-  # ============================================================
-  # PANASONIC PID – parametri e stato (legacy, mantenuto)
-  # ============================================================
-  panasonic_pid_target:
-    name: "Panasonic Target Temperatura Sala"
-    min: 18
-    max: 30
-    step: 0.5
-    unit_of_measurement: "°C"
-    mode: slider
-    icon: mdi:thermometer
 
   # ============================================================
   # PANASONIC – accumulatori energia (aggiornati ogni minuto)
@@ -1776,16 +1722,6 @@ utility_meter:
     name: Produzione Anno
     source: sensor.inverter_uflex_total_production
     cycle: yearly
-
-  acqua_costo_mensile:
-    name: "Acqua Costo Mensile"
-    source: sensor.acqua_costo_acc_sensor
-    cycle: monthly
-
-  acqua_mc_mensile:
-    name: "Acqua mc Mensile"
-    source: sensor.acqua_consumo_acc_sensor
-    cycle: monthly
 
   panasonic_prodotta_oggi:
     name: "Panasonic Prodotta Oggi"
