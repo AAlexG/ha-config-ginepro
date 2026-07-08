@@ -1,4 +1,4 @@
-# automations_clima_35.yaml
+# automations_clima_36.yaml
 
 
 
@@ -1025,6 +1025,11 @@
     - trigger: state
       entity_id: input_select.clima_modalita
       to: "manuale"
+  conditions:
+    # Ignora le transizioni verso 'unavailable'/'unknown' (freeze HeishaMon):
+    # un glitch transitorio del select non deve azzerare lo stato PID.
+    - condition: template
+      value_template: "{{ trigger.to_state.state not in ['unavailable', 'unknown'] }}"
   actions:
     - action: input_number.set_value
       target:
@@ -1624,6 +1629,14 @@
   triggers:
     - platform: time_pattern
       minutes: "/1"
+  conditions:
+    # Guardia anti-reset: al riavvio di HA (o durante un glitch OTGW)
+    # l'accumulatore o la modulazione possono valere 'unknown'/'unavailable';
+    # senza questa condizione 'precedente | float(0)' azzererebbe lo storico gas.
+    - condition: template
+      value_template: >
+        {{ states('input_number.caldaia_gas_totale_acc') not in ['unknown', 'unavailable']
+           and states('sensor.opentherm_gateway_otgw_otgw_relative_modulation_level') not in ['unknown', 'unavailable'] }}
   action:
     - variables:
         fiamma: "{{ is_state('binary_sensor.opentherm_gateway_otgw_otgw_flame', 'on') }}"

@@ -1,4 +1,4 @@
-# configuration_150.yaml
+# configuration_153.yaml
 default_config:
 
 #==================================================================================
@@ -1494,21 +1494,11 @@ input_number:
     mode: box
     icon: mdi:meter-gas
 
-  elec_import_inizio_mese:
-    name: "Elettricità – Import inizio mese (kWh)"
-    min: 0
-    max: 999999
-    step: 0.001
-    initial: 1006.3
-    mode: box
-    icon: mdi:transmission-tower
-
   acqua_costo_inizio_mese:
     name: "Acqua – Costo acc inizio mese (€)"
     min: 0
     max: 999999
     step: 0.01
-    initial: 1151.86
     mode: box
     icon: mdi:currency-eur
 
@@ -1682,7 +1672,6 @@ input_select:
       - "manuale"
       - "comfort"
       - "eco"
-    initial: giorno
     icon: mdi:home-thermometer
 
   clima_stagione:
@@ -1690,7 +1679,6 @@ input_select:
     options:
       - "estate"
       - "inverno"
-    initial: estate
     icon: mdi:weather-sunny
 
   # Mese di riferimento per inserimento bollette.
@@ -1714,6 +1702,16 @@ input_select:
       - "05/2026"
     initial: "-- seleziona --"
     icon: mdi:calendar-month
+
+input_text:
+  # Messaggio mostrato in plancia (Casa Ginepro) con l'esito dell'ultima
+  # valutazione irrigazione: motivi di blocco (pioggia, umidità, vento,
+  # previsioni) oppure conferma di irrigazione permessa. Scritto dalle
+  # automazioni irrigazione e da script.irrigazione_toggle_manuale.
+  irrigazione_motivo_blocco:
+    name: "Irrigazione – Motivo blocco"
+    max: 255
+    icon: mdi:sprinkler-variant
 
 shell_command:
   avvia_vivino_proxy: "python3 /config/vivino_proxy.py &"

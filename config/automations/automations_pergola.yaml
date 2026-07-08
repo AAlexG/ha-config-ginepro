@@ -1,4 +1,4 @@
-# automations_pergola_5.yaml
+# automations_pergola_6.yaml
 
 #==================================================================================
 # PERGOLA – INSEGUIMENTO SOLARE (1 giugno – 1 novembre, dalle 08:30 al tramonto)
@@ -210,3 +210,27 @@
       target:
         entity_id: input_boolean.tenda_notifica_vento_oggi
         
+
+#==================================================================================
+# PERGOLA – RILASCIO BLOCCO MANUALE (07:00 / 23:00)
+# Il blocco attivato da script.pergola_toggle_manuale dura fino al prossimo
+# cambio giorno/notte, come descritto nel commento dell'helper
+# input_boolean.pergola_blocco_manuale in configuration.yaml.
+# (Alla partenza per vacanza il flag viene già azzerato dall'automazione clima.)
+#==================================================================================
+- id: pergola_blocco_manuale_rilascio
+  alias: "Pergola – Rilascio Blocco Manuale"
+  mode: single
+  triggers:
+    - platform: time
+      at: "07:00:00"
+    - platform: time
+      at: "23:00:00"
+  conditions:
+    - condition: state
+      entity_id: input_boolean.pergola_blocco_manuale
+      state: "on"
+  actions:
+    - action: input_boolean.turn_off
+      target:
+        entity_id: input_boolean.pergola_blocco_manuale

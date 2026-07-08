@@ -1,4 +1,4 @@
-# automations_116.yaml
+# automations_117.yaml
 #prova
 #==================================================================================
 # 1. BLOCCO IRRIGAZIONE - Orari fissi DST-aware
@@ -469,11 +469,6 @@
         entity_id: input_number.gas_inizio_mese
       data:
         value: "{{ states('input_number.caldaia_gas_totale_acc') | float(0) }}"
-    - action: input_number.set_value
-      target:
-        entity_id: input_number.elec_import_inizio_mese
-      data:
-        value: "{{ states('sensor.inverter_uflex_total_energy_import') | float(0) }}"
     - action: input_number.set_value
       target:
         entity_id: input_number.acqua_costo_inizio_mese
