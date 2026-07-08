@@ -66,13 +66,6 @@ config:
           action: perform-action
           perform_action: script.apri_grande_cancello
         type: button
-      - entity: input_boolean.alarme_esterno
-        grid_options:
-          columns: 3
-          rows: 2
-        name: Allarme Esterno
-        show_state: true
-        type: button
       - cards:
         - icon: mdi:alarm-light
           name: Sirena ON
