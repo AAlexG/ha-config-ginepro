@@ -1,4 +1,4 @@
-# automations_clima_38.yaml
+# automations_clima_39.yaml
 
 
 
@@ -307,6 +307,10 @@
     - trigger: time
       at: "21:00:00"
   conditions:
+    # Blocco fancoil in vacanza (flag attivabile anche a mano da plancia clima)
+    - condition: state
+      entity_id: input_boolean.vacanza
+      state: "off"
     - condition: not
       conditions:
         - condition: state
@@ -345,6 +349,10 @@
     - trigger: time_pattern
       minutes: "/5"
   conditions:
+    # Blocco fancoil in vacanza (flag attivabile anche a mano da plancia clima)
+    - condition: state
+      entity_id: input_boolean.vacanza
+      state: "off"
     - condition: not
       conditions:
         - condition: state
@@ -458,6 +466,10 @@
       below: input_number.mintemp_giorno_inverno_sala
       id: "inverno"
   conditions:
+    # Blocco fancoil in vacanza (flag attivabile anche a mano da plancia clima)
+    - condition: state
+      entity_id: input_boolean.vacanza
+      state: "off"
     - condition: time
       after: "07:00:00"
       before: "23:00:00"
@@ -554,6 +566,10 @@
     - trigger: time_pattern
       minutes: "/5"
   conditions:
+    # Blocco fancoil in vacanza (flag attivabile anche a mano da plancia clima)
+    - condition: state
+      entity_id: input_boolean.vacanza
+      state: "off"
     - condition: not
       conditions:
         - condition: state
@@ -857,6 +873,10 @@
         soglia_vento: "{{ states('input_number.clima_soglia_vento_naturale') | float(6) }}"
         delta: "{{ t_ext - target }}"
         flag_on: "{{ is_state('input_boolean.clima_freecooling_attivo', 'on') }}"
+        # Vacanza/assenza: nessuna attivazione né notifica; flag ripulito se acceso
+        assenza: >
+          {{ is_state('input_select.clima_modalita', 'assenza')
+             or is_state('input_boolean.vacanza', 'on') }}
         # Condizione di attivazione (soglie base)
         cond_on: >
           {{ delta < base or (delta < (base + bonus) and vento >= soglia_vento) }}
@@ -868,7 +888,7 @@
         # --- ATTIVA: solo in Cool, condizione soddisfatta, flag spento ---
         - conditions:
             - condition: template
-              value_template: "{{ mode in ['Cool', 'Cool only'] and cond_on and not flag_on }}"
+              value_template: "{{ not assenza and mode in ['Cool', 'Cool only'] and cond_on and not flag_on }}"
           sequence:
             - action: input_boolean.turn_on
               target:
@@ -894,7 +914,8 @@
             - condition: template
               value_template: >
                 {{ flag_on and
-                   ((mode in ['Cool', 'Cool only'] and cond_off)
+                   (assenza
+                    or (mode in ['Cool', 'Cool only'] and cond_off)
                     or (mode not in ['Cool', 'Cool only', 'unavailable', 'unknown', 'none'])) }}
           sequence:
             - action: input_boolean.turn_off
@@ -1289,6 +1310,10 @@
         base: "{{ states('input_number.clima_delta_naturale_base') | float(3) }}"
         delta: "{{ target - t_ext }}"
         flag_on: "{{ is_state('input_boolean.clima_freeheating_attivo', 'on') }}"
+        # Vacanza/assenza: nessuna attivazione né notifica; flag ripulito se acceso
+        assenza: >
+          {{ is_state('input_select.clima_modalita', 'assenza')
+             or is_state('input_boolean.vacanza', 'on') }}
         cond_on: "{{ delta < base }}"
         # Disattivazione: fuori soglia con margine 0.5 C di isteresi
         cond_off: "{{ delta >= (base + 0.5) }}"
@@ -1296,7 +1321,7 @@
         # --- ATTIVA: solo in Heat, condizione soddisfatta, flag spento ---
         - conditions:
             - condition: template
-              value_template: "{{ mode in ['Heat', 'Heat only'] and cond_on and not flag_on }}"
+              value_template: "{{ not assenza and mode in ['Heat', 'Heat only'] and cond_on and not flag_on }}"
           sequence:
             - action: input_boolean.turn_on
               target:
@@ -1321,7 +1346,8 @@
             - condition: template
               value_template: >
                 {{ flag_on and
-                   ((mode in ['Heat', 'Heat only'] and cond_off)
+                   (assenza
+                    or (mode in ['Heat', 'Heat only'] and cond_off)
                     or (mode not in ['Heat', 'Heat only', 'unavailable', 'unknown', 'none'])) }}
           sequence:
             - action: input_boolean.turn_off
@@ -1946,3 +1972,25 @@
           priority: high
           ttl: 0
           persistent: "true"
+
+#==================================================================================
+# 28. FANCOIL – SPEGNIMENTO IMMEDIATO ALL'ATTIVAZIONE VACANZA
+# L'automazione di partenza vacanza (calendario) spegne già i fancoil, ma il
+# flag è ora attivabile anche a mano dalla plancia clima: questa garantisce lo
+# spegnimento in ogni caso, anche con fancoil in gestione manuale.
+#==================================================================================
+- id: fancoil_spegnimento_vacanza
+  alias: "Fancoil – Spegnimento all'attivazione Vacanza"
+  mode: single
+  triggers:
+    - trigger: state
+      entity_id: input_boolean.vacanza
+      from: "off"
+      to: "on"
+  actions:
+    - action: switch.turn_off
+      target:
+        entity_id:
+          - switch.camerageorgi_shelly_fancoil_georgi
+          - switch.camerageorgi_shelly_fancoil_georgi_2
+          - switch.sala_fancoil_sala_shelly_1gen4
