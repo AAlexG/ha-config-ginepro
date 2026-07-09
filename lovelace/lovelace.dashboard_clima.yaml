@@ -94,6 +94,8 @@ config:
       - entities:
         - entity: switch.presa_deumidificatore_cantina
           name: Cantina
+        - entity: switch.deumidificatore_armadio_sonoff_sonoff_1002a68db0_1
+          name: Armadio Tania
         grid_options:
           columns: full
           rows: auto
@@ -109,7 +111,7 @@ config:
         grid_options:
           columns: 6
           rows: 1
-        name: "Modalit\xE0 Pompa"
+        name: "Modalit\xE0"
         type: tile
         vertical: false
       - entity: switch.panasonic_heat_pump_main_heatpump_state
@@ -117,13 +119,13 @@ config:
         grid_options:
           columns: 6
           rows: 1
-        name: Pompa ON/OFF
+        name: PompaOn/Off
         type: tile
         vertical: false
       - entity: input_boolean.clima_boost_solare_attivo
         features_position: bottom
         grid_options:
-          columns: 6
+          columns: 12
           rows: 1
         name: Boost Solare
         type: tile
@@ -269,7 +271,7 @@ config:
       - entity: input_boolean.clima_autotune_attivo
         features_position: bottom
         grid_options:
-          columns: 6
+          columns: 12
           rows: 1
         name: Avvia Autotuning
         type: tile
@@ -280,7 +282,7 @@ config:
       - entity: input_number.clima_target_emergenza_antigelo
         features_position: bottom
         grid_options:
-          columns: 6
+          columns: 12
           rows: 1
         name: Soglia Antigelo Sala
         type: tile
