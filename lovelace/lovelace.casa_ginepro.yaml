@@ -73,12 +73,6 @@ config:
             action: perform-action
             perform_action: script.sirena_on
           type: button
-        - icon: mdi:alarm-light-off
-          name: Sirena OFF
-          tap_action:
-            action: perform-action
-            perform_action: script.sirena_off
-          type: button
         - icon: mdi:volume-high
           name: Speaker ON
           show_icon: true
@@ -87,16 +81,22 @@ config:
             action: perform-action
             perform_action: script.speaker_allarme
           type: button
+        - icon: mdi:alarm-light-off
+          name: Tutto OFF
+          tap_action:
+            action: perform-action
+            perform_action: script.sirena_off
+          type: button
         columns: 3
         grid_options:
           columns: 9
           rows: 2
         square: false
         type: grid
-      - entity: binary_sensor.hp1000se_pro_pro_v1_6_4_leak_detection_4
-        features_position: bottom
-        type: tile
-        vertical: false
+      - heading: SCORCIATOIE
+        heading_style: subtitle
+        icon: mdi:water
+        type: heading
       - grid_options:
           columns: 3
           rows: auto
@@ -110,10 +110,6 @@ config:
           action: navigate
           navigation_path: /dashboard-sicurezza/sicurezza
         type: button
-      - heading: SCORCIATOIE
-        heading_style: subtitle
-        icon: mdi:water
-        type: heading
       - grid_options:
           columns: 3
           rows: auto

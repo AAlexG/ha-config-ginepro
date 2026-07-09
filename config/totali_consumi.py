@@ -1,67 +1,63 @@
 #!/usr/bin/env python3
-# totali_consumi_11.py
+# totali_consumi_12.py
 # Calcola totali storici rilevato/bollette dalla tabella statistics del DB HA.
 # Stampa un JSON su stdout con i valori, letto dall'automazione
 # calcola_totali_consumi che aggiorna gli helper input_number della plancia.
 #
-# CORREZIONI v11 (dopo verifica diretta su DB):
-#  * I sensori energia dell'inverter (import/produzione/export) sono
-#    total_increasing: popolano le colonne 'state' e 'sum', NON 'min'/'max'.
-#    Quindi MAX(max)-MIN(min) dava NULL -> 0. Ora si usa MAX(sum)-MIN(sum),
-#    che è anche reset-safe (assorbe la riconfigurazione dell'inverter).
-#  * Nomi entità aggiornati alla convenzione reale dell'integrazione Solarman:
-#      sensor.inverter_uflex_total_energy_import   (elettricità rilevato)
-#      sensor.inverter_uflex_total_energy_export   (export FV)
-#      sensor.inverter_uflex_total_production       (produzione FV)
-#  * Bollette gas/elettricità e GSE lette dai relativi input_number.bolletta_*
-#    (i vecchi sensor.*_bolletta_* e sensor.gse_totale_contributi non esistono).
-#  * Gas rilevato = valore live dell'accumulatore input_number.caldaia_gas_totale_acc
-#    (non ha statistiche; letto dalla tabella states, come il template gas_mese_mc).
-#  * Prezzo del risparmio FV = valore live di input_number.elettricita_prezzo_kwh
-#    applicato a tutta la storia (unico prezzo disponibile). Con prezzo costante
-#    il risparmio da autoconsumo si riduce a (produzione - export) * prezzo.
+# CORREZIONI v12 (confronto rilevato/bollette sui SOLI mesi comuni):
+#  * PRIMA (v11): il "rilevato" era un cumulato totale (import inverter
+#    MAX(sum)-MIN(sum)), il gas un valore live dell'accumulatore, l'acqua la
+#    somma di TUTTI i mesi di acqua_storico; le "bollette" sommavano TUTTI i
+#    mesi di bolletta_*_mc. Le due parti coprivano periodi diversi (rilevato
+#    pochi mesi, bollette anni) -> numeri non confrontabili.
+#  * ORA: per gas/elettricita/acqua il rilevato mensile viene dai utility_meter
+#    mensili (sensor.gas_mese_mc, sensor.elettricita_mese_kwh,
+#    sensor.acqua_mese_mc): per ogni mese si prende il massimo raggiunto
+#    (valore di fine mese, prima dell'azzeramento del ciclo). Si calcola
+#    l'insieme dei mesi in cui il rilevato ha un valore > 0 e si sommano
+#    rilevato e bolletta SOLO su quei mesi comuni. I mesi di sola bolletta
+#    (anni arretrati senza rilevato) sono esclusi da entrambi i totali.
+#  * Fotovoltaico (risparmio/GSE/totale/recupero) e prezzi: invariati da v11.
+#
+# CONVENZIONE COLONNE (verificata su DB):
+#  * utility_meter mensili e input_number.bolletta_* -> valore consolidato in
+#    colonna 'max' (min==max nel consolidato). Per ogni mese si usa MAX(max).
+#  * sensori energia total_increasing dell'inverter -> colonne 'state'/'sum';
+#    per il fotovoltaico si usa MAX(sum)-MIN(sum) (reset-safe).
 
 import sqlite3, json
 
 DB = "/config/home-assistant_v2.db"
 
-# ── Query ────────────────────────────────────────────────────────────────
-
-# Energia cumulata (total_increasing): totale = MAX(sum) - MIN(sum).
-# Vale per import da rete, produzione FV, export FV. Reset-safe.
-ENERGIA_SUM_SQL = """
-SELECT ROUND(IFNULL(MAX(sum) - MIN(sum), 0), {decimals})
+# ── Serie mensili (una riga per mese, valore = MAX(max) del mese) ───────────
+# Ritorna dict {mese 'YYYY-MM': valore} per i soli mesi con valore > 0.
+MENSILE_SQL = """
+SELECT strftime('%Y-%m', datetime(start_ts, 'unixepoch', 'localtime')) AS mese,
+       IFNULL(MAX(max), 0) AS v
 FROM statistics
-WHERE metadata_id=(SELECT id FROM statistics_meta WHERE statistic_id='{entity}')
+WHERE metadata_id=(SELECT id FROM statistics_meta WHERE statistic_id=?)
+GROUP BY mese
+HAVING v > 0
 """
 
-# Bollette e acqua rilevato: valore consolidato mensile (min==max), si somma
-# il massimo di ogni mese. Vale per input_number.bolletta_* e per
-# sensor.acqua_storico_mc_mensile.
-SOMMA_MENSILE_SQL = """
-SELECT ROUND(COALESCE(SUM(x.v), 0), {decimals})
-FROM (
-    SELECT IFNULL(MAX(max), 0) AS v
-    FROM statistics
-    WHERE metadata_id=(SELECT id FROM statistics_meta WHERE statistic_id='{entity}')
-    GROUP BY strftime('%Y-%m', datetime(start_ts, 'unixepoch', 'localtime'))
-) x
+# ── Energia cumulata (total_increasing): totale = MAX(sum)-MIN(sum) ─────────
+ENERGIA_SUM_SQL = """
+SELECT ROUND(IFNULL(MAX(sum) - MIN(sum), 0), 2)
+FROM statistics
+WHERE metadata_id=(SELECT id FROM statistics_meta WHERE statistic_id=?)
 """
 
-CONFIGS = [
-    # ── Gas ──
-    {"key": "gas_bollette",   "entity": "input_number.bolletta_gas_mc",
-     "decimals": 2, "sql": SOMMA_MENSILE_SQL},
-    # ── Elettricità ──
-    {"key": "elec_rilevato",  "entity": "sensor.inverter_uflex_total_energy_import",
-     "decimals": 1, "sql": ENERGIA_SUM_SQL},
-    {"key": "elec_bollette",  "entity": "input_number.bolletta_elec_kwh",
-     "decimals": 1, "sql": SOMMA_MENSILE_SQL},
-    # ── Acqua ──
-    {"key": "acqua_rilevato", "entity": "sensor.acqua_storico_mc_mensile",
-     "decimals": 2, "sql": SOMMA_MENSILE_SQL},
-    {"key": "acqua_bollette", "entity": "input_number.bolletta_acqua_mc",
-     "decimals": 2, "sql": SOMMA_MENSILE_SQL},
+# Per ciascuna utenza: entita rilevato (utility_meter mensile) e bolletta.
+UTENZE = [
+    {"nome": "gas",   "decimals": 2,
+     "rilevato": "sensor.gas_mese_mc",
+     "bolletta": "input_number.bolletta_gas_mc"},
+    {"nome": "elec",  "decimals": 1,
+     "rilevato": "sensor.elettricita_mese_kwh",
+     "bolletta": "input_number.bolletta_elec_kwh"},
+    {"nome": "acqua", "decimals": 2,
+     "rilevato": "sensor.acqua_mese_mc",
+     "bolletta": "input_number.bolletta_acqua_mc"},
 ]
 
 # Sorgenti FV (per il risparmio da autoconsumo).
@@ -70,6 +66,18 @@ PV_EXPORT_ENTITY     = "sensor.inverter_uflex_total_energy_export"
 
 # Costo impianto per il calcolo della % di recupero.
 COSTO_IMPIANTO = 25500.0
+
+
+def serie_mensile(cur, entity):
+    """dict {mese: valore} dei soli mesi con valore > 0."""
+    rows = cur.execute(MENSILE_SQL, (entity,)).fetchall()
+    return {mese: float(v) for mese, v in rows}
+
+
+def energia_totale(cur, entity):
+    """Totale cumulato di un sensore energia total_increasing (MAX(sum)-MIN(sum))."""
+    r = cur.execute(ENERGIA_SUM_SQL, (entity,)).fetchone()
+    return float(r[0]) if r and r[0] is not None else 0.0
 
 
 def get_state(cur, eid):
@@ -82,18 +90,10 @@ def get_state(cur, eid):
     return r[0] if r else None
 
 
-def energia_totale(cur, entity, decimals):
-    """Totale cumulato di un sensore energia total_increasing (MAX(sum)-MIN(sum))."""
-    r = cur.execute(ENERGIA_SUM_SQL.format(entity=entity, decimals=decimals)).fetchone()
-    return float(r[0]) if r and r[0] is not None else 0.0
-
-
 def calc_pv_risparmio(cur, prezzo):
-    """Risparmio da autoconsumo = (produzione FV - export FV) * prezzo corrente.
-    Con prezzo costante la somma dei contributi mensili (prod-export)*prezzo
-    telescopa nel totale produzione meno totale export."""
-    produzione = energia_totale(cur, PV_PRODUZIONE_ENTITY, 2)
-    export     = energia_totale(cur, PV_EXPORT_ENTITY, 2)
+    """Risparmio da autoconsumo = (produzione FV - export FV) * prezzo corrente."""
+    produzione = energia_totale(cur, PV_PRODUZIONE_ENTITY)
+    export     = energia_totale(cur, PV_EXPORT_ENTITY)
     autoconsumo = max(0.0, produzione - export)
     return round(autoconsumo * prezzo, 2)
 
@@ -106,18 +106,16 @@ def main():
         cur = conn.cursor()
         out = {}
 
-        # ── Totali da statistiche (bollette, acqua, elettricità rilevato) ──
-        for cfg in CONFIGS:
-            query  = cfg["sql"].format(entity=cfg["entity"], decimals=cfg["decimals"])
-            result = cur.execute(query).fetchone()
-            out[cfg["key"]] = float(result[0]) if result and result[0] is not None else 0.0
-
-        # ── Gas rilevato: valore live dell'accumulatore (nessuna statistica) ──
-        gas_acc = get_state(cur, "input_number.caldaia_gas_totale_acc")
-        try:
-            out["gas_rilevato"] = round(float(gas_acc), 2) if gas_acc not in (None, "unknown", "unavailable") else 0.0
-        except (TypeError, ValueError):
-            out["gas_rilevato"] = 0.0
+        # ── Totali rilevato/bollette sui SOLI mesi comuni ──
+        for u in UTENZE:
+            rilevato = serie_mensile(cur, u["rilevato"])
+            bolletta = serie_mensile(cur, u["bolletta"])
+            # Mesi comuni: presenti (con valore > 0) in entrambe le serie.
+            mesi_comuni = set(rilevato) & set(bolletta)
+            tot_ril = round(sum(rilevato[m] for m in mesi_comuni), u["decimals"])
+            tot_bol = round(sum(bolletta[m] for m in mesi_comuni), u["decimals"])
+            out[f"{u['nome']}_rilevato"] = tot_ril
+            out[f"{u['nome']}_bollette"] = tot_bol
 
         # ── Prezzo corrente (unico disponibile) per il risparmio FV ──
         prezzo_str = get_state(cur, "input_number.elettricita_prezzo_kwh")
@@ -129,9 +127,8 @@ def main():
         # ── Fotovoltaico: risparmio, GSE, totale, % recupero ──
         pv_risparmio = calc_pv_risparmio(cur, prezzo)
 
-        r = cur.execute(SOMMA_MENSILE_SQL.format(
-            entity="input_number.bolletta_gse_euro", decimals=2)).fetchone()
-        pv_gse = float(r[0]) if r and r[0] is not None else 0.0
+        gse_serie = serie_mensile(cur, "input_number.bolletta_gse_euro")
+        pv_gse = round(sum(gse_serie.values()), 2)
 
         out["pv_risparmio"]    = pv_risparmio
         out["pv_gse"]          = pv_gse

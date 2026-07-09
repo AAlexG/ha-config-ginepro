@@ -81,6 +81,10 @@ config:
         name: Box Persiana
         type: tile
         vertical: false
+      - entity: binary_sensor.hp1000se_pro_pro_v1_6_4_leak_detection_4
+        features_position: bottom
+        type: tile
+        vertical: false
       type: grid
     - cards:
       - heading: Persiana Tania

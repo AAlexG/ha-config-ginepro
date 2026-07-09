@@ -1,4 +1,4 @@
-# scripts_37.yaml
+# scripts_38.yaml
 
 #==================================================================================
 # SCRIPT: APRI CANCELLO CASA
@@ -173,6 +173,9 @@ sirena_off:
           - siren.177_camera_nata_reolink_zoom_sirena
           - siren.camera_box_reolink_sirena
           - siren.184_camera_tania_sirena
+    - action: media_player.media_stop
+      target:
+        entity_id: media_player.tutti_gli_speaker
 
 
 #==================================================================================

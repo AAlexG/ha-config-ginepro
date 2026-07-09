@@ -457,6 +457,116 @@ config:
         - change
         type: statistics-graph
       type: grid
+    - cards:
+      - heading: Lavatrice Miele
+        heading_style: title
+        type: heading
+      - entity: switch.lavatricemielewci870_accensione
+        features_position: bottom
+        name: Stato
+        type: tile
+        vertical: false
+      - entity: binary_sensor.lavatricemielewci870_problema
+        features_position: bottom
+        name: Problemi?
+        type: tile
+        vertical: false
+      - entity: sensor.lavatricemielewci870_tempo_trascorso
+        features_position: bottom
+        name: Tempo trascorso
+        type: tile
+        vertical: false
+      - entity: sensor.lavatricemielewci870_tempo_residuo
+        features_position: bottom
+        name: Tempo residuo
+        type: tile
+        vertical: false
+      - entity: sensor.lavatricemielewci870_livello_twindos_1
+        features:
+        - detail: true
+          type: trend-graph
+        features_position: bottom
+        name: Twin box 1
+        type: tile
+        vertical: false
+      - entity: sensor.lavatricemielewci870_livello_twindos_2
+        features:
+        - type: trend-graph
+        features_position: bottom
+        name: Twin box 2
+        type: tile
+        vertical: false
+      - entity: sensor.lavatricemielewci870_previsione_consumo_acqua
+        features_position: bottom
+        name: Previsto acqua
+        type: tile
+        vertical: false
+      - entity: sensor.lavatricemielewci870_previsione_consumo_energia
+        features_position: bottom
+        name: "Previsto elettricit\xE0 "
+        type: tile
+        vertical: false
+      - entity: sensor.lavatricemielewci870_programma
+        features_position: bottom
+        grid_options:
+          columns: 12
+          rows: 1
+        name: Programma
+        type: tile
+        vertical: false
+      - entity: sensor.lavatricemielewci870_fase_programma
+        features_position: bottom
+        grid_options:
+          columns: full
+        name: Fase
+        type: tile
+        vertical: false
+      - entity: sensor.lavatricemielewci870_centrifuga
+        features_position: bottom
+        name: Centrifuga
+        type: tile
+        vertical: false
+      - entity: sensor.lavatricemielewci870_consumo_acqua
+        features_position: bottom
+        name: Acqua
+        type: tile
+        vertical: false
+      - entity: sensor.lavatricemielewci870_consumo_energia
+        features_position: bottom
+        name: "Elettricit\xE0 "
+        type: tile
+        vertical: false
+      - entity: sensor.lavatricemielewci870_temperatura_impostata
+        features_position: bottom
+        name: Temperatura
+        type: tile
+        vertical: false
+      - entity: sensor.lavatricemielewci870_avvio_programmato
+        features_position: bottom
+        name: Avvio
+        type: tile
+        vertical: false
+      - entity: sensor.lavatricemielewci870_fine
+        features_position: bottom
+        name: Fine
+        type: tile
+        vertical: false
+      - entity: button.lavatricemielewci870_start
+        features_position: bottom
+        name: Start
+        type: tile
+        vertical: false
+      - entity: button.lavatricemielewci870_pausa
+        features_position: bottom
+        name: Pausa
+        type: tile
+        vertical: false
+      - entity: button.lavatricemielewci870_stop
+        features_position: bottom
+        name: Stop
+        type: tile
+        vertical: false
+      type: grid
     title: 'Fancoil & Deumidificatori '
     type: sections
   vpath: fancoil
