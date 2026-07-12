@@ -919,20 +919,7 @@ template:
             Codice sconosciuto ({{ code }})
           {% endif %}
 
-#--- CONSUMO TOTALE DEUMIDIFICATORI (i fancoil Shelly non hanno sensori energia) ---
-      - name: "Consumo Deumidificatori Oggi"
-        unique_id: "consumo_deumidificatori_oggi"
-        unit_of_measurement: "kWh"
-        device_class: energy
-        state_class: total_increasing
-        icon: mdi:water-percent
-        availability: >-
-          {{ has_value('sensor.deumidificatore_cantina_oggi')
-             and has_value('sensor.deumidificatore_armadio_sonoff_sonoff_1002a68db0_energy_day') }}
-        state: >-
-          {{ (states('sensor.deumidificatore_cantina_oggi') | float(0) +
-              states('sensor.deumidificatore_armadio_sonoff_sonoff_1002a68db0_energy_day') | float(0))
-             | round(3) }}
+#--- CONSUMO TOTALE DEUMIDIFICATORI: vedi blocco trigger-based a fine sezione template ---
 
 #--- CONSUMO STIMATO FANCOIL A VELOCITA' MINIMA ---
 # Stima basata su: ore di accensione oggi (history_stats) x potenza a velocità
@@ -975,6 +962,56 @@ template:
         state: >-
           {{ (states('sensor.fancoil_sala_durata_oggi') | float(0) * 0.05) | round(3) }}
 
+#--- SOMME MONOTONE (protezione anti-reset spurio) -------------------------
+# Le somme di piu' sorgenti giornaliere possono CALARE se una sorgente riporta
+# un valore stantio/azzerato pur restando disponibile (tipico del cloud eWeLink).
+# HA interpreta ogni calo di un total_increasing come RESET del contatore e
+# riparte sommando da capo l'intero valore corrente: 3 cali/giorno hanno gonfiato
+# le statistiche deumidificatori fino a 821 kWh in un giorno (max reale 5.6 kWh).
+# Soluzione: sensori trigger-based che trattengono il massimo raggiunto nella
+# giornata (pavimento). Se una sorgente sparisce il totale resta fermo, non cala.
+# Nei primi 10 minuti dopo la mezzanotte il pavimento e' disattivato, per lasciare
+# passare il vero azzeramento giornaliero delle sorgenti.
+  - triggers:
+      - trigger: state
+        entity_id:
+          - sensor.deumidificatore_cantina_oggi
+          - sensor.deumidificatore_armadio_sonoff_sonoff_1002a68db0_energy_day
+      - trigger: time_pattern
+        minutes: "/5"
+      - trigger: homeassistant
+        event: start
+    sensor:
+      - name: "Consumo Deumidificatori Oggi"
+        unique_id: "consumo_deumidificatori_oggi"
+        unit_of_measurement: "kWh"
+        device_class: energy
+        state_class: total_increasing
+        icon: mdi:water-percent
+        availability: >-
+          {{ has_value('sensor.deumidificatore_cantina_oggi')
+             and has_value('sensor.deumidificatore_armadio_sonoff_sonoff_1002a68db0_energy_day') }}
+        state: >-
+          {% set nuovo = (states('sensor.deumidificatore_cantina_oggi') | float(0) +
+                          states('sensor.deumidificatore_armadio_sonoff_sonoff_1002a68db0_energy_day') | float(0))
+                         | round(3) %}
+          {% if now().hour == 0 and now().minute < 10 %}
+            {{ nuovo }}
+          {% else %}
+            {{ [nuovo, this.state | float(0)] | max | round(3) }}
+          {% endif %}
+
+  - triggers:
+      - trigger: state
+        entity_id:
+          - sensor.consumo_fancoil_tania_oggi_stimato
+          - sensor.consumo_fancoil_georgi_oggi_stimato
+          - sensor.consumo_fancoil_sala_oggi_stimato_non_verificato
+      - trigger: time_pattern
+        minutes: "/5"
+      - trigger: homeassistant
+        event: start
+    sensor:
       - name: "Consumo Fancoil Totale Oggi"
         unique_id: "consumo_fancoil_totale_oggi"
         unit_of_measurement: "kWh"
@@ -986,10 +1023,15 @@ template:
              and has_value('sensor.consumo_fancoil_georgi_oggi_stimato')
              and has_value('sensor.consumo_fancoil_sala_oggi_stimato_non_verificato') }}
         state: >-
-          {{ (states('sensor.consumo_fancoil_tania_oggi_stimato') | float(0) +
-              states('sensor.consumo_fancoil_georgi_oggi_stimato') | float(0) +
-              states('sensor.consumo_fancoil_sala_oggi_stimato_non_verificato') | float(0))
-             | round(3) }}
+          {% set nuovo = (states('sensor.consumo_fancoil_tania_oggi_stimato') | float(0) +
+                          states('sensor.consumo_fancoil_georgi_oggi_stimato') | float(0) +
+                          states('sensor.consumo_fancoil_sala_oggi_stimato_non_verificato') | float(0))
+                         | round(3) %}
+          {% if now().hour == 0 and now().minute < 10 %}
+            {{ nuovo }}
+          {% else %}
+            {{ [nuovo, this.state | float(0)] | max | round(3) }}
+          {% endif %}
 
 #--- SENSORI STATISTICI ---
 sensor:
