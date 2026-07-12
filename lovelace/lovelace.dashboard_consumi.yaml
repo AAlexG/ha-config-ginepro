@@ -193,6 +193,42 @@ config:
         name: Sauna totale
         type: tile
         vertical: false
+      - entity: sensor.panasonic_energia_consumata_acc_sensor
+        features_position: bottom
+        grid_options:
+          columns: 3
+          rows: 1
+        icon: mdi:heat-pump
+        name: Pompa totale
+        type: tile
+        vertical: false
+      - entity: sensor.fancoil_totale
+        features_position: bottom
+        grid_options:
+          columns: 3
+          rows: 1
+        icon: mdi:fan
+        name: Fancoil totale
+        type: tile
+        vertical: false
+      - entity: sensor.deumidificatori_totale
+        features_position: bottom
+        grid_options:
+          columns: 3
+          rows: 1
+        icon: mdi:air-humidifier
+        name: Deumidif. totale
+        type: tile
+        vertical: false
+      - entity: sensor.lavatrice_totale
+        features_position: bottom
+        grid_options:
+          columns: 3
+          rows: 1
+        icon: mdi:washing-machine
+        name: Lavatrice totale
+        type: tile
+        vertical: false
       - content: '{% set d = state_attr(''sensor.pv_tabella_mensile'', ''mesi'') %}
           {%
 
@@ -465,6 +501,33 @@ config:
           columns: 3
           rows: 1
         name: Pompa mese
+        type: tile
+        vertical: false
+      - entity: sensor.fancoil_mese
+        features_position: bottom
+        grid_options:
+          columns: 3
+          rows: 1
+        icon: mdi:fan
+        name: Fancoil mese
+        type: tile
+        vertical: false
+      - entity: sensor.deumidificatori_mese
+        features_position: bottom
+        grid_options:
+          columns: 3
+          rows: 1
+        icon: mdi:air-humidifier
+        name: Deumidif. mese
+        type: tile
+        vertical: false
+      - entity: sensor.lavatrice_mese
+        features_position: bottom
+        grid_options:
+          columns: 3
+          rows: 1
+        icon: mdi:washing-machine
+        name: Lavatrice mese
         type: tile
         vertical: false
       - entity: sensor.auto_energia_mese

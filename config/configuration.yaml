@@ -1,4 +1,4 @@
-# configuration_164.yaml
+# configuration_165.yaml
 default_config:
 
 #==================================================================================
@@ -2012,6 +2012,36 @@ utility_meter:
     name: "Deumidificatore Cantina Oggi"
     source: sensor.presa_terrazza_energia_totale
     cycle: daily
+
+  # --- FANCOIL (stima da durata accensione) ---
+  fancoil_mese:
+    name: "Fancoil Mese"
+    source: sensor.consumo_fancoil_totale_oggi
+    cycle: monthly
+
+  fancoil_totale:
+    name: "Fancoil Totale"
+    source: sensor.consumo_fancoil_totale_oggi
+
+  # --- DEUMIDIFICATORI (cantina + armadio) ---
+  deumidificatori_mese:
+    name: "Deumidificatori Mese"
+    source: sensor.consumo_deumidificatori_oggi
+    cycle: monthly
+
+  deumidificatori_totale:
+    name: "Deumidificatori Totale"
+    source: sensor.consumo_deumidificatori_oggi
+
+  # --- LAVATRICE MIELE ---
+  lavatrice_mese:
+    name: "Lavatrice Mese"
+    source: sensor.lavatricemielewci870_consumo_energia
+    cycle: monthly
+
+  lavatrice_totale:
+    name: "Lavatrice Totale"
+    source: sensor.lavatricemielewci870_consumo_energia
 
 input_boolean:
   # --- GESTIONE FONTE CALDAIA/PDC (configuration_162) ---
