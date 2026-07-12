@@ -1,4 +1,4 @@
-# configuration_167.yaml
+# configuration_168.yaml
 default_config:
 
 #==================================================================================
@@ -686,12 +686,23 @@ template:
         state_class: measurement
         icon: mdi:water
 
+      - name: "Acqua Lavatrice Oggi"
+        unique_id: "acqua_lavatrice_oggi"
+        # Litri consumati oggi dalla lavatrice (utility_meter giornaliero sul
+        # wrapper sensor.lavatrice_acqua), convertiti in m³.
+        state: >-
+          {{ (states('sensor.lavatrice_acqua_oggi') | float(0) / 1000) | round(4) }}
+        unit_of_measurement: "m³"
+        state_class: measurement
+        icon: mdi:washing-machine
+
       - name: "Acqua Oggi MC"
         unique_id: "acqua_oggi_mc"
         state: >-
           {% set C2 = states('sensor.acqua_irrigazione_oggi') | float(0) %}
           {% set C5 = states('sensor.acqua_sanitaria_totale') | float(0) %}
-          {{ (C2 + C5) | round(4) }}
+          {% set C6 = states('sensor.acqua_lavatrice_oggi') | float(0) %}
+          {{ (C2 + C5 + C6) | round(4) }}
         unit_of_measurement: "m³"
         state_class: measurement
         icon: mdi:water-check
@@ -1043,10 +1054,25 @@ template:
 # restano visibili e vengono gestiti normalmente da Utility Meter.
   - triggers:
       - trigger: state
-        entity_id: sensor.lavatricemielewci870_consumo_energia
+        entity_id:
+          - sensor.lavatricemielewci870_consumo_energia
+          - sensor.lavatricemielewci870_consumo_acqua
       - trigger: homeassistant
         event: start
     sensor:
+      - name: "Lavatrice Acqua"
+        unique_id: "lavatrice_acqua"
+        unit_of_measurement: "L"
+        device_class: water
+        state_class: total_increasing
+        icon: mdi:washing-machine
+        state: >-
+          {% if has_value('sensor.lavatricemielewci870_consumo_acqua') %}
+            {{ states('sensor.lavatricemielewci870_consumo_acqua') | float(0) | round(2) }}
+          {% else %}
+            {{ this.state | float(0) | round(2) }}
+          {% endif %}
+
       - name: "Lavatrice Energia"
         unique_id: "lavatrice_energia"
         unit_of_measurement: "kWh"
@@ -2111,6 +2137,14 @@ utility_meter:
   lavatrice_totale:
     name: "Lavatrice Totale"
     source: sensor.lavatrice_energia
+
+  # --- LAVATRICE: acqua giornaliera (litri) ---
+  # Si azzera a mezzanotte, mentre acqua_reset_mezzanotte accumula alle 23:59:
+  # l'acqua eventualmente erogata in quel minuto non viene conteggiata.
+  lavatrice_acqua_oggi:
+    name: "Lavatrice Acqua Oggi"
+    source: sensor.lavatrice_acqua
+    cycle: daily
 
 input_boolean:
   # --- GESTIONE FONTE CALDAIA/PDC (configuration_162) ---
