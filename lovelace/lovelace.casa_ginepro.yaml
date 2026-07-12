@@ -396,7 +396,7 @@ config:
         name: Irrigazione
         tap_action:
           action: perform-action
-          perform_action: script.irrigazione_toggle_manuale
+          perform_action: script.irrigazione_salta_toggle
         type: tile
         vertical: false
       type: grid
@@ -1197,7 +1197,7 @@ config:
         name: Irrigazione
         tap_action:
           action: perform-action
-          perform_action: script.irrigazione_toggle_manuale
+          perform_action: script.irrigazione_salta_toggle
         type: tile
         vertical: false
       - entity: input_number.irrigazione_soglia_umidita
@@ -1271,15 +1271,28 @@ config:
           action: navigate
           navigation_path: /dashboard-meteo/meteo
         type: button
+      - grid_options:
+          columns: 3
+          rows: auto
+        icon: mdi:sprinkler-variant
+        icon_height: 20px
+        name: Irrigazione
+        show_icon: true
+        show_name: true
+        show_state: false
+        tap_action:
+          action: navigate
+          navigation_path: /dashboard-irrigazione/irrigazione
+        type: button
       - heading: Solo Irrigazione oggi
         heading_style: subtitle
         type: heading
-      - entity: counter.irrigazione_sessioni_oggi
+      - entity: counter.irrigazione_minuti_oggi
         features_position: bottom
         grid_options:
           columns: 3
           rows: 1
-        name: N irrigazioni
+        name: Minuti oggi
         type: tile
         vertical: false
       - entity: sensor.acqua_irrigazione_oggi
@@ -1290,24 +1303,6 @@ config:
         name: Consumo Irrigazione
         type: tile
         vertical: false
-      - entity: input_number.acqua_durata_irrigazione
-        grid_options:
-          columns: 9
-          rows: auto
-        name: ' Durata 1 sessione'
-        type: entity
-        visibility:
-        - condition: screen
-          media_query: '(min-width: 768px) and (max-width: 1023px)'
-      - entity: input_number.acqua_consumo_per_minuto
-        grid_options:
-          columns: 9
-          rows: auto
-        name: Flusso irrigazione
-        type: entity
-        visibility:
-        - condition: screen
-          media_query: '(min-width: 768px) and (max-width: 1023px)'
       - heading: Solo Acqua Sanitaria oggi
         heading_style: subtitle
         type: heading
@@ -1335,30 +1330,6 @@ config:
         name: 'Sanitaria totale '
         type: tile
         vertical: false
-      - entity: input_number.acqua_sanitaria_manuale
-        grid_options:
-          columns: 12
-          rows: auto
-        name: Consumo Acqua fredda al giorno
-        type: entity
-      - entity: input_number.caldaia_dhw_durata_invernale
-        grid_options:
-          columns: 12
-          rows: auto
-        name: Durata caldaia x sanitaria al giorno in inverno
-        type: entity
-        visibility:
-        - condition: screen
-          media_query: '(min-width: 768px) and (max-width: 1023px)'
-      - entity: input_number.acqua_flusso_doccia
-        grid_options:
-          columns: 9
-          rows: auto
-        name: Flusso acqua calda
-        type: entity
-        visibility:
-        - condition: screen
-          media_query: '(min-width: 768px) and (max-width: 1023px)'
       type: grid
     - cards:
       - heading: STATO

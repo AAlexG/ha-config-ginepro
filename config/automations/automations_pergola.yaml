@@ -1,22 +1,49 @@
-# automations_pergola_6.yaml
+# automations_pergola_11.yaml
 
 #==================================================================================
-# PERGOLA – INSEGUIMENTO SOLARE (1 giugno – 1 novembre, dalle 08:30 al tramonto)
-# Geometria: asse lamelle lungo la facciata (145°/325°), lamelle che si aprono
-# verso est e si chiudono verso ovest. Formula "profile angle" standard per
-# schermature orientate, calcolata su sun.sun (azimuth/elevation).
-# Parametri dichiarati (verificare sul campo, vedi nota in chat):
-#   corsa totale lamelle 0-100% = 135°, margine di sicurezza ombra = 20°,
-#   quantizzazione a scalini di 20 punti (per difetto = più chiuso = più sicuro).
-# Quando il sole è troppo radente rispetto al piano lamelle (geometria degenere,
-# tipicamente da metà-tarda pomeriggio in poi) il target è forzato a 0% (chiuso).
+# PERGOLA – INSEGUIMENTO SOLARE + APERTURA AERAZIONE (1 giugno – 1 novembre)
+# Versione a 6 movimenti fissi al giorno (eliminato il ciclo dei 10 minuti):
+#   08:30 / 10:00 / 11:15 : formula "profile angle" su sun.sun (asse lamelle
+#                 145°/325°, corsa 0-100% = 135°, margine ombra = 41°),
+#                 +5 punti di scorta perché la posizione deve reggere fino
+#                 allo slot successivo mentre il sole sale; arrotondamento
+#                 al punto intero. Taratura empirica: 15% alle 12:00 di
+#                 luglio (slot 11:15 -> ~17). NOTA: prima mattina ancora
+#                 da verificare sul campo.
+#   azimut >= 145° (il sole passa il piano lamelle: luglio ~12:30,
+#                 ottobre ~11:10, lo scatto segue la stagione da solo):
+#                 posizione fissa 95%, regge tutto il primo pomeriggio.
+#                 Taratura empirica: 95% h13:22, 87% h13:46, 80% h15:00.
+#   15:00 : lamelle all'80% per aerare la zona sottostante.
+#   23:01 : chiusura per la notte (0%). Alle 23:01 e non 23:00 per evitare
+#           la corsa con il rilascio del blocco manuale delle 23:00.
+# Trigger extra: al rilascio della sicurezza meteo la pergola si riposiziona
+# subito al valore dello slot corrente, altrimenti dopo un temporale
+# resterebbe chiusa fino allo slot successivo.
+# Le posizioni NON vengono piu' ripristinate ogni 10 minuti: uno spostamento
+# manuale resta valido fino allo slot successivo.
 # Rispetta il flag vacanza, il blocco manuale e la chiusura di sicurezza meteo.
 #==================================================================================
 - id: pergola_inseguimento_solare
   alias: "Pergola – Inseguimento Solare"
+  mode: single
   triggers:
-    - trigger: time_pattern
-      minutes: "/10"
+    - trigger: time
+      at: "08:30:00"
+    - trigger: time
+      at: "10:00:00"
+    - trigger: time
+      at: "11:15:00"
+    - trigger: template
+      value_template: "{{ state_attr('sun.sun','azimuth') | float(0) >= 145 }}"
+    - trigger: time
+      at: "15:00:00"
+    - trigger: time
+      at: "23:01:00"
+    - trigger: state
+      entity_id: input_boolean.pergola_meteo_chiusura
+      from: "on"
+      to: "off"
   conditions:
     - condition: state
       entity_id: input_boolean.vacanza
@@ -29,32 +56,24 @@
       state: "off"
     - condition: template
       value_template: "{{ '06-01' <= now().strftime('%m-%d') <= '11-01' }}"
-    - condition: time
-      after: "08:30:00"
-    - condition: numeric_state
-      entity_id: sun.sun
-      attribute: elevation
-      above: 0.5
   actions:
     - variables:
         normal: 145
         travel: 135
-        margin: 20
-        step: 20
+        margin: 41
         az: "{{ state_attr('sun.sun','azimuth') | float(180) }}"
         el: "{{ state_attr('sun.sun','elevation') | float(0) }}"
         c: "{{ cos((az - normal) * pi / 180) }}"
         pct_grezzo: "{{ (((atan(tan(el * pi / 180) / c) * 180 / pi) - margin) / travel) * 100 if c > 0.01 else 0 }}"
         pct: "{{ [[pct_grezzo, 0] | max, 100] | min }}"
-        target: "{{ ((pct / step) | int) * step }}"
-        attuale: "{{ state_attr('cover.terrazzo_pergola_terrazza','current_tilt_position') | int(0) }}"
-    - condition: template
-      value_template: "{{ target != attuale }}"
+        ora: "{{ now().strftime('%H:%M') }}"
+        target: >-
+          {% if '08:30' <= ora < '15:00' %}{% if az < 145 %}{{ [pct + 5, 100] | min | round | int }}{% else %}95{% endif %}{% elif '15:00' <= ora < '23:00' %}80{% else %}0{% endif %}
     - action: cover.set_cover_tilt_position
       target:
         entity_id: cover.terrazzo_pergola_terrazza
       data:
-        tilt_position: "{{ target }}"
+        tilt_position: "{{ target | int }}"
 
 #==================================================================================
 # PERGOLA – CHIUSURA SICUREZZA METEO

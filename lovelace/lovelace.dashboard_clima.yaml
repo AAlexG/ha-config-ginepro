@@ -407,5 +407,107 @@ config:
         type: tile
         vertical: false
       type: grid
+    - cards:
+      - heading: SCELTA TRA CALDAIA E PDC(pompa)
+        heading_style: title
+        icon: mdi:swap-horizontal-circle
+        type: heading
+      - entity: input_boolean.fonte_auto_attiva
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        name: Stato gestione
+        type: tile
+        vertical: false
+      - entity: sensor.riscaldamento_fonte_conveniente
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        name: Fonte scelto
+        type: tile
+        vertical: false
+      - entity: sensor.pdc_costo_kwh_termico
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        name: Prezzo PdC
+        type: tile
+        vertical: false
+      - entity: sensor.caldaia_costo_kwh_termico
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        name: Prezzo Caldaia
+        type: tile
+        vertical: false
+      - entity: input_number.gse_prezzo_kwh_stima
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        name: "Prezzo GSE \u20AC/kWh"
+        type: tile
+        vertical: false
+      - entity: input_datetime.fonte_ultima_commutazione
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        name: Ultimo cambio
+        type: tile
+        vertical: false
+      - entity: binary_sensor.pv_surplus
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        name: A rete
+        type: tile
+        vertical: false
+      - entity: input_number.pv_surplus_soglia
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        name: Soglia a rete
+        type: tile
+        vertical: false
+      - entity: input_number.caldaia_rendimento
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        name: 'Caldaia: COP'
+        type: tile
+        vertical: false
+      - entity: input_number.pdc_cop_fallback
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        name: 'PdC: COP di riserva'
+        type: tile
+        vertical: false
+      - entity: input_number.fonte_isteresi_pct
+        features_position: bottom
+        grid_options:
+          columns: 12
+          rows: auto
+        name: Ritardo switch pompa/ caldaia
+        type: tile
+        vertical: false
+      - entity: input_number.fonte_ore_minime
+        features_position: bottom
+        grid_options:
+          columns: 12
+          rows: auto
+        name: Ore minime tra switch
+        type: tile
+        vertical: false
+      type: grid
     title: Clima
     type: sections

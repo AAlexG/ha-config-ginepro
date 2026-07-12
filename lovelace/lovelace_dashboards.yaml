@@ -59,7 +59,7 @@ items:
   mode: storage
   require_admin: false
   show_in_sidebar: true
-  title: Fancoil & Deumidificatori
+  title: Fancoil & Devices
   url_path: dashboard-fancoil
 - icon: mdi:lock
   id: dashboard_sicurezza
@@ -75,3 +75,10 @@ items:
   show_in_sidebar: true
   title: Tende
   url_path: dashboard-tende
+- icon: mdi:water
+  id: dashboard_irrigazione
+  mode: storage
+  require_admin: false
+  show_in_sidebar: true
+  title: Irrigazione
+  url_path: dashboard-irrigazione

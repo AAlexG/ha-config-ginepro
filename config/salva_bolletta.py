@@ -1,8 +1,13 @@
-# salva_bolletta_6.py
+# salva_bolletta_9.py
 # Legge mese selezionato e valori bolletta da HA DB, inietta statistiche mensili.
 # Ricalcola inoltre:
-#   input_number.elettricita_prezzo_kwh = somma € bollette elettriche / somma kWh bollette
-#   input_number.gas_prezzo_mc          = somma € bollette gas / somma m³ bollette
+#   prezzo MEDIO elettricità = somma € bollette elettriche / somma kWh bollette
+#   prezzo MEDIO gas         = somma € bollette gas / somma m³ bollette
+# I prezzi medi (quote fisse incluse) restano SOLO nel log come dato
+# di controllo: nessun input_number viene aggiornato (salva_bolletta_8,
+# helper medi rimossi in configuration_159). I prezzi A CONSUMO
+# (input_number.elettricita_prezzo_kwh, aggiornato dal PUN, e
+# input_number.gas_prezzo_mc, manuale) NON vengono toccati.
 # (solo mesi con entrambi i valori storicizzati > 0, per ciascuna utenza).
 #
 # NUOVO (v5): ricalcola il prezzo €/kWh pagato dal GSE per OGNI mese con
@@ -68,7 +73,7 @@ def ins(cur, mid, ym, val, now_s, now_ts):
         (now_s, now_ts, mid, utc, t, val, val, val, val))
 
 
-def calcola_prezzo(cur, entity_qty, entity_euro, entity_prezzo_attuale):
+def calcola_prezzo(cur, entity_qty, entity_euro):
     """Prezzo medio = somma € bollette / somma quantità bollette (kWh o m³).
     Generica per qualsiasi coppia (quantità, euro) storicizzata per mese."""
     row = cur.execute("""
@@ -94,14 +99,10 @@ def calcola_prezzo(cur, entity_qty, entity_euro, entity_prezzo_attuale):
     tot_qty  = float(row[1]) if row and row[1] is not None else 0.0
     if tot_qty > 0:
         return round(tot_euro / tot_qty, 4), tot_euro, tot_qty
-    # Fallback: nessuna bolletta valida ancora storicizzata,
-    # mantiene il prezzo attuale invece di azzerarlo.
-    attuale = get_state(cur, entity_prezzo_attuale)
-    try:
-        attuale = float(attuale) if attuale else 0.0
-    except ValueError:
-        attuale = 0.0
-    return attuale, tot_euro, tot_qty
+    # Fallback: nessuna bolletta valida ancora storicizzata.
+    # (salva_bolletta_8: il prezzo medio è solo informativo nel log,
+    # nessun helper da preservare -> 0.)
+    return 0.0, tot_euro, tot_qty
 
 
 def valori_mensili(cur, sid):
@@ -211,14 +212,12 @@ def main():
         log("Nessun valore >0 – nulla scritto nel DB.")
 
     prezzo_kwh, tot_euro_elec, tot_kwh = calcola_prezzo(
-        cur, "input_number.bolletta_elec_kwh", "input_number.bolletta_elec_euro",
-        "input_number.elettricita_prezzo_kwh")
-    log(f"Prezzo €/kWh ricalcolato: {prezzo_kwh} (tot €={tot_euro_elec}, tot kWh={tot_kwh})")
+        cur, "input_number.bolletta_elec_kwh", "input_number.bolletta_elec_euro")
+    log(f"Prezzo medio €/kWh ricalcolato: {prezzo_kwh} (tot €={tot_euro_elec}, tot kWh={tot_kwh})")
 
     prezzo_mc, tot_euro_gas, tot_mc = calcola_prezzo(
-        cur, "input_number.bolletta_gas_mc", "input_number.bolletta_gas_euro",
-        "input_number.gas_prezzo_mc")
-    log(f"Prezzo €/m³ gas ricalcolato: {prezzo_mc} (tot €={tot_euro_gas}, tot m³={tot_mc})")
+        cur, "input_number.bolletta_gas_mc", "input_number.bolletta_gas_euro")
+    log(f"Prezzo medio €/m³ gas ricalcolato: {prezzo_mc} (tot €={tot_euro_gas}, tot m³={tot_mc})")
 
     prezzi_gse = calcola_prezzi_gse(cur, now_s, now_ts)
     conn.commit()
@@ -236,6 +235,10 @@ def main():
         "tot_euro_gas": tot_euro_gas,
         "tot_mc_gas": tot_mc,
         "prezzi_gse": prezzi_gse,
+        # NUOVO (v9): prezzo GSE dell'ultimo mese disponibile, usato
+        # dallo script HA per aggiornare input_number.gse_prezzo_kwh_stima.
+        "gse_prezzo_ultimo": (prezzi_gse[sorted(prezzi_gse)[-1]]
+                              if prezzi_gse else 0),
     }
 
 

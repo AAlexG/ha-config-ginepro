@@ -1,40 +1,31 @@
-# automations_117.yaml
+# automations_118.yaml
 #prova
 #==================================================================================
-# 1. BLOCCO IRRIGAZIONE - Orari fissi DST-aware
+# 1. IRRIGAZIONE – Ciclo programmato (O1/O2) con gate meteo
 #==================================================================================
-- id: smart_irrigation_dst
-  alias: Smart Irrigation Control
+- id: irrigazione_ciclo_programmato
+  alias: "Irrigazione – Ciclo programmato (O1/O2)"
   mode: single
+  max_exceeded: silent
   triggers:
     - platform: time
-      at: "08:25:00"
+      at: input_datetime.irrigazione_ora_mattino
     - platform: time
-      at: "20:25:00"
-    - platform: homeassistant
-      event: start
+      at: input_datetime.irrigazione_ora_sera
   condition: []
   action:
-    # --- Gestione manuale attiva: scrivi solo il messaggio e termina ---
     - if:
         - condition: state
-          entity_id: input_boolean.irrigazione_manuale_oggi
+          entity_id: input_boolean.irrigazione_salta_oggi
           state: 'on'
       then:
         - action: input_text.set_value
           target:
             entity_id: input_text.irrigazione_motivo_blocco
           data:
-            value: "🖐️ È stato scelto gestione manuale per oggi"
-        - stop: "Gestione manuale attiva – nessuna modifica automatica"
+            value: "🖐️ Programma saltato per oggi"
+        - stop: "Salta oggi attivo"
 
-    # Apre irrigazione (default permessa)
-    - action: switch.turn_off
-      target:
-        entity_id: switch.sonoff_irrigation_block
-    - delay: "00:00:02"
-
-    # Recupera previsioni meteo orarie
     - action: weather.get_forecasts
       target:
         entity_id: weather.casa
@@ -42,7 +33,6 @@
         type: hourly
       response_variable: previsioni
 
-    # --- Passo 1: lettura valori grezzi ---
     - variables:
         ora_esecuzione: "{{ now().strftime('%d/%m/%Y %H:%M') }}"
         soglia: "{{ states('input_number.irrigazione_soglia_umidita') | float(40) }}"
@@ -51,7 +41,6 @@
         vento: "{{ states('sensor.wind_speed_media_1h') | float(0) }}"
         rain_rate: "{{ states('sensor.hp1000se_pro_pro_v1_6_4_hourly_rain') | float(0) }}"
 
-    # --- Passo 2: calcolo motivi di blocco e flag ---
     - variables:
         motivi: >
           {% set ns = namespace(lista=[]) %}
@@ -77,36 +66,56 @@
                  | selectattr('condition', 'in', ['rainy','showers','pouring','hail'])
                  | list | count > 0) }}
 
-    # --- Passo 3: composizione messaggio finale ---
-    - variables:
-        messaggio: >
-          {% if motivi | trim != '' %}
-          {{ '⛔ Bloccata ' ~ ora_esecuzione ~ '\n' ~ (motivi | trim) }}
-          {% else %}
-          ✅ Permessa {{ ora_esecuzione }}
-          {% endif %}
-
-    # --- Scrivi il messaggio nella plancia (sempre, qualunque sia l'esito) ---
-    - action: input_text.set_value
-      target:
-        entity_id: input_text.irrigazione_motivo_blocco
-      data:
-        value: "{{ messaggio | trim }}"
-
-    # --- Blocca irrigazione solo se necessario ---
     - if:
         - condition: template
           value_template: "{{ blocco | bool }}"
       then:
-        - action: switch.turn_on
+        - action: input_text.set_value
           target:
-            entity_id: switch.sonoff_irrigation_block
+            entity_id: input_text.irrigazione_motivo_blocco
+          data:
+            value: "{{ ('⛔ Bloccata ' ~ ora_esecuzione ~ '\n' ~ (motivi | trim)) | trim }}"
+        - stop: "Meteo sfavorevole – nessuna irrigazione"
+
+    - action: input_text.set_value
+      target:
+        entity_id: input_text.irrigazione_motivo_blocco
+      data:
+        value: "✅ Permessa {{ ora_esecuzione }}"
+    - action: script.irrigazione_esegui_sequenza
+
+#==================================================================================
+# 1b. ACQUA – Accumula minuti irrigazione (tick ogni minuto)
+# Interblocco HW: max 1 canale ON => 1 tick = 1 minuto-canale. Robusto ai riavvii.
+#==================================================================================
+- id: acqua_accumula_minuti_irrigazione
+  alias: "Acqua – Accumula minuti irrigazione"
+  mode: single
+  triggers:
+    - platform: time_pattern
+      minutes: "/1"
+  condition:
+    - condition: or
+      conditions:
+        - condition: state
+          entity_id: switch.irrigazione_sonoff_switch_4chpror3_sonoff_10028b1d36_1
+          state: "on"
+        - condition: state
+          entity_id: switch.irrigazione_sonoff_switch_4chpror3_sonoff_10028b1d36_2
+          state: "on"
+        - condition: state
+          entity_id: switch.irrigazione_sonoff_switch_4chpror3_sonoff_10028b1d36_3
+          state: "on"
+  action:
+    - action: counter.increment
+      target:
+        entity_id: counter.irrigazione_minuti_oggi
 
 #==================================================================================
 # 2. IRRIGAZIONE – RESET GESTIONE MANUALE A MEZZANOTTE
 #==================================================================================
-- id: irrigazione_reset_manuale_mezzanotte
-  alias: "Irrigazione - Reset gestione manuale a mezzanotte"
+- id: irrigazione_reset_salta_mezzanotte
+  alias: "Irrigazione - Reset salta-oggi a mezzanotte"
   mode: single
   triggers:
     - platform: time
@@ -115,7 +124,7 @@
   action:
     - action: input_boolean.turn_off
       target:
-        entity_id: input_boolean.irrigazione_manuale_oggi
+        entity_id: input_boolean.irrigazione_salta_oggi
 
 #==================================================================================
 # 3. ALLERTA PANNELLO A 0 PER 1 ORA (SOLO DI GIORNO)
@@ -205,22 +214,6 @@
         data:
           priority: high
           ttl: 0
-
-#==================================================================================
-# 7. RESET IRRIGATION BLOCK (OFF dopo 30 min da ON)
-#==================================================================================
-- id: irrigation_block_reset_30min
-  alias: "Irrigation Block - Reset OFF dopo 30 min"
-  mode: restart
-  triggers:
-    - platform: state
-      entity_id: switch.sonoff_irrigation_block
-      to: "on"
-  action:
-    - delay: "00:30:00"
-    - action: switch.turn_off
-      target:
-        entity_id: switch.sonoff_irrigation_block
 
 #==================================================================================
 # 8. CONTROLLO VELOCITÀ VENTOLA ARGON (CPU TEMP + LIMITE NOTTE)
@@ -370,43 +363,12 @@
 
 
 #==================================================================================
-# 25. ACQUA – Conta sessioni irrigazione permesse
-#
-# Alle 08:31 e 20:31 (1 minuto dopo smart_irrigation_dst) controlla se
-# l'irrigazione è permessa e incrementa il contatore (C2 = T1 × C1 × n).
-# Funziona sia in modalità automatica che manuale:
-#   - Auto:    switch OFF (smart_irrigation_dst ha valutato e permesso)
-#   - Manuale: switch OFF (l'utente ha lasciato/impostato irrigazione permessa)
-# Se l'utente ha bloccato manualmente (switch ON) la sessione non viene contata.
-# Il counter viene azzerato ogni notte da acqua_reset_mezzanotte.
-#==================================================================================
-- id: acqua_conta_irrigazione
-  alias: "Acqua – Conta sessioni irrigazione permesse"
-  mode: single
-  triggers:
-    - platform: time
-      at: "08:31:00"
-    - platform: time
-      at: "20:31:00"
-  condition:
-    # Conta la sessione se il blocco è disattivo (switch OFF).
-    # Vale sia in modalità auto (decisa da smart_irrigation_dst)
-    # che in modalità manuale (decisa dall'utente).
-    - condition: state
-      entity_id: switch.sonoff_irrigation_block
-      state: "off"
-  action:
-    - action: counter.increment
-      target:
-        entity_id: counter.irrigazione_sessioni_oggi
-
-#==================================================================================
 # 26. ACQUA – Reset giornaliero mezzanotte
 #
 # Ogni notte alle 23:00:
 #   1. Legge sensor.acqua_oggi_euro e lo aggiunge all'accumulatore.
 #   2. Accumula m³ giornalieri.
-#   3. Azzera counter.irrigazione_sessioni_oggi.
+#   3. Azzera counter.irrigazione_minuti_oggi.
 #   4. Azzera input_number.caldaia_dhw_durata_acc → ripartenza da 0 per il nuovo
 #      giorno (valido sia in estate che in inverno; in inverno il sensore non usa
 #      questo accumulatore, ma è corretto azzerarlo comunque per coerenza).
@@ -435,10 +397,10 @@
         value: >
           {{ ([states('input_number.acqua_consumo_acc') | float(0) +
                states('sensor.acqua_oggi_mc') | float(0), 0] | max) | round(4) }}
-    # 3. Azzera sessioni irrigazione per il nuovo giorno
+    # 3. Azzera minuti irrigazione per il nuovo giorno
     - action: counter.reset
       target:
-        entity_id: counter.irrigazione_sessioni_oggi
+        entity_id: counter.irrigazione_minuti_oggi
     # 4. Azzera accumulatore minuti DHW per il nuovo giorno
     #    (in estate viene ricostruito dall'automazione caldaia_dhw_accumula_minuti;
     #     in inverno il sensore usa il valore fisso e questo rimane a 0)

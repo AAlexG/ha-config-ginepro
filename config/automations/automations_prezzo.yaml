@@ -1,0 +1,30 @@
+# automations_prezzo_1.yaml
+# Aggiorna input_number.elettricita_prezzo_kwh con il prezzo marginale
+# ricostruito dal PUN (sensor.elettricita_prezzo_kwh_variabile).
+# Tutti i sensori di costo esistenti continuano a leggere l'input_number,
+# che ora si allinea automaticamente all'indice mensile del contratto.
+- id: elettricita_prezzo_aggiorna_da_pun
+  alias: "Elettricità – aggiorna prezzo kWh da PUN"
+  description: >-
+    Copia il valore di sensor.elettricita_prezzo_kwh_variabile in
+    input_number.elettricita_prezzo_kwh a ogni variazione e all'avvio di HA.
+  mode: single
+  triggers:
+    - trigger: state
+      entity_id: sensor.elettricita_prezzo_kwh_variabile
+      not_to:
+        - unavailable
+        - unknown
+    - trigger: homeassistant
+      event: start
+  conditions:
+    - condition: template
+      value_template: >-
+        {{ has_value('sensor.elettricita_prezzo_kwh_variabile')
+           and states('sensor.elettricita_prezzo_kwh_variabile') | float(0) > 0 }}
+  actions:
+    - action: input_number.set_value
+      target:
+        entity_id: input_number.elettricita_prezzo_kwh
+      data:
+        value: "{{ states('sensor.elettricita_prezzo_kwh_variabile') | float(0) | round(4) }}"

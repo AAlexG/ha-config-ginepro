@@ -1,4 +1,4 @@
-# scripts_38.yaml
+# scripts_42.yaml
 
 #==================================================================================
 # SCRIPT: APRI CANCELLO CASA
@@ -255,13 +255,15 @@ speaker_allarme:
 
 #==================================================================================
 # SCRIPT: SALVA BOLLETTA
-# Chiama shell_command.salva_bolletta (Python -> SQLite). Lo script Python
-# salva i valori bolletta E ricalcola:
-#   input_number.elettricita_prezzo_kwh (€ bollette elettriche / kWh bollette)
-#   input_number.gas_prezzo_mc          (€ bollette gas / m³ bollette)
-# restituendo il risultato come JSON su stdout. Entrambi i campi restano
-# comunque modificabili a mano in qualsiasi momento – vengono solo
-# aggiornati ad ogni nuovo salvataggio bolletta.
+# Chiama shell_command.salva_bolletta (Python -> SQLite) e restituisce
+# il risultato come JSON su stdout. Nessun prezzo viene più scritto qui
+# (scripts_40): i prezzi medi restano solo nel log Python come dato di
+# controllo. I prezzi A CONSUMO sono gestiti altrove:
+#   input_number.elettricita_prezzo_kwh -> automatico dal PUN
+#     (automations_prezzo, sensor.elettricita_prezzo_kwh_variabile)
+#   input_number.gas_prezzo_mc          -> manuale da bolletta
+#     (Corrispettivo Gas Index + contributo + rete + accise, IVA inclusa)
+# Le quote fisse mensili sono in input_number.*_quota_fissa_mese (manuali).
 #==================================================================================
 salva_bolletta:
   alias: "Bollette – Salva nel DB"
@@ -275,22 +277,23 @@ salva_bolletta:
         - condition: template
           value_template: "{{ dati.ok }}"
       then:
-        - action: input_number.set_value
-          target:
-            entity_id: input_number.elettricita_prezzo_kwh
-          data:
-            value: "{{ dati.prezzo_kwh }}"
-        - action: input_number.set_value
-          target:
-            entity_id: input_number.gas_prezzo_mc
-          data:
-            value: "{{ dati.prezzo_mc_gas }}"
+        # NUOVO (scripts_41): aggiorna il prezzo GSE stimato con
+        # l'ultimo mese calcolato da salva_bolletta_9 (se disponibile).
+        - if:
+            - condition: template
+              value_template: "{{ (dati.gse_prezzo_ultimo | default(0) | float(0)) > 0 }}"
+          then:
+            - action: input_number.set_value
+              target:
+                entity_id: input_number.gse_prezzo_kwh_stima
+              data:
+                value: "{{ dati.gse_prezzo_ultimo | float(0) | round(4) }}"
         - action: notify.mobile_app_cph2653
           data:
             title: "💾 Bolletta salvata"
             message: >
               Dati salvati per {{ states('input_select.bolletta_mese_sel') }}.
-              Prezzo €/kWh: {{ dati.prezzo_kwh }} – Prezzo €/m³ gas: {{ dati.prezzo_mc_gas }}
+              Salvataggio completato.
               Dettagli in /config/bolletta_log.txt
       else:
         - action: notify.mobile_app_cph2653
@@ -300,26 +303,96 @@ salva_bolletta:
               {{ dati.errore | default('errore sconosciuto') }} – vedi /config/bolletta_log.txt
 
 #==================================================================================
-# SCRIPT: IRRIGAZIONE TOGGLE MANUALE
-# Chiamato dal tap_action del tile Irrigazione in plancia ginepro.
-# Esegue: toggle switch + attiva flag manuale + scrive messaggio nel campo testo.
-# Approccio diretto: nessuna dipendenza dal context del trigger.
+# SCRIPT: IRRIGAZIONE – ESEGUI SEQUENZA C1 -> C2 -> C3
+# Accende in sequenza i tre canali per le durate T1/T2/T3 (turn_off esplicito tra
+# un canale e l'altro). Chiamato dal ciclo programmato (dopo il gate meteo) e da "Cicla ora".
 #==================================================================================
-irrigazione_toggle_manuale:
-  alias: "Irrigazione – Toggle Manuale"
+irrigazione_esegui_sequenza:
+  alias: "Irrigazione – Esegui sequenza C1→C2→C3"
   mode: single
   sequence:
-    - action: switch.toggle
+    - action: switch.turn_on
       target:
-        entity_id: switch.sonoff_irrigation_block
-    - action: input_boolean.turn_on
+        entity_id: switch.irrigazione_sonoff_switch_4chpror3_sonoff_10028b1d36_1
+    - delay:
+        minutes: "{{ states('input_number.irrigazione_durata_c1') | int(0) }}"
+    - action: switch.turn_off
       target:
-        entity_id: input_boolean.irrigazione_manuale_oggi
+        entity_id: switch.irrigazione_sonoff_switch_4chpror3_sonoff_10028b1d36_1
+    - action: switch.turn_on
+      target:
+        entity_id: switch.irrigazione_sonoff_switch_4chpror3_sonoff_10028b1d36_2
+    - delay:
+        minutes: "{{ states('input_number.irrigazione_durata_c2') | int(0) }}"
+    - action: switch.turn_off
+      target:
+        entity_id: switch.irrigazione_sonoff_switch_4chpror3_sonoff_10028b1d36_2
+    - action: switch.turn_on
+      target:
+        entity_id: switch.irrigazione_sonoff_switch_4chpror3_sonoff_10028b1d36_3
+    - delay:
+        minutes: "{{ states('input_number.irrigazione_durata_c3') | int(0) }}"
+    - action: switch.turn_off
+      target:
+        entity_id: switch.irrigazione_sonoff_switch_4chpror3_sonoff_10028b1d36_3
+
+#==================================================================================
+# SCRIPT: IRRIGAZIONE – CICLA ORA (manuale) — ignora meteo e "salta oggi"
+#==================================================================================
+irrigazione_cicla_ora:
+  alias: "Irrigazione – Cicla ora"
+  mode: single
+  sequence:
     - action: input_text.set_value
       target:
         entity_id: input_text.irrigazione_motivo_blocco
       data:
-        value: "🖐️ È stato scelto gestione manuale per oggi"
+        value: "🖐️ Ciclo manuale avviato {{ now().strftime('%d/%m/%Y %H:%M') }}"
+    - action: script.irrigazione_esegui_sequenza
+
+#==================================================================================
+# SCRIPT: IRRIGAZIONE – STOP (interrompe la sequenza e spegne tutti i canali)
+#==================================================================================
+irrigazione_stop:
+  alias: "Irrigazione – Stop tutti i canali"
+  mode: single
+  sequence:
+    - action: script.turn_off
+      target:
+        entity_id:
+          - script.irrigazione_esegui_sequenza
+          - script.irrigazione_cicla_ora
+    - action: switch.turn_off
+      target:
+        entity_id:
+          - switch.irrigazione_sonoff_switch_4chpror3_sonoff_10028b1d36_1
+          - switch.irrigazione_sonoff_switch_4chpror3_sonoff_10028b1d36_2
+          - switch.irrigazione_sonoff_switch_4chpror3_sonoff_10028b1d36_3
+    - action: input_text.set_value
+      target:
+        entity_id: input_text.irrigazione_motivo_blocco
+      data:
+        value: "⏹️ Irrigazione fermata {{ now().strftime('%d/%m/%Y %H:%M') }}"
+
+#==================================================================================
+# SCRIPT: IRRIGAZIONE – SALTA OGGI (toggle) — auto-ripristino a mezzanotte
+# Usato dal tap_action del tile Irrigazione in plancia ginepro e irrigazione.
+#==================================================================================
+irrigazione_salta_toggle:
+  alias: "Irrigazione – Salta oggi (toggle)"
+  mode: single
+  sequence:
+    - action: input_boolean.toggle
+      target:
+        entity_id: input_boolean.irrigazione_salta_oggi
+    - action: input_text.set_value
+      target:
+        entity_id: input_text.irrigazione_motivo_blocco
+      data:
+        value: >-
+          {{ '🖐️ Programma saltato per oggi'
+             if is_state('input_boolean.irrigazione_salta_oggi','on')
+             else '✅ Programma riattivato' }}
 
 #==================================================================================
 # SCRIPT: RIAGGANCIA YAMAHA
@@ -538,3 +611,70 @@ pergola_toggle_manuale:
         - action: input_boolean.turn_off
           target:
             entity_id: input_boolean.pergola_blocco_manuale
+
+
+#==================================================================================
+# SCRIPT: FONTE - RIPRISTINA PARAMETRI (NUOVO - scripts_41)
+#==================================================================================
+# Reimposta tutti i parametri manuali della gestione fonte ai valori
+# consigliati/di contratto. Richiamato dalla sentinella all'avvio di HA
+# (automations_fonte_2) quando rileva la perdita dello stato salvato,
+# oppure manualmente da Strumenti per sviluppatori -> Azioni.
+# Provenienza dei valori:
+#   rendimento 0.95      -> Baxi a condensazione, PCS
+#   COP riserva 3.0      -> media stagionale reale PdC
+#   soglia surplus 1000  -> assorbimento tipico compressore (W)
+#   GSE 0.10             -> baseline; aggiornato da salva_bolletta a ogni bolletta
+#   isteresi 15 / ore 3  -> tuning anti-usura valvola pompa-caldaia
+#   gas 1.3338           -> bolletta mag 2026 (indice + componenti, IVA 22%)
+#   quote fisse 24.11/19.42 -> bolletta apr-mag 2026 (IVA inclusa)
+fonte_ripristina_parametri:
+  alias: "Fonte - Ripristina parametri"
+  icon: mdi:backup-restore
+  mode: single
+  sequence:
+    - action: input_number.set_value
+      target:
+        entity_id: input_number.caldaia_rendimento
+      data:
+        value: 0.95
+    - action: input_number.set_value
+      target:
+        entity_id: input_number.pdc_cop_fallback
+      data:
+        value: 3.0
+    - action: input_number.set_value
+      target:
+        entity_id: input_number.pv_surplus_soglia
+      data:
+        value: 1000
+    - action: input_number.set_value
+      target:
+        entity_id: input_number.gse_prezzo_kwh_stima
+      data:
+        value: 0.10
+    - action: input_number.set_value
+      target:
+        entity_id: input_number.fonte_isteresi_pct
+      data:
+        value: 15
+    - action: input_number.set_value
+      target:
+        entity_id: input_number.fonte_ore_minime
+      data:
+        value: 3
+    - action: input_number.set_value
+      target:
+        entity_id: input_number.gas_prezzo_mc
+      data:
+        value: 1.3338
+    - action: input_number.set_value
+      target:
+        entity_id: input_number.elettricita_quota_fissa_mese
+      data:
+        value: 24.11
+    - action: input_number.set_value
+      target:
+        entity_id: input_number.gas_quota_fissa_mese
+      data:
+        value: 19.42

@@ -91,7 +91,7 @@ config:
           perform_action: script.panasonic_toggle
         type: button
       - grid_options:
-          columns: 3
+          columns: 6
           rows: auto
         icon: mdi:restart
         icon_height: 20px

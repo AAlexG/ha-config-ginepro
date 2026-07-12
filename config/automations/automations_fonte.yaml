@@ -1,0 +1,175 @@
+# automations_fonte_2.yaml
+# Gestione automatica della fonte di riscaldamento (caldaia Baxi via
+# SAT/OTGW vs PdC Panasonic via HeishaMon) in base al costo €/kWh
+# termico (sensor.pdc_costo_kwh_termico / caldaia_costo_kwh_termico).
+#
+# Valvola pompa-caldaia: switch.shelly_box (on = Pompa, off = Caldaia),
+# nessun feedback di posizione -> attesa fissa 120 s dopo la manovra.
+#
+# Filtri anti-usura valvola:
+#   - isteresi economica: si commuta solo se l'alternativa costa almeno
+#     input_number.fonte_isteresi_pct % in meno della fonte attuale
+#   - dwell time: nessuna manovra prima di input_number.fonte_ore_minime
+#     ore dall'ultima (input_datetime.fonte_ultima_commutazione)
+#   - controllo periodico ogni 5 minuti (stile freecooling), mode single
+#
+# Sequenza sicura: mai calore con valvola in transito.
+#   Pompa -> Caldaia: off PdC -> 30 s -> valvola -> 120 s -> SAT heat
+#   Caldaia -> Pompa: SAT off  -> 30 s -> valvola -> 120 s -> on PdC
+- id: fonte_controllo_periodico
+  alias: "Fonte – Controllo periodico caldaia/PdC"
+  description: >-
+    Ogni 5 minuti valuta i costi €/kWh termico e commuta la fonte di
+    riscaldamento se conviene, rispettando isteresi e ore minime.
+  mode: single
+  triggers:
+    - trigger: time_pattern
+      minutes: "/5"
+  conditions:
+    - condition: state
+      entity_id: input_boolean.fonte_auto_attiva
+      state: "on"
+    - condition: state
+      entity_id: input_select.clima_stagione
+      state: "inverno"
+    - condition: state
+      entity_id: input_boolean.vacanza
+      state: "off"
+    # Sensori costo e valvola devono essere vivi
+    - condition: template
+      value_template: >-
+        {{ has_value('sensor.pdc_costo_kwh_termico')
+           and has_value('sensor.caldaia_costo_kwh_termico')
+           and has_value('switch.shelly_box')
+           and has_value('switch.panasonic_heat_pump_main_heatpump_state') }}
+    # Dwell time: ultima manovra piu' vecchia di fonte_ore_minime
+    - condition: template
+      value_template: >-
+        {% set ultima = states('input_datetime.fonte_ultima_commutazione') %}
+        {% set ore = states('input_number.fonte_ore_minime') | float(3) %}
+        {{ ultima in ['unknown', 'unavailable', '']
+           or (now().timestamp() - as_timestamp(ultima, 0)) > ore * 3600 }}
+    # Serve commutare? L'alternativa deve battere l'attuale di almeno isteresi%
+    - condition: template
+      value_template: >-
+        {% set pdc = states('sensor.pdc_costo_kwh_termico') | float(0) %}
+        {% set cal = states('sensor.caldaia_costo_kwh_termico') | float(0) %}
+        {% set ist = states('input_number.fonte_isteresi_pct') | float(15) / 100 %}
+        {% set pompa_attiva = is_state('switch.shelly_box', 'on') %}
+        {{ (pompa_attiva and cal > 0 and cal <= pdc * (1 - ist))
+           or (not pompa_attiva and pdc > 0 and pdc <= cal * (1 - ist)) }}
+  actions:
+    - choose:
+        # ---------- POMPA -> CALDAIA ----------
+        - conditions:
+            - condition: state
+              entity_id: switch.shelly_box
+              state: "on"
+          sequence:
+            - action: switch.turn_off
+              target:
+                entity_id: switch.panasonic_heat_pump_main_heatpump_state
+            - delay: "00:00:30"
+            - action: switch.turn_off
+              target:
+                entity_id: switch.shelly_box
+            - delay: "00:02:00"
+            - action: climate.set_hvac_mode
+              target:
+                entity_id: climate.smart_autotune_thermostat_living_room
+              data:
+                hvac_mode: "heat"
+            - action: input_datetime.set_datetime
+              target:
+                entity_id: input_datetime.fonte_ultima_commutazione
+              data:
+                datetime: "{{ now().strftime('%Y-%m-%d %H:%M:%S') }}"
+            - action: notify.mobile_app_cph2653
+              data:
+                title: "🔥 Fonte → Caldaia"
+                message: >-
+                  Caldaia {{ states('sensor.caldaia_costo_kwh_termico') }} €/kWht
+                  vs PdC {{ states('sensor.pdc_costo_kwh_termico') }} €/kWht.
+                  Valvola commutata, SAT attivo.
+        # ---------- CALDAIA -> POMPA ----------
+        - conditions:
+            - condition: state
+              entity_id: switch.shelly_box
+              state: "off"
+          sequence:
+            - action: climate.set_hvac_mode
+              target:
+                entity_id: climate.smart_autotune_thermostat_living_room
+              data:
+                hvac_mode: "off"
+            - delay: "00:00:30"
+            - action: switch.turn_on
+              target:
+                entity_id: switch.shelly_box
+            - delay: "00:02:00"
+            # La PdC parte solo se il modo operativo e' in riscaldamento
+            - if:
+                - condition: template
+                  value_template: >-
+                    {{ states('select.panasonic_heat_pump_main_operating_mode_state')
+                       in ['Heat', 'Heat only'] }}
+              then:
+                - action: switch.turn_on
+                  target:
+                    entity_id: switch.panasonic_heat_pump_main_heatpump_state
+              else:
+                - action: notify.mobile_app_cph2653
+                  data:
+                    title: "⚠️ Fonte – PdC non avviata"
+                    message: >-
+                      Valvola su Pompa ma modo operativo Panasonic =
+                      {{ states('select.panasonic_heat_pump_main_operating_mode_state') }}.
+                      Verificare il modo Heat.
+            - action: input_datetime.set_datetime
+              target:
+                entity_id: input_datetime.fonte_ultima_commutazione
+              data:
+                datetime: "{{ now().strftime('%Y-%m-%d %H:%M:%S') }}"
+            - action: notify.mobile_app_cph2653
+              data:
+                title: "♨️ Fonte → Pompa di calore"
+                message: >-
+                  PdC {{ states('sensor.pdc_costo_kwh_termico') }} €/kWht
+                  vs Caldaia {{ states('sensor.caldaia_costo_kwh_termico') }} €/kWht.
+                  Valvola commutata.
+
+# ---------------------------------------------------------------------------
+# SENTINELLA PARAMETRI (NUOVO - automations_fonte_2)
+# Se al riavvio di HA il ripristino dello stato salvato fallisce, gli
+# helper ripartono dal minimo di scala. Il canarino e' il rendimento
+# caldaia: 0.5 (minimo) e' un valore implausibile che segnala la perdita
+# dello stato. In quel caso esegue script.fonte_ripristina_parametri
+# (tutti i parametri della gestione fonte + prezzi/quote da bolletta)
+# e notifica cosa ha fatto.
+- id: fonte_sentinella_parametri
+  alias: "Fonte – Sentinella parametri all'avvio"
+  description: >-
+    Rileva la perdita dello stato salvato degli helper al riavvio e
+    ripristina i parametri della gestione fonte ai valori consigliati.
+  mode: single
+  triggers:
+    - trigger: homeassistant
+      event: start
+  actions:
+    # Attende che il restore_state abbia finito il suo lavoro
+    - delay: "00:02:00"
+    - if:
+        - condition: numeric_state
+          entity_id: input_number.caldaia_rendimento
+          below: 0.6
+      then:
+        - action: script.fonte_ripristina_parametri
+        - action: notify.mobile_app_cph2653
+          data:
+            title: "🛠️ Fonte – Parametri ripristinati"
+            message: >-
+              Rilevata perdita dello stato salvato al riavvio
+              (rendimento caldaia al minimo). Ripristinati i valori
+              consigliati: rendimento 0.95, COP 3.0, soglia 1000 W,
+              GSE 0.10, isteresi 15%, ore minime 3, gas 1.3338 €/m³,
+              quote fisse 24.11/19.42 €/mese.

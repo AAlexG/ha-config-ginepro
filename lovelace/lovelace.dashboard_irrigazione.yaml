@@ -1,0 +1,211 @@
+config:
+  views:
+  - icon: mdi:sprinkler-variant
+    max_columns: 2
+    path: irrigazione
+    sections:
+    - cards:
+      - heading: STATO & COMANDI
+        heading_style: title
+        icon: mdi:sprinkler-variant
+        type: heading
+      - heading: "Stato umidit\xE0 suolo e centralina "
+        heading_style: subtitle
+        icon: ''
+        type: heading
+      - entity: sensor.soil_moisture_2
+        features_position: bottom
+        grid_options:
+          columns: 3
+          rows: 1
+        name: "Gi\xF9 prima umidit\xE0 S2"
+        type: tile
+        vertical: false
+      - entity: sensor.soil_moisture_1
+        features_position: bottom
+        grid_options:
+          columns: 3
+          rows: 1
+        name: "Gi\xF9 mezzo umidit\xE0 S1"
+        type: tile
+        vertical: false
+      - content: '{{ states(''input_text.irrigazione_motivo_blocco'') }}'
+        grid_options:
+          columns: 12
+          rows: auto
+        type: markdown
+      - color: '#1E88E5'
+        entity: sensor.irrigazione_attiva
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        name: Programma
+        tap_action:
+          action: perform-action
+          perform_action: script.irrigazione_salta_toggle
+        type: tile
+        vertical: false
+      - color: '#1E88E5'
+        entity: sensor.irrigazione_sonoff_switch_4chpror3_sonoff_10028b1d36_rssi
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        name: WiFi
+        tap_action:
+          action: perform-action
+          perform_action: script.irrigazione_salta_toggle
+        type: tile
+        vertical: false
+      - heading: Controllo manuale
+        heading_style: subtitle
+        icon: ''
+        type: heading
+      - entity: input_boolean.irrigazione_salta_oggi
+        features:
+        - type: toggle
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        name: Salta x oggi
+        type: tile
+        vertical: false
+      - entity: switch.irrigazione_sonoff_switch_4chpror3_sonoff_10028b1d36_1
+        features:
+        - type: toggle
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        name: "Gi\xF9 n.1"
+        type: tile
+        vertical: false
+      - entity: switch.irrigazione_sonoff_switch_4chpror3_sonoff_10028b1d36_2
+        features:
+        - type: toggle
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        name: Sopra n.2
+        type: tile
+        vertical: false
+      - entity: switch.irrigazione_sonoff_switch_4chpror3_sonoff_10028b1d36_3
+        features:
+        - type: toggle
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        name: Sopra n.3
+        type: tile
+        vertical: false
+      - color: '#43A047'
+        grid_options:
+          columns: 6
+          rows: auto
+        icon: mdi:play-circle
+        icon_height: 24px
+        name: Esegui ciclo ora
+        show_icon: true
+        show_name: true
+        show_state: false
+        tap_action:
+          action: perform-action
+          perform_action: script.irrigazione_cicla_ora
+        type: button
+      - color: '#E53935'
+        grid_options:
+          columns: 6
+          rows: auto
+        icon: mdi:stop-circle
+        icon_height: 24px
+        name: Stop
+        show_icon: true
+        show_name: true
+        show_state: false
+        tap_action:
+          action: perform-action
+          perform_action: script.irrigazione_stop
+        type: button
+      type: grid
+    - cards:
+      - heading: CONSUMO ACQUA OGGI x IRRIGAZIONE
+        heading_style: title
+        icon: mdi:water-check
+        type: heading
+      - entity: counter.irrigazione_minuti_oggi
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        name: Minuti oggi
+        type: tile
+        vertical: false
+      - entity: sensor.acqua_irrigazione_oggi
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        name: Consumo irrigazione
+        type: tile
+        vertical: false
+      - entity: input_number.acqua_consumo_per_minuto
+        grid_options:
+          columns: 12
+          rows: auto
+        name: "Flusso per canale (m\xB3/min)"
+        type: entity
+      - content: "Consumo = minuti-canale erogati oggi \xD7 flusso per canale. Con\
+          \ 0.0333 m\xB3/min per canale e durate 3+3+3 min, 2 cicli/giorno \u2248\
+          \ 0.6 m\xB3/giorno."
+        grid_options:
+          columns: 12
+          rows: auto
+        type: markdown
+      type: grid
+    - cards:
+      - heading: 'PARAMETRI IRRIGAZIONE '
+        heading_style: title
+        icon: mdi:clock-outline
+        type: heading
+      - entity: input_number.irrigazione_soglia_umidita
+        grid_options:
+          columns: 12
+          rows: auto
+        name: "Soglia umidit\xE0 per blocco irrigazione "
+        type: entity
+      - entity: input_datetime.irrigazione_ora_mattino
+        grid_options:
+          columns: 6
+          rows: auto
+        name: Mattino
+        type: entity
+      - entity: input_datetime.irrigazione_ora_sera
+        grid_options:
+          columns: 6
+          rows: auto
+        name: Sera
+        type: entity
+      - entity: input_number.irrigazione_durata_c1
+        grid_options:
+          columns: 12
+          rows: auto
+        name: Durata giardino sotto
+        type: entity
+      - entity: input_number.irrigazione_durata_c2
+        grid_options:
+          columns: 12
+          rows: auto
+        name: Durata fiori giardino sopra
+        type: entity
+      - entity: input_number.irrigazione_durata_c3
+        grid_options:
+          columns: 12
+          rows: auto
+        name: Durata erba giardino sopra
+        type: entity
+      type: grid
+    title: Irrigazione

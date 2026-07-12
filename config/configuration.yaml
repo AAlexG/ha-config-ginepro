@@ -1,4 +1,4 @@
-# configuration_156.yaml
+# configuration_164.yaml
 default_config:
 
 #==================================================================================
@@ -388,16 +388,16 @@ template:
         icon: >-
           {{ 'mdi:battery' if states('sensor.hp1000se_pro_pro_v1_6_4_leak_detection_4_battery') | int(0) == 0 else 'mdi:battery-alert' }}
 
-  # --- IRRIGAZIONE: sensor testuale con logica inversa ---
-  # switch ON  = blocco attivo  = acqua NON PERMESSA
-  # switch OFF = blocco inattivo = acqua PERMESSA
+  # --- IRRIGAZIONE: stato del programma automatico ---
+  # salta_oggi OFF = programma attivo (parte agli orari O1/O2 se il meteo lo permette)
+  # salta_oggi ON  = programma saltato per oggi (auto-ripristino a mezzanotte)
   - sensor:
       - name: "Irrigazione Attiva"
         unique_id: "irrigazione_attiva"
         state: >-
-          {{ 'Permessa' if is_state('switch.sonoff_irrigation_block', 'off') else 'Non permessa' }}
+          {{ 'Saltata oggi' if is_state('input_boolean.irrigazione_salta_oggi', 'on') else 'Programmata' }}
         icon: >-
-          {{ 'mdi:water-pump' if is_state('switch.sonoff_irrigation_block', 'off') else 'mdi:water-pump-off' }}
+          {{ 'mdi:water-pump-off' if is_state('input_boolean.irrigazione_salta_oggi', 'on') else 'mdi:water-pump' }}
 
   - sensor:
       # ============================================================
@@ -415,9 +415,12 @@ template:
 
       - name: "Elettricita Mese Euro"
         unique_id: "elettricita_mese_euro"
+        # configuration_159: aggiunta quota fissa mensile (€/mese Eni,
+        # indipendente dai giorni) per allineare il rilevato alla bolletta.
         state: >-
           {% set kwh = states('sensor.rete_energia_mese') | float(0) %}
-          {{ (kwh * states('input_number.elettricita_prezzo_kwh') | float(0)) | round(2) }}
+          {% set fissa = states('input_number.elettricita_quota_fissa_mese') | float(0) %}
+          {{ (kwh * states('input_number.elettricita_prezzo_kwh') | float(0) + fissa) | round(2) }}
         unit_of_measurement: "€"
         state_class: measurement
         icon: mdi:currency-eur
@@ -468,9 +471,12 @@ template:
 
       - name: "Gas Mese Euro"
         unique_id: "gas_mese_euro"
+        # configuration_159: aggiunta quota fissa mensile (€/mese Eni,
+        # indipendente dai giorni) per allineare il rilevato alla bolletta.
         state: >-
           {{ (states('sensor.gas_caldaia_mensile') | float(0) *
-              states('input_number.gas_prezzo_mc') | float(0)) | round(2) }}
+              states('input_number.gas_prezzo_mc') | float(0) +
+              states('input_number.gas_quota_fissa_mese') | float(0)) | round(2) }}
         unit_of_measurement: "€"
         state_class: measurement
         icon: mdi:currency-eur
@@ -524,6 +530,40 @@ template:
       # Il grafico "Prezzo GSE €/kWh" della dashboard continua a
       # leggere le stesse statistiche.
 
+      # ============================================================
+      # ELETTRICITA: prezzo marginale variabile ricostruito da PUN
+      # (NUOVO – configuration_157)
+      # Contratto Plenitude "Trend Casa Base Luce" (monorario,
+      # indice PUN Index GME, aggiornamento mensile).
+      # Formula quota energia da bolletta:
+      #   Corrispettivo Luce Index x 1,1 (perdite)
+      #   + Contributo al consumo 0,022 x 1,1
+      #   + Dispacciamento 0,01752
+      # Componenti marginali aggiuntive (bolletta apr-mag 2026):
+      #   rete quota energia 0,01473
+      #   oneri ASOS 0,028657 + ARIM 0,0016380
+      #   accisa 0,0227
+      # Il tutto x 1,10 (IVA 10%).
+      # Il PUN Index GME mensile e' approssimato dalla media mensile
+      # mono-oraria di sensor.pun_mono_orario (integrazione HACS
+      # virtualdj/pun_sensor). Le costanti vanno riallineate quando
+      # cambiano le condizioni economiche o le tariffe ARERA.
+      # ============================================================
+      - name: "Elettricita Prezzo KWh Variabile"
+        unique_id: "elettricita_prezzo_kwh_variabile"
+        unit_of_measurement: "€/kWh"
+        state_class: measurement
+        icon: mdi:currency-eur
+        availability: >-
+          {{ has_value('sensor.pun_mono_orario') }}
+        state: >-
+          {% set pun = states('sensor.pun_mono_orario') | float(0) %}
+          {% set vendita = pun * 1.1 + 0.022 * 1.1 + 0.01752 %}
+          {% set rete = 0.01473 %}
+          {% set oneri = 0.028657 + 0.0016380 %}
+          {% set accisa = 0.0227 %}
+          {{ ((vendita + rete + oneri + accisa) * 1.10) | round(4) }}
+
   # ============================================================
   # CALDAIA: binary_sensor DHW effettivo (NUOVO – configuration_54)
   # ============================================================
@@ -540,6 +580,27 @@ template:
   #   * Riscaldamento: SAT controlla temperatura di mandata bassa → mod <60%
   # Soglia 80% separa i due regimi con buona affidabilità.
   # Se la stima appare ancora troppo alta/bassa, aggiustare la soglia qui.
+  # ============================================================
+  # FV SURPLUS (NUOVO – configuration_161)
+  # CT1 (sensor.inverter_uflex_external_ct1_power): positivo =
+  # prelievo da rete, negativo = immissione (verificato sul campo).
+  # Surplus = immissione oltre la soglia. delay_on/off contro il
+  # flapping da passaggi nuvolosi.
+  # ============================================================
+  - binary_sensor:
+      - name: "PV Surplus"
+        unique_id: "pv_surplus"
+        device_class: power
+        icon: mdi:solar-power-variant
+        delay_on: "00:02:00"
+        delay_off: "00:05:00"
+        availability: >-
+          {{ has_value('sensor.inverter_uflex_external_ct1_power')
+             and states('input_number.pv_surplus_soglia') | float(0) > 0 }}
+        state: >-
+          {{ states('sensor.inverter_uflex_external_ct1_power') | float(0)
+             < -(states('input_number.pv_surplus_soglia') | float(0)) }}
+
   - binary_sensor:
       - name: "Caldaia DHW Attiva"
         unique_id: "caldaia_dhw_attiva"
@@ -580,11 +641,11 @@ template:
   - sensor:
       - name: "Acqua Irrigazione Oggi"
         unique_id: "acqua_irrigazione_oggi"
+        # Consumo = minuti-canale erogati oggi × m³/min per canale.
         state: >-
-          {% set T1 = states('input_number.acqua_durata_irrigazione') | float(0) %}
-          {% set C1 = states('input_number.acqua_consumo_per_minuto') | float(0) %}
-          {% set n  = states('counter.irrigazione_sessioni_oggi') | int(0) %}
-          {{ (T1 * C1 * n) | round(4) }}
+          {% set minuti = states('counter.irrigazione_minuti_oggi') | int(0) %}
+          {% set flusso = states('input_number.acqua_consumo_per_minuto') | float(0) %}
+          {{ (minuti * flusso) | round(4) }}
         unit_of_measurement: "m³"
         state_class: measurement
         icon: mdi:sprinkler
@@ -712,6 +773,74 @@ template:
           {% else %}
             0
           {% endif %}
+
+      # ============================================================
+      # GESTIONE CALDAIA/PDC (NUOVO – configuration_160)
+      # Costo di 1 kWh termico per ciascuna fonte, a prezzi correnti.
+      # Le quote fisse NON entrano nel confronto: si pagano comunque
+      # con entrambe le fonti e si cancellano nella differenza.
+      # ============================================================
+      # Caldaia: prezzo gas a consumo / (11,0078 kWh/Smc × rendimento).
+      # 11,0078 = PCS da bolletta 0,039628 GJ/Smc ÷ 0,0036 GJ/kWh.
+      - name: "Caldaia Costo KWh Termico"
+        unique_id: "caldaia_costo_kwh_termico"
+        unit_of_measurement: "€/kWh"
+        state_class: measurement
+        icon: mdi:fire
+        availability: >-
+          {{ states('input_number.caldaia_rendimento') | float(0) > 0
+             and states('input_number.gas_prezzo_mc') | float(0) > 0 }}
+        state: >-
+          {% set prezzo = states('input_number.gas_prezzo_mc') | float(0) %}
+          {% set eta = states('input_number.caldaia_rendimento') | float(0) %}
+          {{ (prezzo / (11.0078 * eta)) | round(4) }}
+
+      # PdC: prezzo elettricità effettivo / COP. Usa il COP reale
+      # quando la pompa lavora, altrimenti il COP di riserva.
+      # configuration_161: con surplus FV (binary_sensor.pv_surplus on)
+      # il prezzo effettivo è il mancato incasso GSE, non il P1.
+      - name: "PdC Costo KWh Termico"
+        unique_id: "pdc_costo_kwh_termico"
+        unit_of_measurement: "€/kWh"
+        state_class: measurement
+        icon: mdi:heat-pump
+        availability: >-
+          {{ states('input_number.elettricita_prezzo_kwh') | float(0) > 0
+             and (has_value('sensor.panasonic_cop_calcolato')
+                  or states('input_number.pdc_cop_fallback') | float(0) > 0) }}
+        state: >-
+          {% set surplus = is_state('binary_sensor.pv_surplus', 'on') %}
+          {% set gse = states('input_number.gse_prezzo_kwh_stima') | float(0) %}
+          {% set p1 = states('input_number.elettricita_prezzo_kwh') | float(0) %}
+          {% set prezzo = gse if (surplus and gse > 0) else p1 %}
+          {% set cop_reale = states('sensor.panasonic_cop_calcolato') | float(0) %}
+          {% set cop = cop_reale if cop_reale > 0.8
+                       else states('input_number.pdc_cop_fallback') | float(0) %}
+          {{ (prezzo / cop) | round(4) }}
+
+      # Verdetto: fonte più conveniente adesso. Attributi con i due
+      # costi e il risparmio %. Solo informativo: le automazioni di
+      # controllo (con isteresi) arriveranno in un passo successivo.
+      - name: "Riscaldamento Fonte Conveniente"
+        unique_id: "riscaldamento_fonte_conveniente"
+        icon: mdi:scale-balance
+        availability: >-
+          {{ has_value('sensor.pdc_costo_kwh_termico')
+             and has_value('sensor.caldaia_costo_kwh_termico') }}
+        state: >-
+          {% set pdc = states('sensor.pdc_costo_kwh_termico') | float(0) %}
+          {% set cal = states('sensor.caldaia_costo_kwh_termico') | float(0) %}
+          {{ 'PdC' if pdc <= cal else 'Caldaia' }}
+        attributes:
+          surplus_pv: "{{ is_state('binary_sensor.pv_surplus', 'on') }}"
+          pdc_eur_kwht: "{{ states('sensor.pdc_costo_kwh_termico') | float(0) }}"
+          caldaia_eur_kwht: "{{ states('sensor.caldaia_costo_kwh_termico') | float(0) }}"
+          risparmio_pct: >-
+            {% set pdc = states('sensor.pdc_costo_kwh_termico') | float(0) %}
+            {% set cal = states('sensor.caldaia_costo_kwh_termico') | float(0) %}
+            {% if pdc > 0 and cal > 0 %}
+              {{ ((1 - ([pdc, cal] | min) / ([pdc, cal] | max)) * 100) | round(1) }}
+            {% else %} 0 {% endif %}
 
       # COP reale: potenza prodotta / potenza consumata
       - name: "Panasonic COP Calcolato"
@@ -923,9 +1052,11 @@ sensor:
 
 
 counter:
-  # Sessioni di irrigazione permesse oggi (reset a mezzanotte)
-  irrigazione_sessioni_oggi:
-    name: "Irrigazioni permesse oggi"
+  # Minuti-canale di irrigazione erogati oggi (reset a mezzanotte).
+  # +1 ogni minuto con un canale ON. Interblocco HW: max 1 canale acceso => 1 tick = 1 minuto-canale.
+  # Copre cicli programmati e accensioni manuali (anche di singolo canale).
+  irrigazione_minuti_oggi:
+    name: "Minuti irrigazione oggi"
     initial: 0
     step: 1
     restore: true
@@ -1341,7 +1472,7 @@ input_number:
     icon: mdi:meter-gas
 
   gas_prezzo_mc:
-    name: "Prezzo Gas €/m³"
+    name: "Gas – Prezzo a consumo €/m³"
     min: 0
     max: 5
     step: 0.0001
@@ -1349,12 +1480,104 @@ input_number:
     mode: box
     icon: mdi:currency-eur
 
+  # NUOVO (configuration_159): quota fissa mensile gas da bolletta
+  # (vendita + rete − oneri, IVA 22% inclusa). Fatturata da Eni in
+  # €/mese, indipendente dai giorni. Aggiornare quando cambiano le
+  # condizioni economiche o le tariffe ARERA.
+  gas_quota_fissa_mese:
+    name: "Gas – Quota fissa €/mese"
+    min: 0
+    max: 99
+    step: 0.01
+    unit_of_measurement: "€/mese"
+    mode: box
+    icon: mdi:currency-eur
+
   elettricita_prezzo_kwh:
-    name: "Prezzo Elettricità €/kWh"
+    name: "Elettricità – Prezzo a consumo €/kWh"
     min: 0
     max: 9.999
     step: 0.0001
     unit_of_measurement: "€/kWh"
+    mode: box
+    icon: mdi:currency-eur
+
+  # ============================================================
+  # GESTIONE CALDAIA/PDC (NUOVO – configuration_160)
+  # ============================================================
+  # Rendimento della Baxi su PCS (0,90–1,00 tipico condensazione;
+  # regolabile in base alla temperatura di ritorno).
+  caldaia_rendimento:
+    name: "Caldaia – Rendimento"
+    min: 0.5
+    max: 1.1
+    step: 0.01
+    mode: box
+    icon: mdi:fire
+
+  # COP usato quando la PdC è ferma e il COP reale non è disponibile
+  # (media stagionale stimata, da affinare con i dati).
+  pdc_cop_fallback:
+    name: "PdC – COP di riserva"
+    min: 1
+    max: 6
+    step: 0.1
+    mode: box
+    icon: mdi:heat-pump
+
+  # NUOVO (configuration_161): soglia di immissione in rete oltre la
+  # quale si considera surplus FV disponibile per la PdC.
+  pv_surplus_soglia:
+    name: "FV – Soglia surplus"
+    min: 0
+    max: 6000
+    step: 50
+    unit_of_measurement: "W"
+    mode: box
+    icon: mdi:solar-power
+
+  # NUOVO (configuration_161): prezzo €/kWh pagato dal GSE (stima
+  # manuale dal grafico "Prezzo GSE €/kWh" in plancia Consumi).
+  # Con surplus FV, usare la PdC costa solo il mancato incasso GSE.
+  gse_prezzo_kwh_stima:
+    name: "GSE – Prezzo €/kWh stimato"
+    min: 0
+    max: 1
+    step: 0.001
+    unit_of_measurement: "€/kWh"
+    mode: box
+    icon: mdi:currency-eur
+
+  # NUOVO (configuration_162): gestione automatica fonte caldaia/PdC.
+  # Vantaggio minimo % della fonte alternativa per commutare.
+  fonte_isteresi_pct:
+    name: "Fonte – Isteresi commutazione"
+    min: 5
+    max: 50
+    step: 1
+    unit_of_measurement: "%"
+    mode: box
+    icon: mdi:swap-horizontal
+
+  # Ore minime tra due manovre della valvola pompa-caldaia.
+  fonte_ore_minime:
+    name: "Fonte – Ore minime tra commutazioni"
+    min: 1
+    max: 24
+    step: 1
+    unit_of_measurement: "h"
+    mode: box
+    icon: mdi:timer-lock
+
+  # NUOVO (configuration_159): quota fissa mensile elettricità da
+  # bolletta (fissa vendita/rete + quota potenza 4,5 kW, IVA 10%
+  # inclusa). Fatturata da Eni in €/mese, indipendente dai giorni.
+  elettricita_quota_fissa_mese:
+    name: "Elettricità – Quota fissa €/mese"
+    min: 0
+    max: 99
+    step: 0.01
+    unit_of_measurement: "€/mese"
     mode: box
     icon: mdi:currency-eur
 
@@ -1370,17 +1593,36 @@ input_number:
   # ============================================================
   # ACQUA: input manuali (NUOVO – configuration_53)
   # ============================================================
-  acqua_durata_irrigazione:
-    name: "Irrigazione – Durata sessione"
+  # Durate per singolo canale (T1/T2/T3). Usate dal ciclo programmato e da "Cicla ora".
+  irrigazione_durata_c1:
+    name: "Irrigazione – Durata C1 (T1)"
     min: 0
     max: 180
     step: 1
     unit_of_measurement: "min"
     mode: box
-    icon: mdi:timer
+    icon: mdi:numeric-1-box
+  irrigazione_durata_c2:
+    name: "Irrigazione – Durata C2 (T2)"
+    min: 0
+    max: 180
+    step: 1
+    unit_of_measurement: "min"
+    mode: box
+    icon: mdi:numeric-2-box
+  irrigazione_durata_c3:
+    name: "Irrigazione – Durata C3 (T3)"
+    min: 0
+    max: 180
+    step: 1
+    unit_of_measurement: "min"
+    mode: box
+    icon: mdi:numeric-3-box
 
+  # m³ al minuto PER SINGOLO CANALE (impostare 0.0333).
+  # Consumo irrigazione = minuti-canale erogati oggi × questo valore.
   acqua_consumo_per_minuto:
-    name: "Irrigazione – m³ per minuto (C1)"
+    name: "Irrigazione – m³/min per canale"
     min: 0
     max: 1
     step: 0.0001
@@ -1605,6 +1847,31 @@ input_number:
     mode: box
     icon: mdi:percent
 
+# NUOVA SEZIONE (configuration_162): richiede riavvio COMPLETO no,
+# RAPIDO (solo HA) essendo nuova integrazione top-level.
+input_datetime:
+  fonte_ultima_commutazione:
+    name: "Fonte – Ultima commutazione"
+    has_date: true
+    has_time: true
+    icon: mdi:history
+
+  # Orari del programma irrigazione (modificabili da plancia). Solo ora, niente data.
+  # initial: valore di partenza se manca il restore_state (evita stato unavailable,
+  # che bloccherebbe silenziosamente i trigger del ciclo programmato).
+  irrigazione_ora_mattino:
+    name: "Irrigazione - Ora mattino (O1)"
+    has_date: false
+    has_time: true
+    initial: "08:25:00"
+    icon: mdi:weather-sunset-up
+  irrigazione_ora_sera:
+    name: "Irrigazione - Ora sera (O2)"
+    has_date: false
+    has_time: true
+    initial: "20:25:00"
+    icon: mdi:weather-sunset-down
+
 input_select:
   # --- MODALITÀ CLIMA ---
   clima_modalita:
@@ -1651,7 +1918,7 @@ input_text:
   # Messaggio mostrato in plancia (Casa Ginepro) con l'esito dell'ultima
   # valutazione irrigazione: motivi di blocco (pioggia, umidità, vento,
   # previsioni) oppure conferma di irrigazione permessa. Scritto dalle
-  # automazioni irrigazione e da script.irrigazione_toggle_manuale.
+  # ciclo programmato e dagli script irrigazione (cicla_ora, stop, salta_toggle).
   irrigazione_motivo_blocco:
     name: "Irrigazione – Motivo blocco"
     max: 255
@@ -1747,6 +2014,11 @@ utility_meter:
     cycle: daily
 
 input_boolean:
+  # --- GESTIONE FONTE CALDAIA/PDC (configuration_162) ---
+  fonte_auto_attiva:
+    name: "Fonte – Gestione automatica"
+    icon: mdi:swap-horizontal-circle
+
   # --- SISTEMA CLIMA ---
   clima_pid_attivo:
     name: "Clima PID Attivo"
@@ -1825,8 +2097,11 @@ input_boolean:
     initial: false
     icon: mdi:timer
 
-  irrigazione_manuale_oggi:
-    name: "Irrigazione – Gestione Manuale Oggi"
+  # Salta il programma automatico SOLO per oggi. Auto-reset a mezzanotte (auto-ripristino).
+  # I canali restano comandabili a mano e "Cicla ora" funziona comunque.
+  irrigazione_salta_oggi:
+    name: "Irrigazione – Salta programma oggi"
+    initial: false
     icon: mdi:hand-back-right
 
   sirena_attiva:

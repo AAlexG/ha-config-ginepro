@@ -1731,10 +1731,10 @@
           {{ (states('input_number.caldaia_dhw_durata_acc') | float(0) + 1) | round(0) }}
 
 #==================================================================================
-# 25. CALDAIA - SAT - RISCALDAMENTO - Rientro vacanza 
+# 25. CLIMA - Rientro vacanza 
 #==================================================================================
-- id: riscaldamento_rientro_vacanza
-  alias: "Riscaldamento rientro vacanza"
+- id: clima_ rientro_vacanza
+  alias: "Clima - rientro vacanza"
   description: >
     Alle 15:00 del giorno di fine vacanza ripristina la casa, con qualsiasi
     temperatura: spegne il flag vacanza, modalita' clima "giorno", riattiva
@@ -1834,10 +1834,10 @@
           Fancoil e pergola ripartono dalle loro automazioni. Benvenuti a casa!
 
 #==================================================================================
-# 26. CALDAIA - SAT - RISCALDAMENTO - Spegnimento inizio vacanza 
+# 26. CLIMA - Spegnimento inizio vacanza 
 #==================================================================================
 - id: spegnimento_inizio_vacanza
-  alias: "Spegnimento riscaldamento inizio vacanza"
+  alias: "Clima - inizio vacanza"
   description: >
     1 ora dopo l'inizio di un evento con 'Vacanza' nel titolo
     (durato più di 1 giorno), spegne riscaldamento (away), acqua sanitaria,
