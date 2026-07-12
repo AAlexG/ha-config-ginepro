@@ -1,4 +1,4 @@
-# configuration_165.yaml
+# configuration_166.yaml
 default_config:
 
 #==================================================================================
@@ -1031,6 +1031,33 @@ template:
             {{ nuovo }}
           {% else %}
             {{ [nuovo, this.state | float(0)] | max | round(3) }}
+          {% endif %}
+
+#--- LAVATRICE MIELE: sorgente sempre numerica ------------------------------
+# sensor.lavatricemielewci870_consumo_energia va in 'unknown' quando la lavatrice
+# e' spenta. Utility Meter eredita unita' e device_class dalla sorgente al primo
+# stato valido: se al riavvio la sorgente e' unknown, i contatori restano senza
+# kWh e senza device_class energy (quindi inutilizzabili nel cruscotto Energia).
+# Questo wrapper trattiene l'ultimo valore noto quando la sorgente sparisce e
+# dichiara unita' e device_class in modo esplicito. Gli azzeramenti di fine ciclo
+# restano visibili e vengono gestiti normalmente da Utility Meter.
+  - triggers:
+      - trigger: state
+        entity_id: sensor.lavatricemielewci870_consumo_energia
+      - trigger: homeassistant
+        event: start
+    sensor:
+      - name: "Lavatrice Energia"
+        unique_id: "lavatrice_energia"
+        unit_of_measurement: "kWh"
+        device_class: energy
+        state_class: total_increasing
+        icon: mdi:washing-machine
+        state: >-
+          {% if has_value('sensor.lavatricemielewci870_consumo_energia') %}
+            {{ states('sensor.lavatricemielewci870_consumo_energia') | float(0) | round(3) }}
+          {% else %}
+            {{ this.state | float(0) | round(3) }}
           {% endif %}
 
 #--- SENSORI STATISTICI ---
@@ -2078,12 +2105,12 @@ utility_meter:
   # --- LAVATRICE MIELE ---
   lavatrice_mese:
     name: "Lavatrice Mese"
-    source: sensor.lavatricemielewci870_consumo_energia
+    source: sensor.lavatrice_energia
     cycle: monthly
 
   lavatrice_totale:
     name: "Lavatrice Totale"
-    source: sensor.lavatricemielewci870_consumo_energia
+    source: sensor.lavatrice_energia
 
 input_boolean:
   # --- GESTIONE FONTE CALDAIA/PDC (configuration_162) ---
