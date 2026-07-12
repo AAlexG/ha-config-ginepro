@@ -103,7 +103,7 @@ config:
           id: euro
           opposite: true
       - chart_type: bar
-        days_to_show: 90
+        days_to_show: 365
         entities:
         - entity: sensor.gas_mese_mc
           name: "m\xB3 rilevato"
@@ -118,7 +118,7 @@ config:
         title: "Gas, m\xB3/mese"
         type: statistics-graph
       - chart_type: bar
-        days_to_show: 90
+        days_to_show: 365
         entities:
         - entity: sensor.gas_mese_euro
           name: "\u20AC rilevato"
@@ -131,6 +131,21 @@ config:
         stat_types:
         - max
         title: Gas, Euro/mese
+        type: statistics-graph
+      - chart_type: bar
+        days_to_show: 730
+        entities:
+        - entity: sensor.gas_mese_mc
+          name: "m\xB3 rilevato"
+        - entity: input_number.bolletta_gas_mc
+          name: "m\xB3 bolletta"
+        grid_options:
+          columns: 12
+          rows: auto
+        period: year
+        stat_types:
+        - max
+        title: "Gas, m\xB3/anno"
         type: statistics-graph
       - entity: input_number.gas_prezzo_mc
         grid_options:
@@ -589,13 +604,13 @@ config:
         vertical: false
       - entity: input_number.elettricita_prezzo_kwh
         grid_options:
-          columns: 6
+          columns: 12
           rows: 2
         name: Prezzo a consumo (1 kWh)
         type: entity
       - entity: input_number.elettricita_quota_fissa_mese
         grid_options:
-          columns: 6
+          columns: 12
           rows: 2
         name: Quota fissa mensile
         type: entity
@@ -634,6 +649,75 @@ config:
         - max
         title: "Da rete, \u20AC/mese"
         type: statistics-graph
+      - graph_span: 365d
+        grid_options:
+          columns: 12
+          rows: auto
+        header:
+          show: true
+          title: Tutti apparecchi, kWh/mese
+        series:
+        - entity: sensor.panasonic_consumata_oggi
+          name: Pompa
+          statistics:
+            period: month
+            type: change
+          type: column
+          yaxis_id: kwh
+        - entity: sensor.consumo_fancoil_totale_oggi
+          name: Fancoil
+          statistics:
+            period: month
+            type: change
+          type: column
+          yaxis_id: kwh
+        - entity: sensor.consumo_deumidificatori_oggi
+          name: Deumidif.
+          statistics:
+            period: month
+            type: change
+          type: column
+          yaxis_id: kwh
+        - entity: sensor.lavatricemielewci870_consumo_energia
+          name: Lavatrice
+          statistics:
+            period: month
+            type: change
+          type: column
+          yaxis_id: kwh
+        - entity: sensor.auto_energia_oggi
+          name: Auto
+          statistics:
+            period: month
+            type: change
+          type: column
+          yaxis_id: kwh
+        - entity: sensor.sauna_energia_oggi
+          name: Sauna
+          statistics:
+            period: month
+            type: change
+          type: column
+          yaxis_id: kwh
+        type: custom:apexcharts-card
+        yaxis:
+        - apex_config:
+            title:
+              text: kWh
+          decimals: 1
+          id: kwh
+        - apex_config:
+            title:
+              text: kwh
+          decimals: 1
+          id: jwh
+          opposite: true
+        - apex_config:
+            title:
+              text: kwh
+          decimals: 1
+          id: kwh
+          opposite: true
       - chart_type: bar
         days_to_show: 365
         entities:
@@ -663,6 +747,48 @@ config:
         title: "Prezzo GSE \u20AC/kWh"
         type: statistics-graph
       type: grid
+    - cards:
+      - heading: Anni
+        heading_style: title
+        type: heading
+      - chart_type: bar
+        days_to_show: 730
+        entities:
+        - entity: sensor.elettricita_mese_kwh
+          name: kWh rilevato
+        - entity: input_number.bolletta_elec_kwh
+          name: kWh bolletta
+        grid_options:
+          columns: 12
+          rows: auto
+        period: year
+        stat_types:
+        - max
+        title: Da rete, kWh/anno
+        type: statistics-graph
+      - chart_type: bar
+        days_to_show: 730
+        entities:
+        - entity: sensor.panasonic_consumata_oggi
+          name: Pompa
+        - entity: sensor.consumo_fancoil_totale_oggi
+          name: Fancoil
+        - entity: sensor.consumo_deumidificatori_oggi
+          name: Deumidif.
+        - entity: sensor.lavatricemielewci870_consumo_energia
+          name: Lavatrice
+        - entity: sensor.auto_energia_oggi
+          name: Auto
+        - entity: sensor.sauna_energia_oggi
+          name: Sauna
+        grid_options:
+          columns: 12
+          rows: auto
+        period: year
+        stat_types:
+        - change
+        type: statistics-graph
+      type: grid
     title: "Elettricit\xE0"
     type: sections
   - header:
@@ -674,7 +800,7 @@ config:
     sections:
     - cards:
       - heading: 'Totale (solo mesi dove esistono tutti dati):'
-        heading_style: subtitle
+        heading_style: title
         type: heading
       - entity: input_number.acqua_totale_rilevato_mc
         features_position: bottom
@@ -692,27 +818,8 @@ config:
         name: Totale bollette
         type: tile
         vertical: false
-      - heading: 'Ultimo mese:'
-        heading_style: subtitle
-        type: heading
-      - entity: sensor.acqua_mese_mc
-        features_position: bottom
-        grid_options:
-          columns: 3
-          rows: 1
-        name: Acqua mese
-        type: tile
-        vertical: false
-      - entity: sensor.acqua_mese_euro
-        features_position: bottom
-        grid_options:
-          columns: 3
-          rows: 1
-        name: Acqua mese
-        type: tile
-        vertical: false
       - heading: 'Oggi:'
-        heading_style: subtitle
+        heading_style: title
         type: heading
       - entity: sensor.acqua_oggi_mc
         features_position: bottom
@@ -798,36 +905,6 @@ config:
           decimals: 2
           id: euro
           opposite: true
-      - chart_type: bar
-        days_to_show: 730
-        entities:
-        - entity: sensor.acqua_mese_mc
-          name: "m\xB3 rilevato"
-        - entity: input_number.bolletta_acqua_mc
-          name: "m\xB3 bolletta"
-        grid_options:
-          columns: 12
-          rows: auto
-        period: month
-        stat_types:
-        - max
-        title: "Acqua, m\xB3/mese"
-        type: statistics-graph
-      - chart_type: bar
-        days_to_show: 730
-        entities:
-        - entity: sensor.acqua_mese_euro
-          name: "\u20AC rilevato"
-        - entity: input_number.bolletta_acqua_euro
-          name: "\u20AC bolletta"
-        grid_options:
-          columns: 12
-          rows: auto
-        period: month
-        stat_types:
-        - max
-        title: Acqua, Euro/mese
-        type: statistics-graph
       - heading: Solo Irrigazione oggi
         heading_style: subtitle
         type: heading
@@ -874,7 +951,93 @@ config:
         name: 'Sanitaria totale '
         type: tile
         vertical: false
-      - heading: Parametri di configurazione
+      type: grid
+    - cards:
+      - heading: Ultimi 12 mesi
+        heading_style: title
+        type: heading
+      - entity: sensor.acqua_mese_mc
+        features_position: bottom
+        grid_options:
+          columns: 3
+          rows: 1
+        name: Acqua mese
+        type: tile
+        vertical: false
+      - entity: sensor.acqua_mese_euro
+        features_position: bottom
+        grid_options:
+          columns: 3
+          rows: 1
+        name: Acqua mese
+        type: tile
+        vertical: false
+      - chart_type: bar
+        days_to_show: 730
+        entities:
+        - entity: sensor.acqua_mese_mc
+          name: "m\xB3 rilevato"
+        - entity: input_number.bolletta_acqua_mc
+          name: "m\xB3 bolletta"
+        grid_options:
+          columns: 12
+          rows: auto
+        period: month
+        stat_types:
+        - max
+        type: statistics-graph
+      - chart_type: bar
+        days_to_show: 730
+        entities:
+        - entity: sensor.acqua_mese_euro
+          name: "\u20AC rilevato"
+        - entity: input_number.bolletta_acqua_euro
+          name: "\u20AC bolletta"
+        grid_options:
+          columns: 12
+          rows: auto
+        period: month
+        stat_types:
+        - max
+        type: statistics-graph
+      type: grid
+    - cards:
+      - heading: Anno
+        heading_style: title
+        type: heading
+      - chart_type: bar
+        days_to_show: 730
+        entities:
+        - entity: sensor.acqua_mese_mc
+          name: "m\xB3 rilevato"
+        - entity: input_number.bolletta_acqua_mc
+          name: "m\xB3 bolletta"
+        grid_options:
+          columns: 12
+          rows: auto
+        period: year
+        stat_types:
+        - max
+        title: "Acqua, m\xB3/anno"
+        type: statistics-graph
+      - chart_type: bar
+        days_to_show: 730
+        entities:
+        - entity: sensor.acqua_mese_euro
+          name: "\u20AC rilevato"
+        - entity: input_number.bolletta_acqua_euro
+          name: "\u20AC bolletta"
+        grid_options:
+          columns: 12
+          rows: auto
+        period: year
+        stat_types:
+        - max
+        title: Acqua, Euro/anno
+        type: statistics-graph
+      type: grid
+    - cards:
+      - heading: Parametri di Configurazione
         heading_style: title
         type: heading
       - entity: input_number.acqua_tariffa

@@ -564,12 +564,12 @@ config:
         - apex_config:
             title:
               text: Kwh
-          decimals: 2
+          decimals: 3
           id: Kwh
         - apex_config:
             title:
               text: Litri
-          decimals: 2
+          decimals: 3
           id: litri
           opposite: true
       - chart_type: bar

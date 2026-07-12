@@ -530,13 +530,17 @@ config:
           show_daily: true
         type: custom:sunsynk-power-flow-card
         wide: false
+      - heading: Oggi
+        heading_style: subtitle
+        icon: ''
+        type: heading
       - entity: sensor.sauna_energia_oggi
         features_position: bottom
         grid_options:
           columns: 4
           rows: 1
         icon: mdi:spa-outline
-        name: Sauna oggi
+        name: Sauna
         type: tile
         vertical: false
       - entity: sensor.panasonic_consumata_oggi
@@ -544,7 +548,7 @@ config:
         grid_options:
           columns: 3
           rows: 1
-        name: Pompa Oggi
+        name: Pompa
         type: tile
         vertical: false
       - entity: sensor.auto_energia_oggi
@@ -553,7 +557,7 @@ config:
           columns: 4
           rows: 1
         icon: mdi:flash-auto
-        name: Auto oggi
+        name: Auto
         type: tile
         vertical: false
       - entity: sensor.consumo_fancoil_totale_oggi
@@ -562,7 +566,7 @@ config:
           columns: 6
           rows: 1
         hide_state: false
-        name: Fancoil oggi
+        name: Fancoil
         show_entity_picture: false
         type: tile
         vertical: false
@@ -571,16 +575,30 @@ config:
         grid_options:
           columns: 6
           rows: auto
-        name: Deumidif. oggi
+        name: Deumidif.
         type: tile
         vertical: false
+      - entity: sensor.lavatrice_energia
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        hide_state: false
+        name: Lavatrice
+        show_entity_picture: false
+        type: tile
+        vertical: false
+      - heading: Mese
+        heading_style: subtitle
+        icon: ''
+        type: heading
       - entity: sensor.produzione_mese
         features_position: bottom
         grid_options:
           columns: 4
           rows: 1
         icon: mdi:solar-power
-        name: Produz. mese
+        name: Produzione
         type: tile
         vertical: false
       - entity: sensor.elettricita_mese_kwh
@@ -589,7 +607,7 @@ config:
           columns: 4
           rows: 1
         icon: mdi:transmission-tower-import
-        name: Da rete mese
+        name: Da rete
         type: tile
         vertical: false
       - entity: sensor.a_rete_mese
@@ -598,7 +616,7 @@ config:
           columns: 6
           rows: 1
         icon: mdi:transmission-tower-export
-        name: A rete mese
+        name: A rete
         type: tile
         vertical: false
       - entity: sensor.panasonic_consumata_mese
@@ -606,7 +624,7 @@ config:
         grid_options:
           columns: 3
           rows: 1
-        name: Pompa mese
+        name: Pompa
         type: tile
         vertical: false
       - entity: sensor.auto_energia_mese
@@ -615,9 +633,21 @@ config:
           columns: 4
           rows: 1
         icon: mdi:flash-auto
-        name: Auto mese
+        name: Auto
         type: tile
         vertical: false
+      - entity: sensor.lavatrice_mese
+        features_position: bottom
+        grid_options:
+          columns: 3
+          rows: 1
+        name: Lavatrice
+        type: tile
+        vertical: false
+      - heading: Totale
+        heading_style: subtitle
+        icon: ''
+        type: heading
       - entity: input_number.pv_totale_euro
         features_position: bottom
         grid_options:
@@ -676,7 +706,7 @@ config:
           rows: auto
         icon: mdi:weather-partly-cloudy
         icon_height: 20px
-        name: Fancoil Deum
+        name: Fancoil Devices
         show_icon: true
         show_name: true
         show_state: false
