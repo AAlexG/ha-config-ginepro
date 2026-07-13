@@ -244,14 +244,26 @@ config:
             message: command_launch_app
           perform_action: notify.mobile_app_cph2653
         type: button
-      - entity: switch.shelly_box
-        features:
-        - type: toggle
+      - entity: sensor.opentherm_gateway_otgw_otgw_boiler_exhaust_temperature
         features_position: bottom
         grid_options:
-          columns: full
-          rows: auto
-        name: Accesso->pompa/Spento->caldaia
+          columns: 3
+          rows: 1
+        icon_tap_action:
+          action: navigate
+          navigation_path: /otgw-caldaia/otgw
+        name: OUT caldaia
+        type: tile
+        vertical: false
+      - entity: sensor.panasonic_heat_pump_main_main_outlet_temp
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        icon_tap_action:
+          action: navigate
+          navigation_path: /dashboard-panasonic/panasonic
+        name: OUT pompa
         type: tile
         vertical: false
       - entity: switch.panasonic_heat_pump_main_heatpump_state
@@ -284,20 +296,27 @@ config:
         name: Pompa Online
         type: tile
         vertical: false
-      - entity: sensor.panasonic_heat_pump_main_main_outlet_temp
-        features_position: bottom
-        grid_options:
-          columns: 4
-          rows: 1
-        name: OUT Acqua
-        type: tile
-        vertical: false
       - entity: binary_sensor.opentherm_gateway_otgw_otgw_flame
         features_position: bottom
         grid_options:
           columns: 3
           rows: 1
+        icon_tap_action:
+          action: navigate
+          navigation_path: /otgw-caldaia/otgw
         name: Caldaia Fiamma
+        type: tile
+        vertical: false
+      - color: blue
+        entity: sensor.irrigazione_attiva
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        name: ON/OFF Irrigazione
+        tap_action:
+          action: perform-action
+          perform_action: script.irrigazione_salta_toggle
         type: tile
         vertical: false
       - card:
@@ -387,18 +406,6 @@ config:
         name: Auto contattore
         type: tile
         vertical: false
-      - color: blue
-        entity: sensor.irrigazione_attiva
-        features_position: bottom
-        grid_options:
-          columns: 4
-          rows: 1
-        name: Irrigazione
-        tap_action:
-          action: perform-action
-          perform_action: script.irrigazione_salta_toggle
-        type: tile
-        vertical: false
       type: grid
     - cards:
       - heading: MUSICA
@@ -464,6 +471,58 @@ config:
               package_name: com.spotify.music
             message: command_launch_app
           perform_action: notify.mobile_app_cph2653
+        type: button
+      type: grid
+    - cards:
+      - heading: TEMPERATURE ATTUALI E DESIDERATE
+        heading_style: title
+        type: heading
+      - entities:
+        - entity: sensor.hp1000se_pro_pro_v1_6_4_indoor_temperature
+          name: Sala
+        - entity: sensor.sonoff_10008d119d_temperature
+          name: Georgi
+        - entity: sensor.panasonic_heat_pump_main_outside_temp
+          name: Esterna
+        - entity: sensor.panasonic_heat_pump_main_main_outlet_temp
+          name: Pompa Out
+        - entity: sensor.opentherm_gateway_otgw_otgw_boiler_flow_water_temperature
+          name: Caldaia OUT
+        grid_options:
+          columns: full
+          rows: auto
+        hours_to_show: 24
+        refresh_interval: 60
+        type: history-graph
+      - content: "{% set mod = states('input_select.clima_modalita') %} {% set stagione\
+          \ = states('input_select.clima_stagione') %} {% if stagione == 'estate'\
+          \ %}\n  {% if mod == 'notte' %}\n    **Sala max disiderata:** {{ states('input_number.maxtemp_notte_estate_sala')\
+          \ }}\xB0C\n    **Georgi max disiderata:** {{ states('input_number.maxtemp_notte_estate_letto')\
+          \ }}\xB0C\n  {% else %}\n    **Sala max disiderata:** {{ states('input_number.maxtemp_giorno_estate_sala')\
+          \ }}\xB0C\n    **Georgi max disiderata:** {{ states('input_number.maxtemp_giorno_estate_letto')\
+          \ }}\xB0C\n  {% endif %}\n{% else %}\n  {% if mod == 'notte' %}\n    **Sala\
+          \ min disiderata:** {{ states('input_number.mintemp_notte_inverno_sala')\
+          \ }}\xB0C\n    **Georgi min disiderata:** {{ states('input_number.mintemp_notte_inverno_letto')\
+          \ }}\xB0C\n  {% else %}\n    **Sala min disiderata:** {{ states('input_number.mintemp_giorno_inverno_sala')\
+          \ }}\xB0C\n    **Georgi min disiderata:** {{ states('input_number.mintemp_giorno_inverno_letto')\
+          \ }}\xB0C\n  {% endif %}\n{% endif %} &nbsp;&nbsp; *({{ stagione }} / {{\
+          \ mod }})*\n"
+        grid_options:
+          columns: 9
+          rows: auto
+        type: markdown
+      - grid_options:
+          columns: 3
+          rows: auto
+        icon: mdi:heat-pump
+        icon_height: 20px
+        name: Clima
+        show_icon: true
+        show_name: true
+        show_state: false
+        tap_action:
+          action: navigate
+          navigation_path: /dashboard-clima/clima
         type: button
       type: grid
     - cards:
@@ -548,6 +607,9 @@ config:
         grid_options:
           columns: 3
           rows: 1
+        icon_tap_action:
+          action: navigate
+          navigation_path: /dashboard-panasonic/panasonic
         name: Pompa
         type: tile
         vertical: false
@@ -566,6 +628,9 @@ config:
           columns: 6
           rows: 1
         hide_state: false
+        icon_tap_action:
+          action: navigate
+          navigation_path: /dashboard-fancoil/fancoil
         name: Fancoil
         show_entity_picture: false
         type: tile
@@ -575,6 +640,9 @@ config:
         grid_options:
           columns: 6
           rows: auto
+        icon_tap_action:
+          action: navigate
+          navigation_path: /dashboard-fancoil/fancoil
         name: Deumidif.
         type: tile
         vertical: false
@@ -584,6 +652,9 @@ config:
           columns: 6
           rows: 1
         hide_state: false
+        icon_tap_action:
+          action: navigate
+          navigation_path: /dashboard-fancoil
         name: Lavatrice
         show_entity_picture: false
         type: tile
@@ -598,6 +669,9 @@ config:
           columns: 4
           rows: 1
         icon: mdi:solar-power
+        icon_tap_action:
+          action: navigate
+          navigation_path: /dashboard-fotovoltaico/fotovoltaico
         name: Produzione
         type: tile
         vertical: false
@@ -607,6 +681,9 @@ config:
           columns: 4
           rows: 1
         icon: mdi:transmission-tower-import
+        icon_tap_action:
+          action: navigate
+          navigation_path: /dashboard-consumi/elettricita
         name: Da rete
         type: tile
         vertical: false
@@ -616,6 +693,9 @@ config:
           columns: 6
           rows: 1
         icon: mdi:transmission-tower-export
+        icon_tap_action:
+          action: navigate
+          navigation_path: /dashboard-fotovoltaico/fotovoltaico
         name: A rete
         type: tile
         vertical: false
@@ -624,6 +704,9 @@ config:
         grid_options:
           columns: 3
           rows: 1
+        icon_tap_action:
+          action: navigate
+          navigation_path: /dashboard-consumi/elettricita
         name: Pompa
         type: tile
         vertical: false
@@ -672,6 +755,9 @@ config:
           columns: 4
           rows: 1
         icon: mdi:cash-multiple
+        icon_tap_action:
+          action: navigate
+          navigation_path: /dashboard-consumi/elettricita
         name: Da GSE
         type: tile
         vertical: false
@@ -743,58 +829,6 @@ config:
               package_name: appinventor.ai_aagorine.PanelAnalytics
             message: command_launch_app
           perform_action: notify.mobile_app_cph2653
-        type: button
-      type: grid
-    - cards:
-      - heading: TEMPERATURE ATTUALI E DESIDERATE
-        heading_style: title
-        type: heading
-      - entities:
-        - entity: sensor.hp1000se_pro_pro_v1_6_4_indoor_temperature
-          name: Sala
-        - entity: sensor.sonoff_10008d119d_temperature
-          name: Georgi
-        - entity: sensor.panasonic_heat_pump_main_outside_temp
-          name: Esterna
-        - entity: sensor.panasonic_heat_pump_main_main_outlet_temp
-          name: Pompa Out
-        - entity: sensor.opentherm_gateway_otgw_otgw_boiler_flow_water_temperature
-          name: Caldaia OUT
-        grid_options:
-          columns: full
-          rows: auto
-        hours_to_show: 24
-        refresh_interval: 60
-        type: history-graph
-      - content: "{% set mod = states('input_select.clima_modalita') %} {% set stagione\
-          \ = states('input_select.clima_stagione') %} {% if stagione == 'estate'\
-          \ %}\n  {% if mod == 'notte' %}\n    **Sala max disiderata:** {{ states('input_number.maxtemp_notte_estate_sala')\
-          \ }}\xB0C\n    **Georgi max disiderata:** {{ states('input_number.maxtemp_notte_estate_letto')\
-          \ }}\xB0C\n  {% else %}\n    **Sala max disiderata:** {{ states('input_number.maxtemp_giorno_estate_sala')\
-          \ }}\xB0C\n    **Georgi max disiderata:** {{ states('input_number.maxtemp_giorno_estate_letto')\
-          \ }}\xB0C\n  {% endif %}\n{% else %}\n  {% if mod == 'notte' %}\n    **Sala\
-          \ min disiderata:** {{ states('input_number.mintemp_notte_inverno_sala')\
-          \ }}\xB0C\n    **Georgi min disiderata:** {{ states('input_number.mintemp_notte_inverno_letto')\
-          \ }}\xB0C\n  {% else %}\n    **Sala min disiderata:** {{ states('input_number.mintemp_giorno_inverno_sala')\
-          \ }}\xB0C\n    **Georgi min disiderata:** {{ states('input_number.mintemp_giorno_inverno_letto')\
-          \ }}\xB0C\n  {% endif %}\n{% endif %} &nbsp;&nbsp; *({{ stagione }} / {{\
-          \ mod }})*\n"
-        grid_options:
-          columns: 9
-          rows: auto
-        type: markdown
-      - grid_options:
-          columns: 3
-          rows: auto
-        icon: mdi:heat-pump
-        icon_height: 20px
-        name: Clima
-        show_icon: true
-        show_name: true
-        show_state: false
-        tap_action:
-          action: navigate
-          navigation_path: /dashboard-clima/clima
         type: button
       type: grid
     - cards:
@@ -1302,7 +1336,7 @@ config:
           navigation_path: /dashboard-meteo/meteo
         type: button
       - grid_options:
-          columns: 3
+          columns: 6
           rows: auto
         icon: mdi:sprinkler-variant
         icon_height: 20px

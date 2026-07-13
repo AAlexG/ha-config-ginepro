@@ -1,4 +1,4 @@
-# configuration_168.yaml
+# configuration_170.yaml
 default_config:
 
 #==================================================================================
@@ -406,9 +406,22 @@ template:
       # ============================================================
       - name: "Gas Mese MC"
         unique_id: "gas_mese_mc"
+        # configuration_170: nei grafici mensili (stat_types: max) la prima ora
+        # del mese ereditava il valore finale del mese precedente, perche'
+        # l'azzeramento (utility_meter a 00:00:00, reset_inizio_mese a 00:00:30)
+        # cade DENTRO la fascia oraria 00:00-01:00 del giorno 1. Risultato: ogni
+        # mese mostrava il maggiore fra il proprio totale e quello del mese prima
+        # (invisibile finche' i consumi crescevano, evidente a luglio 2026).
+        # Forzando 0 nella prima ora del mese il picco spurio sparisce: il massimo
+        # mensile si raggiunge comunque a fine mese, quindi il dato non ne risente.
+        # Accumulatori e utility_meter NON sono toccati: cambia solo la vetrina.
         state: >-
-          {{ ([states('input_number.caldaia_gas_totale_acc') | float(0) -
-               states('input_number.gas_inizio_mese') | float(0), 0] | max) | round(4) }}
+          {% if now().day == 1 and now().hour == 0 %}
+            0
+          {% else %}
+            {{ ([states('input_number.caldaia_gas_totale_acc') | float(0) -
+                 states('input_number.gas_inizio_mese') | float(0), 0] | max) | round(4) }}
+          {% endif %}
         unit_of_measurement: "m³"
         state_class: measurement
         icon: mdi:meter-gas
@@ -418,9 +431,13 @@ template:
         # configuration_159: aggiunta quota fissa mensile (€/mese Eni,
         # indipendente dai giorni) per allineare il rilevato alla bolletta.
         state: >-
-          {% set kwh = states('sensor.rete_energia_mese') | float(0) %}
-          {% set fissa = states('input_number.elettricita_quota_fissa_mese') | float(0) %}
-          {{ (kwh * states('input_number.elettricita_prezzo_kwh') | float(0) + fissa) | round(2) }}
+          {% if now().day == 1 and now().hour == 0 %}
+            0
+          {% else %}
+            {% set kwh = states('sensor.rete_energia_mese') | float(0) %}
+            {% set fissa = states('input_number.elettricita_quota_fissa_mese') | float(0) %}
+            {{ (kwh * states('input_number.elettricita_prezzo_kwh') | float(0) + fissa) | round(2) }}
+          {% endif %}
         unit_of_measurement: "€"
         state_class: measurement
         icon: mdi:currency-eur
@@ -428,8 +445,12 @@ template:
       - name: "Acqua Mese Euro"
         unique_id: "acqua_mese_euro"
         state: >-
-          {{ ([states('input_number.acqua_costo_acc') | float(0) -
-               states('input_number.acqua_costo_inizio_mese') | float(0), 0] | max) | round(2) }}
+          {% if now().day == 1 and now().hour == 0 %}
+            0
+          {% else %}
+            {{ ([states('input_number.acqua_costo_acc') | float(0) -
+                 states('input_number.acqua_costo_inizio_mese') | float(0), 0] | max) | round(2) }}
+          {% endif %}
         unit_of_measurement: "€"
         state_class: measurement
         icon: mdi:currency-eur
@@ -437,10 +458,15 @@ template:
       - name: "Acqua Mese MC"
         unique_id: "acqua_mese_mc"
         state: >-
-          {{ ([states('input_number.acqua_consumo_acc') | float(0) -
-               states('input_number.acqua_mc_inizio_mese') | float(0), 0] | max) | round(4) }}
+          {% if now().day == 1 and now().hour == 0 %}
+            0
+          {% else %}
+            {{ ([states('input_number.acqua_consumo_acc') | float(0) -
+                 states('input_number.acqua_mc_inizio_mese') | float(0), 0] | max) | round(4) }}
+          {% endif %}
         unit_of_measurement: "m³"
         state_class: measurement
+        suggested_display_precision: 4
         icon: mdi:water
 
 
@@ -474,9 +500,13 @@ template:
         # configuration_159: aggiunta quota fissa mensile (€/mese Eni,
         # indipendente dai giorni) per allineare il rilevato alla bolletta.
         state: >-
-          {{ (states('sensor.gas_caldaia_mensile') | float(0) *
-              states('input_number.gas_prezzo_mc') | float(0) +
-              states('input_number.gas_quota_fissa_mese') | float(0)) | round(2) }}
+          {% if now().day == 1 and now().hour == 0 %}
+            0
+          {% else %}
+            {{ (states('sensor.gas_caldaia_mensile') | float(0) *
+                states('input_number.gas_prezzo_mc') | float(0) +
+                states('input_number.gas_quota_fissa_mese') | float(0)) | round(2) }}
+          {% endif %}
         unit_of_measurement: "€"
         state_class: measurement
         icon: mdi:currency-eur
@@ -502,7 +532,11 @@ template:
       - name: "Elettricita Mese KWh"
         unique_id: "elettricita_mese_kwh"
         state: >-
-          {{ states('sensor.rete_energia_mese') | float(0) | round(2) }}
+          {% if now().day == 1 and now().hour == 0 %}
+            0
+          {% else %}
+            {{ states('sensor.rete_energia_mese') | float(0) | round(2) }}
+          {% endif %}
         unit_of_measurement: "kWh"
         state_class: measurement
         icon: mdi:transmission-tower
@@ -515,9 +549,13 @@ template:
       - name: "A Rete Mese Euro"
         unique_id: "a_rete_mese_euro"
         state: >-
-          {% set kwh = states('sensor.a_rete_mese') | float(0) %}
-          {% set prezzo = states('input_number.elettricita_prezzo_kwh') | float(0) %}
-          {{ (kwh * prezzo) | round(2) }}
+          {% if now().day == 1 and now().hour == 0 %}
+            0
+          {% else %}
+            {% set kwh = states('sensor.a_rete_mese') | float(0) %}
+            {% set prezzo = states('input_number.elettricita_prezzo_kwh') | float(0) %}
+            {{ (kwh * prezzo) | round(2) }}
+          {% endif %}
         unit_of_measurement: "€"
         state_class: measurement
         icon: mdi:transmission-tower-export
@@ -648,6 +686,7 @@ template:
           {{ (minuti * flusso) | round(4) }}
         unit_of_measurement: "m³"
         state_class: measurement
+        suggested_display_precision: 4
         icon: mdi:sprinkler
 
       - name: "Caldaia DHW Durata Oggi Minuti"
@@ -674,6 +713,7 @@ template:
           {{ (minuti / 60 * flusso * 0.06) | round(4) }}
         unit_of_measurement: "m³"
         state_class: measurement
+        suggested_display_precision: 4
         icon: mdi:water-boiler
 
       - name: "Acqua Sanitaria Totale"
@@ -684,6 +724,7 @@ template:
           {{ (C3 + C4) | round(4) }}
         unit_of_measurement: "m³"
         state_class: measurement
+        suggested_display_precision: 4
         icon: mdi:water
 
       - name: "Acqua Lavatrice Oggi"
@@ -694,6 +735,7 @@ template:
           {{ (states('sensor.lavatrice_acqua_oggi') | float(0) / 1000) | round(4) }}
         unit_of_measurement: "m³"
         state_class: measurement
+        suggested_display_precision: 4
         icon: mdi:washing-machine
 
       - name: "Acqua Oggi MC"
@@ -705,6 +747,7 @@ template:
           {{ (C2 + C5 + C6) | round(4) }}
         unit_of_measurement: "m³"
         state_class: measurement
+        suggested_display_precision: 4
         icon: mdi:water-check
 
       - name: "Acqua Oggi Euro"
