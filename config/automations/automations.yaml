@@ -1,4 +1,4 @@
-# automations_118.yaml
+# automations_119.yaml
 #prova
 #==================================================================================
 # 1. IRRIGAZIONE – Ciclo programmato (O1/O2) con gate meteo
@@ -135,27 +135,27 @@
   triggers:
     - platform: state
       entity_id:
-        - sensor.panel_a1_power
-        - sensor.panel_a2_power
-        - sensor.panel_a3_power
-        - sensor.panel_a4_power
-        - sensor.panel_a5_power
-        - sensor.panel_a6_power
-        - sensor.panel_a7_power
-        - sensor.panel_a8_power
-        - sensor.panel_a9_power
-        - sensor.panel_a10_power
-        - sensor.panel_b1_power
-        - sensor.panel_b2_power
-        - sensor.panel_b3_power
-        - sensor.panel_b4_power
-        - sensor.panel_b5_power
-        - sensor.panel_b6_power
-        - sensor.panel_b7_power
-        - sensor.panel_b8_power
-        - sensor.panel_b9_power
-        - sensor.panel_b10_power
-        - sensor.panel_b11_power
+        - sensor.tetto_vs_ovest_panel_a1_power
+        - sensor.tetto_vs_ovest_panel_a2_power
+        - sensor.tetto_vs_ovest_panel_a3_power
+        - sensor.tetto_vs_ovest_panel_a4_power
+        - sensor.tetto_vs_ovest_panel_a5_power
+        - sensor.tetto_vs_mare_panel_a6_power
+        - sensor.tetto_vs_mare_panel_a7_power
+        - sensor.tetto_vs_mare_panel_a8_power
+        - sensor.tetto_vs_mare_panel_a9_power
+        - sensor.tetto_vs_mare_panel_a10_power
+        - sensor.sopra_pergola_panel_b1_power
+        - sensor.sopra_pergola_panel_b2_power
+        - sensor.sopra_pergola_panel_b3_power
+        - sensor.sopra_pergola_panel_b4_power
+        - sensor.sopra_pergola_panel_b5_power
+        - sensor.sopra_tenda_giardino_panel_b6_power
+        - sensor.sopra_tenda_giardino_panel_b7_power
+        - sensor.sopra_tenda_giardino_panel_b8_power
+        - sensor.sopra_tenda_giardino_panel_b9_power
+        - sensor.sopra_pergola_panel_b10_power
+        - sensor.sopra_tenda_giardino_panel_b11_power
       to: "0"
       for: "01:00:00"
   condition:
@@ -169,7 +169,7 @@
       data:
         title: "⚠️ Pannello a 0 da 1h"
         message: >-
-          Pannello {{ trigger.entity_id.split('.')[1].split('_')[1] | upper }} = 0 W da almeno 1 ora.
+          Pannello {{ trigger.entity_id.split('panel_')[1].split('_')[0] | upper }} = 0 W da almeno 1 ora.
         data:
           clickAction: "/casa-ginepro/home"
           priority: high
@@ -950,4 +950,3 @@
     - action: hassio.addon_start
       data:
         addon: "68413af6_git-exporter"
-

@@ -1,4 +1,4 @@
-# automations_pergola_11.yaml
+# automations_pergola_12.yaml
 
 #==================================================================================
 # PERGOLA – INSEGUIMENTO SOLARE + APERTURA AERAZIONE (1 giugno – 1 novembre)
@@ -12,8 +12,9 @@
 #                 da verificare sul campo.
 #   azimut >= 145° (il sole passa il piano lamelle: luglio ~12:30,
 #                 ottobre ~11:10, lo scatto segue la stagione da solo):
-#                 posizione fissa 95%, regge tutto il primo pomeriggio.
-#                 Taratura empirica: 95% h13:22, 87% h13:46, 80% h15:00.
+#                 posizione fissa 97%, regge tutto il primo pomeriggio.
+#                 Taratura empirica: 97% h12:40, 95% h13:22, 87% h13:46,
+#                 80% h15:00.
 #   15:00 : lamelle all'80% per aerare la zona sottostante.
 #   23:01 : chiusura per la notte (0%). Alle 23:01 e non 23:00 per evitare
 #           la corsa con il rilascio del blocco manuale delle 23:00.
@@ -68,7 +69,7 @@
         pct: "{{ [[pct_grezzo, 0] | max, 100] | min }}"
         ora: "{{ now().strftime('%H:%M') }}"
         target: >-
-          {% if '08:30' <= ora < '15:00' %}{% if az < 145 %}{{ [pct + 5, 100] | min | round | int }}{% else %}95{% endif %}{% elif '15:00' <= ora < '23:00' %}80{% else %}0{% endif %}
+          {% if '08:30' <= ora < '15:00' %}{% if az < 145 %}{{ [pct + 5, 100] | min | round | int }}{% else %}97{% endif %}{% elif '15:00' <= ora < '23:00' %}80{% else %}0{% endif %}
     - action: cover.set_cover_tilt_position
       target:
         entity_id: cover.terrazzo_pergola_terrazza
