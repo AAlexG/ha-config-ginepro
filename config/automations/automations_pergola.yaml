@@ -1,4 +1,4 @@
-# automations_pergola_12.yaml
+# automations_pergola_13.yaml
 
 #==================================================================================
 # PERGOLA – INSEGUIMENTO SOLARE + APERTURA AERAZIONE (1 giugno – 1 novembre)
@@ -13,8 +13,13 @@
 #   azimut >= 145° (il sole passa il piano lamelle: luglio ~12:30,
 #                 ottobre ~11:10, lo scatto segue la stagione da solo):
 #                 posizione fissa 97%, regge tutto il primo pomeriggio.
-#                 Taratura empirica: 97% h12:40, 95% h13:22, 87% h13:46,
-#                 80% h15:00.
+#                 Taratura empirica: 97% h12:40, 95% h13:22, 91% h13:26,
+#                 87% h13:46, 80% h15:00.
+#                 Trigger di recupero alle 13:00 e 14:00: ripetono la
+#                 posizione dello slot corrente (nessun movimento fisico se
+#                 gia' in posa) e coprono ricariche/riavvii avvenuti DOPO
+#                 l'attraversamento, quando il trigger sull'azimut non puo'
+#                 piu' scattare (valuta solo il passaggio falso -> vero).
 #   15:00 : lamelle all'80% per aerare la zona sottostante.
 #   23:01 : chiusura per la notte (0%). Alle 23:01 e non 23:00 per evitare
 #           la corsa con il rilascio del blocco manuale delle 23:00.
@@ -37,6 +42,10 @@
       at: "11:15:00"
     - trigger: template
       value_template: "{{ state_attr('sun.sun','azimuth') | float(0) >= 145 }}"
+    - trigger: time
+      at: "13:00:00"
+    - trigger: time
+      at: "14:00:00"
     - trigger: time
       at: "15:00:00"
     - trigger: time
