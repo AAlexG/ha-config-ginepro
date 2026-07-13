@@ -466,7 +466,7 @@ config:
           name: 'Consumo giorno '
         period: day
         stat_types:
-        - change
+        - state
         type: statistics-graph
       - chart_type: bar
         days_to_show: 365

@@ -649,7 +649,7 @@ config:
         - max
         title: "Da rete, \u20AC/mese"
         type: statistics-graph
-      - graph_span: 365d
+      - graph_span: 120d
         grid_options:
           columns: 12
           rows: auto

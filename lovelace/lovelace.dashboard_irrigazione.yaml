@@ -154,10 +154,23 @@ config:
         vertical: false
       - entity: input_number.acqua_consumo_per_minuto
         grid_options:
-          columns: 12
+          columns: 9
           rows: auto
         name: "Flusso per canale (m\xB3/min)"
         type: entity
+      - grid_options:
+          columns: 3
+          rows: auto
+        icon: mdi:file-table
+        icon_height: 20px
+        name: Consumi
+        show_icon: true
+        show_name: true
+        show_state: false
+        tap_action:
+          action: navigate
+          navigation_path: /dashboard-consumi/acqua
+        type: button
       - content: "Consumo = minuti-canale erogati oggi \xD7 flusso per canale. Con\
           \ 0.0333 m\xB3/min per canale e durate 3+3+3 min, 2 cicli/giorno \u2248\
           \ 0.6 m\xB3/giorno."

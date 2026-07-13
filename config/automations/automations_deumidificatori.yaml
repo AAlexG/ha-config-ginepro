@@ -1,0 +1,73 @@
+# automations_deumidificatori_1.yaml
+#
+# ALLARME SERBATOIO PIENO – DEUMIDIFICATORI
+#
+# I deumidificatori di Casa Ginepro non hanno igrostato: finche' sono alimentati
+# lavorano. Quindi "presa accesa + potenza a zero" non puo' essere uno stand-by:
+# significa che la macchina si e' fermata, e la causa tipica e' il serbatoio pieno.
+#
+# Caso reale che ha originato queste automazioni (13/07/2026): il deumidificatore
+# cantina e' rimasto alimentato per 9h55 con corrente e potenza a zero. Il consumo
+# di quel giorno e' andato perso e la macchina non ha deumidificato nulla.
+#
+# Trigger di tipo template con "for": scatta solo se la condizione (presa accesa
+# E potenza sotto soglia) resta vera per 30 minuti consecutivi. Copre sia il
+# serbatoio che si riempie a macchina in funzione, sia la macchina che non parte.
+# La notifica arriva una volta sola per evento: il conteggio riparte solo dopo che
+# la condizione e' tornata falsa (serbatoio svuotato, potenza risalita).
+#
+# La soglia e' 5 W (non 0) per tollerare l'assorbimento residuo dell'elettronica
+# e il rumore di misura delle prese.
+#
+# Il float(999) di guardia rende il template FALSO se il sensore di potenza e'
+# unavailable o unknown: un sensore che sparisce non deve generare un falso allarme.
+
+- id: deumidificatore_cantina_serbatoio_pieno
+  alias: "Deumidificatore cantina – serbatoio pieno"
+  description: >-
+    Presa accesa ma potenza a zero da 30 minuti: la macchina non sta lavorando.
+    Causa tipica: serbatoio dell'acqua pieno.
+  mode: single
+  triggers:
+    - trigger: template
+      value_template: >-
+        {{ is_state('switch.presa_deumidificatore_cantina', 'on')
+           and states('sensor.presa_terrazza_potenza') | float(999) < 5 }}
+      for: "00:30:00"
+  actions:
+    - action: notify.mobile_app_cph2653
+      data:
+        title: "Deumidificatore cantina fermo"
+        message: >-
+          La presa e' accesa da oltre 30 minuti ma la potenza assorbita e' zero.
+          Il deumidificatore non sta lavorando: controlla il serbatoio dell'acqua,
+          probabilmente e' pieno.
+        data:
+          tag: deumidificatore_cantina_serbatoio
+          channel: Deumidificatori
+          importance: high
+
+- id: deumidificatore_armadio_serbatoio_pieno
+  alias: "Deumidificatore armadio – serbatoio pieno"
+  description: >-
+    Presa accesa ma potenza a zero da 30 minuti: la macchina non sta lavorando.
+    Causa tipica: serbatoio dell'acqua pieno.
+  mode: single
+  triggers:
+    - trigger: template
+      value_template: >-
+        {{ is_state('switch.deumidificatore_armadio_sonoff_sonoff_1002a68db0_1', 'on')
+           and states('sensor.deumidificatore_armadio_sonoff_sonoff_1002a68db0_power') | float(999) < 5 }}
+      for: "00:30:00"
+  actions:
+    - action: notify.mobile_app_cph2653
+      data:
+        title: "Deumidificatore armadio fermo"
+        message: >-
+          La presa e' accesa da oltre 30 minuti ma la potenza assorbita e' zero.
+          Il deumidificatore non sta lavorando: controlla il serbatoio dell'acqua,
+          probabilmente e' pieno.
+        data:
+          tag: deumidificatore_armadio_serbatoio
+          channel: Deumidificatori
+          importance: high
