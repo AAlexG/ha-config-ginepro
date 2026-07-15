@@ -548,6 +548,16 @@ config:
         name: "Previsto elettricit\xE0 "
         type: tile
         vertical: false
+      - entity: sensor.lavatricemielewci870_livello_twindos_1
+        features_position: bottom
+        name: 1 TwinDocs
+        type: tile
+        vertical: false
+      - entity: sensor.lavatricemielewci870_livello_twindos_2
+        features_position: bottom
+        name: 2 TwinDocs
+        type: tile
+        vertical: false
       - entity: sensor.lavatricemielewci870_programma
         features_position: bottom
         grid_options:

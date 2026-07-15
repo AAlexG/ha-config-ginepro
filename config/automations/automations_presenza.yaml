@@ -1,0 +1,36 @@
+# automations_presenza_1.yaml
+
+#==================================================================================
+# 1. NOTIFICA - Tania esce di casa (ritardo 2 min anti falsi positivi GPS)
+#==================================================================================
+- id: notifica_tania_uscita
+  alias: "Presenza - Tania esce di casa"
+  mode: single
+  triggers:
+    - platform: state
+      entity_id: person.tania
+      from: "home"
+      to: "not_home"
+      for: "00:02:00"
+  action:
+    - action: notify.mobile_app_cph2653
+      data:
+        title: "Presenza"
+        message: "Tania è uscita di casa"
+
+#==================================================================================
+# 2. NOTIFICA - Tania rientra a casa (immediata)
+#==================================================================================
+- id: notifica_tania_rientro
+  alias: "Presenza - Tania rientra a casa"
+  mode: single
+  triggers:
+    - platform: state
+      entity_id: person.tania
+      from: "not_home"
+      to: "home"
+  action:
+    - action: notify.mobile_app_cph2653
+      data:
+        title: "Presenza"
+        message: "Tania è rientrata a casa"
