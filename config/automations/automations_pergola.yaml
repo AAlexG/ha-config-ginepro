@@ -1,4 +1,4 @@
-# automations_pergola_13.yaml
+# automations_pergola_14.yaml
 
 #==================================================================================
 # PERGOLA – INSEGUIMENTO SOLARE + APERTURA AERAZIONE (1 giugno – 1 novembre)
@@ -205,6 +205,10 @@
     - action: cover.close_cover
       target:
         entity_id: cover.all_house_tenda_terrazzo
+    # Allinea lo stato logico della tenda (v14)
+    - action: input_boolean.turn_off
+      target:
+        entity_id: input_boolean.tenda_giardino_aperta
     - if:
         - condition: state
           entity_id: input_boolean.tenda_notifica_vento_oggi

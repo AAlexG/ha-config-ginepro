@@ -1,4 +1,4 @@
-# scripts_42.yaml
+# scripts_43.yaml
 
 #==================================================================================
 # SCRIPT: APRI CANCELLO CASA
@@ -678,3 +678,60 @@ fonte_ripristina_parametri:
         entity_id: input_number.gas_quota_fissa_mese
       data:
         value: 19.42
+
+#==================================================================================
+# TENDA GIARDINO - Apri con stop automatico a 18 secondi
+#
+# La cover cover.all_house_tenda_terrazzo non ha feedback di stato: accetta
+# solo open/close/stop. Lo stato logico e' tracciato in
+# input_boolean.tenda_giardino_aperta.
+#
+# - Se la tenda risulta gia' aperta: non fa nulla.
+# - Altrimenti: open_cover, boolean subito a on (cosi' lo stato resta
+#   coerente anche se lo script viene interrotto), delay 18s, stop_cover.
+# - mode single + max_exceeded silent: click ripetuti durante i 18s ignorati.
+#==================================================================================
+tenda_giardino_apri:
+  alias: "Tenda Giardino – Apri (stop a 18s)"
+  icon: mdi:arrow-expand
+  mode: single
+  max_exceeded: silent
+  sequence:
+    - condition: state
+      entity_id: input_boolean.tenda_giardino_aperta
+      state: "off"
+    - action: cover.open_cover
+      target:
+        entity_id: cover.all_house_tenda_terrazzo
+    - action: input_boolean.turn_on
+      target:
+        entity_id: input_boolean.tenda_giardino_aperta
+    - delay:
+        seconds: 18
+    - action: cover.stop_cover
+      target:
+        entity_id: cover.all_house_tenda_terrazzo
+
+#==================================================================================
+# TENDA GIARDINO - Chiudi
+#
+# - Se la tenda risulta gia' chiusa: non fa nulla.
+# - Altrimenti: close_cover (corsa completa, nessuno stop) e boolean a off.
+# - E' anche il rimedio in caso di stato incoerente: un ciclo di chiusura
+#   riallinea tenda fisica e stato logico.
+#==================================================================================
+tenda_giardino_chiudi:
+  alias: "Tenda Giardino – Chiudi"
+  icon: mdi:arrow-collapse
+  mode: single
+  max_exceeded: silent
+  sequence:
+    - condition: state
+      entity_id: input_boolean.tenda_giardino_aperta
+      state: "on"
+    - action: cover.close_cover
+      target:
+        entity_id: cover.all_house_tenda_terrazzo
+    - action: input_boolean.turn_off
+      target:
+        entity_id: input_boolean.tenda_giardino_aperta

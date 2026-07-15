@@ -1,4 +1,4 @@
-# automations_clima_39.yaml
+# automations_clima_40.yaml
 
 
 
@@ -1915,6 +1915,8 @@
             entity_id:
               - input_boolean.pergola_blocco_manuale
               - input_boolean.pergola_meteo_chiusura
+              # Stato logico tenda giardino: chiusa (v40)
+              - input_boolean.tenda_giardino_aperta
         # Chiusura pergola e tenda giardino
         - action: cover.close_cover
           target:

@@ -1,4 +1,4 @@
-# configuration_172.yaml
+# configuration_173.yaml
 default_config:
 
 #==================================================================================
@@ -2293,6 +2293,14 @@ input_boolean:
     name: "Tenda – Notifica Vento Oggi"
     initial: false
     icon: mdi:bell-check
+
+  # Stato logico tenda giardino (la cover non ha feedback di stato).
+  # Gestito dagli script tenda_giardino_apri/chiudi e dalle chiusure
+  # automatiche (vento, vacanza). Correggibile a mano da plancia Tende.
+  # NIENTE "initial": lo stato deve sopravvivere ai riavvii.
+  tenda_giardino_aperta:
+    name: "Tenda Giardino – Aperta"
+    icon: mdi:roman-shade
 
   # --- FREE COOLING / FREE HEATING NATURALE ---
   clima_freecooling_attivo:

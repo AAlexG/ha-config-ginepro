@@ -45,14 +45,53 @@ config:
         heading_style: title
         icon: mdi:roman-shade
         type: heading
-      - entity: cover.all_house_tenda_terrazzo
+      - entity: input_boolean.tenda_giardino_aperta
         features:
-        - type: cover-open-close
+        - type: toggle
         features_position: bottom
         grid_options:
           columns: 12
           rows: 1
-        name: Tenda Giardino
+        name: Stato tenda
+        state_content: state
+        tap_action:
+          action: toggle
+        type: tile
+        vertical: false
+      - entity: script.tenda_giardino_apri
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        icon: mdi:arrow-expand
+        name: 'Apri '
+        tap_action:
+          action: perform-action
+          perform_action: script.tenda_giardino_apri
+        type: tile
+        vertical: false
+      - entity: script.tenda_giardino_chiudi
+        grid_options:
+          columns: 4
+          rows: 1
+        icon: mdi:arrow-collapse
+        name: Chiudi
+        tap_action:
+          action: perform-action
+          perform_action: script.tenda_giardino_chiudi
+        type: tile
+        vertical: false
+      - entity: cover.all_house_tenda_terrazzo
+        grid_options:
+          columns: 4
+          rows: 1
+        icon: mdi:stop
+        name: Stop
+        tap_action:
+          action: perform-action
+          perform_action: cover.stop_cover
+          target:
+            entity_id: cover.all_house_tenda_terrazzo
         type: tile
         vertical: false
       - entity: input_boolean.tenda_notifica_vento_oggi
