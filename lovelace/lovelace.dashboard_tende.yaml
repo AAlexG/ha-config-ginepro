@@ -5,57 +5,22 @@ config:
     path: tende
     sections:
     - cards:
-      - heading: Pergola Terrazza
+      - heading: Tenda Giardino
         heading_style: title
         icon: mdi:awning-outline
         type: heading
-      - entity: cover.terrazzo_pergola_terrazza
-        features:
-        - type: cover-open-close
-        - type: cover-position
-        features_position: bottom
-        grid_options:
-          columns: 6
-          rows: auto
-        name: Stato apertura
-        type: tile
-        vertical: false
-      - entity: input_boolean.pergola_blocco_manuale
-        features_position: bottom
-        grid_options:
-          columns: 6
-          rows: 1
-        name: Chiudere fino notte
-        tap_action:
-          action: perform-action
-          perform_action: script.pergola_toggle_manuale
-        type: tile
-        vertical: false
-      - entity: input_boolean.pergola_meteo_chiusura
-        features_position: bottom
-        grid_options:
-          columns: full
-          rows: 1
-        name: E' stata chiusa X meteo oggi
-        type: tile
-        vertical: false
-      type: grid
-    - cards:
-      - heading: Tenda Giardino
-        heading_style: title
-        icon: mdi:roman-shade
-        type: heading
-      - entity: input_boolean.tenda_giardino_aperta
-        features:
-        - type: toggle
+      - entity: binary_sensor.tenda_giardino_stato
         features_position: bottom
         grid_options:
           columns: 12
-          rows: 1
-        name: Stato tenda
+          rows: auto
+        name: Stato (click x cambiare a mano)
         state_content: state
         tap_action:
-          action: toggle
+          action: perform-action
+          perform_action: input_boolean.toggle
+          target:
+            entity_id: input_boolean.tenda_giardino_aperta
         type: tile
         vertical: false
       - entity: script.tenda_giardino_apri
@@ -63,6 +28,7 @@ config:
         grid_options:
           columns: 4
           rows: 1
+        hide_state: true
         icon: mdi:arrow-expand
         name: 'Apri '
         tap_action:
@@ -71,9 +37,11 @@ config:
         type: tile
         vertical: false
       - entity: script.tenda_giardino_chiudi
+        features_position: bottom
         grid_options:
           columns: 4
           rows: 1
+        hide_state: true
         icon: mdi:arrow-collapse
         name: Chiudi
         tap_action:
@@ -82,9 +50,11 @@ config:
         type: tile
         vertical: false
       - entity: cover.all_house_tenda_terrazzo
+        features_position: bottom
         grid_options:
           columns: 4
           rows: 1
+        hide_state: true
         icon: mdi:stop
         name: Stop
         tap_action:
@@ -99,6 +69,42 @@ config:
           columns: 12
           rows: 1
         name: E' stata chiusa x raffiche oggi
+        type: tile
+        vertical: false
+      type: grid
+    - cards:
+      - heading: Pergola Terrazza
+        heading_style: title
+        icon: mdi:awning
+        type: heading
+      - entity: cover.terrazzo_pergola_terrazza
+        features:
+        - type: cover-open-close
+        - type: cover-position
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: auto
+        name: Stato
+        type: tile
+        vertical: false
+      - entity: input_boolean.pergola_blocco_manuale
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: auto
+        name: Chiudere fino notte
+        tap_action:
+          action: perform-action
+          perform_action: script.pergola_toggle_manuale
+        type: tile
+        vertical: true
+      - entity: input_boolean.pergola_meteo_chiusura
+        features_position: bottom
+        grid_options:
+          columns: full
+          rows: 1
+        name: E' stata chiusa X meteo oggi
         type: tile
         vertical: false
       type: grid

@@ -1,4 +1,4 @@
-# configuration_173.yaml
+# configuration_174.yaml
 default_config:
 
 #==================================================================================
@@ -662,6 +662,20 @@ template:
           {{ is_state('binary_sensor.portone_box_sensore_zigbee_contact', 'off') }}
         device_class: garage_door
         icon: mdi:garage
+
+  # ============================================================
+  # TENDA GIARDINO: stato per plancia (configuration_174)
+  # Rispecchia input_boolean.tenda_giardino_aperta con
+  # device_class opening: on=Aperto, off=Chiuso nell'interfaccia.
+  # Il tap sulla tile in plancia commuta l'input_boolean sottostante.
+  # ============================================================
+  - binary_sensor:
+      - name: "Tenda Giardino Stato"
+        unique_id: "tenda_giardino_stato"
+        state: >-
+          {{ is_state('input_boolean.tenda_giardino_aperta', 'on') }}
+        device_class: opening
+        icon: mdi:roman-shade
 
   # ============================================================
   # ACQUA: sensori calcolati (NUOVO – configuration_53)
