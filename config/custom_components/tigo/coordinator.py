@@ -59,7 +59,7 @@ from .const import (
     METRIC_VIN,
     OUTAGE_ISSUE_AFTER,
 )
-from .topology import Topology, build_topology
+from .topology import PanelMeta, Topology, build_topology
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -168,7 +168,6 @@ class TigoDataUpdateCoordinator(DataUpdateCoordinator):
 
         self._meta = _RuntimeMeta()
         self._backoff = _Backoff()
-        self._last_minute: dict[str, int] = {}
         self._panel_vals: dict[str, dict[str, float | None]] = {}
         self._sys_energy = _EnergyState()
         self._panel_energy: dict[str, _EnergyState] = {}
@@ -305,7 +304,6 @@ class TigoDataUpdateCoordinator(DataUpdateCoordinator):
             self._sys_energy.rollover()
             for st in self._panel_energy.values():
                 st.rollover()
-            self._last_minute.clear()
             self._meta.last_lastdata = None
             await self._refresh_system_info(today)
             self._meta.current_date = date_str
@@ -395,33 +393,139 @@ class TigoDataUpdateCoordinator(DataUpdateCoordinator):
                     self._meta.last_lastdata = last_data
                 self._apply_summary(metric, payload)
 
+    def _debug_summary_shape(self, metric: str, ds0: dict) -> None:
+        """Compact DEBUG dump of the summary d[] layout vs. the topology.
+
+        The full-day payload is ~330 KB, so log_raw truncates it to the
+        (empty) night rows. This logs only the richest row, the payload's
+        ``order`` list, and the resolved column->panel map, so users can
+        confirm the per-panel columns are populated AND mapped to the right
+        panel. Issues #7 (population) and #8 (ordering).
+        """
+        if not _LOGGER.isEnabledFor(logging.DEBUG) or self.topology is None:
+            return
+        rows = ds0.get("data") or []
+        best: list | None = None
+        best_t = ""
+        best_cnt = -1
+        for row in rows:
+            d = row.get("d") or []
+            cnt = sum(1 for v in d if v not in ("-", "", None))
+            if cnt > best_cnt:
+                best_cnt, best, best_t = cnt, d, row.get("t", "")
+        order = ds0.get("order") or ds0.get("orders") or []
+        col_map = self._summary_column_map(ds0)
+        used_order = bool(order) and col_map != dict(self.topology.by_index)
+        _LOGGER.debug(
+            "SUMMARY-SHAPE[%s]: order len=%d sample=%s | resolved via=%s | "
+            "col_map size=%d sample=%s",
+            metric,
+            len(order),
+            order[:6],
+            "order[]" if used_order else "positional by_index",
+            len(col_map),
+            [(i, col_map[i].equipment_id) for i in sorted(col_map)[:6]],
+        )
+        if best is None:
+            _LOGGER.debug("SUMMARY-SHAPE[%s]: no rows", metric)
+            return
+        filled = [(i, v) for i, v in enumerate(best) if v not in ("-", "", None)]
+        mapped = [
+            (i, v, col_map[i].equipment_id) for i, v in filled if i in col_map
+        ]
+        unmapped = [(i, v) for i, v in filled if i not in col_map]
+        _LOGGER.debug(
+            "SUMMARY-SHAPE[%s]: richest t=%s len(d)=%d non_dash=%d | "
+            "filled->panel=%s | filled->UNMAPPED(aggregate?)=%s",
+            metric,
+            best_t,
+            len(best),
+            best_cnt,
+            mapped[:50],
+            unmapped[:50],
+        )
+
+    def _summary_column_map(self, ds0: dict) -> dict[int, PanelMeta]:
+        """Map each d[] column index -> PanelMeta using the payload's own order.
+
+        The summary payload carries a ground-truth ``order`` list whose i-th
+        entry identifies the panel in d[i]. This is authoritative: the d[]
+        column order does NOT match ``/api/v4/equipments`` (which is
+        alphabetical: A1, A10, A11, A2, ...), so mapping by the equipments
+        index silently assigns each panel its neighbour's reading (issue #8).
+        On a fully healthy array every column still shows a plausible value,
+        so the swap is invisible unless a panel is dark.
+
+        ``order`` entries may be object_ids (aggenergy keys) or equipmentIds;
+        match against both. Fall back to the positional equipments index only
+        when no order is present (older payloads), warning if an order exists
+        but resolves nothing.
+        """
+        assert self.topology is not None
+        order = ds0.get("order") or ds0.get("orders") or []
+        if order:
+            col: dict[int, PanelMeta] = {}
+            for idx, ident in enumerate(order):
+                key = str(ident)
+                meta = self.topology.by_object_id.get(
+                    key
+                ) or self.topology.by_equipment_id.get(key)
+                if meta is not None:
+                    col[idx] = meta
+            if col:
+                return col
+            _LOGGER.warning(
+                "Tigo summary 'order' present (%d entries) but none matched the "
+                "topology; falling back to positional mapping (issue #8)",
+                len(order),
+            )
+        return dict(self.topology.by_index)
+
     def _apply_summary(self, metric: str, payload: dict) -> None:
         dataset = payload.get("dataset") or []
         if not dataset:
             return
-        rows = dataset[0].get("data") or []
-        seen = self._last_minute.get(metric, -1)
-        newest = seen
-        newest_row: list | None = None
+        ds0 = dataset[0]
+        rows = ds0.get("data") or []
+        self._debug_summary_shape(metric, ds0)
+        assert self.topology is not None
+
+        # Column -> panel via the payload's ground-truth order (issue #8).
+        col_map = self._summary_column_map(ds0)
+
+        # Per-panel-column latest-valid selection (issue #7). The old code
+        # picked ONE newest row where *any* column was non-dash, then mapped
+        # its whole d[]. But the trailing CCA/aggregate columns are non-dash in
+        # every minute of the day -- including night and not-yet-reached
+        # minutes -- so "newest such row" always walked to the end-of-day row,
+        # where the per-panel columns are still "-", collapsing every panel to
+        # null. This is the same failure the v2.0.1 changelog fixed for the v3
+        # CSV path, unfixed here.
+        #
+        # Fix: scan every row and, per panel column, keep the highest-minute
+        # non-dash value. Only panel columns (col_map) are considered, so the
+        # always-fresh aggregate columns can't hijack selection.
+        latest: dict[int, tuple[int, Any]] = {}
         for row in rows:
             mi = self._minute_index(row.get("t", ""))
-            if mi <= seen:
+            if mi < 0:
                 continue
             vals = row.get("d") or []
-            if any(v not in ("-", "", None) for v in vals):
-                if mi > newest:
-                    newest = mi
-                    newest_row = vals
-        if newest_row is None:
-            return  # no newer filled minute -> carry forward
-        self._last_minute[metric] = newest
-        assert self.topology is not None
-        for idx, raw in enumerate(newest_row):
-            meta = self.topology.by_index.get(idx)
-            if meta is None:
-                continue
+            for idx in col_map:
+                if idx >= len(vals):
+                    continue
+                raw = vals[idx]
+                if raw in ("-", "", None):
+                    continue
+                prev = latest.get(idx)
+                if prev is None or mi > prev[0]:
+                    latest[idx] = (mi, raw)
+        if not latest:
+            return  # nothing populated yet today -> carry forward
+        for idx, (_mi, raw) in latest.items():
+            meta = col_map[idx]
             try:
-                val = None if raw in ("-", "", None) else round(float(raw), 2)
+                val = round(float(raw), 2)
             except (TypeError, ValueError):
                 val = None
             self._panel_vals.setdefault(meta.equipment_id, {})[metric] = val
