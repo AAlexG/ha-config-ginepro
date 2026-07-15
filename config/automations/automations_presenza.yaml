@@ -1,4 +1,4 @@
-# automations_presenza_1.yaml
+# automations_presenza_3.yaml
 
 #==================================================================================
 # 1. NOTIFICA - Tania esce di casa (ritardo 2 min anti falsi positivi GPS)
@@ -16,7 +16,8 @@
     - action: notify.mobile_app_cph2653
       data:
         title: "Presenza"
-        message: "Tania è uscita di casa"
+        message: >-
+          Tania è uscita di casa alle {{ (now() - timedelta(minutes=2)).strftime('%H:%M') }}
 
 #==================================================================================
 # 2. NOTIFICA - Tania rientra a casa (immediata)
@@ -34,3 +35,65 @@
       data:
         title: "Presenza"
         message: "Tania è rientrata a casa"
+
+#==================================================================================
+# 3. NOTIFICA - Nuovo dispositivo MAI VISTO rilevato sulla rete
+#==================================================================================
+- id: notifica_nuovo_dispositivo_rete
+  alias: "Presenza - Nuovo dispositivo sulla rete"
+  mode: queued
+  max: 10
+  triggers:
+    - platform: event
+      event_type: entity_registry_updated
+      event_data:
+        action: create
+  condition:
+    - condition: template
+      value_template: "{{ trigger.event.data.entity_id.startswith('device_tracker.') }}"
+  action:
+    - delay: "00:00:10"
+    - variables:
+        eid: "{{ trigger.event.data.entity_id }}"
+    - action: notify.mobile_app_cph2653
+      data:
+        title: "Rete - NUOVO dispositivo"
+        message: >-
+          {{ state_attr(eid, 'friendly_name') or eid }}
+          | IP: {{ state_attr(eid, 'ip') or 'n/d' }}
+          | MAC: {{ state_attr(eid, 'mac') or 'n/d' }}
+          | Host: {{ state_attr(eid, 'host_name') or 'n/d' }}
+
+#==================================================================================
+# 4. NOTIFICA - Dispositivo noto (non whitelist) si collega alla rete
+#    Esclusi: telefoni di Alex e Tania (tracker Companion + tracker Netgear)
+#==================================================================================
+- id: notifica_dispositivo_connesso_rete
+  alias: "Presenza - Dispositivo connesso alla rete"
+  mode: queued
+  max: 10
+  triggers:
+    - platform: event
+      event_type: state_changed
+  condition:
+    - condition: template
+      value_template: >-
+        {{ trigger.event.data.entity_id.startswith('device_tracker.')
+           and trigger.event.data.new_state is not none
+           and trigger.event.data.old_state is not none
+           and trigger.event.data.new_state.state == 'home'
+           and trigger.event.data.old_state.state != 'home'
+           and trigger.event.data.entity_id not in [
+             'device_tracker.cph2653',
+             'device_tracker.samsungtania',
+             'device_tracker.oneplus_13',
+             'device_tracker.s22_ultra_di_tania'] }}
+  action:
+    - action: notify.mobile_app_cph2653
+      data:
+        title: "Rete - dispositivo connesso"
+        message: >-
+          {{ trigger.event.data.new_state.attributes.get('friendly_name', trigger.event.data.entity_id) }}
+          | IP: {{ trigger.event.data.new_state.attributes.get('ip', 'n/d') }}
+          | MAC: {{ trigger.event.data.new_state.attributes.get('mac', 'n/d') }}
+          | Host: {{ trigger.event.data.new_state.attributes.get('host_name', 'n/d') }}
