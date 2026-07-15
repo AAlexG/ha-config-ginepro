@@ -319,6 +319,13 @@ config:
           perform_action: script.irrigazione_salta_toggle
         type: tile
         vertical: false
+      - entity: switch.solo_auto_contattore_interruttore
+        features:
+        - type: toggle
+        features_position: bottom
+        name: Auto contattore
+        type: tile
+        vertical: false
       - card:
           grid_options:
             columns: 3
@@ -399,13 +406,6 @@ config:
           columns: 3
           rows: auto
         type: conditional
-      - entity: switch.solo_auto_contattore_interruttore
-        features:
-        - type: toggle
-        features_position: bottom
-        name: Auto contattore
-        type: tile
-        vertical: false
       type: grid
     - cards:
       - heading: MUSICA
@@ -598,6 +598,9 @@ config:
         grid_options:
           columns: 4
           rows: 1
+        icon_tap_action:
+          action: navigate
+          navigation_path: /dashboard-panasonic
         name: Pompa
         type: tile
         vertical: false
@@ -614,6 +617,9 @@ config:
         grid_options:
           columns: 4
           rows: 1
+        icon_tap_action:
+          action: navigate
+          navigation_path: /dashboard-fancoil/fancoil
         name: Deum.armadio
         type: tile
         vertical: false
@@ -622,6 +628,9 @@ config:
         grid_options:
           columns: 4
           rows: 1
+        icon_tap_action:
+          action: navigate
+          navigation_path: /dashboard-fancoil/fancoil
         name: Deum.cantina
         type: tile
         vertical: false
@@ -630,6 +639,9 @@ config:
         grid_options:
           columns: 4
           rows: 1
+        icon_tap_action:
+          action: navigate
+          navigation_path: /dashboard-fancoil/fancoil
         name: Lavatrice
         type: tile
         vertical: false
@@ -638,6 +650,9 @@ config:
         grid_options:
           columns: 4
           rows: 1
+        icon_tap_action:
+          action: navigate
+          navigation_path: /dashboard-fancoil/fancoil
         name: Sauna
         type: tile
         vertical: false
@@ -651,6 +666,9 @@ config:
           columns: 4
           rows: 1
         icon: mdi:spa-outline
+        icon_tap_action:
+          action: navigate
+          navigation_path: /dashboard-fancoil
         name: Sauna
         type: tile
         vertical: false
@@ -776,6 +794,9 @@ config:
         grid_options:
           columns: 3
           rows: 1
+        icon_tap_action:
+          action: navigate
+          navigation_path: /dashboard-fancoil/fancoil
         name: Lavatrice
         type: tile
         vertical: false
@@ -973,6 +994,9 @@ config:
         grid_options:
           columns: 3
           rows: auto
+        icon_tap_action:
+          action: navigate
+          navigation_path: /otgw-caldaia/otgw
         name: Riscaldamento calcolata
         type: tile
         vertical: false
@@ -990,6 +1014,9 @@ config:
         grid_options:
           columns: 6
           rows: 1
+        icon_tap_action:
+          action: navigate
+          navigation_path: /otgw-caldaia/otgw
         name: Sanitaria desiderata
         type: tile
         vertical: false
@@ -998,6 +1025,9 @@ config:
         grid_options:
           columns: 3
           rows: 1
+        icon_tap_action:
+          action: navigate
+          navigation_path: /otgw-caldaia/otgw
         name: Fiamma
         type: tile
         vertical: false
@@ -1006,6 +1036,9 @@ config:
         grid_options:
           columns: 3
           rows: 1
+        icon_tap_action:
+          action: navigate
+          navigation_path: /otgw-caldaia/otgw
         name: Modulazione
         type: tile
         vertical: false
@@ -1014,6 +1047,9 @@ config:
         grid_options:
           columns: 3
           rows: 1
+        icon_tap_action:
+          action: navigate
+          navigation_path: /otgw-caldaia/otgw
         name: Gas oggi
         type: tile
         vertical: false
@@ -1022,6 +1058,9 @@ config:
         grid_options:
           columns: 6
           rows: 1
+        icon_tap_action:
+          action: navigate
+          navigation_path: /otgw-caldaia/otgw
         name: Gas mese
         type: tile
         vertical: false
@@ -1147,6 +1186,9 @@ config:
         grid_options:
           columns: 6
           rows: 1
+        icon_tap_action:
+          action: navigate
+          navigation_path: /dashboard-panasonic/panasonic
         name: "Modalit\xE0"
         type: tile
         vertical: false
@@ -1155,6 +1197,9 @@ config:
         grid_options:
           columns: 4
           rows: 1
+        icon_tap_action:
+          action: navigate
+          navigation_path: /dashboard-panasonic/panasonic
         name: COP
         type: tile
         vertical: false
@@ -1163,6 +1208,9 @@ config:
         grid_options:
           columns: 4
           rows: 1
+        icon_tap_action:
+          action: navigate
+          navigation_path: /dashboard-panasonic/panasonic
         name: Consum.ora
         type: tile
         vertical: false
@@ -1171,6 +1219,9 @@ config:
         grid_options:
           columns: 4
           rows: 1
+        icon_tap_action:
+          action: navigate
+          navigation_path: /dashboard-panasonic/panasonic
         name: Produz.ora
         type: tile
         vertical: false
@@ -1179,6 +1230,9 @@ config:
         grid_options:
           columns: 4
           rows: 1
+        icon_tap_action:
+          action: navigate
+          navigation_path: /dashboard-panasonic/panasonic
         name: Consu.oggi
         type: tile
         vertical: false
@@ -1187,6 +1241,9 @@ config:
         grid_options:
           columns: 4
           rows: 1
+        icon_tap_action:
+          action: navigate
+          navigation_path: /dashboard-panasonic/panasonic
         name: Produ.oggi
         type: tile
         vertical: false
@@ -1310,6 +1367,9 @@ config:
         grid_options:
           columns: 6
           rows: 1
+        icon_tap_action:
+          action: navigate
+          navigation_path: /dashboard-irrigazione/irrigazione
         name: Irrigazione
         tap_action:
           action: perform-action
@@ -1317,10 +1377,16 @@ config:
         type: tile
         vertical: false
       - entity: input_number.irrigazione_soglia_umidita
+        features:
+        - style: buttons
+          type: numeric-input
         features_position: bottom
         grid_options:
           columns: 6
           rows: 1
+        icon_tap_action:
+          action: navigate
+          navigation_path: /dashboard-irrigazione/irrigazione
         name: "Umidit\xE0 max"
         type: tile
         vertical: false
@@ -1329,6 +1395,9 @@ config:
         grid_options:
           columns: 3
           rows: 1
+        icon_tap_action:
+          action: navigate
+          navigation_path: /dashboard-irrigazione/irrigazione
         name: "Gi\xF9 prima umidit\xE0 S2"
         type: tile
         vertical: false
@@ -1337,6 +1406,9 @@ config:
         grid_options:
           columns: 3
           rows: 1
+        icon_tap_action:
+          action: navigate
+          navigation_path: /dashboard-irrigazione/irrigazione
         name: "Gi\xF9 mezzo umidit\xE0 S1"
         type: tile
         vertical: false
@@ -1345,6 +1417,9 @@ config:
         grid_options:
           columns: 3
           rows: 1
+        icon_tap_action:
+          action: navigate
+          navigation_path: /dashboard-irrigazione/irrigazione
         name: Acqua oggi
         type: tile
         vertical: false
@@ -1353,6 +1428,9 @@ config:
         grid_options:
           columns: 3
           rows: 1
+        icon_tap_action:
+          action: navigate
+          navigation_path: /dashboard-irrigazione/irrigazione
         name: Acqua mese
         type: tile
         vertical: false
@@ -1494,11 +1572,17 @@ config:
         type: heading
       - entity: sensor.hp1000se_pro_pro_v1_6_4_wh80_battery
         features_position: bottom
+        icon_tap_action:
+          action: navigate
+          navigation_path: /dashboard-meteo/meteo
         name: SensorStrada
         type: tile
         vertical: false
       - entity: sensor.meteo_wh40_battery
         features_position: bottom
+        icon_tap_action:
+          action: navigate
+          navigation_path: /dashboard-meteo/meteo
         name: Piovimetro
         type: tile
         vertical: false
@@ -1509,31 +1593,49 @@ config:
         vertical: false
       - entity: binary_sensor.hp1000se_pro_pro_v1_6_4_wh25_battery
         features_position: bottom
+        icon_tap_action:
+          action: navigate
+          navigation_path: /dashboard-meteo/meteo
         name: SensorCasa
         type: tile
         vertical: false
       - entity: sensor.hp1000se_pro_pro_v1_6_4_soil_battery_1
         features_position: bottom
+        icon_tap_action:
+          action: navigate
+          navigation_path: /dashboard-meteo/meteo
         name: Soil Hum 1
         type: tile
         vertical: false
       - entity: sensor.hp1000se_pro_pro_v1_6_4_soil_battery_2
         features_position: bottom
+        icon_tap_action:
+          action: navigate
+          navigation_path: /dashboard-meteo/meteo
         name: Soil Hum 2
         type: tile
         vertical: false
       - entity: sensor.persiana_box_sensore_zigbee_battery
         features_position: bottom
+        icon_tap_action:
+          action: navigate
+          navigation_path: /dashboard-sicurezza/meteo
         name: Box persiana
         type: tile
         vertical: false
       - entity: sensor.portone_box_sensore_zigbee_battery
         features_position: bottom
+        icon_tap_action:
+          action: navigate
+          navigation_path: /dashboard-sicurezza/meteo
         name: Box portone
         type: tile
         vertical: false
       - entity: sensor.persiana_tania_sensore_zigbee_battery
         features_position: bottom
+        icon_tap_action:
+          action: navigate
+          navigation_path: /dashboard-sicurezza/meteo
         name: Tania persiana
         type: tile
         vertical: false
