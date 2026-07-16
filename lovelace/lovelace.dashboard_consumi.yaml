@@ -1044,7 +1044,13 @@ config:
         grid_options:
           columns: 12
           rows: auto
-        name: Prezzo 1 m3 di acqua
+        name: "Prezzo a consumo (1 m\xB3)"
+        type: entity
+      - entity: input_number.acqua_quota_fissa_mese
+        grid_options:
+          columns: 12
+          rows: auto
+        name: Quota fissa mensile
         type: entity
       - entity: input_number.acqua_sanitaria_manuale
         grid_options:

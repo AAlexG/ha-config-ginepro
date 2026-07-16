@@ -1,4 +1,4 @@
-# configuration_174.yaml
+# configuration_175.yaml
 default_config:
 
 #==================================================================================
@@ -444,12 +444,16 @@ template:
 
       - name: "Acqua Mese Euro"
         unique_id: "acqua_mese_euro"
+        # configuration_175: aggiunta quota fissa mensile acqua (€/mese
+        # IRETI, indipendente dal consumo) per allineare il rilevato
+        # alla bolletta, come già fatto per gas ed elettricità.
         state: >-
           {% if now().day == 1 and now().hour == 0 %}
             0
           {% else %}
-            {{ ([states('input_number.acqua_costo_acc') | float(0) -
-                 states('input_number.acqua_costo_inizio_mese') | float(0), 0] | max) | round(2) }}
+            {% set consumo = ([states('input_number.acqua_costo_acc') | float(0) -
+                 states('input_number.acqua_costo_inizio_mese') | float(0), 0] | max) %}
+            {{ (consumo + states('input_number.acqua_quota_fissa_mese') | float(0)) | round(2) }}
           {% endif %}
         unit_of_measurement: "€"
         state_class: measurement
@@ -1927,12 +1931,27 @@ input_number:
     mode: box
     icon: mdi:solar-power-variant
 
+  # configuration_175: acqua_tariffa diventa prezzo A CONSUMO €/m³
+  # (variabile + fognatura + oneri, IVA 10% inclusa), media effettiva
+  # da bolletta IRETI. Le quote fisse sono in acqua_quota_fissa_mese.
   acqua_tariffa:
-    name: "Acqua – Tariffa omnicomprensiva €/m³"
+    name: "Acqua – Prezzo a consumo €/m³"
     min: 0.01
     max: 20
     step: 0.01
     unit_of_measurement: "€/m³"
+    mode: box
+    icon: mdi:currency-eur
+
+  # NUOVO (configuration_175): quote fisse mensili acqua da bolletta
+  # IRETI (Acquedotto + Fognatura Quota Fissa, €/unità/anno / 12,
+  # IVA 10% inclusa). Aggiornare quando cambiano le tariffe ARERA.
+  acqua_quota_fissa_mese:
+    name: "Acqua – Quota fissa €/mese"
+    min: 0
+    max: 99
+    step: 0.01
+    unit_of_measurement: "€/mese"
     mode: box
     icon: mdi:currency-eur
 
