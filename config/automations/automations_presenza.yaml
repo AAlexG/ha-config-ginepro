@@ -1,7 +1,136 @@
-# automations_presenza_3.yaml
+# automations_presenza_6.yaml
 
 #==================================================================================
-# 1. NOTIFICA - Tania esce di casa (ritardo 2 min anti falsi positivi GPS)
+# 1. NOTIFICA - Nuovo dispositivo MAI VISTO rilevato sulla rete
+#==================================================================================
+- id: notifica_nuovo_dispositivo_rete
+  alias: "Presenza - Nuovo dispositivo sulla rete"
+  mode: queued
+  max: 10
+  variables:
+    mac_whitelist: &mac_whitelist
+      - "e0:b6:68:91:cc:58"  # 001 modem fastweb
+      - "14:59:c0:51:55:3f"  # 002 Orbi RBR50
+      - "38:18:4c:1a:d0:c3"  # 005 TV sala Sony
+      - "d8:f1:5b:15:26:40"  # 011 stazione meteo sala (IP fisso DHCP)
+      - "44:a5:6e:48:69:d8"  # 015 RBS20 sotto (IP fisso DHCP)
+      - "38:94:ed:0c:78:df"  # 016 RBS50 sopra (IP fisso DHCP)
+      - "a0:40:a0:5e:40:d2"  # 017 RBS50 box (IP fisso DHCP)
+      - "9a:da:c4:71:89:d4"  # 018 repeater TP-Link RE650
+      - "7c:f0:e5:ef:0f:73"  # 025 OnePlus 13 Sasha 
+      - "a0:85:e3:b4:be:e4"  # 031 Shelly fancoil Georgi
+      - "a0:85:e3:b3:f8:1c"  # 032 Shelly fancoil Tania
+      - "1c:69:20:26:3f:b8"  # 033 Shelly valvola pompa-caldaia
+      - "a0:85:e3:ba:36:e0"  # 034 Shelly fancoil sala
+      - "9a:da:c4:ad:e1:ad"  # 036 OTGW via RE650
+      - "9a:da:c4:85:b8:7c"  # 037 HeishaMon via RE650 (IP fisso DHCP)
+      - "38:44:be:46:1f:08"  # 039 RPI fan controller ESP32
+      - "00:25:ca:74:c0:47"  # 041 Tigo CCA logger armadio fotovoltaico
+      - "00:1d:63:36:65:92"  # 046 lavatrice Miele
+      - "84:0d:8e:66:14:ff"  # 047 Sonoff RF Bridge 433 (IP fisso DHCP)
+      - "70:a8:d3:db:50:f6"  # 048 SASHA-MSI-PC 
+      - "9A:DA:C4:B3:47:56"  # 050 irrigazione sonoff switch 4chproR3 via RE650 (IP fisso DHCP)
+      - "a0:43:b0:53:f0:46"  # 055 Broadlink salotto RM4 Pro (IP fisso DHCP)
+      - "d8:3a:dd:9f:9e:0a"  # 077 Raspberry Pi 5 (IP fisso DHCP)
+      - "4c:f5:dc:fd:39:cc"  # 085 camera sotto pergola EZVIZ 
+      - "9a:da:c4:d2:c4:40"  # 090 interruttore irrigazione Sonoff via RE650
+      - "ec:71:db:db:94:06"  # 168 camera Georgi Reolink E1 Zoom
+      - "e8:ca:c8:f8:47:65"  # 177 camera Nata Reolink E1 Zoom
+      - "ec:71:db:f0:01:30"  # 179 camera cancello Reolink
+      - "94:b3:f7:dc:30:13"  # 182 camera box Reolink E1 Pro
+      - "bc:fd:0c:dc:56:04"  # 183 camera portone Reolink Lumus
+      - "68:39:43:85:23:02"  # 184 camera Tania Reolink E1 Zoom
+      - "ec:71:db:a5:f9:05"  # 186 camera sopra 8K Reolink
+      - "2c:c3:e6:3b:9f:bb"  # 191 camera sopra gambe Ctronics
+      - "d0:12:55:ee:e9:95"  # 192 camera barbecue
+      - "5c:c3:36:4d:19:67"  # 193 camera cucina Reolink 
+      - "a0:92:08:86:9c:b7"  # Aspirapolvere Lina 
+      - "38:8b:59:82:fb:03"  # Google Nest sopra
+      - "d4:27:87:51:9f:4c"  # inverter fotovoltaico UFLEX
+      - "cc:32:e5:7e:07:5a"  # Tapo lenzuola sotto
+      - "00:33:7a:cc:0b:ff"  # stazione meteo sottotetto
+      - "8c:3b:4a:9f:e3:69"  # Google Chromecast (soundbar Sony sopra)
+      - "f4:f5:d8:9e:f7:ff"  # Google Home camera Georgi
+      - "18:69:d8:64:b0:99"  # presa luce cucina
+      - "70:89:76:fd:4c:18"  # contattore auto
+      - "d8:1f:12:93:61:65"  # contattore sauna
+      - "44:07:0b:f2:e0:8f"  # Google Home Mini Yamaha
+      - "cc:50:e3:c7:94:35"  # termometro Georgi Sonoff
+      - "ac:67:84:1a:78:14"  # Google Nest sala
+      - "1c:d6:be:be:3a:05"  # Sony TV sopra
+      - "38:1f:8d:90:0d:89"  # pet feeder
+      - "50:8a:06:5c:04:72"  # luce sopra Tuya
+      - "40:ca:63:39:6c:12"  # cooktop Samsung
+      - "d8:f1:5b:a1:e0:13"  # presa deumidificatore cantina
+      - "70:03:9f:74:79:f9"  # tenda giardino old via Sonoff
+      - "9a:da:c4:b3:47:56"  # irrigazione Sonoff 4CHPRoR3 via RE650
+      - "d8:eb:46:84:3d:bd"  # Chromecast sotto 
+      - "f4:2d:c9:98:1d:fc"  # Somfy Connectivity Kit
+      - "74:EE:2A:E7:76:6D"  # Citofono Philips forse?
+      - "f8:6d:cc:3d:26:d4"  # WNC (visto live, da identificare)
+      # ESCLUSO volutamente: 66:00:c0:a6:9c:6e = S22 Ultra di Tania (deve notificare)
+  triggers:
+    - platform: event
+      event_type: entity_registry_updated
+      event_data:
+        action: create
+  condition:
+    - condition: template
+      value_template: "{{ trigger.event.data.entity_id.startswith('device_tracker.') }}"
+  action:
+    - delay: "00:00:10"
+    - variables:
+        eid: "{{ trigger.event.data.entity_id }}"
+        dev_mac: "{{ (state_attr(eid, 'mac') or '') | lower }}"
+    - condition: template
+      value_template: "{{ dev_mac not in (mac_whitelist | map('lower') | list) }}"
+    - action: notify.mobile_app_cph2653
+      data:
+        title: "Rete - NUOVO dispositivo"
+        message: >-
+          {{ state_attr(eid, 'friendly_name') or eid }}
+          | IP: {{ state_attr(eid, 'ip') or 'n/d' }}
+          | MAC: {{ state_attr(eid, 'mac') or 'n/d' }}
+          | Host: {{ state_attr(eid, 'host_name') or 'n/d' }}
+
+#==================================================================================
+# 2. NOTIFICA - Dispositivo noto (non whitelist) si collega alla rete
+#    Notifica solo se il MAC NON è nella whitelist dei dispositivi conosciuti.
+#    Il S22 di Tania è volutamente fuori whitelist: la sua connessione notifica.
+#    Tracker senza attributo MAC (app Companion, GPS) vengono ignorati.
+#==================================================================================
+- id: notifica_dispositivo_connesso_rete
+  alias: "Presenza - Dispositivo connesso alla rete"
+  mode: queued
+  max: 10
+  variables:
+    mac_whitelist: *mac_whitelist
+  triggers:
+    - platform: event
+      event_type: state_changed
+  condition:
+    - condition: template
+      value_template: >-
+        {{ trigger.event.data.entity_id.startswith('device_tracker.')
+           and trigger.event.data.new_state is not none
+           and trigger.event.data.old_state is not none
+           and trigger.event.data.new_state.state == 'home'
+           and trigger.event.data.old_state.state != 'home'
+           and (trigger.event.data.new_state.attributes.get('mac', '') or '') != ''
+           and (trigger.event.data.new_state.attributes.get('mac', '') | lower) not in (mac_whitelist | map('lower') | list) }}
+  action:
+    - action: notify.mobile_app_cph2653
+      data:
+        title: "Rete - dispositivo connesso"
+        message: >-
+          {{ trigger.event.data.new_state.attributes.get('friendly_name', trigger.event.data.entity_id) }}
+          | IP: {{ trigger.event.data.new_state.attributes.get('ip', 'n/d') }}
+          | MAC: {{ trigger.event.data.new_state.attributes.get('mac', 'n/d') }}
+          | Host: {{ trigger.event.data.new_state.attributes.get('host_name', 'n/d') }}
+          
+
+#==================================================================================
+# 3. NOTIFICA - Tania esce di casa (ritardo 2 min anti falsi positivi GPS)
 #==================================================================================
 - id: notifica_tania_uscita
   alias: "Presenza - Tania esce di casa"
@@ -20,7 +149,7 @@
           Tania è uscita di casa alle {{ (now() - timedelta(minutes=2)).strftime('%H:%M') }}
 
 #==================================================================================
-# 2. NOTIFICA - Tania rientra a casa (immediata)
+# 4. NOTIFICA - Tania rientra a casa (immediata)
 #==================================================================================
 - id: notifica_tania_rientro
   alias: "Presenza - Tania rientra a casa"
@@ -35,65 +164,3 @@
       data:
         title: "Presenza"
         message: "Tania è rientrata a casa"
-
-#==================================================================================
-# 3. NOTIFICA - Nuovo dispositivo MAI VISTO rilevato sulla rete
-#==================================================================================
-- id: notifica_nuovo_dispositivo_rete
-  alias: "Presenza - Nuovo dispositivo sulla rete"
-  mode: queued
-  max: 10
-  triggers:
-    - platform: event
-      event_type: entity_registry_updated
-      event_data:
-        action: create
-  condition:
-    - condition: template
-      value_template: "{{ trigger.event.data.entity_id.startswith('device_tracker.') }}"
-  action:
-    - delay: "00:00:10"
-    - variables:
-        eid: "{{ trigger.event.data.entity_id }}"
-    - action: notify.mobile_app_cph2653
-      data:
-        title: "Rete - NUOVO dispositivo"
-        message: >-
-          {{ state_attr(eid, 'friendly_name') or eid }}
-          | IP: {{ state_attr(eid, 'ip') or 'n/d' }}
-          | MAC: {{ state_attr(eid, 'mac') or 'n/d' }}
-          | Host: {{ state_attr(eid, 'host_name') or 'n/d' }}
-
-#==================================================================================
-# 4. NOTIFICA - Dispositivo noto (non whitelist) si collega alla rete
-#    Esclusi: telefoni di Alex e Tania (tracker Companion + tracker Netgear)
-#==================================================================================
-- id: notifica_dispositivo_connesso_rete
-  alias: "Presenza - Dispositivo connesso alla rete"
-  mode: queued
-  max: 10
-  triggers:
-    - platform: event
-      event_type: state_changed
-  condition:
-    - condition: template
-      value_template: >-
-        {{ trigger.event.data.entity_id.startswith('device_tracker.')
-           and trigger.event.data.new_state is not none
-           and trigger.event.data.old_state is not none
-           and trigger.event.data.new_state.state == 'home'
-           and trigger.event.data.old_state.state != 'home'
-           and trigger.event.data.entity_id not in [
-             'device_tracker.cph2653',
-             'device_tracker.samsungtania',
-             'device_tracker.oneplus_13',
-             'device_tracker.s22_ultra_di_tania'] }}
-  action:
-    - action: notify.mobile_app_cph2653
-      data:
-        title: "Rete - dispositivo connesso"
-        message: >-
-          {{ trigger.event.data.new_state.attributes.get('friendly_name', trigger.event.data.entity_id) }}
-          | IP: {{ trigger.event.data.new_state.attributes.get('ip', 'n/d') }}
-          | MAC: {{ trigger.event.data.new_state.attributes.get('mac', 'n/d') }}
-          | Host: {{ trigger.event.data.new_state.attributes.get('host_name', 'n/d') }}
