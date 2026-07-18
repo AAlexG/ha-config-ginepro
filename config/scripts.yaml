@@ -1,4 +1,4 @@
-# scripts_43.yaml
+# scripts_44.yaml
 
 #==================================================================================
 # SCRIPT: APRI CANCELLO CASA
@@ -37,6 +37,15 @@ apri_grande_cancello:
         - action: input_boolean.turn_off
           target:
             entity_id: input_boolean.grande_cancello_status_helper
+    - if:
+        - condition: state
+          entity_id: binary_sensor.persiana_box_sensore_zigbee_contact
+          state: "on"
+      then:
+        - action: browser_mod.popup
+          data:
+            title: Attenzione
+            content: La persiana del box è aperta
 
 #==================================================================================
 # SCRIPT: APRI BOX COMBO
@@ -63,6 +72,15 @@ apri_box_combo:
         - action: input_boolean.turn_off
           target:
             entity_id: input_boolean.grande_cancello_status_helper
+    - if:
+        - condition: state
+          entity_id: binary_sensor.persiana_box_sensore_zigbee_contact
+          state: "on"
+      then:
+        - action: browser_mod.popup
+          data:
+            title: Attenzione
+            content: La persiana del box è aperta
 
 #==================================================================================
 # SCRIPT: SIRENA ON
