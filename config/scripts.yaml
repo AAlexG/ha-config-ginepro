@@ -1,4 +1,4 @@
-# scripts_44.yaml
+# scripts_46.yaml
 
 #==================================================================================
 # SCRIPT: APRI CANCELLO CASA
@@ -38,14 +38,19 @@ apri_grande_cancello:
           target:
             entity_id: input_boolean.grande_cancello_status_helper
     - if:
-        - condition: state
-          entity_id: binary_sensor.persiana_box_sensore_zigbee_contact
-          state: "on"
+        - condition: template
+          value_template: "{{ states('binary_sensor.persiana_box_sensore_zigbee_contact') != 'off' }}"
       then:
         - action: browser_mod.popup
           data:
             title: Attenzione
-            content: La persiana del box è aperta
+            initial_style: classic
+            content: >-
+              {% if is_state('binary_sensor.persiana_box_sensore_zigbee_contact', 'on') %}
+              La persiana del box è aperta
+              {% else %}
+              Stato della persiana del box sconosciuto ({{ states('binary_sensor.persiana_box_sensore_zigbee_contact') }})
+              {% endif %}
 
 #==================================================================================
 # SCRIPT: APRI BOX COMBO
@@ -73,14 +78,19 @@ apri_box_combo:
           target:
             entity_id: input_boolean.grande_cancello_status_helper
     - if:
-        - condition: state
-          entity_id: binary_sensor.persiana_box_sensore_zigbee_contact
-          state: "on"
+        - condition: template
+          value_template: "{{ states('binary_sensor.persiana_box_sensore_zigbee_contact') != 'off' }}"
       then:
         - action: browser_mod.popup
           data:
             title: Attenzione
-            content: La persiana del box è aperta
+            initial_style: classic
+            content: >-
+              {% if is_state('binary_sensor.persiana_box_sensore_zigbee_contact', 'on') %}
+              La persiana del box è aperta
+              {% else %}
+              Stato della persiana del box sconosciuto ({{ states('binary_sensor.persiana_box_sensore_zigbee_contact') }})
+              {% endif %}
 
 #==================================================================================
 # SCRIPT: SIRENA ON
