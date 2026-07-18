@@ -20,3 +20,6 @@ items:
 - id: 7cc6627d038d4760a817de48a8a148e9
   type: module
   url: /hacsfiles/lovelace-plotly-graph-card/plotly-graph-card.js
+- id: 5bc3d04d19b040988639a3f9df222dae
+  type: module
+  url: /browser_mod.js?automatically-added&3.1.0
