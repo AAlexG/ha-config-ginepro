@@ -56,3 +56,5 @@ devices:
     description: Sensore persiana box
   '0xa4c138f820e17e6e':
     friendly_name: Portone box sensore zigbee
+  '0xa4c138e6a0d06219':
+    friendly_name: Termometro Tania zigbee

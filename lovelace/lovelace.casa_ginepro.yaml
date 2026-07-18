@@ -1639,6 +1639,8 @@ config:
         name: Tania persiana
         type: tile
         vertical: false
+      - entity: sensor.termometro_tania_zigbee_battery
+        type: tile
       - heading: UPS
         heading_style: subtitle
         type: heading
@@ -1674,6 +1676,16 @@ config:
         name: Stato UPS
         type: tile
         vertical: false
+      type: grid
+    - cards:
+      - entity: sensor.0xa4c138e6a0d06219_linkquality
+        type: tile
+      - entity: sensor.termometro_tania_zigbee_voltage
+        type: tile
+      type: grid
+    - cards:
+      - heading: Nuova sezione
+        type: heading
       type: grid
     title: Casa
     type: sections
