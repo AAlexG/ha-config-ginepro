@@ -102,7 +102,7 @@ config:
         grid_options:
           columns: 6
           rows: 1
-        name: Armadio ora
+        name: Tania ora
         type: tile
         vertical: false
       - entity: input_boolean.deumidificatore_armadio_manuale
@@ -110,7 +110,7 @@ config:
         grid_options:
           columns: 6
           rows: 1
-        name: Armadio Manuale
+        name: Tania Manuale
         tap_action:
           action: perform-action
           perform_action: script.deumidificatore_armadio_toggle_manuale
@@ -265,6 +265,8 @@ config:
           name: Sala
         - entity: sensor.sonoff_10008d119d_temperature
           name: T Camera Georgi
+        - entity: sensor.termometro_tania_zigbee_temperature
+          name: T.Tania
         - entity: sensor.hp1000se_pro_pro_v1_6_4_indoor_temperature
           name: T Sala
         - entity: sensor.panasonic_heat_pump_main_main_outlet_temp
@@ -294,9 +296,9 @@ config:
         type: heading
       - entities:
         - entity: switch.presa_deumidificatore_cantina
-          name: Cantina
+          name: Tania
         - entity: switch.deumidificatore_armadio_sonoff_sonoff_1002a68db0_1
-          name: Armadio
+          name: Cantina
         grid_options:
           columns: full
           rows: auto
@@ -310,6 +312,19 @@ config:
       - entities:
         - entity: sensor.inverter_uflex_pv_power
           name: Produzione panelli ora
+        grid_options:
+          columns: full
+          rows: auto
+        hours_to_show: 24
+        refresh_interval: 60
+        type: history-graph
+      - entities:
+        - entity: sensor.termometro_tania_zigbee_humidity
+          name: Umid.Tania
+        - entity: sensor.sonoff_10008d119d_humidity
+          name: Umid.Georgi
+        - entity: sensor.hp1000se_pro_pro_v1_6_4_indoor_humidity
+          name: Umid. Sala
         grid_options:
           columns: full
           rows: auto
@@ -414,7 +429,7 @@ config:
         vertical: false
       type: grid
     - cards:
-      - heading: Deumidificatore cantina presa
+      - heading: Deumidificatore Tania Sonoff
         heading_style: title
         type: heading
       - entity: switch.presa_deumidificatore_cantina
@@ -461,7 +476,7 @@ config:
         type: statistics-graph
       type: grid
     - cards:
-      - heading: Deumidificatore armadio presa
+      - heading: Deumidificatore cantina Tuya
         heading_style: title
         type: heading
       - entity: switch.deumidificatore_armadio_sonoff_sonoff_1002a68db0_1
@@ -668,6 +683,42 @@ config:
         type: tile
         vertical: false
       - entity: sensor.sonoff_10008d119d_temperature
+        features_position: bottom
+        name: Temperatura
+        type: tile
+        vertical: false
+      type: grid
+    - cards:
+      - heading: Termometro Tania zigbee
+        heading_style: title
+        icon: mdi:coolant-temperature
+        type: heading
+      - entity: sensor.termometro_tania_zigbee_voltage
+        features_position: bottom
+        name: Tensione
+        type: tile
+        vertical: false
+      - entity: sensor.termometro_tania_zigbee_battery
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: auto
+        name: Batteria
+        type: tile
+        vertical: false
+      - entity: sensor.0xa4c138e6a0d06219_linkquality
+        features:
+        - type: trend-graph
+        features_position: bottom
+        name: WiFi
+        type: tile
+        vertical: false
+      - entity: sensor.termometro_tania_zigbee_humidity
+        features_position: bottom
+        name: "Umidit\xE0 "
+        type: tile
+        vertical: false
+      - entity: sensor.termometro_tania_zigbee_temperature
         features_position: bottom
         name: Temperatura
         type: tile

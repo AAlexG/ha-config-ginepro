@@ -1,4 +1,4 @@
-# automations_presenza_6.yaml
+# automations_presenza_7.yaml
 
 #==================================================================================
 # 1. NOTIFICA - Nuovo dispositivo MAI VISTO rilevato sulla rete
@@ -62,6 +62,7 @@
       - "50:8a:06:5c:04:72"  # luce sopra Tuya
       - "40:ca:63:39:6c:12"  # cooktop Samsung
       - "d8:f1:5b:a1:e0:13"  # presa deumidificatore cantina
+      - "d0:27:04:c3:db:32"  # presa deumidificatore armadio Sonoff
       - "70:03:9f:74:79:f9"  # tenda giardino old via Sonoff
       - "9a:da:c4:b3:47:56"  # irrigazione Sonoff 4CHPRoR3 via RE650
       - "d8:eb:46:84:3d:bd"  # Chromecast sotto 

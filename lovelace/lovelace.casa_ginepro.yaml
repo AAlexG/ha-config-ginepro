@@ -482,6 +482,8 @@ config:
           name: Sala
         - entity: sensor.sonoff_10008d119d_temperature
           name: Georgi
+        - entity: sensor.termometro_tania_zigbee_temperature
+          name: Tania
         - entity: sensor.panasonic_heat_pump_main_outside_temp
           name: Esterna
         - entity: sensor.panasonic_heat_pump_main_main_outlet_temp
@@ -1640,7 +1642,10 @@ config:
         type: tile
         vertical: false
       - entity: sensor.termometro_tania_zigbee_battery
+        features_position: bottom
+        name: 'Term. Tania '
         type: tile
+        vertical: false
       - heading: UPS
         heading_style: subtitle
         type: heading
@@ -1676,12 +1681,6 @@ config:
         name: Stato UPS
         type: tile
         vertical: false
-      type: grid
-    - cards:
-      - entity: sensor.0xa4c138e6a0d06219_linkquality
-        type: tile
-      - entity: sensor.termometro_tania_zigbee_voltage
-        type: tile
       type: grid
     - cards:
       - heading: Nuova sezione
