@@ -1,4 +1,4 @@
-# automations_119.yaml
+# automations_120.yaml
 #prova
 #==================================================================================
 # 1. IRRIGAZIONE – Ciclo programmato (O1/O2) con gate meteo
@@ -880,6 +880,12 @@
           priority: high
           ttl: 0
           persistent: "true"
+          channel: alarm_stream
+    - action: persistent_notification.create
+      data:
+        title: "🛑 HeishaMon - Nessun dato da 30 min"
+        message: "HeishaMon risulta irraggiungibile (LWT offline) da almeno 30 minuti."
+        notification_id: watchdog_heishamon
 
 #==================================================================================
 # 37. OTGW - NESSUN DATO RICEVUTO DA 30 MINUTI
@@ -908,6 +914,12 @@
           priority: high
           ttl: 0
           persistent: "true"
+          channel: alarm_stream
+    - action: persistent_notification.create
+      data:
+        title: "🛑 OTGW - Nessun dato da 30 min"
+        message: "L'OTGW risulta irraggiungibile (nessun dato MQTT) da almeno 30 minuti."
+        notification_id: watchdog_otgw
 
 #==================================================================================
 # 38. BACKUP CONFIG SU GITHUB
