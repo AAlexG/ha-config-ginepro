@@ -82,3 +82,10 @@ items:
   show_in_sidebar: true
   title: Irrigazione
   url_path: dashboard-irrigazione
+- icon: mdi:wifi
+  id: wi_fi
+  mode: storage
+  require_admin: false
+  show_in_sidebar: true
+  title: Wi-Fi
+  url_path: wi-fi

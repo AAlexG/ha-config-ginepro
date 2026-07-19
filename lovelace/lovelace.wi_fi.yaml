@@ -1,0 +1,30 @@
+config:
+  views:
+  - cards:
+    - columns:
+      - data: righe
+        modify: x.nome
+        name: Dispositivo
+      - data: righe
+        modify: x.mac
+        name: MAC
+      - data: righe
+        modify: x.ip
+        name: IP
+      - data: righe
+        modify: 'x.ssid === null ? ''n/d'' : x.ssid'
+        name: SSID
+      - data: righe
+        modify: 'x.segnale === null ? ''n/d'' : x.segnale + '' %'''
+        name: Segnale
+      - data: righe
+        modify: "x.casa ? '\u2714 In casa' : '\u2718 Fuori casa'"
+        name: Stato
+      entities:
+        include: sensor.wifi_tabella
+      title: Dispositivi WiFi
+      type: custom:flex-table-card
+    icon: mdi:wifi
+    path: wifi
+    title: WiFi
+    type: panel

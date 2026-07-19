@@ -1,79 +1,122 @@
-# configuration_176.yaml
+# configuration_178.yaml
 default_config:
 
 #==================================================================================
-# RECORDER - Esclusioni entità ad alta frequenza per contenere il database
-# Escluse solo dallo storico dettagliato: automazioni, statistiche a lungo
-# termine, dashboard Energia e tabella FV mensile NON sono influenzate.
+# WHITELIST DISPOSITIVI WIFI - FONTE UNICA (mappa MAC -> nome)
+# Per aggiungere/togliere un dispositivo modificare SOLO la mappa mac_nomi qui
+# sotto, poi Strumenti per sviluppatori -> YAML -> Ricarica entita' modello.
+# Usata da: automations_presenza (whitelist notifiche) + plancia WiFi (tabella).
 #==================================================================================
-recorder:
-  purge_keep_days: 7
-  exclude:
-    entities:
-      - binary_sensor.inverter_uflex_connection
-      - sensor.inverter_uflex_update_interval
-    entity_globs:
-      - sensor.panasonic_heat_pump_stats_*
-      - sensor.inverter_uflex_*_l1_*
-      - sensor.inverter_uflex_*_current
-      - sensor.inverter_uflex_external_ct1_*
-
-homeassistant:
-  allowlist_external_dirs:
-    - /sys
-    - /config
-
-http:
-  use_x_forwarded_for: true
-  trusted_proxies:
-    - 172.30.33.0/24
-    - 127.0.0.1
-
-frontend:
-  themes: !include_dir_merge_named themes
-
-automation: !include_dir_merge_list automations/
-script: !include scripts.yaml
-scene: !include scenes.yaml
-
-logger:
-  default: warning
-
-#--- MONITORAGGIO HARDWARE ---
-command_line:
-  - sensor:
-      name: RPi CPU Temperature
-      command: "cat /sys/class/thermal/thermal_zone0/temp"
-      unit_of_measurement: "°C"
-      icon: mdi:thermometer
-      scan_interval: 30
-      value_template: "{{ (value | int / 1000) | round(1) }}"
-
-  - sensor:
-      name: RPi Fan Speed
-      command: "cat /sys/class/hwmon/hwmon*/fan1_input 2>/dev/null | head -1 || echo '0'"
-      unit_of_measurement: "RPM"
-      icon: mdi:fan
-      scan_interval: 15
-      value_template: "{{ value | int(0) }}"
-
-  - sensor:
-      name: PV Tabella Mensile
-      unique_id: pv_tabella_mensile
-      command: "cat /config/pv_tabella_mensile.json 2>/dev/null"
-      scan_interval: 3600
-      value_template: "{{ value_json.mesi | length }}"
-      json_attributes:
-        - mesi
-  - sensor:
-      name: "Ultima Modifica Configurazione"
-      command: "find . -maxdepth 2 -name '*.yaml' -exec stat -c '%Y' {} + | sort -n | tail -1"
-      scan_interval: 120
-      value_template: "{{ value | int }}"
-      
-
-#--- TIGO / PANNELLI (TEMPLATE SENSOR) ---
 template:
+
+  #--- WIFI: FONTE UNICA WHITELIST DISPOSITIVI ---
+  - sensor:
+      - name: "WiFi Dispositivi"
+        unique_id: wifi_dispositivi
+        icon: mdi:wifi
+        state: "{{ (this.attributes.get('mac_nomi', {}) or {}) | length }}"
+        attributes:
+          mac_nomi: >-
+            {{ {
+              'e0:b6:68:91:cc:58': '001 modem fastweb',
+              '14:59:c0:51:55:3f': '002 Orbi RBR50',
+              '38:18:4c:1a:d0:c3': '005 TV sala Sony',
+              'd8:f1:5b:15:26:40': '011 stazione meteo sala (IP fisso DHCP)',
+              '44:a5:6e:48:69:d8': '015 RBS20 sotto (IP fisso DHCP)',
+              '38:94:ed:0c:78:df': '016 RBS50 sopra (IP fisso DHCP)',
+              'a0:40:a0:5e:40:d2': '017 RBS50 box (IP fisso DHCP)',
+              '9a:da:c4:71:89:d4': '018 repeater TP-Link RE650',
+              '7c:f0:e5:ef:0f:73': '025 OnePlus 13 Sasha',
+              'a0:85:e3:b4:be:e4': '031 Shelly fancoil Georgi',
+              'a0:85:e3:b3:f8:1c': '032 Shelly fancoil Tania',
+              '1c:69:20:26:3f:b8': '033 Shelly valvola pompa-caldaia',
+              'a0:85:e3:ba:36:e0': '034 Shelly fancoil sala',
+              '9a:da:c4:ad:e1:ad': '036 OTGW via RE650',
+              '9a:da:c4:85:b8:7c': '037 HeishaMon via RE650 (IP fisso DHCP)',
+              '38:44:be:46:1f:08': '039 RPI fan controller ESP32',
+              '00:25:ca:74:c0:47': '041 Tigo CCA logger armadio fotovoltaico',
+              '00:1d:63:36:65:92': '046 lavatrice Miele',
+              '84:0d:8e:66:14:ff': '047 Sonoff RF Bridge 433 (IP fisso DHCP)',
+              '70:a8:d3:db:50:f6': '048 SASHA-MSI-PC',
+              'f4:2d:c9:98:1d:fc': '050 Somfy Connectivity Kit (IP fisso DHCP)',
+              'a0:43:b0:53:f0:46': '055 Broadlink salotto RM4 Pro (IP fisso DHCP)',
+              'd8:3a:dd:9f:9e:0a': '077 Raspberry Pi 5 (IP fisso DHCP)',
+              '4c:f5:dc:fd:39:cc': '085 camera sotto pergola EZVIZ',
+              '9a:da:c4:d2:c4:40': '090 interruttore irrigazione Sonoff via RE650',
+              'ec:71:db:db:94:06': '168 camera Georgi Reolink E1 Zoom',
+              'e8:ca:c8:f8:47:65': '177 camera Nata Reolink E1 Zoom',
+              'ec:71:db:f0:01:30': '179 camera cancello Reolink',
+              '94:b3:f7:dc:30:13': '182 camera box Reolink E1 Pro',
+              'bc:fd:0c:dc:56:04': '183 camera portone Reolink Lumus',
+              '68:39:43:85:23:02': '184 camera Tania Reolink E1 Zoom',
+              'ec:71:db:a5:f9:05': '186 camera sopra 8K Reolink',
+              '2c:c3:e6:3b:9f:bb': '191 camera sopra gambe Ctronics',
+              'd0:12:55:ee:e9:95': '192 camera barbecue',
+              '5c:c3:36:4d:19:67': '193 camera cucina Reolink',
+              'a0:92:08:86:9c:b7': 'Aspirapolvere Lina',
+              '38:8b:59:82:fb:03': 'Google Nest sopra',
+              'd4:27:87:51:9f:4c': 'inverter fotovoltaico UFLEX',
+              'cc:32:e5:7e:07:5a': 'Tapo lenzuola sotto',
+              '00:33:7a:cc:0b:ff': 'stazione meteo sottotetto',
+              '8c:3b:4a:9f:e3:69': 'Google Chromecast (soundbar Sony sopra)',
+              'f4:f5:d8:9e:f7:ff': 'Google Home camera Georgi',
+              '18:69:d8:64:b0:99': 'presa luce cucina',
+              '70:89:76:fd:4c:18': 'contattore auto',
+              'd8:1f:12:93:61:65': 'contattore sauna',
+              '44:07:0b:f2:e0:8f': 'Google Home Mini Yamaha',
+              'cc:50:e3:c7:94:35': 'termometro Georgi Sonoff',
+              'ac:67:84:1a:78:14': 'Google Nest sala',
+              '1c:d6:be:be:3a:05': 'Sony TV sopra',
+              '38:1f:8d:90:0d:89': 'pet feeder',
+              '50:8a:06:5c:04:72': 'luce sopra Tuya',
+              '40:ca:63:39:6c:12': 'cooktop Samsung',
+              'd8:f1:5b:a1:e0:13': 'presa deumidificatore cantina',
+              'd0:27:04:c3:db:32': 'presa deumidificatore armadio Sonoff',
+              '70:03:9f:74:79:f9': 'tenda giardino old via Sonoff',
+              '9a:da:c4:b3:47:56': 'irrigazione Sonoff 4CHPRoR3 via RE650',
+              'd8:eb:46:84:3d:bd': 'Chromecast sotto',
+              '74:ee:2a:e7:76:6d': 'Citofono Philips forse?',
+              'f8:6d:cc:3d:26:d4': 'WNC (visto live, da identificare)',
+              '66:00:c0:a6:9c:6e': 'S22 Ultra di Tania'
+            } }}
+
+  #--- WIFI: TABELLA DINAMICA PER PLANCIA (righe da tracker Netgear) ---
+  - sensor:
+      - name: "WiFi Tabella"
+        unique_id: wifi_tabella
+        icon: mdi:table-network
+        state: >-
+          {% set nomi = state_attr('sensor.wifi_dispositivi', 'mac_nomi') or {} %}
+          {% set ns = namespace(n=0) %}
+          {% for e in integration_entities('netgear') if e.startswith('device_tracker.')
+             and states(e) == 'home' and (state_attr(e, 'mac') or '') | lower in nomi %}
+          {% set ns.n = ns.n + 1 %}
+          {% endfor %}
+          {{ ns.n }}
+        attributes:
+          righe: >-
+            {% set nomi = state_attr('sensor.wifi_dispositivi', 'mac_nomi') or {} %}
+            {% set ng = integration_entities('netgear') %}
+            {% set righe = namespace(list=[]) %}
+            {% for e in ng if e.startswith('device_tracker.') %}
+            {% set mac = (state_attr(e, 'mac') or '') | lower %}
+            {% if mac in nomi %}
+            {% set ssid = namespace(v='n/d') %}
+            {% set sig = namespace(v=none) %}
+            {% for s in device_entities(device_id(e)) if s in ng and s.startswith('sensor.') %}
+            {% if s.endswith('_ssid') and states(s) not in ['unknown', 'unavailable'] %}
+            {% set ssid.v = states(s) %}
+            {% endif %}
+            {% if ('segnale' in s or 'signal_strength' in s) and states(s) not in ['unknown', 'unavailable'] %}
+            {% set sig.v = states(s) | float(none) %}
+            {% endif %}
+            {% endfor %}
+            {% set righe.list = righe.list + [{'nome': nomi[mac], 'mac': mac, 'ip': state_attr(e, 'ip') or 'n/d', 'ssid': ssid.v, 'segnale': sig.v, 'casa': states(e) == 'home'}] %}
+            {% endif %}
+            {% endfor %}
+            {{ (righe.list | selectattr('casa') | sort(attribute='nome') | list) + (righe.list | rejectattr('casa') | sort(attribute='nome') | list) }}
+
+  #--- TIGO / PANNELLI (TEMPLATE SENSOR) ---
   - sensor:
       - name: "Panel Max Power Summary"
         unique_id: "panel_max_power_summary"
@@ -1140,6 +1183,79 @@ template:
           {% else %}
             {{ this.state | float(0) | round(3) }}
           {% endif %}
+
+
+#==================================================================================
+# RECORDER - Esclusioni entità ad alta frequenza per contenere il database
+# Escluse solo dallo storico dettagliato: automazioni, statistiche a lungo
+# termine, dashboard Energia e tabella FV mensile NON sono influenzate.
+#==================================================================================
+recorder:
+  purge_keep_days: 7
+  exclude:
+    entities:
+      - binary_sensor.inverter_uflex_connection
+      - sensor.inverter_uflex_update_interval
+      - sensor.wifi_tabella
+    entity_globs:
+      - sensor.panasonic_heat_pump_stats_*
+      - sensor.inverter_uflex_*_l1_*
+      - sensor.inverter_uflex_*_current
+      - sensor.inverter_uflex_external_ct1_*
+
+homeassistant:
+  allowlist_external_dirs:
+    - /sys
+    - /config
+
+http:
+  use_x_forwarded_for: true
+  trusted_proxies:
+    - 172.30.33.0/24
+    - 127.0.0.1
+
+frontend:
+  themes: !include_dir_merge_named themes
+
+automation: !include_dir_merge_list automations/
+script: !include scripts.yaml
+scene: !include scenes.yaml
+
+logger:
+  default: warning
+
+#--- MONITORAGGIO HARDWARE ---
+command_line:
+  - sensor:
+      name: RPi CPU Temperature
+      command: "cat /sys/class/thermal/thermal_zone0/temp"
+      unit_of_measurement: "°C"
+      icon: mdi:thermometer
+      scan_interval: 30
+      value_template: "{{ (value | int / 1000) | round(1) }}"
+
+  - sensor:
+      name: RPi Fan Speed
+      command: "cat /sys/class/hwmon/hwmon*/fan1_input 2>/dev/null | head -1 || echo '0'"
+      unit_of_measurement: "RPM"
+      icon: mdi:fan
+      scan_interval: 15
+      value_template: "{{ value | int(0) }}"
+
+  - sensor:
+      name: PV Tabella Mensile
+      unique_id: pv_tabella_mensile
+      command: "cat /config/pv_tabella_mensile.json 2>/dev/null"
+      scan_interval: 3600
+      value_template: "{{ value_json.mesi | length }}"
+      json_attributes:
+        - mesi
+  - sensor:
+      name: "Ultima Modifica Configurazione"
+      command: "find . -maxdepth 2 -name '*.yaml' -exec stat -c '%Y' {} + | sort -n | tail -1"
+      scan_interval: 120
+      value_template: "{{ value | int }}"
+      
 
 #--- SENSORI STATISTICI ---
 sensor:
