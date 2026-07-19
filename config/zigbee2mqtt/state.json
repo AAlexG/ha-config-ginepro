@@ -22,9 +22,9 @@
         "linkquality": 172
     },
     "0xa4c138e6a0d06219": {
-        "voltage": 2600,
+        "voltage": 2500,
         "battery": 53,
-        "temperature": 29.22,
-        "humidity": 61.85
+        "temperature": 29.01,
+        "humidity": 61.8
     }
 }
