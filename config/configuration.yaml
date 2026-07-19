@@ -1,4 +1,4 @@
-# configuration_178.yaml
+# configuration_180.yaml
 default_config:
 
 #==================================================================================
@@ -70,8 +70,8 @@ template:
               '38:1f:8d:90:0d:89': 'pet feeder',
               '50:8a:06:5c:04:72': 'luce sopra Tuya',
               '40:ca:63:39:6c:12': 'cooktop Samsung',
-              'd8:f1:5b:a1:e0:13': 'presa deumidificatore cantina',
-              'd0:27:04:c3:db:32': 'presa deumidificatore armadio Sonoff',
+              'd8:f1:5b:a1:e0:13': 'Deumidificatore Tania Tuya',
+              'd0:27:04:c3:db:32': 'Deumidificatore cantina Sonoff',
               '70:03:9f:74:79:f9': 'tenda giardino old via Sonoff',
               '9a:da:c4:b3:47:56': 'irrigazione Sonoff 4CHPRoR3 via RE650',
               'd8:eb:46:84:3d:bd': 'Chromecast sotto',
@@ -95,12 +95,22 @@ template:
           {{ ns.n }}
         attributes:
           righe: >-
+            {# Itera la WHITELIST: ogni MAC produce sempre una riga, anche se il #}
+            {# tracker Netgear e' stato eliminato/disabilitato (-> n/d, fuori casa) #}
             {% set nomi = state_attr('sensor.wifi_dispositivi', 'mac_nomi') or {} %}
             {% set ng = integration_entities('netgear') %}
-            {% set righe = namespace(list=[]) %}
+            {% set pairs = namespace(l=[]) %}
             {% for e in ng if e.startswith('device_tracker.') %}
-            {% set mac = (state_attr(e, 'mac') or '') | lower %}
-            {% if mac in nomi %}
+            {% set m = (state_attr(e, 'mac') or '') | lower %}
+            {% if m %}{% set pairs.l = pairs.l + [(m, e)] %}{% endif %}
+            {% endfor %}
+            {% set tmap = dict(pairs.l) %}
+            {% set righe = namespace(list=[]) %}
+            {% for mac, nome in nomi.items() %}
+            {% set e = tmap.get(mac | lower) %}
+            {% if e is none %}
+            {% set righe.list = righe.list + [{'nome': nome, 'mac': mac | lower, 'ip': 'n/d', 'ssid': 'n/d', 'segnale': none, 'casa': false}] %}
+            {% else %}
             {% set ssid = namespace(v='n/d') %}
             {% set sig = namespace(v=none) %}
             {% for s in device_entities(device_id(e)) if s in ng and s.startswith('sensor.') %}
@@ -111,7 +121,7 @@ template:
             {% set sig.v = states(s) | float(none) %}
             {% endif %}
             {% endfor %}
-            {% set righe.list = righe.list + [{'nome': nomi[mac], 'mac': mac, 'ip': state_attr(e, 'ip') or 'n/d', 'ssid': ssid.v, 'segnale': sig.v, 'casa': states(e) == 'home'}] %}
+            {% set righe.list = righe.list + [{'nome': nome, 'mac': mac | lower, 'ip': state_attr(e, 'ip') or 'n/d', 'ssid': ssid.v, 'segnale': sig.v, 'casa': states(e) == 'home'}] %}
             {% endif %}
             {% endfor %}
             {{ (righe.list | selectattr('casa') | sort(attribute='nome') | list) + (righe.list | rejectattr('casa') | sort(attribute='nome') | list) }}
