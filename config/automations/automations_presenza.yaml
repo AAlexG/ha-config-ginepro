@@ -1,4 +1,4 @@
-# automations_presenza_7.yaml
+# automations_presenza_8.yaml
 
 #==================================================================================
 # 1. NOTIFICA - Nuovo dispositivo MAI VISTO rilevato sulla rete
@@ -29,7 +29,7 @@
       - "00:1d:63:36:65:92"  # 046 lavatrice Miele
       - "84:0d:8e:66:14:ff"  # 047 Sonoff RF Bridge 433 (IP fisso DHCP)
       - "70:a8:d3:db:50:f6"  # 048 SASHA-MSI-PC 
-      - "9A:DA:C4:B3:47:56"  # 050 irrigazione sonoff switch 4chproR3 via RE650 (IP fisso DHCP)
+      - "f4:2d:c9:98:1d:fc"  # 050 Somfy Connectivity Kit (IP fisso DHCP) 
       - "a0:43:b0:53:f0:46"  # 055 Broadlink salotto RM4 Pro (IP fisso DHCP)
       - "d8:3a:dd:9f:9e:0a"  # 077 Raspberry Pi 5 (IP fisso DHCP)
       - "4c:f5:dc:fd:39:cc"  # 085 camera sotto pergola EZVIZ 
@@ -66,10 +66,10 @@
       - "70:03:9f:74:79:f9"  # tenda giardino old via Sonoff
       - "9a:da:c4:b3:47:56"  # irrigazione Sonoff 4CHPRoR3 via RE650
       - "d8:eb:46:84:3d:bd"  # Chromecast sotto 
-      - "f4:2d:c9:98:1d:fc"  # Somfy Connectivity Kit
+      - "9A:DA:C4:B3:47:56"  # irrigazione sonoff switch 4chproR3 via RE650
       - "74:EE:2A:E7:76:6D"  # Citofono Philips forse?
       - "f8:6d:cc:3d:26:d4"  # WNC (visto live, da identificare)
-      # ESCLUSO volutamente: 66:00:c0:a6:9c:6e = S22 Ultra di Tania (deve notificare)
+      - "66:00:c0:a6:9c:6e"  # S22 Ultra di Tania 
   triggers:
     - platform: event
       event_type: entity_registry_updated
