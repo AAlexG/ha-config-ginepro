@@ -78,7 +78,7 @@ config:
         heading_style: subtitle
         icon: ''
         type: heading
-      - entity: switch.presa_deumidificatore_cantina
+      - entity: switch.box_deumidificatore_cantina_sonoff
         features_position: bottom
         grid_options:
           columns: 6
@@ -97,7 +97,7 @@ config:
           perform_action: script.deumidificatore_cantina_toggle_manuale
         type: tile
         vertical: false
-      - entity: switch.deumidificatore_armadio_sonoff_sonoff_1002a68db0_1
+      - entity: switch.cameratania_deumidificatore_tania_tuya
         features_position: bottom
         grid_options:
           columns: 6
@@ -295,9 +295,9 @@ config:
         icon: mdi:water
         type: heading
       - entities:
-        - entity: switch.presa_deumidificatore_cantina
+        - entity: switch.cameratania_deumidificatore_tania_tuya
           name: Tania
-        - entity: switch.deumidificatore_armadio_sonoff_sonoff_1002a68db0_1
+        - entity: switch.box_deumidificatore_cantina_sonoff
           name: Cantina
         grid_options:
           columns: full
@@ -429,29 +429,29 @@ config:
         vertical: false
       type: grid
     - cards:
-      - heading: Deumidificatore Tania Sonoff
+      - heading: Deumidificatore cantina Tuya
         heading_style: title
         type: heading
-      - entity: switch.presa_deumidificatore_cantina
+      - entity: switch.box_deumidificatore_cantina_sonoff
         features:
         - type: toggle
         features_position: bottom
         name: Stato
         type: tile
         vertical: false
-      - entity: sensor.presa_terrazza_potenza
+      - entity: sensor.box_deumidificatore_cantina_sonoff_power
         features:
         - type: trend-graph
         features_position: bottom
         name: Potenza
         type: tile
         vertical: false
-      - entity: sensor.presa_terrazza_corrente
+      - entity: sensor.box_deumidificatore_cantina_sonoff_current
         features_position: bottom
         name: Corrente
         type: tile
         vertical: false
-      - entity: sensor.presa_terrazza_tensione
+      - entity: sensor.box_deumidificatore_cantina_sonoff_voltage
         features_position: bottom
         name: Tensione
         type: tile
@@ -459,8 +459,8 @@ config:
       - chart_type: bar
         days_to_show: 7
         entities:
-        - entity: sensor.presa_terrazza_energia_totale
-          name: Consumo giorno
+        - entity: sensor.deumidificatore_cantina_oggi
+          name: Consumo
         period: day
         stat_types:
         - change
@@ -468,44 +468,43 @@ config:
       - chart_type: bar
         days_to_show: 365
         entities:
-        - entity: sensor.presa_terrazza_energia_totale
-          name: Consumo mese
+        - sensor.deumidificatore_cantina_oggi
         period: month
         stat_types:
         - change
         type: statistics-graph
       type: grid
     - cards:
-      - heading: Deumidificatore cantina Tuya
+      - heading: Deumidificatore Tania Sonoff
         heading_style: title
         type: heading
-      - entity: switch.deumidificatore_armadio_sonoff_sonoff_1002a68db0_1
+      - entity: switch.cameratania_deumidificatore_tania_tuya
         features:
         - type: toggle
         features_position: bottom
         name: Stato
         type: tile
         vertical: false
-      - entity: sensor.deumidificatore_armadio_sonoff_sonoff_1002a68db0_rssi
+      - entity: sensor.presa_deumidificatore_cantina_intensita_del_segnale
         features:
         - type: trend-graph
         features_position: bottom
         name: WiFi
         type: tile
         vertical: false
-      - entity: sensor.deumidificatore_armadio_sonoff_sonoff_1002a68db0_power
+      - entity: sensor.cameratania_deumidificatore_tania_tuya_potenza
         features:
         - type: trend-graph
         features_position: bottom
         name: Potenza
         type: tile
         vertical: false
-      - entity: sensor.deumidificatore_armadio_sonoff_sonoff_1002a68db0_current
+      - entity: sensor.cameratania_deumidificatore_tania_tuya_corrente_deumidificatore_tania_tuya
         features_position: bottom
         name: Corrente
         type: tile
         vertical: false
-      - entity: sensor.presa_terrazza_tensione
+      - entity: sensor.cameratania_deumidificatore_tania_tuya_tensione
         features_position: bottom
         name: Tensione
         type: tile
@@ -513,8 +512,8 @@ config:
       - chart_type: bar
         days_to_show: 7
         entities:
-        - entity: sensor.deumidificatore_armadio_sonoff_sonoff_1002a68db0_energy_day
-          name: 'Consumo giorno '
+        - entity: sensor.box_deumidificatore_cantina_sonoff_energy_day
+          name: Consumo
         period: day
         stat_types:
         - state
@@ -522,8 +521,8 @@ config:
       - chart_type: bar
         days_to_show: 365
         entities:
-        - entity: sensor.deumidificatore_armadio_sonoff_sonoff_1002a68db0_energy_day
-          name: Consumo mese
+        - entity: sensor.box_deumidificatore_cantina_sonoff_energy_day
+          name: Consumo
         period: month
         stat_types:
         - change
