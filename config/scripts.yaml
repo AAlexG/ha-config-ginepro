@@ -1,4 +1,4 @@
-# scripts_47.yaml
+# scripts_48.yaml
 
 #==================================================================================
 # SCRIPT: APRI CANCELLO CASA
@@ -521,9 +521,11 @@ caldaia_dhw_off:
 
 #==================================================================================
 # SCRIPT: FANCOIL TANIA – TOGGLE MANUALE
-# Inverte input_boolean.fancoil_georgi_manuale (gestione manuale ON/OFF) e
-# specchia lo stesso stato sullo switch reale: boolean ON -> switch ON,
-# boolean OFF -> switch OFF. Chiamato dal toggle del tile in plancia.
+# Toggle basato sul flag input_boolean.fancoil_georgi_manuale:
+#  - flag OFF -> accende lo switch e attiva il flag (gestione manuale attiva)
+#  - flag ON  -> spegne lo switch e disattiva il flag (le automazioni riprendono
+#    subito il controllo, senza attendere il reset delle 07:00/23:00)
+# Chiamato dal toggle del tile in plancia. Stesso schema per tutti i 5 script.
 #==================================================================================
 fancoil_georgi_toggle_manuale:
   alias: "Fancoil Tania – Toggle Manuale"
@@ -532,12 +534,25 @@ fancoil_georgi_toggle_manuale:
     - condition: template
       value_template: >
         {{ states('switch.camerageorgi_shelly_fancoil_georgi') in ['on', 'off'] }}
-    - action: switch.toggle
-      target:
-        entity_id: switch.camerageorgi_shelly_fancoil_georgi
-    - action: input_boolean.turn_on
-      target:
-        entity_id: input_boolean.fancoil_georgi_manuale
+    - choose:
+        - conditions:
+            - condition: state
+              entity_id: input_boolean.fancoil_georgi_manuale
+              state: "off"
+          sequence:
+            - action: switch.turn_on
+              target:
+                entity_id: switch.camerageorgi_shelly_fancoil_georgi
+            - action: input_boolean.turn_on
+              target:
+                entity_id: input_boolean.fancoil_georgi_manuale
+      default:
+        - action: switch.turn_off
+          target:
+            entity_id: switch.camerageorgi_shelly_fancoil_georgi
+        - action: input_boolean.turn_off
+          target:
+            entity_id: input_boolean.fancoil_georgi_manuale
 
 #==================================================================================
 # SCRIPT: FANCOIL GEORGI – TOGGLE MANUALE
@@ -549,12 +564,25 @@ fancoil_georgi2_toggle_manuale:
     - condition: template
       value_template: >
         {{ states('switch.camerageorgi_shelly_fancoil_georgi_2') in ['on', 'off'] }}
-    - action: switch.toggle
-      target:
-        entity_id: switch.camerageorgi_shelly_fancoil_georgi_2
-    - action: input_boolean.turn_on
-      target:
-        entity_id: input_boolean.fancoil_georgi2_manuale
+    - choose:
+        - conditions:
+            - condition: state
+              entity_id: input_boolean.fancoil_georgi2_manuale
+              state: "off"
+          sequence:
+            - action: switch.turn_on
+              target:
+                entity_id: switch.camerageorgi_shelly_fancoil_georgi_2
+            - action: input_boolean.turn_on
+              target:
+                entity_id: input_boolean.fancoil_georgi2_manuale
+      default:
+        - action: switch.turn_off
+          target:
+            entity_id: switch.camerageorgi_shelly_fancoil_georgi_2
+        - action: input_boolean.turn_off
+          target:
+            entity_id: input_boolean.fancoil_georgi2_manuale
 
 #==================================================================================
 # SCRIPT: FANCOIL SALA – TOGGLE MANUALE
@@ -566,12 +594,25 @@ fancoil_sala_toggle_manuale:
     - condition: template
       value_template: >
         {{ states('switch.sala_fancoil_sala_shelly_1gen4') in ['on', 'off'] }}
-    - action: switch.toggle
-      target:
-        entity_id: switch.sala_fancoil_sala_shelly_1gen4
-    - action: input_boolean.turn_on
-      target:
-        entity_id: input_boolean.fancoil_sala_manuale
+    - choose:
+        - conditions:
+            - condition: state
+              entity_id: input_boolean.fancoil_sala_manuale
+              state: "off"
+          sequence:
+            - action: switch.turn_on
+              target:
+                entity_id: switch.sala_fancoil_sala_shelly_1gen4
+            - action: input_boolean.turn_on
+              target:
+                entity_id: input_boolean.fancoil_sala_manuale
+      default:
+        - action: switch.turn_off
+          target:
+            entity_id: switch.sala_fancoil_sala_shelly_1gen4
+        - action: input_boolean.turn_off
+          target:
+            entity_id: input_boolean.fancoil_sala_manuale
 
 #==================================================================================
 # SCRIPT: DEUMIDIFICATORE CANTINA – TOGGLE MANUALE
@@ -583,12 +624,25 @@ deumidificatore_cantina_toggle_manuale:
     - condition: template
       value_template: >
         {{ states('switch.box_deumidificatore_cantina_sonoff') in ['on', 'off'] }}
-    - action: switch.toggle
-      target:
-        entity_id: switch.box_deumidificatore_cantina_sonoff
-    - action: input_boolean.turn_on
-      target:
-        entity_id: input_boolean.deumidificatore_cantina_manuale
+    - choose:
+        - conditions:
+            - condition: state
+              entity_id: input_boolean.deumidificatore_cantina_manuale
+              state: "off"
+          sequence:
+            - action: switch.turn_on
+              target:
+                entity_id: switch.box_deumidificatore_cantina_sonoff
+            - action: input_boolean.turn_on
+              target:
+                entity_id: input_boolean.deumidificatore_cantina_manuale
+      default:
+        - action: switch.turn_off
+          target:
+            entity_id: switch.box_deumidificatore_cantina_sonoff
+        - action: input_boolean.turn_off
+          target:
+            entity_id: input_boolean.deumidificatore_cantina_manuale
 
 #==================================================================================
 # SCRIPT: DEUMIDIFICATORE TANIA (ex armadio) – TOGGLE MANUALE
@@ -600,12 +654,25 @@ deumidificatore_armadio_toggle_manuale:
     - condition: template
       value_template: >
         {{ states('switch.cameratania_deumidificatore_tania_tuya') in ['on', 'off'] }}
-    - action: switch.toggle
-      target:
-        entity_id: switch.cameratania_deumidificatore_tania_tuya
-    - action: input_boolean.turn_on
-      target:
-        entity_id: input_boolean.deumidificatore_armadio_manuale
+    - choose:
+        - conditions:
+            - condition: state
+              entity_id: input_boolean.deumidificatore_armadio_manuale
+              state: "off"
+          sequence:
+            - action: switch.turn_on
+              target:
+                entity_id: switch.cameratania_deumidificatore_tania_tuya
+            - action: input_boolean.turn_on
+              target:
+                entity_id: input_boolean.deumidificatore_armadio_manuale
+      default:
+        - action: switch.turn_off
+          target:
+            entity_id: switch.cameratania_deumidificatore_tania_tuya
+        - action: input_boolean.turn_off
+          target:
+            entity_id: input_boolean.deumidificatore_armadio_manuale
 
 #==================================================================================
 # SCRIPT: PERGOLA – TOGGLE MANUALE ("Chiudere fino notte")
