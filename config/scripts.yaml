@@ -1,4 +1,4 @@
-# scripts_46.yaml
+# scripts_47.yaml
 
 #==================================================================================
 # SCRIPT: APRI CANCELLO CASA
@@ -582,27 +582,27 @@ deumidificatore_cantina_toggle_manuale:
   sequence:
     - condition: template
       value_template: >
-        {{ states('switch.presa_deumidificatore_cantina') in ['on', 'off'] }}
+        {{ states('switch.box_deumidificatore_cantina_sonoff') in ['on', 'off'] }}
     - action: switch.toggle
       target:
-        entity_id: switch.presa_deumidificatore_cantina
+        entity_id: switch.box_deumidificatore_cantina_sonoff
     - action: input_boolean.turn_on
       target:
         entity_id: input_boolean.deumidificatore_cantina_manuale
 
 #==================================================================================
-# SCRIPT: DEUMIDIFICATORE ARMADIO – TOGGLE MANUALE
+# SCRIPT: DEUMIDIFICATORE TANIA (ex armadio) – TOGGLE MANUALE
 #==================================================================================
 deumidificatore_armadio_toggle_manuale:
-  alias: "Deumidificatore Armadio – Toggle Manuale"
+  alias: "Deumidificatore Tania – Toggle Manuale"
   mode: single
   sequence:
     - condition: template
       value_template: >
-        {{ states('switch.deumidificatore_armadio_sonoff_sonoff_1002a68db0_1') in ['on', 'off'] }}
+        {{ states('switch.cameratania_deumidificatore_tania_tuya') in ['on', 'off'] }}
     - action: switch.toggle
       target:
-        entity_id: switch.deumidificatore_armadio_sonoff_sonoff_1002a68db0_1
+        entity_id: switch.cameratania_deumidificatore_tania_tuya
     - action: input_boolean.turn_on
       target:
         entity_id: input_boolean.deumidificatore_armadio_manuale

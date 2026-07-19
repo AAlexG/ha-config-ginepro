@@ -1,4 +1,4 @@
-# configuration_175.yaml
+# configuration_176.yaml
 default_config:
 
 #==================================================================================
@@ -1041,8 +1041,8 @@ template:
   - triggers:
       - trigger: state
         entity_id:
-          - sensor.deumidificatore_cantina_oggi
-          - sensor.deumidificatore_armadio_sonoff_sonoff_1002a68db0_energy_day
+          - sensor.deumidificatore_tania_oggi
+          - sensor.box_deumidificatore_cantina_sonoff_energy_day
       - trigger: time_pattern
         minutes: "/5"
       - trigger: homeassistant
@@ -1055,11 +1055,11 @@ template:
         state_class: total_increasing
         icon: mdi:water-percent
         availability: >-
-          {{ has_value('sensor.deumidificatore_cantina_oggi')
-             and has_value('sensor.deumidificatore_armadio_sonoff_sonoff_1002a68db0_energy_day') }}
+          {{ has_value('sensor.deumidificatore_tania_oggi')
+             and has_value('sensor.box_deumidificatore_cantina_sonoff_energy_day') }}
         state: >-
-          {% set nuovo = (states('sensor.deumidificatore_cantina_oggi') | float(0) +
-                          states('sensor.deumidificatore_armadio_sonoff_sonoff_1002a68db0_energy_day') | float(0))
+          {% set nuovo = (states('sensor.deumidificatore_tania_oggi') | float(0) +
+                          states('sensor.box_deumidificatore_cantina_sonoff_energy_day') | float(0))
                          | round(3) %}
           {% if now().hour == 0 and now().minute < 10 %}
             {{ nuovo }}
@@ -2173,9 +2173,9 @@ utility_meter:
     source: sensor.panasonic_energia_consumata_acc_sensor
     cycle: monthly
 
-  deumidificatore_cantina_oggi:
-    name: "Deumidificatore Cantina Oggi"
-    source: sensor.presa_terrazza_energia_totale
+  deumidificatore_tania_oggi:
+    name: "Deumidificatore Tania Oggi"
+    source: sensor.cameratania_deumidificatore_tania_tuya_energia_totale
     cycle: daily
 
   # --- FANCOIL (stima da durata accensione) ---
@@ -2266,7 +2266,7 @@ input_boolean:
     icon: mdi:hand-back-right
 
   deumidificatore_armadio_manuale:
-    name: "Deumidificatore Armadio - Gestione Manuale"
+    name: "Deumidificatore Tania - Gestione Manuale"
     initial: false
     icon: mdi:hand-back-right
 

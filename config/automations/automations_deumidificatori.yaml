@@ -1,4 +1,4 @@
-# automations_deumidificatori_1.yaml
+# automations_deumidificatori_2.yaml
 #
 # ALLARME SERBATOIO PIENO – DEUMIDIFICATORI
 #
@@ -31,8 +31,8 @@
   triggers:
     - trigger: template
       value_template: >-
-        {{ is_state('switch.presa_deumidificatore_cantina', 'on')
-           and states('sensor.presa_terrazza_potenza') | float(999) < 5 }}
+        {{ is_state('switch.box_deumidificatore_cantina_sonoff', 'on')
+           and states('sensor.box_deumidificatore_cantina_sonoff_power') | float(999) < 5 }}
       for: "00:30:00"
   actions:
     - action: notify.mobile_app_cph2653
@@ -48,7 +48,7 @@
           importance: high
 
 - id: deumidificatore_armadio_serbatoio_pieno
-  alias: "Deumidificatore armadio – serbatoio pieno"
+  alias: "Deumidificatore Tania – serbatoio pieno"
   description: >-
     Presa accesa ma potenza a zero da 30 minuti: la macchina non sta lavorando.
     Causa tipica: serbatoio dell'acqua pieno.
@@ -56,13 +56,13 @@
   triggers:
     - trigger: template
       value_template: >-
-        {{ is_state('switch.deumidificatore_armadio_sonoff_sonoff_1002a68db0_1', 'on')
-           and states('sensor.deumidificatore_armadio_sonoff_sonoff_1002a68db0_power') | float(999) < 5 }}
+        {{ is_state('switch.cameratania_deumidificatore_tania_tuya', 'on')
+           and states('sensor.cameratania_deumidificatore_tania_tuya_potenza') | float(999) < 5 }}
       for: "00:30:00"
   actions:
     - action: notify.mobile_app_cph2653
       data:
-        title: "Deumidificatore armadio fermo"
+        title: "Deumidificatore Tania fermo"
         message: >-
           La presa e' accesa da oltre 30 minuti ma la potenza assorbita e' zero.
           Il deumidificatore non sta lavorando: controlla il serbatoio dell'acqua,

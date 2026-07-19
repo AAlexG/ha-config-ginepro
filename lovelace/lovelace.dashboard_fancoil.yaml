@@ -429,7 +429,7 @@ config:
         vertical: false
       type: grid
     - cards:
-      - heading: Deumidificatore cantina Tuya
+      - heading: Deumidificatore cantina Sonoff
         heading_style: title
         type: heading
       - entity: switch.box_deumidificatore_cantina_sonoff
@@ -459,7 +459,7 @@ config:
       - chart_type: bar
         days_to_show: 7
         entities:
-        - entity: sensor.deumidificatore_cantina_oggi
+        - entity: sensor.box_deumidificatore_cantina_sonoff_energy_day
           name: Consumo
         period: day
         stat_types:
@@ -468,14 +468,14 @@ config:
       - chart_type: bar
         days_to_show: 365
         entities:
-        - sensor.deumidificatore_cantina_oggi
+        - sensor.box_deumidificatore_cantina_sonoff_energy_day
         period: month
         stat_types:
         - change
         type: statistics-graph
       type: grid
     - cards:
-      - heading: Deumidificatore Tania Sonoff
+      - heading: Deumidificatore Tania Tuya
         heading_style: title
         type: heading
       - entity: switch.cameratania_deumidificatore_tania_tuya
@@ -512,7 +512,7 @@ config:
       - chart_type: bar
         days_to_show: 7
         entities:
-        - entity: sensor.box_deumidificatore_cantina_sonoff_energy_day
+        - entity: sensor.deumidificatore_tania_oggi
           name: Consumo
         period: day
         stat_types:
@@ -521,7 +521,7 @@ config:
       - chart_type: bar
         days_to_show: 365
         entities:
-        - entity: sensor.box_deumidificatore_cantina_sonoff_energy_day
+        - entity: sensor.deumidificatore_tania_oggi
           name: Consumo
         period: month
         stat_types:
