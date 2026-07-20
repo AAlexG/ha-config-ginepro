@@ -1,6 +1,60 @@
 config:
   views:
   - cards:
+    - cards:
+      - entity: sensor.0xa4c1383e0fd87686_linkquality
+        features:
+        - type: trend-graph
+        features_position: bottom
+        name: Armadio
+        type: tile
+        vertical: false
+      - entity: sensor.0xa4c1384b868fa6bd_linkquality
+        features:
+        - type: trend-graph
+        features_position: bottom
+        name: PresaTania
+        type: tile
+        vertical: false
+      - entity: sensor.0xa4c1385040d042fb_linkquality
+        features:
+        - type: trend-graph
+        features_position: bottom
+        name: PresaBox
+        type: tile
+        vertical: false
+      - entity: sensor.0xa4c138f820e17e6e_linkquality
+        features:
+        - type: trend-graph
+        features_position: bottom
+        name: PortoneBox
+        type: tile
+        vertical: false
+      - entity: sensor.persiana_box_sensore_zigbee_linkquality
+        features:
+        - type: trend-graph
+        features_position: bottom
+        name: Pers.Box
+        type: tile
+        vertical: false
+      - entity: sensor.persiana_tania_sensore_zigbee_linkquality
+        features:
+        - type: trend-graph
+        features_position: bottom
+        name: Pers.Tania
+        type: tile
+        vertical: false
+      - entity: sensor.0xa4c138e6a0d06219_linkquality
+        features:
+        - type: trend-graph
+        features_position: bottom
+        name: Term.Tania
+        type: tile
+        vertical: false
+      columns: 2
+      square: false
+      title: Zigbee
+      type: grid
     - columns:
       - data: righe
         modify: x.nome
@@ -20,11 +74,24 @@ config:
       - data: righe
         modify: "x.casa ? '\u2714 In casa' : '\u2718 Fuori casa'"
         name: Stato
+      css:
+        table+: 'width: 150%; font-size: 12px;'
+        tbody tr td:nth-child(1)+: 'min-width: 220px; width: 220px; white-space: normal;'
+        tbody tr td:nth-child(2)+: 'min-width: 150px; width: 150px;'
+        tbody tr td:nth-child(3)+: 'min-width: 110px; width: 110px;'
+        tbody tr td:nth-child(4)+: 'min-width: 140px; width: 140px; white-space: normal;'
+        tbody tr td:nth-child(5)+: 'min-width: 70px; width: 70px; text-align: center;'
+        tbody tr td:nth-child(6)+: 'min-width: 80px; width: 80px; white-space: normal;'
+        th:nth-child(1)+: 'min-width: 220px; width: 220px;'
+        th:nth-child(2)+: 'min-width: 150px; width: 150px;'
+        th:nth-child(3)+: 'min-width: 110px; width: 110px;'
+        th:nth-child(4)+: 'min-width: 140px; width: 140px;'
+        th:nth-child(5)+: 'min-width: 70px; width: 70px; text-align: center;'
+        th:nth-child(6)+: 'min-width: 80px; width: 80px;'
       entities:
         include: sensor.wifi_tabella
-      title: Dispositivi WiFi
+      title: Wi-Fi
       type: custom:flex-table-card
     icon: mdi:wifi
     path: wifi
     title: WiFi
-    type: panel

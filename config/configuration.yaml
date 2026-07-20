@@ -72,11 +72,9 @@ template:
               '40:ca:63:39:6c:12': 'cooktop Samsung',
               'd8:f1:5b:a1:e0:13': 'OLD Deumidificatore Tania Tuya',
               'd0:27:04:c3:db:32': 'Deumidificatore cantina Sonoff',
-              '70:03:9f:74:79:f9': 'tenda giardino old via Sonoff',
               '9a:da:c4:b3:47:56': 'irrigazione Sonoff 4CHPRoR3 via RE650',
               'd8:eb:46:84:3d:bd': 'Chromecast sotto',
               '74:ee:2a:e7:76:6d': 'Citofono Philips forse?',
-              'f8:6d:cc:3d:26:d4': 'WNC (visto live, da identificare)',
               '66:00:c0:a6:9c:6e': 'S22 Ultra di Tania'
             } }}
 

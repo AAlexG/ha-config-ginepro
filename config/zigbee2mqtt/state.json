@@ -4,7 +4,7 @@
         "voltage": 3000,
         "contact": false,
         "battery_low": false,
-        "linkquality": 140
+        "linkquality": 116
     },
     "0xa4c1380697d6ffff": {
         "battery": 100,
@@ -19,14 +19,14 @@
         "contact": false,
         "tamper": false,
         "battery_low": false,
-        "linkquality": 112
+        "linkquality": 100
     },
     "0xa4c138e6a0d06219": {
-        "voltage": 2400,
-        "battery": 43,
-        "temperature": 29.49,
-        "humidity": 62.29,
-        "linkquality": 176
+        "voltage": 2200,
+        "battery": 0,
+        "temperature": 28.66,
+        "humidity": 61.72,
+        "linkquality": 180
     },
     "0xa4c1385040d042fb": {
         "energy": 0,
@@ -35,33 +35,33 @@
         "power_outage_memory": "restore",
         "indicator_mode": "off/on",
         "child_lock": "UNLOCK",
-        "voltage": 215.3,
+        "voltage": 218.1,
         "power": 0,
         "current": 0,
         "linkquality": 120
     },
     "0xa4c1383e0fd87686": {
-        "state": "ON",
-        "energy": 0.18,
+        "state": "OFF",
+        "energy": 0.26,
         "countdown": 0,
         "power_outage_memory": "restore",
         "indicator_mode": "off/on",
         "child_lock": "UNLOCK",
-        "voltage": 214.3,
-        "linkquality": 68,
-        "power": 209.6,
-        "current": 1.01
+        "voltage": 222.2,
+        "linkquality": 48,
+        "power": 0,
+        "current": 0
     },
     "0xa4c1384b868fa6bd": {
         "state": "ON",
-        "energy": 0,
+        "energy": 0.02,
         "countdown": 0,
         "power_outage_memory": "restore",
         "indicator_mode": "off",
         "child_lock": "UNLOCK",
-        "voltage": 213.4,
+        "voltage": 224.8,
         "power": 3.9,
-        "current": 0.043,
+        "current": 0.065,
         "update": {
             "state": "idle",
             "installed_version": 66,
@@ -69,6 +69,6 @@
             "latest_source": null,
             "latest_release_notes": null
         },
-        "linkquality": 168
+        "linkquality": 116
     }
 }

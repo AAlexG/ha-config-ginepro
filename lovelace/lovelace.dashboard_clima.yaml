@@ -62,7 +62,17 @@ config:
           name: Sala
         - entity: sensor.sonoff_10008d119d_temperature
           name: Georgi
-        - entity: sensor.panasonic_heat_pump_main_outside_temp
+        - entity: sensor.termometro_tania_zigbee_temperature
+          name: Tania
+        - entity: sensor.hp1000se_pro_pro_v1_6_4_outdoor_temperature
+          name: Esterna
+        - entity: sensor.hp1000se_pro_pro_v1_6_4_indoor_humidity
+          name: Sala
+        - entity: sensor.sonoff_10008d119d_humidity
+          name: Georgi
+        - entity: sensor.termometro_tania_zigbee_humidity
+          name: Tania
+        - entity: sensor.hp1000se_pro_pro_v1_6_4_humidity
           name: Esterna
         grid_options:
           columns: full

@@ -87,5 +87,5 @@ items:
   mode: storage
   require_admin: false
   show_in_sidebar: true
-  title: Wi-Fi
+  title: Wi-Fi & Zigbee
   url_path: wi-fi
