@@ -58,3 +58,7 @@ devices:
     friendly_name: Portone box sensore zigbee
   '0xa4c138e6a0d06219':
     friendly_name: Termometro Tania zigbee
+  '0xa4c1385040d042fb':
+    friendly_name: Presa box zigbee
+  '0xa4c1383e0fd87686':
+    friendly_name: '0xa4c1383e0fd87686'
