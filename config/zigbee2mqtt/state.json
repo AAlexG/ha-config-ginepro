@@ -26,7 +26,7 @@
         "battery": 43,
         "temperature": 29.49,
         "humidity": 62.76,
-        "linkquality": 188
+        "linkquality": 176
     },
     "0xa4c1385040d042fb": {
         "energy": 0,
@@ -42,11 +42,32 @@
     },
     "0xa4c1383e0fd87686": {
         "state": "ON",
+        "energy": 0.03,
+        "countdown": 0,
+        "power_outage_memory": "restore",
+        "indicator_mode": "off/on",
+        "child_lock": "UNLOCK",
+        "voltage": 214.9,
+        "linkquality": 196,
+        "power": 210.9,
+        "current": 1
+    },
+    "0xa4c1384b868fa6bd": {
+        "state": "ON",
         "energy": 0,
         "countdown": 0,
         "power_outage_memory": "restore",
         "indicator_mode": "off/on",
         "child_lock": "UNLOCK",
-        "voltage": 218.4
+        "voltage": 215.4,
+        "power": 3.9,
+        "current": 0.032,
+        "update": {
+            "state": "idle",
+            "installed_version": 66,
+            "latest_version": 66,
+            "latest_source": null,
+            "latest_release_notes": null
+        }
     }
 }

@@ -62,3 +62,7 @@ devices:
     friendly_name: Presa box zigbee
   '0xa4c1383e0fd87686':
     friendly_name: Deumidificatore Tania zigbee
+  '0xa4c1384b868fa6bd':
+    friendly_name: Presa CameraTania zigbee
+    power_precision: 3
+    current_precision: 3
