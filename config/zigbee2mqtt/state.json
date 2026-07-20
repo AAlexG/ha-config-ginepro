@@ -4,7 +4,7 @@
         "voltage": 3000,
         "contact": false,
         "battery_low": false,
-        "linkquality": 52
+        "linkquality": 36
     },
     "0xa4c1380697d6ffff": {
         "battery": 100,
@@ -19,12 +19,13 @@
         "contact": false,
         "tamper": false,
         "battery_low": false,
-        "linkquality": 172
+        "linkquality": 152
     },
     "0xa4c138e6a0d06219": {
         "voltage": 2500,
         "battery": 53,
-        "temperature": 28.95,
-        "humidity": 62.18
+        "temperature": 28.88,
+        "humidity": 63.7,
+        "linkquality": 160
     }
 }

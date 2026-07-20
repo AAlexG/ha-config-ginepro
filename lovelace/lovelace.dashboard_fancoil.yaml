@@ -122,7 +122,7 @@ config:
         heading_style: title
         icon: mdi:lightning-bolt
         type: heading
-      - heading: 'Fancoil: '
+      - heading: 'Fancoil oggi:'
         heading_style: subtitle
         icon: ''
         type: heading
@@ -180,7 +180,7 @@ config:
         stat_types:
         - change
         type: statistics-graph
-      - heading: 'Deumidificatori:'
+      - heading: 'Deumidificatori oggi:'
         heading_style: subtitle
         icon: ''
         type: heading
@@ -204,7 +204,7 @@ config:
         stat_types:
         - change
         type: statistics-graph
-      - heading: 'Lavatrice Miele:'
+      - heading: 'Lavatrice Miele al giorno:'
         heading_style: subtitle
         icon: ''
         type: heading
@@ -220,7 +220,7 @@ config:
         stat_types:
         - change
         type: statistics-graph
-      - heading: 'Sauna:'
+      - heading: Sauna oggi e al giorno
         heading_style: subtitle
         icon: ''
         type: heading
@@ -248,7 +248,7 @@ config:
         type: statistics-graph
       type: grid
     - cards:
-      - heading: 'Storico Accensioni:'
+      - heading: 'Accensioni:'
         heading_style: title
         icon: mdi:chart-timeline
         type: heading
@@ -470,7 +470,7 @@ config:
         days_to_show: 7
         entities:
         - entity: sensor.box_deumidificatore_cantina_sonoff_energy_day
-          name: Consumo
+          name: Consumo x giorno
         period: day
         stat_types:
         - change
@@ -478,7 +478,8 @@ config:
       - chart_type: bar
         days_to_show: 365
         entities:
-        - sensor.box_deumidificatore_cantina_sonoff_energy_day
+        - entity: sensor.box_deumidificatore_cantina_sonoff_energy_day
+          name: Consumo x mese
         period: month
         stat_types:
         - change
@@ -528,7 +529,7 @@ config:
         days_to_show: 7
         entities:
         - entity: sensor.deumidificatore_tania_oggi
-          name: Consumo
+          name: Consumo x giorno
         period: day
         stat_types:
         - state
@@ -537,7 +538,7 @@ config:
         days_to_show: 365
         entities:
         - entity: sensor.deumidificatore_tania_oggi
-          name: Consumo
+          name: Consumo x mese
         period: month
         stat_types:
         - change
