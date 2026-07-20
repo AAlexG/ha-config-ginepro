@@ -1,4 +1,4 @@
-# automations_clima_41.yaml
+# automations_clima_42.yaml
 
 
 
@@ -687,9 +687,9 @@
 # Rispetta input_boolean.deumidificatore_armadio_manuale.
 #==================================================================================
 - id: deumidificatore_armadio_controllo
-  alias: "Deumidificatore Tania – Controllo Periodico FV"
+  alias: "Deumidificatore armadio  – Controllo Periodico FV"
   description: >
-    Ogni 5 minuti accende switch.cameratania_deumidificatore_tania_tuya
+    Ogni 5 minuti accende switch.deumidificatore_armadio_zigbee
     se produzione FV supera 1000W, spegne se sotto soglia. Bloccato se in gestione manuale.
   mode: single
   triggers:
@@ -702,7 +702,7 @@
   actions:
     - variables:
         fv: "{{ states('sensor.inverter_uflex_pv_power') | float(0) }}"
-        presa_on: "{{ is_state('switch.cameratania_deumidificatore_tania_tuya', 'on') }}"
+        presa_on: "{{ is_state('switch.deumidificatore_armadio_zigbee', 'on') }}"
     - choose:
         - conditions:
             - condition: template
@@ -710,14 +710,14 @@
           sequence:
             - action: switch.turn_on
               target:
-                entity_id: switch.cameratania_deumidificatore_tania_tuya
+                entity_id: switch.deumidificatore_armadio_zigbee
         - conditions:
             - condition: template
               value_template: "{{ fv < 1000 and presa_on }}"
           sequence:
             - action: switch.turn_off
               target:
-                entity_id: switch.cameratania_deumidificatore_tania_tuya
+                entity_id: switch.deumidificatore_armadio_zigbee
 
 #==================================================================================
 # 7. PANSONIC - PID – RAFFRESCAMENTO COMPLETO (PID con D)
