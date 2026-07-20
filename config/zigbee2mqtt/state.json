@@ -4,7 +4,7 @@
         "voltage": 3000,
         "contact": false,
         "battery_low": false,
-        "linkquality": 144
+        "linkquality": 140
     },
     "0xa4c1380697d6ffff": {
         "battery": 100,
@@ -24,17 +24,29 @@
     "0xa4c138e6a0d06219": {
         "voltage": 2400,
         "battery": 43,
-        "temperature": 29.62,
-        "humidity": 62.91,
+        "temperature": 29.49,
+        "humidity": 62.76,
         "linkquality": 188
     },
     "0xa4c1385040d042fb": {
         "energy": 0,
         "state": "ON",
-        "countdown": 41700,
+        "countdown": 0,
         "power_outage_memory": "restore",
         "indicator_mode": "off/on",
         "child_lock": "UNLOCK",
-        "voltage": 218.3
+        "voltage": 218.1,
+        "power": 0,
+        "current": 0,
+        "linkquality": 120
+    },
+    "0xa4c1383e0fd87686": {
+        "state": "ON",
+        "energy": 0,
+        "countdown": 0,
+        "power_outage_memory": "restore",
+        "indicator_mode": "off/on",
+        "child_lock": "UNLOCK",
+        "voltage": 218.4
     }
 }
