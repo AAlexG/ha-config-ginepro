@@ -97,12 +97,12 @@ config:
           perform_action: script.deumidificatore_cantina_toggle_manuale
         type: tile
         vertical: false
-      - entity: switch.cameratania_deumidificatore_tania_tuya
+      - entity: switch.deumidificatore_armadio_zigbee
         features_position: bottom
         grid_options:
           columns: 6
           rows: 1
-        name: Tania ora
+        name: Armadio ora
         type: tile
         vertical: false
       - entity: input_boolean.deumidificatore_armadio_manuale
@@ -295,8 +295,8 @@ config:
         icon: mdi:water
         type: heading
       - entities:
-        - entity: switch.cameratania_deumidificatore_tania_tuya
-          name: Tania
+        - entity: switch.deumidificatore_armadio_zigbee
+          name: Armadio
         - entity: switch.box_deumidificatore_cantina_sonoff
           name: Cantina
         grid_options:
@@ -486,38 +486,38 @@ config:
         type: statistics-graph
       type: grid
     - cards:
-      - heading: Deumidificatore Tania Tuya
+      - heading: Deumidificatore Armadio Zigbee
         heading_style: title
         type: heading
-      - entity: switch.cameratania_deumidificatore_tania_tuya
+      - entity: switch.deumidificatore_armadio_zigbee
         features:
         - type: toggle
         features_position: bottom
         name: Stato
         type: tile
         vertical: false
-      - entity: sensor.cameratania_deumidificatore_tania_tuya_potenza
+      - entity: sensor.deumidificatore_armadio_zigbee_power
         features:
         - type: trend-graph
         features_position: bottom
         name: Potenza
         type: tile
         vertical: false
-      - entity: sensor.cameratania_deumidificatore_tania_tuya_corrente_deumidificatore_tania_tuya
+      - entity: sensor.deumidificatore_armadio_zigbee_current
         features_position: bottom
         name: Corrente
         type: tile
         vertical: false
-      - entity: sensor.cameratania_deumidificatore_tania_tuya_tensione
+      - entity: sensor.deumidificatore_armadio_zigbee_voltage
         features_position: bottom
         name: Tensione
         type: tile
         vertical: false
-      - entity: sensor.cameratania_deumidificatore_tania_tuya_ssid
+      - entity: sensor.deumidificatore_armadio_zigbee_energy
         features_position: bottom
         grid_options:
           rows: auto
-        name: WiFi
+        name: Consumo
         type: tile
         vertical: false
       - entity: sensor.cameratania_deumidificatore_tania_tuya_wifi
