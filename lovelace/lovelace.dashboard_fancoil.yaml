@@ -520,9 +520,9 @@ config:
         name: Consumo
         type: tile
         vertical: false
-      - entity: sensor.cameratania_deumidificatore_tania_tuya_wifi
+      - entity: sensor.0xa4c1383e0fd87686_linkquality
         features_position: bottom
-        name: WiFi
+        name: LinkQulity
         type: tile
         vertical: false
       - chart_type: bar

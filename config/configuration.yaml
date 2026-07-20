@@ -70,7 +70,7 @@ template:
               '38:1f:8d:90:0d:89': 'pet feeder',
               '50:8a:06:5c:04:72': 'luce sopra Tuya',
               '40:ca:63:39:6c:12': 'cooktop Samsung',
-              'd8:f1:5b:a1:e0:13': 'Deumidificatore Tania Tuya',
+              'd8:f1:5b:a1:e0:13': 'OLD Deumidificatore Tania Tuya',
               'd0:27:04:c3:db:32': 'Deumidificatore cantina Sonoff',
               '70:03:9f:74:79:f9': 'tenda giardino old via Sonoff',
               '9a:da:c4:b3:47:56': 'irrigazione Sonoff 4CHPRoR3 via RE650',
@@ -1094,7 +1094,7 @@ template:
   - triggers:
       - trigger: state
         entity_id:
-          - sensor.deumidificatore_tania_oggi
+          - sensor.deumidificatore_armadio_oggi
           - sensor.box_deumidificatore_cantina_sonoff_energy_day
       - trigger: time_pattern
         minutes: "/5"
@@ -1108,10 +1108,10 @@ template:
         state_class: total_increasing
         icon: mdi:water-percent
         availability: >-
-          {{ has_value('sensor.deumidificatore_tania_oggi')
+          {{ has_value('sensor.deumidificatore_armadio_oggi')
              and has_value('sensor.box_deumidificatore_cantina_sonoff_energy_day') }}
         state: >-
-          {% set nuovo = (states('sensor.deumidificatore_tania_oggi') | float(0) +
+          {% set nuovo = (states('sensor.deumidificatore_armadio_oggi') | float(0) +
                           states('sensor.box_deumidificatore_cantina_sonoff_energy_day') | float(0))
                          | round(3) %}
           {% if now().hour == 0 and now().minute < 10 %}
@@ -2299,9 +2299,9 @@ utility_meter:
     source: sensor.panasonic_energia_consumata_acc_sensor
     cycle: monthly
 
-  deumidificatore_tania_oggi:
-    name: "Deumidificatore Tania Oggi"
-    source: sensor.cameratania_deumidificatore_tania_tuya_energia_totale
+  deumidificatore_armadio_oggi:
+    name: "Deumidificatore Armadio Oggi"
+    source: sensor.deumidificatore_armadio_zigbee_energy
     cycle: daily
 
   # --- FANCOIL (stima da durata accensione) ---
@@ -2392,7 +2392,7 @@ input_boolean:
     icon: mdi:hand-back-right
 
   deumidificatore_armadio_manuale:
-    name: "Deumidificatore Tania - Gestione Manuale"
+    name: "Deumidificatore Armadio - Gestione Manuale"
     initial: false
     icon: mdi:hand-back-right
 
