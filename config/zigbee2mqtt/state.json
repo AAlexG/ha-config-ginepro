@@ -24,8 +24,8 @@
     "0xa4c138e6a0d06219": {
         "voltage": 2200,
         "battery": 0,
-        "temperature": 28.66,
-        "humidity": 61.72,
+        "temperature": 28.69,
+        "humidity": 63.03,
         "linkquality": 180
     },
     "0xa4c1385040d042fb": {
@@ -35,7 +35,7 @@
         "power_outage_memory": "restore",
         "indicator_mode": "off/on",
         "child_lock": "UNLOCK",
-        "voltage": 218.1,
+        "voltage": 224.3,
         "power": 0,
         "current": 0,
         "linkquality": 120
@@ -54,14 +54,14 @@
     },
     "0xa4c1384b868fa6bd": {
         "state": "ON",
-        "energy": 0.02,
+        "energy": 0.05,
         "countdown": 0,
         "power_outage_memory": "restore",
         "indicator_mode": "off",
         "child_lock": "UNLOCK",
-        "voltage": 224.8,
-        "power": 3.9,
-        "current": 0.065,
+        "voltage": 221.3,
+        "power": 9.1,
+        "current": 0.087,
         "update": {
             "state": "idle",
             "installed_version": 66,
