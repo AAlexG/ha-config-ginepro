@@ -1,0 +1,35 @@
+# automations_devices_1.yaml
+
+# ACCENSIONE/SPEGNIMENTO PROGRAMMATO – PRESA RESMED TANIA
+
+# Questa automazione gestisce la presa switch.cameratania_resmed_tania_presa_tuya_socket_1
+# con un orario fisso giornaliero.
+
+# Ogni giorno la presa viene accesa alle 22:00 di sera e spenta alle 10:00 di mattina.
+# Le due automazioni sono separate per mantenere il file chiaro e semplice da modificare.
+
+- id: cameratania_resmed_tania_presa_accensione_programmata
+  alias: "Camera Tania – presa ResMed accensione programmata"
+  description: >-
+    Accende ogni giorno alle 22:00 la presa della ResMed in Camera Tania.
+  mode: single
+  triggers:
+    - trigger: time
+      at: "22:00:00"
+  actions:
+    - action: switch.turn_on
+      target:
+        entity_id: switch.cameratania_resmed_tania_presa_tuya_socket_1
+
+- id: cameratania_resmed_tania_presa_spegnimento_programmato
+  alias: "Camera Tania – presa ResMed spegnimento programmato"
+  description: >-
+    Spegne ogni giorno alle 10:00 la presa della ResMed in Camera Tania.
+  mode: single
+  triggers:
+    - trigger: time
+      at: "10:00:00"
+  actions:
+    - action: switch.turn_off
+      target:
+        entity_id: switch.cameratania_resmed_tania_presa_tuya_socket_1

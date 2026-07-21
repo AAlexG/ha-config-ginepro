@@ -495,7 +495,8 @@ config:
         vertical: false
       type: grid
     - cards:
-      - heading: Presa CameraTania zigbee
+      - heading: Resmed Tania presa Tuya
+        heading_style: title
         type: heading
       - entity: switch.presa_cameratania_zigbee
         features:

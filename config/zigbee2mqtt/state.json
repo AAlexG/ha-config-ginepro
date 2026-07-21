@@ -4,14 +4,14 @@
         "voltage": 3000,
         "contact": false,
         "battery_low": false,
-        "linkquality": 116
+        "linkquality": 148
     },
     "0xa4c1380697d6ffff": {
         "battery": 100,
         "voltage": 3100,
-        "contact": false,
+        "contact": true,
         "battery_low": false,
-        "linkquality": 44
+        "linkquality": 136
     },
     "0xa4c138f820e17e6e": {
         "voltage": 2900,
@@ -19,14 +19,14 @@
         "contact": false,
         "tamper": false,
         "battery_low": false,
-        "linkquality": 100
+        "linkquality": 80
     },
     "0xa4c138e6a0d06219": {
-        "voltage": 2200,
-        "battery": 0,
-        "temperature": 28.69,
-        "humidity": 63.03,
-        "linkquality": 180
+        "voltage": 2600,
+        "battery": 53,
+        "temperature": 28.96,
+        "humidity": 64.91,
+        "linkquality": 96
     },
     "0xa4c1385040d042fb": {
         "energy": 0,
@@ -35,33 +35,33 @@
         "power_outage_memory": "restore",
         "indicator_mode": "off/on",
         "child_lock": "UNLOCK",
-        "voltage": 224.3,
+        "voltage": 218,
         "power": 0,
         "current": 0,
-        "linkquality": 120
+        "linkquality": 116
     },
     "0xa4c1383e0fd87686": {
-        "state": "OFF",
-        "energy": 0.26,
+        "state": "ON",
+        "energy": 0.75,
         "countdown": 0,
         "power_outage_memory": "restore",
         "indicator_mode": "off/on",
         "child_lock": "UNLOCK",
-        "voltage": 222.2,
-        "linkquality": 48,
-        "power": 0,
-        "current": 0
+        "voltage": 218.4,
+        "linkquality": 16,
+        "power": 204.5,
+        "current": 0.97
     },
     "0xa4c1384b868fa6bd": {
         "state": "ON",
-        "energy": 0.05,
-        "countdown": 0,
+        "energy": 0.11,
+        "countdown": 6180,
         "power_outage_memory": "restore",
         "indicator_mode": "off",
         "child_lock": "UNLOCK",
-        "voltage": 221.3,
-        "power": 9.1,
-        "current": 0.087,
+        "voltage": 219.2,
+        "power": 3.9,
+        "current": 0.043,
         "update": {
             "state": "idle",
             "installed_version": 66,
@@ -69,6 +69,6 @@
             "latest_source": null,
             "latest_release_notes": null
         },
-        "linkquality": 116
+        "linkquality": 180
     }
 }
