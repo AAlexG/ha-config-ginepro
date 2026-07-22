@@ -23,9 +23,9 @@
     },
     "0xa4c138e6a0d06219": {
         "voltage": 2600,
-        "battery": 53,
-        "temperature": 28.96,
-        "humidity": 64.91,
+        "battery": 52,
+        "temperature": 27.64,
+        "humidity": 55.54,
         "linkquality": 96
     },
     "0xa4c1385040d042fb": {
@@ -35,33 +35,33 @@
         "power_outage_memory": "restore",
         "indicator_mode": "off/on",
         "child_lock": "UNLOCK",
-        "voltage": 218,
+        "voltage": 220.3,
         "power": 0,
         "current": 0,
         "linkquality": 116
     },
     "0xa4c1383e0fd87686": {
-        "state": "ON",
-        "energy": 0.75,
+        "state": "OFF",
+        "energy": 1.99,
         "countdown": 0,
         "power_outage_memory": "restore",
         "indicator_mode": "off/on",
         "child_lock": "UNLOCK",
-        "voltage": 218.4,
+        "voltage": 225.1,
         "linkquality": 16,
-        "power": 204.5,
-        "current": 0.97
+        "power": 0,
+        "current": 0
     },
     "0xa4c1384b868fa6bd": {
-        "state": "ON",
+        "state": "OFF",
         "energy": 0.11,
-        "countdown": 6180,
+        "countdown": 0,
         "power_outage_memory": "restore",
-        "indicator_mode": "off",
+        "indicator_mode": "off/on",
         "child_lock": "UNLOCK",
-        "voltage": 219.2,
-        "power": 3.9,
-        "current": 0.043,
+        "voltage": 225.2,
+        "power": 0,
+        "current": 0,
         "update": {
             "state": "idle",
             "installed_version": 66,

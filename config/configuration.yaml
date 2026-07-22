@@ -75,7 +75,8 @@ template:
               '9a:da:c4:b3:47:56': 'irrigazione Sonoff 4CHPRoR3 via RE650',
               'd8:eb:46:84:3d:bd': 'Chromecast sotto',
               '74:ee:2a:e7:76:6d': 'Citofono Philips forse?',
-              '66:00:c0:a6:9c:6e': 'S22 Ultra di Tania'
+              '66:00:c0:a6:9c:6e': 'S22 Ultra di Tania',
+              'F8:6D:CC:3D:26:D4': 'Fiat 500e'
             } }}
 
   #--- WIFI: TABELLA DINAMICA PER PLANCIA (righe da tracker Netgear) ---

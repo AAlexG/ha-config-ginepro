@@ -498,42 +498,30 @@ config:
       - heading: Resmed Tania presa Tuya
         heading_style: title
         type: heading
-      - entity: switch.presa_cameratania_zigbee
+      - entity: switch.cameratania_resmed_tania_presa_tuya_socket_1
         features:
         - type: toggle
         features_position: bottom
         name: Stato
         type: tile
         vertical: false
-      - entity: sensor.0xa4c1384b868fa6bd_linkquality
+      - entity: sensor.cameratania_resmed_tania_presa_tuya_potenza
         features:
         - type: trend-graph
-        features_position: bottom
-        name: LinkQuality
-        type: tile
-        vertical: false
-      - entity: sensor.presa_cameratania_zigbee_energy
-        features_position: bottom
-        name: Consumo
-        type: tile
-        vertical: false
-      - entity: sensor.presa_cameratania_zigbee_power
         features_position: bottom
         name: Potenza
         type: tile
         vertical: false
-      - entity: sensor.presa_cameratania_zigbee_current
+      - entity: sensor.cameratania_resmed_tania_presa_tuya_corrente_resmed_tania_presa_tuya
         features_position: bottom
         name: Corrente
         type: tile
         vertical: false
-      - entity: sensor.presa_cameratania_zigbee_voltage
+      - entity: sensor.cameratania_resmed_tania_presa_tuya_tensione
         features_position: bottom
         name: Tensione
         type: tile
         vertical: false
-      - heading: Presa box zigbee
-        type: heading
       type: grid
     - cards:
       - heading: Presa box bici zigbee
