@@ -1,4 +1,4 @@
-# configuration_181.yaml
+# configuration_182.yaml
 default_config:
 
 #==================================================================================
@@ -197,6 +197,9 @@ template:
 
       - name: "Panel Max Strength Value"
         unique_id: "panel_max_strength_value"
+        availability: >-
+          {% set entities = ['sensor.panel_a1_signal_strength', 'sensor.panel_a2_signal_strength', 'sensor.panel_a3_signal_strength', 'sensor.panel_a4_signal_strength', 'sensor.panel_a5_signal_strength', 'sensor.panel_a6_signal_strength', 'sensor.panel_a7_signal_strength', 'sensor.panel_a8_signal_strength', 'sensor.panel_a9_signal_strength', 'sensor.panel_a10_signal_strength', 'sensor.panel_b1_signal_strength', 'sensor.panel_b2_signal_strength', 'sensor.panel_b3_signal_strength', 'sensor.panel_b4_signal_strength', 'sensor.panel_b5_signal_strength', 'sensor.panel_b6_signal_strength', 'sensor.panel_b7_signal_strength', 'sensor.panel_b8_signal_strength', 'sensor.panel_b9_signal_strength', 'sensor.panel_b10_signal_strength', 'sensor.panel_b11_signal_strength'] %}
+          {{ entities | select('has_value') | list | count > 0 }}
         unit_of_measurement: "dBm"
         state_class: measurement
         state: >-
@@ -208,10 +211,13 @@ template:
               {% set ns.best_val = v %}
             {% endif %}
           {% endfor %}
-          {{ ns.best_val if ns.best_val > -999999 else None }}
+          {{ ns.best_val }}
 
       - name: "Panel Min Strength Value"
         unique_id: "panel_min_strength_value"
+        availability: >-
+          {% set entities = ['sensor.panel_a1_signal_strength', 'sensor.panel_a2_signal_strength', 'sensor.panel_a3_signal_strength', 'sensor.panel_a4_signal_strength', 'sensor.panel_a5_signal_strength', 'sensor.panel_a6_signal_strength', 'sensor.panel_a7_signal_strength', 'sensor.panel_a8_signal_strength', 'sensor.panel_a9_signal_strength', 'sensor.panel_a10_signal_strength', 'sensor.panel_b1_signal_strength', 'sensor.panel_b2_signal_strength', 'sensor.panel_b3_signal_strength', 'sensor.panel_b4_signal_strength', 'sensor.panel_b5_signal_strength', 'sensor.panel_b6_signal_strength', 'sensor.panel_b7_signal_strength', 'sensor.panel_b8_signal_strength', 'sensor.panel_b9_signal_strength', 'sensor.panel_b10_signal_strength', 'sensor.panel_b11_signal_strength'] %}
+          {{ entities | select('has_value') | list | count > 0 }}
         unit_of_measurement: "dBm"
         state_class: measurement
         state: >-
@@ -223,7 +229,7 @@ template:
               {% set ns.best_val = v %}
             {% endif %}
           {% endfor %}
-          {{ ns.best_val if ns.best_val < 999999999 else None }}
+          {{ ns.best_val }}
 
       - name: "Panels Zero Production"
         unique_id: "panels_zero_production"
@@ -624,7 +630,7 @@ template:
       # leggere le stesse statistiche.
 
       # ============================================================
-      # ELETTRICITA: prezzo marginale variabile ricostruito da PUN
+      # ELETTRICITA: prezzo a consumo (parte variabile) ricostruito da PUN
       # (NUOVO – configuration_157)
       # Contratto Plenitude "Trend Casa Base Luce" (monorario,
       # indice PUN Index GME, aggiornamento mensile).
@@ -1263,7 +1269,7 @@ command_line:
       name: "Ultima Modifica Configurazione"
       command: "find . -maxdepth 2 -name '*.yaml' -exec stat -c '%Y' {} + | sort -n | tail -1"
       scan_interval: 120
-      value_template: "{{ value | int }}"
+      value_template: "{{ value | int(none) }}"
       
 
 #--- SENSORI STATISTICI ---

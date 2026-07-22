@@ -1,4 +1,4 @@
-# automations_120.yaml
+# automations_121.yaml
 #prova
 #==================================================================================
 # 1. IRRIGAZIONE – Ciclo programmato (O1/O2) con gate meteo
@@ -956,7 +956,7 @@
         {{ trigger.from_state is not none 
            and trigger.from_state.state not in ['unknown', 'unavailable'] 
            and trigger.to_state.state not in ['unknown', 'unavailable']
-           and trigger.to_state.state | int > trigger.from_state.state | int }}
+           and trigger.to_state.state | int(0) > trigger.from_state.state | int(0) }}
   actions:
     - delay: "00:05:00" # <--- Attende 5 minuti dall'ultimo cambio di stato del sensore
     - action: hassio.addon_start

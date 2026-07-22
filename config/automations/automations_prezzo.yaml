@@ -1,6 +1,6 @@
-# automations_prezzo_1.yaml
-# Aggiorna input_number.elettricita_prezzo_kwh con il prezzo marginale
-# ricostruito dal PUN (sensor.elettricita_prezzo_kwh_variabile).
+# automations_prezzo_2.yaml
+# Aggiorna input_number.elettricita_prezzo_kwh con il prezzo a consumo
+# (parte variabile) ricostruito dal PUN (sensor.elettricita_prezzo_kwh_variabile).
 # Tutti i sensori di costo esistenti continuano a leggere l'input_number,
 # che ora si allinea automaticamente all'indice mensile del contratto.
 - id: elettricita_prezzo_aggiorna_da_pun

@@ -1,4 +1,4 @@
-# scripts_49.yaml
+# scripts_50.yaml
 
 #==================================================================================
 # SCRIPT: APRI CANCELLO CASA
@@ -482,10 +482,13 @@ panasonic_set_target_mandata:
   alias: "Panasonic – Imposta Target Mandata Manuale"
   mode: single
   sequence:
+    # Guardia: non pubblica nulla se lo slider non ha un valore numerico
+    - condition: template
+      value_template: "{{ has_value('input_number.panasonic_target_mandata_manuale') }}"
     - action: mqtt.publish
       data:
         topic: "panasonic_heat_pump/commands/SetZ1CoolRequestTemperature"
-        payload: "{{ states('input_number.panasonic_target_mandata_manuale') | int }}"
+        payload: "{{ states('input_number.panasonic_target_mandata_manuale') | int(0) }}"
 
 #==================================================================================
 # SCRIPT: CALDAIA DHW ON

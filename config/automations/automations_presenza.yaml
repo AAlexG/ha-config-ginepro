@@ -1,4 +1,4 @@
-# automations_presenza_9.yaml
+# automations_presenza_10.yaml
 
 #==================================================================================
 # 1. NOTIFICA - Nuovo dispositivo MAI VISTO rilevato sulla rete
@@ -48,27 +48,88 @@
   variables:
     mac_whitelist: *mac_whitelist
   triggers:
-    - platform: event
-      event_type: state_changed
+    # Elenco esplicito dei tracker Netgear (da integration_entities, 22/07/2026).
+    # Il filtro "to: home" avviene nel core, senza valutare template a ogni
+    # evento del sistema. I dispositivi NUOVI non in elenco sono comunque
+    # coperti dall'automazione 1 (entity_registry_updated); dopo averli
+    # aggiunti alla whitelist, aggiungerli anche a questo elenco.
+    - platform: state
+      entity_id:
+        - device_tracker.186_camera_sopra_8k_reolink
+        - device_tracker.168_camera_georgi_reolink_e1
+        - device_tracker.055_broadlink_salotto
+        - device_tracker.193_camera_cucina_reolink
+        - device_tracker.184_camera_tania_reolink_e1_zoom
+        - device_tracker.177_camera_nata_reolink_e1zoom
+        - device_tracker.192_camera_barbeque_reolink
+        - device_tracker.182_camera_box_reolink_e1pro
+        - device_tracker.183_camera_portone_reolinklumus
+        - device_tracker.047_sonoff_433_rf_bridge
+        - device_tracker.sonoff_sonoff_wifi_switch
+        - device_tracker.191_camera_sopra_gambe_citronics
+        - device_tracker.tapo_smart_plug_sotto_tplink
+        - device_tracker.179_camera_cancello_reolink
+        - device_tracker.019_inverter_uflex_wifi_modul
+        - device_tracker.064_shelly_valvola_pompa_caldaia
+        - device_tracker.espressif
+        - device_tracker.032_fancoil_tania_shelly_1_gen4
+        - device_tracker.031_fancoil_georgi_shelly_1_gen4
+        - device_tracker.034_fancoil_sala_shelly_1_gen4
+        - device_tracker.google_chromecast
+        - device_tracker.box_deumidificatore_cantina_sonoff
+        - device_tracker.unknown
+        - device_tracker.005_tv_sala_sony
+        - device_tracker.somfy_connectivity_kit
+        - device_tracker.google_nest_sopra
+        - device_tracker.046_lavatrice_miele
+        - device_tracker.018_repeater_tp_re650
+        - device_tracker.077_rapsberry_pi
+        - device_tracker.037_heishamon_via_re650
+        - device_tracker.036_otgw_x_baxi_via_re650
+        - device_tracker.stazione_meteo_sottotetto
+        - device_tracker.google_home_camera_georgi
+        - device_tracker.presa_luce_cucina
+        - device_tracker.contattore_auto
+        - device_tracker.google_home_mini_yamaha
+        - device_tracker.011_stazione_meteo_sala
+        - device_tracker.oneplus_13
+        - device_tracker.chromecast_sotto
+        - device_tracker.google_nest_sala
+        - device_tracker.sony_tv_sopra
+        - device_tracker.pet_feeder
+        - device_tracker.s22_ultra_di_tania
+        - device_tracker.aspirapolvere_lina
+        - device_tracker.085_camera_sotto_pergola_ezviz
+        - device_tracker.048_sasha_msi_pc
+        - device_tracker.luce_sopra_tuya
+        - device_tracker.cooktop_samsung
+        - device_tracker.wnc
+        - device_tracker.dev_15_f3_cc
+        - device_tracker.dev_7c_cf_ce
+        - device_tracker.dev_08_0f_b8
+        - device_tracker.dev_c0_d0_9c
+        - device_tracker.017_satellite_rbs50_box
+        - device_tracker.dev_b3_47_56
+        - device_tracker.netgear_orbi_satellite_rbs50
+        - device_tracker.cameratania_deumidificatore_tania_tuya
+        - device_tracker.001_modem_fastweb
+      to: "home"
   condition:
+    # Tracker senza attributo MAC (app Companion, GPS) ignorati; notifica
+    # solo se il MAC non e' nella whitelist dei dispositivi conosciuti.
     - condition: template
       value_template: >-
-        {{ trigger.event.data.entity_id.startswith('device_tracker.')
-           and trigger.event.data.new_state is not none
-           and trigger.event.data.old_state is not none
-           and trigger.event.data.new_state.state == 'home'
-           and trigger.event.data.old_state.state != 'home'
-           and (trigger.event.data.new_state.attributes.get('mac', '') or '') != ''
-           and (trigger.event.data.new_state.attributes.get('mac', '') | lower) not in (mac_whitelist | map('lower') | list) }}
+        {{ (trigger.to_state.attributes.get('mac', '') or '') != ''
+           and (trigger.to_state.attributes.get('mac', '') | lower) not in (mac_whitelist | map('lower') | list) }}
   action:
     - action: notify.mobile_app_cph2653
       data:
         title: "Rete - dispositivo connesso"
         message: >-
-          {{ trigger.event.data.new_state.attributes.get('friendly_name', trigger.event.data.entity_id) }}
-          | IP: {{ trigger.event.data.new_state.attributes.get('ip', 'n/d') }}
-          | MAC: {{ trigger.event.data.new_state.attributes.get('mac', 'n/d') }}
-          | Host: {{ trigger.event.data.new_state.attributes.get('host_name', 'n/d') }}
+          {{ trigger.to_state.attributes.get('friendly_name', trigger.entity_id) }}
+          | IP: {{ trigger.to_state.attributes.get('ip', 'n/d') }}
+          | MAC: {{ trigger.to_state.attributes.get('mac', 'n/d') }}
+          | Host: {{ trigger.to_state.attributes.get('host_name', 'n/d') }}
           
 
 #==================================================================================
