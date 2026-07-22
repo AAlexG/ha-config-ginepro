@@ -1,4 +1,4 @@
-# configuration_182.yaml
+# configuration_183.yaml
 default_config:
 
 #==================================================================================
@@ -2481,6 +2481,13 @@ input_boolean:
     name: "Clima – Free Cooling Notifica Oggi"
     initial: false
     icon: mdi:bell-check
+
+  # Acceso quando il free cooling ferma i fancoil (porte finestre
+  # presumibilmente aperte); spento dalla notifica di riaccensione
+  # del primo fancoil (automations_clima: fancoil_riaccensione_dopo_freecooling)
+  clima_freecooling_finestre:
+    name: "Free cooling – Finestre aperte"
+    icon: mdi:window-open-variant
 
   clima_freeheating_notifica_oggi:
     name: "Clima – Free Heating Notifica Oggi"

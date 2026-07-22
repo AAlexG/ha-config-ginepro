@@ -1,4 +1,4 @@
-# automations_clima_43.yaml
+# automations_clima_44.yaml
 
 
 
@@ -893,6 +893,11 @@
             - action: input_boolean.turn_on
               target:
                 entity_id: input_boolean.clima_freecooling_attivo
+            # Fancoil in pausa: arma la notifica di riaccensione
+            # (porte finestre presumibilmente aperte)
+            - action: input_boolean.turn_on
+              target:
+                entity_id: input_boolean.clima_freecooling_finestre
             - if:
                 - condition: state
                   entity_id: input_boolean.clima_freecooling_notifica_oggi
@@ -921,6 +926,44 @@
             - action: input_boolean.turn_off
               target:
                 entity_id: input_boolean.clima_freecooling_attivo
+
+#==================================================================================
+# 7b. FANCOIL – NOTIFICA RIACCENSIONE DOPO FREE COOLING
+# Durante il free cooling i fancoil sono fermi e le porte finestre vengono
+# aperte. Al primo fancoil che si riaccende (da controllo periodico, accensione
+# sala fuori target, toggle manuale o rientro vacanza) notifica quale fancoil
+# e' partito, per chiudere le porte finestre. Notifica una sola volta:
+# il flag si spegne e i fancoil successivi non notificano. Se il free cooling
+# termina senza riaccensioni il flag resta armato fino alla prima riaccensione
+# futura.
+#==================================================================================
+- id: fancoil_riaccensione_dopo_freecooling
+  alias: "Fancoil – Riaccensione dopo Free Cooling (chiudi finestre)"
+  description: >
+    Notifica la prima riaccensione di un fancoil dopo un periodo di free
+    cooling, per ricordare di chiudere le porte finestre.
+  mode: single
+  triggers:
+    - platform: state
+      entity_id:
+        - switch.camerageorgi_shelly_fancoil_georgi
+        - switch.camerageorgi_shelly_fancoil_georgi_2
+        - switch.sala_fancoil_sala_shelly_1gen4
+      to: "on"
+  condition:
+    - condition: state
+      entity_id: input_boolean.clima_freecooling_finestre
+      state: "on"
+  actions:
+    - action: notify.mobile_app_cph2653
+      data:
+        title: "🪟 Fancoil riacceso"
+        message: >
+          {{ trigger.to_state.attributes.get('friendly_name', trigger.entity_id) }}
+          e' acceso: il free cooling e' finito, chiudi le porte finestre.
+    - action: input_boolean.turn_off
+      target:
+        entity_id: input_boolean.clima_freecooling_finestre
 
 #==================================================================================
 # 8. PANASONIC - CLIMA – PRE-RAFFRESCAMENTO DA PREVISIONI METEO

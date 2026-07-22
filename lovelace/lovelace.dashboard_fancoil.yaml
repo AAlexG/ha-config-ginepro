@@ -124,7 +124,7 @@ config:
         type: heading
       - entities:
         - entity: sensor.hp1000se_pro_pro_v1_6_4_indoor_temperature
-          name: Sala
+          name: Temp.Sala
         - entity: sensor.sonoff_10008d119d_temperature
           name: Georgi
         - entity: sensor.termometro_tania_zigbee_temperature
@@ -134,7 +134,7 @@ config:
         - entity: sensor.panasonic_heat_pump_main_main_outlet_temp
           name: Pompa Out
         - entity: sensor.hp1000se_pro_pro_v1_6_4_indoor_humidity
-          name: Sala
+          name: Humid.Sala
         - entity: sensor.sonoff_10008d119d_humidity
           name: Georgi
         - entity: sensor.termometro_tania_zigbee_humidity
@@ -327,7 +327,8 @@ config:
       - chart_type: bar
         days_to_show: 7
         entities:
-        - sensor.deumidificatore_armadio_oggi
+        - entity: sensor.deumidificatore_armadio_oggi
+          name: Consumo al giorno
         period: day
         stat_types:
         - state
@@ -335,7 +336,8 @@ config:
       - chart_type: bar
         days_to_show: 365
         entities:
-        - sensor.deumidificatore_armadio_oggi
+        - entity: sensor.deumidificatore_armadio_oggi
+          name: Consumo mensile
         period: month
         stat_types:
         - change
@@ -522,6 +524,24 @@ config:
         name: Tensione
         type: tile
         vertical: false
+      - chart_type: bar
+        days_to_show: 7
+        entities:
+        - entity: sensor.cameratania_resmed_tania_presa_tuya_energia_totale
+          name: Consumo al giorno
+        period: day
+        stat_types:
+        - change
+        type: statistics-graph
+      - chart_type: bar
+        days_to_show: 365
+        entities:
+        - entity: sensor.cameratania_resmed_tania_presa_tuya_energia_totale
+          name: Consumo al giorno
+        period: month
+        stat_types:
+        - change
+        type: statistics-graph
       type: grid
     - cards:
       - heading: Presa box bici zigbee

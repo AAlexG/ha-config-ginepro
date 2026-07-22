@@ -1682,14 +1682,5 @@ config:
         type: tile
         vertical: false
       type: grid
-    - cards:
-      - heading: Nuova sezione
-        type: heading
-      type: grid
-    - cards:
-      - entity: sensor.0xa4c1384b868fa6bd_linkquality
-        type: tile
-      title: Presa CameraTania zigbee
-      type: grid
     title: Casa
     type: sections
