@@ -24,8 +24,8 @@
     "0xa4c138e6a0d06219": {
         "voltage": 2600,
         "battery": 52,
-        "temperature": 28.62,
-        "humidity": 56.11,
+        "temperature": 28.5,
+        "humidity": 56.13,
         "linkquality": 96
     },
     "0xa4c1385040d042fb": {
@@ -59,7 +59,7 @@
         "power_outage_memory": "restore",
         "indicator_mode": "off/on",
         "child_lock": "UNLOCK",
-        "voltage": 222.7,
+        "voltage": 219.4,
         "power": 0,
         "current": 0,
         "update": {
