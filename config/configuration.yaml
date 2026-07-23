@@ -22,6 +22,7 @@ template:
               '14:59:c0:51:55:3f': '002 Orbi RBR50',
               '38:18:4c:1a:d0:c3': '005 TV sala Sony',
               'd8:f1:5b:15:26:40': '011 stazione meteo sala (IP fisso DHCP)',
+              '22:7a:a4:df:b7:d7': '014 fritz repeater 2400',
               '44:a5:6e:48:69:d8': '015 RBS20 sotto (IP fisso DHCP)',
               '38:94:ed:0c:78:df': '016 RBS50 sopra (IP fisso DHCP)',
               'a0:40:a0:5e:40:d2': '017 RBS50 box (IP fisso DHCP)',

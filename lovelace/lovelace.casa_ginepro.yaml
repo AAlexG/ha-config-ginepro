@@ -622,10 +622,10 @@ config:
         icon_tap_action:
           action: navigate
           navigation_path: /dashboard-fancoil/fancoil
-        name: Deum.Tania
+        name: Deum.Cantina
         type: tile
         vertical: false
-      - entity: sensor.box_deumidificatore_cantina_sonoff_power
+      - entity: sensor.deumidificatore_armadio_zigbee_power
         features_position: bottom
         grid_options:
           columns: 4
@@ -633,7 +633,7 @@ config:
         icon_tap_action:
           action: navigate
           navigation_path: /dashboard-fancoil/fancoil
-        name: Deum.cantina
+        name: Deum.armadio
         type: tile
         vertical: false
       - entity: sensor.lavatricemielewci870_consumo_energia
