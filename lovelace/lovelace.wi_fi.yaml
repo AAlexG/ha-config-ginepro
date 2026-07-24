@@ -51,6 +51,8 @@ config:
         name: Term.Tania
         type: tile
         vertical: false
+      - entity: sensor.backup_backup_manager_state
+        type: tile
       columns: 2
       square: false
       title: Zigbee

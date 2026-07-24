@@ -66,3 +66,6 @@ devices:
     friendly_name: Presa CameraTania zigbee
     power_precision: 3
     current_precision: 3
+  '0x0c4314fffe52b0c2':
+    friendly_name: Presa zigbee nuova
+    description: Presa zigbee nuova

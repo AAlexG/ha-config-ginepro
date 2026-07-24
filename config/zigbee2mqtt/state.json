@@ -4,14 +4,14 @@
         "voltage": 3000,
         "contact": false,
         "battery_low": false,
-        "linkquality": 148
+        "linkquality": 116
     },
     "0xa4c1380697d6ffff": {
         "battery": 100,
         "voltage": 3100,
         "contact": true,
         "battery_low": false,
-        "linkquality": 136
+        "linkquality": 92
     },
     "0xa4c138f820e17e6e": {
         "voltage": 2900,
@@ -19,14 +19,14 @@
         "contact": false,
         "tamper": false,
         "battery_low": false,
-        "linkquality": 80
+        "linkquality": 152
     },
     "0xa4c138e6a0d06219": {
         "voltage": 2600,
         "battery": 52,
-        "temperature": 27.35,
-        "humidity": 50.67,
-        "linkquality": 96
+        "temperature": 28.47,
+        "humidity": 51.17,
+        "linkquality": 104
     },
     "0xa4c1385040d042fb": {
         "energy": 0,
@@ -35,22 +35,22 @@
         "power_outage_memory": "restore",
         "indicator_mode": "off/on",
         "child_lock": "UNLOCK",
-        "voltage": 219.2,
+        "voltage": 219.5,
         "power": 0,
         "current": 0,
-        "linkquality": 116
+        "linkquality": 84
     },
     "0xa4c1383e0fd87686": {
-        "state": "OFF",
-        "energy": 4.91,
+        "state": "ON",
+        "energy": 6.51,
         "countdown": 0,
         "power_outage_memory": "restore",
         "indicator_mode": "off/on",
         "child_lock": "UNLOCK",
-        "voltage": 218.4,
-        "linkquality": 16,
-        "power": 0,
-        "current": 0
+        "voltage": 220.1,
+        "linkquality": 136,
+        "power": 199.4,
+        "current": 0.94
     },
     "0xa4c1384b868fa6bd": {
         "state": "OFF",
@@ -59,7 +59,7 @@
         "power_outage_memory": "restore",
         "indicator_mode": "off/on",
         "child_lock": "UNLOCK",
-        "voltage": 221.7,
+        "voltage": 219.6,
         "power": 0,
         "current": 0,
         "update": {
@@ -69,6 +69,16 @@
             "latest_source": null,
             "latest_release_notes": null
         },
-        "linkquality": 180
+        "linkquality": 132
+    },
+    "0x0c4314fffe52b0c2": {
+        "state": "OFF",
+        "countdown": 0,
+        "power_outage_memory": "on",
+        "indicator_mode": "off/on",
+        "power": 0,
+        "current": 0,
+        "voltage": 223,
+        "energy": 0
     }
 }
