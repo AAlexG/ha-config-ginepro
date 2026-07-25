@@ -1,4 +1,4 @@
-# configuration_183.yaml
+# configuration_185.yaml
 default_config:
 
 #==================================================================================
@@ -94,8 +94,10 @@ template:
           {{ ns.n }}
         attributes:
           righe: >-
-            {# Itera la WHITELIST: ogni MAC produce sempre una riga, anche se il #}
-            {# tracker Netgear e' stato eliminato/disabilitato (-> n/d, fuori casa) #}
+            {# Itera la WHITELIST: ogni MAC produce sempre una riga, anche se il  #}
+            {# tracker Netgear e' assente/disabilitato o non fornisce un IP.       #}
+            {# In tal caso: nome con 3 cifre iniziali -> IP 192.168.1.xxx, in casa; #}
+            {# altrimenti -> n/d, fuori casa.                                        #}
             {% set nomi = state_attr('sensor.wifi_dispositivi', 'mac_nomi') or {} %}
             {% set ng = integration_entities('netgear') %}
             {% set pairs = namespace(l=[]) %}
@@ -107,8 +109,14 @@ template:
             {% set righe = namespace(list=[]) %}
             {% for mac, nome in nomi.items() %}
             {% set e = tmap.get(mac | lower) %}
-            {% if e is none %}
+            {% set ng_ip = (state_attr(e, 'ip') if e is not none else none) %}
+            {% if ng_ip in [none, '', 'unknown', 'unavailable'] %}
+            {% set pref = nome[:3] %}
+            {% if pref.isdigit() %}
+            {% set righe.list = righe.list + [{'nome': nome, 'mac': mac | lower, 'ip': '192.168.1.' ~ (pref | int), 'ssid': 'n/d', 'segnale': none, 'casa': true}] %}
+            {% else %}
             {% set righe.list = righe.list + [{'nome': nome, 'mac': mac | lower, 'ip': 'n/d', 'ssid': 'n/d', 'segnale': none, 'casa': false}] %}
+            {% endif %}
             {% else %}
             {% set ssid = namespace(v='n/d') %}
             {% set sig = namespace(v=none) %}
@@ -120,7 +128,7 @@ template:
             {% set sig.v = states(s) | float(none) %}
             {% endif %}
             {% endfor %}
-            {% set righe.list = righe.list + [{'nome': nome, 'mac': mac | lower, 'ip': state_attr(e, 'ip') or 'n/d', 'ssid': ssid.v, 'segnale': sig.v, 'casa': states(e) == 'home'}] %}
+            {% set righe.list = righe.list + [{'nome': nome, 'mac': mac | lower, 'ip': ng_ip, 'ssid': ssid.v, 'segnale': sig.v, 'casa': states(e) == 'home'}] %}
             {% endif %}
             {% endfor %}
             {{ (righe.list | selectattr('casa') | sort(attribute='nome') | list) + (righe.list | rejectattr('casa') | sort(attribute='nome') | list) }}
@@ -2153,19 +2161,17 @@ input_datetime:
     icon: mdi:history
 
   # Orari del programma irrigazione (modificabili da plancia). Solo ora, niente data.
-  # initial: valore di partenza se manca il restore_state (evita stato unavailable,
-  # che bloccherebbe silenziosamente i trigger del ciclo programmato).
+  # NIENTE "initial": con initial il valore torna al default a ogni riavvio/reload
+  # (initial sovrascrive restore_state). Senza, lo stato scelto da plancia persiste.
   irrigazione_ora_mattino:
     name: "Irrigazione - Ora mattino (O1)"
     has_date: false
     has_time: true
-    initial: "08:25:00"
     icon: mdi:weather-sunset-up
   irrigazione_ora_sera:
     name: "Irrigazione - Ora sera (O2)"
     has_date: false
     has_time: true
-    initial: "20:25:00"
     icon: mdi:weather-sunset-down
 
 input_select:

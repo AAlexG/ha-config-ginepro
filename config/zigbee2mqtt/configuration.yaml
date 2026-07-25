@@ -69,3 +69,5 @@ devices:
   '0x0c4314fffe52b0c2':
     friendly_name: Presa zigbee nuova
     description: Presa zigbee nuova
+  '0xa4c1380eff54ffff':
+    friendly_name: Termometro Georgi zigbee
