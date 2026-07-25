@@ -1,4 +1,4 @@
-# configuration_185.yaml
+# configuration_186.yaml
 default_config:
 
 #==================================================================================
@@ -2258,6 +2258,7 @@ utility_meter:
 
   auto_energia_mese:
     name: Auto Energia Mese
+    unique_id: auto_energia_mese
     source: sensor.solo_auto_contattore_energia_totale
     cycle: monthly
 
@@ -2268,6 +2269,7 @@ utility_meter:
 
   sauna_energia_mese:
     name: Sauna Energia Mese
+    unique_id: sauna_energia_mese
     source: sensor.solo_sauna_contatore_energia_totale
     cycle: monthly
 
@@ -2278,11 +2280,13 @@ utility_meter:
 
   rete_export_mese:
     name: A Rete Mese
+    unique_id: rete_export_mese
     source: sensor.inverter_uflex_total_energy_export
     cycle: monthly
 
   produzione_mese:
     name: Produzione Mese
+    unique_id: produzione_mese
     source: sensor.inverter_uflex_total_production
     cycle: monthly
 
@@ -2308,6 +2312,7 @@ utility_meter:
 
   panasonic_consumata_mese:
     name: "Panasonic Consumata Mese"
+    unique_id: panasonic_consumata_mese
     source: sensor.panasonic_energia_consumata_acc_sensor
     cycle: monthly
 
@@ -2319,31 +2324,37 @@ utility_meter:
   # --- FANCOIL (stima da durata accensione) ---
   fancoil_mese:
     name: "Fancoil Mese"
+    unique_id: fancoil_mese
     source: sensor.consumo_fancoil_totale_oggi
     cycle: monthly
 
   fancoil_totale:
     name: "Fancoil Totale"
+    unique_id: fancoil_totale
     source: sensor.consumo_fancoil_totale_oggi
 
   # --- DEUMIDIFICATORI (cantina + armadio) ---
   deumidificatori_mese:
     name: "Deumidificatori Mese"
+    unique_id: deumidificatori_mese
     source: sensor.consumo_deumidificatori_oggi
     cycle: monthly
 
   deumidificatori_totale:
     name: "Deumidificatori Totale"
+    unique_id: deumidificatori_totale
     source: sensor.consumo_deumidificatori_oggi
 
   # --- LAVATRICE MIELE ---
   lavatrice_mese:
     name: "Lavatrice Mese"
+    unique_id: lavatrice_mese
     source: sensor.lavatrice_energia
     cycle: monthly
 
   lavatrice_totale:
     name: "Lavatrice Totale"
+    unique_id: lavatrice_totale
     source: sensor.lavatrice_energia
 
   # --- LAVATRICE: acqua giornaliera (litri) ---
