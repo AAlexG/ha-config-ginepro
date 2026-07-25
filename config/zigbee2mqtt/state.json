@@ -24,8 +24,8 @@
     "0xa4c138e6a0d06219": {
         "voltage": 2600,
         "battery": 52,
-        "temperature": 27.87,
-        "humidity": 51.22,
+        "temperature": 27.93,
+        "humidity": 51.58,
         "linkquality": 120
     },
     "0xa4c1385040d042fb": {
@@ -35,21 +35,21 @@
         "power_outage_memory": "restore",
         "indicator_mode": "off/on",
         "child_lock": "UNLOCK",
-        "voltage": 215.1,
+        "voltage": 222.2,
         "power": 0,
         "current": 0,
         "linkquality": 140
     },
     "0xa4c1383e0fd87686": {
         "state": "ON",
-        "energy": 7.5,
+        "energy": 7.6,
         "countdown": 0,
         "power_outage_memory": "restore",
         "indicator_mode": "off/on",
         "child_lock": "UNLOCK",
-        "voltage": 216.1,
+        "voltage": 226.6,
         "linkquality": 44,
-        "power": 16.5,
+        "power": 17.7,
         "current": 0.08
     },
     "0xa4c1384b868fa6bd": {
@@ -59,7 +59,7 @@
         "power_outage_memory": "restore",
         "indicator_mode": "off/on",
         "child_lock": "UNLOCK",
-        "voltage": 216.4,
+        "voltage": 223,
         "power": 0,
         "current": 0,
         "update": {
@@ -78,23 +78,23 @@
         "indicator_mode": "off/on",
         "power": 0,
         "current": 0,
-        "voltage": 223,
+        "voltage": 227,
         "energy": 0,
         "linkquality": 200
     },
     "0xa4c1380eff54ffff": {
         "battery": 100,
-        "temperature": 29.5,
+        "temperature": 27.1,
         "voltage": 3200,
-        "humidity": 51.3,
+        "humidity": 52.2,
         "temperature_sensor_select": "internal",
         "comfort_temperature_min": 19,
         "comfort_temperature_max": 27,
         "comfort_humidity_min": 40,
         "comfort_humidity_max": 60,
         "temperature_units": "celsius",
-        "temperature_calibration": 0,
-        "humidity_calibration": 0,
+        "temperature_calibration": -1.4,
+        "humidity_calibration": -2.8,
         "linkquality": 236,
         "update": {
             "state": "available",

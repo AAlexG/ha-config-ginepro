@@ -1,4 +1,4 @@
-# automations_clima_44.yaml
+# automations_clima_45.yaml
 
 
 
@@ -367,7 +367,7 @@
   actions:
     - variables:
         mode: "{{ states('select.panasonic_heat_pump_main_operating_mode_state') }}"
-        t_georgi: "{{ states('sensor.sonoff_10008d119d_temperature') | float(25) }}"
+        t_georgi: "{{ states('sensor.termometro_georgi_zigbee_temperature') | float(25) }}"
         outlet: "{{ states('sensor.panasonic_heat_pump_main_main_outlet_temp') | float(20) }}"
         ora: "{{ now().hour }}"
         # Prelavoro: 21:00-22:59 — entrambi i fancoil attivi
@@ -756,7 +756,7 @@
         mod: "{{ states('input_select.clima_modalita') }}"
         t_attivo: >
           {% if mod == 'notte' %}
-            {{ states('sensor.sonoff_10008d119d_temperature') | float(25) }}
+            {{ states('sensor.termometro_georgi_zigbee_temperature') | float(25) }}
           {% else %}
             {{ states('sensor.hp1000se_pro_pro_v1_6_4_indoor_temperature') | float(25) }}
           {% endif %}
@@ -1252,7 +1252,7 @@
         mod: "{{ states('input_select.clima_modalita') }}"
         t_attivo: >
           {% if mod == 'notte' %}
-            {{ states('sensor.sonoff_10008d119d_temperature') | float(20) }}
+            {{ states('sensor.termometro_georgi_zigbee_temperature') | float(20) }}
           {% else %}
             {{ states('sensor.hp1000se_pro_pro_v1_6_4_indoor_temperature') | float(20) }}
           {% endif %}
@@ -1472,7 +1472,7 @@
     - trigger: state
       entity_id: sensor.hp1000se_pro_pro_v1_6_4_indoor_temperature
     - trigger: state
-      entity_id: sensor.sonoff_10008d119d_temperature
+      entity_id: sensor.termometro_georgi_zigbee_temperature
   conditions:
     - condition: state
       entity_id: switch.panasonic_heat_pump_main_heatpump_state
@@ -1493,7 +1493,7 @@
       value_template: >
         {% set mod = states('input_select.clima_modalita') %}
         {% if mod == 'notte' %}
-          {% set t = states('sensor.sonoff_10008d119d_temperature') | float(25) %}
+          {% set t = states('sensor.termometro_georgi_zigbee_temperature') | float(25) %}
           {% set target = states('input_number.maxtemp_notte_estate_letto') | float(25) %}
         {% else %}
           {% set t = states('sensor.hp1000se_pro_pro_v1_6_4_indoor_temperature') | float(25) %}

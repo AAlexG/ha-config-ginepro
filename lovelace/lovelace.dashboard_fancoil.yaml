@@ -125,7 +125,7 @@ config:
       - entities:
         - entity: sensor.hp1000se_pro_pro_v1_6_4_indoor_temperature
           name: Temp.Sala
-        - entity: sensor.sonoff_10008d119d_temperature
+        - entity: sensor.termometro_georgi_zigbee_temperature
           name: Georgi
         - entity: sensor.termometro_tania_zigbee_temperature
           name: Tania
@@ -135,7 +135,7 @@ config:
           name: Pompa Out
         - entity: sensor.hp1000se_pro_pro_v1_6_4_indoor_humidity
           name: Humid.Sala
-        - entity: sensor.sonoff_10008d119d_humidity
+        - entity: sensor.termometro_georgi_zigbee_humidity
           name: Georgi
         - entity: sensor.termometro_tania_zigbee_humidity
           name: Tania
@@ -405,38 +405,30 @@ config:
         type: statistics-graph
       type: grid
     - cards:
-      - heading: Termometro Georgi sonoff
+      - heading: Termometro Georgi zigbee
         heading_style: title
         icon: mdi:coolant-temperature
         type: heading
-      - entity: switch.sonoff_10008d119d
+      - entity: sensor.termometro_georgi_zigbee_temperature
         features_position: bottom
-        grid_options:
-          columns: 6
-          rows: auto
-        name: Stato
+        name: Temperatura
         type: tile
         vertical: false
-      - entity: climate.sonoff_10008d119d
-        features_position: bottom
-        name: "Modalit\xE0 "
-        type: tile
-        vertical: false
-      - entity: sensor.sonoff_10008d119d_rssi
-        features:
-        - type: trend-graph
-        features_position: bottom
-        name: WiFi
-        type: tile
-        vertical: false
-      - entity: sensor.sonoff_10008d119d_humidity
+      - entity: sensor.termometro_georgi_zigbee_humidity
         features_position: bottom
         name: "Umidit\xE0 "
         type: tile
         vertical: false
-      - entity: sensor.sonoff_10008d119d_temperature
+      - entity: sensor.termometro_georgi_zigbee_battery
         features_position: bottom
-        name: Temperatura
+        name: Batteria
+        type: tile
+        vertical: false
+      - entity: sensor.termometro_georgi_zigbee_linkquality
+        features:
+        - type: trend-graph
+        features_position: bottom
+        name: LinkQuality
         type: tile
         vertical: false
       type: grid
