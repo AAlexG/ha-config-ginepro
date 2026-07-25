@@ -71,3 +71,5 @@ devices:
     description: Presa zigbee nuova
   '0xa4c1380eff54ffff':
     friendly_name: Termometro Georgi zigbee
+    temperature_calibration: 0
+    humidity_calibration: 0

@@ -51,17 +51,17 @@ config:
         name: Term.Tania
         type: tile
         vertical: false
-      - entity: sensor.presa_zigbee_nuova_linkquality_2
-        features:
-        - type: trend-graph
-        features_position: bottom
-        type: tile
-        vertical: false
       - entity: sensor.termometro_georgi_zigbee_linkquality
         features:
         - type: trend-graph
         features_position: bottom
         name: Term.Georgi
+        type: tile
+        vertical: false
+      - entity: sensor.presa_zigbee_nuova_linkquality_2
+        features:
+        - type: trend-graph
+        features_position: bottom
         type: tile
         vertical: false
       columns: 2
