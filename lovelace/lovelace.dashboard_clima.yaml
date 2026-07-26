@@ -80,7 +80,7 @@ config:
         hours_to_show: 24
         refresh_interval: 60
         type: history-graph
-      - heading: Fancoil
+      - heading: Fancoil & Deumidificatori
         heading_style: title
         icon: mdi:heat-pump
         type: heading
@@ -91,21 +91,10 @@ config:
           name: Georgi
         - entity: switch.sala_fancoil_sala_shelly_1gen4
           name: Sala
-        grid_options:
-          columns: full
-          rows: auto
-        hours_to_show: 168
-        refresh_interval: 300
-        type: history-graph
-      - heading: Deumidificatori
-        heading_style: title
-        icon: mdi:heat-pump
-        type: heading
-      - entities:
-        - entity: switch.presa_deumidificatore_cantina
+        - entity: switch.deumidificatore_armadio_zigbee
+          name: Armadio
+        - entity: switch.box_deumidificatore_cantina_sonoff
           name: Cantina
-        - entity: switch.deumidificatore_armadio_sonoff_sonoff_1002a68db0_1
-          name: Armadio Tania
         grid_options:
           columns: full
           rows: auto

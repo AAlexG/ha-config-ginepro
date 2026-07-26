@@ -131,8 +131,6 @@ config:
           name: Tania
         - entity: sensor.hp1000se_pro_pro_v1_6_4_outdoor_temperature
           name: Esterna
-        - entity: sensor.panasonic_heat_pump_main_main_outlet_temp
-          name: Pompa Out
         - entity: sensor.hp1000se_pro_pro_v1_6_4_indoor_humidity
           name: Humid.Sala
         - entity: sensor.termometro_georgi_zigbee_humidity
@@ -147,6 +145,36 @@ config:
         hours_to_show: 24
         refresh_interval: 60
         type: history-graph
+      - entity: sensor.panasonic_heat_pump_main_main_target_temp
+        features_position: bottom
+        name: PompaTarget
+        type: tile
+        vertical: false
+      - entity: sensor.panasonic_heat_pump_main_main_outlet_temp
+        features_position: bottom
+        name: PompaOut
+        type: tile
+        vertical: false
+      - entity: sensor.opentherm_gateway_otgw_otgw_control_setpoint
+        features_position: bottom
+        name: RiscalTarget
+        type: tile
+        vertical: false
+      - entity: sensor.opentherm_gateway_otgw_otgw_boiler_flow_water_temperature
+        features_position: bottom
+        name: RiscalOUT
+        type: tile
+        vertical: false
+      - entity: sensor.opentherm_gateway_otgw_otgw_dhw_setpoint
+        features_position: bottom
+        name: Sanit.Target
+        type: tile
+        vertical: false
+      - entity: sensor.opentherm_gateway_otgw_otgw_dhw_temperature
+        features_position: bottom
+        name: Sanit.Ora
+        type: tile
+        vertical: false
       type: grid
     - cards:
       - heading: 'Accensioni Fancoil e Deumidificatori:'
@@ -285,6 +313,7 @@ config:
     - cards:
       - heading: Deumidificatore Armadio Zigbee
         heading_style: title
+        icon: mdi:air-humidifier
         type: heading
       - entity: switch.deumidificatore_armadio_zigbee
         features:
@@ -346,6 +375,7 @@ config:
     - cards:
       - heading: Deumidificatore cantina Sonoff
         heading_style: title
+        icon: mdi:air-humidifier
         type: heading
       - entity: switch.box_deumidificatore_cantina_sonoff
         features:
@@ -475,6 +505,8 @@ config:
       type: grid
     - cards:
       - heading: Irrigazione Sonoff switch 4CHPROR3
+        heading_style: title
+        icon: mdi:sprinkler-variant
         type: heading
       - entity: switch.irrigazione_sonoff_switch_4chpror3_sonoff_10028b1d36_1
         features:
@@ -503,6 +535,7 @@ config:
     - cards:
       - heading: Resmed Tania presa Tuya
         heading_style: title
+        icon: mdi:medical-cotton-swab
         type: heading
       - entity: switch.cameratania_resmed_tania_presa_tuya_socket_1
         features:
@@ -550,6 +583,7 @@ config:
     - cards:
       - heading: Presa box bici zigbee
         heading_style: title
+        icon: mdi:bike
         type: heading
       - entity: switch.presa_box_zigbee
         features:
@@ -589,6 +623,7 @@ config:
     - cards:
       - heading: Lavatrice Miele
         heading_style: title
+        icon: mdi:washing-machine
         type: heading
       - entity: switch.lavatricemielewci870_accensione
         features_position: bottom
@@ -712,6 +747,7 @@ config:
     - cards:
       - heading: Sauna
         heading_style: title
+        icon: mdi:spa
         type: heading
       - entity: switch.solo_sauna_contatore_interruttore
         features:
