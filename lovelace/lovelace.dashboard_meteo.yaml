@@ -51,44 +51,55 @@ config:
         heading_style: subtitle
         icon: mdi:coolant-temperature
         type: heading
-      - entity: sensor.hp1000se_pro_pro_v1_6_4_indoor_temperature
-        features_position: bottom
-        name: Temp Sala
-        type: tile
-        vertical: false
-      - entity: sensor.hp1000se_pro_pro_v1_6_4_indoor_humidity
-        features_position: bottom
-        name: Umidita Sala
-        type: tile
-        vertical: false
-      - entity: sensor.sonoff_10008d119d_temperature
-        features_position: bottom
-        name: Temp Georgi
-        type: tile
-        vertical: false
-      - entity: sensor.sonoff_10008d119d_humidity
-        features_position: bottom
-        name: Umidita Georgi
-        type: tile
-        vertical: false
-      - entity: sensor.hp1000se_pro_pro_v1_6_4_outdoor_temperature
-        features_position: bottom
-        type: tile
-        vertical: false
-      - entity: sensor.hp1000se_pro_pro_v1_6_4_humidity
-        features_position: bottom
-        name: "Umidit\xE0 OUT"
-        type: tile
-        vertical: false
+      - entities:
+        - entity: sensor.hp1000se_pro_pro_v1_6_4_indoor_temperature
+          name: Temp.Sala
+        - entity: sensor.termometro_georgi_zigbee_temperature
+          name: Georgi
+        - entity: sensor.termometro_tania_zigbee_temperature
+          name: Tania
+        - entity: sensor.hp1000se_pro_pro_v1_6_4_outdoor_temperature
+          name: Esterna
+        - entity: sensor.hp1000se_pro_pro_v1_6_4_indoor_humidity
+          name: Humid.Sala
+        - entity: sensor.termometro_georgi_zigbee_humidity
+          name: Georgi
+        - entity: sensor.termometro_tania_zigbee_humidity
+          name: Tania
+        - entity: sensor.hp1000se_pro_pro_v1_6_4_humidity
+          name: Esterna
+        grid_options:
+          columns: full
+          rows: auto
+        hours_to_show: 24
+        refresh_interval: 60
+        type: history-graph
       - heading: "Vento in dettagli\xF2 "
         heading_style: subtitle
         icon: mdi:wind-power
         type: heading
-      - entity: sensor.hp1000se_pro_pro_v1_6_4_wind_speed
-        features_position: bottom
-        name: "Velocit\xE0 "
-        type: tile
-        vertical: false
+      - entities:
+        - entity: sensor.hp1000se_pro_pro_v1_6_4_wind_speed
+          name: Velocita 24H
+        - entity: sensor.hp1000se_pro_pro_v1_6_4_wind_gust
+          name: Raffiche 24H
+        grid_options:
+          columns: full
+          rows: auto
+        hours_to_show: 24
+        refresh_interval: 60
+        type: history-graph
+      - entities:
+        - entity: sensor.hp1000se_pro_pro_v1_6_4_wind_speed
+          name: Velocita
+        - entity: sensor.hp1000se_pro_pro_v1_6_4_wind_gust
+          name: Raffiche
+        grid_options:
+          columns: full
+          rows: auto
+        hours_to_show: 4380
+        refresh_interval: 60
+        type: history-graph
       - entity: sensor.hp1000se_pro_pro_v1_6_4_wind_direction
         features_position: bottom
         name: Direzione
@@ -104,18 +115,32 @@ config:
         name: Raffiche Annuale
         type: tile
         vertical: false
-      - entity: sensor.hp1000se_pro_pro_v1_6_4_daily_rain
-        features_position: bottom
-        name: Giorno
-        type: tile
-        vertical: false
       - heading: Pioggia in dettaglio
         heading_style: subtitle
         icon: mdi:weather-rainy
         type: heading
-      - entity: sensor.hp1000se_pro_pro_v1_6_4_hourly_rain
+      - entities:
+        - entity: sensor.hp1000se_pro_pro_v1_6_4_hourly_rain
+          name: Pioggia 24H
+        grid_options:
+          columns: full
+          rows: auto
+        hours_to_show: 24
+        refresh_interval: 60
+        type: history-graph
+      - entities:
+        - entity: sensor.hp1000se_pro_pro_v1_6_4_monthly_rain
+          name: Pioggia
+        expand_legend: false
+        grid_options:
+          columns: full
+          rows: auto
+        hours_to_show: 4380
+        refresh_interval: 60
+        type: history-graph
+      - entity: sensor.hp1000se_pro_pro_v1_6_4_daily_rain
         features_position: bottom
-        name: Ora
+        name: Giorno
         type: tile
         vertical: false
       - entity: sensor.hp1000se_pro_pro_v1_6_4_weekly_rain

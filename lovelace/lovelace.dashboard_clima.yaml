@@ -60,7 +60,7 @@ config:
       - entities:
         - entity: sensor.hp1000se_pro_pro_v1_6_4_indoor_temperature
           name: Sala
-        - entity: sensor.sonoff_10008d119d_temperature
+        - entity: sensor.termometro_georgi_zigbee_temperature
           name: Georgi
         - entity: sensor.termometro_tania_zigbee_temperature
           name: Tania
@@ -68,7 +68,7 @@ config:
           name: Esterna
         - entity: sensor.hp1000se_pro_pro_v1_6_4_indoor_humidity
           name: Sala
-        - entity: sensor.sonoff_10008d119d_humidity
+        - entity: sensor.termometro_georgi_zigbee_humidity
           name: Georgi
         - entity: sensor.termometro_tania_zigbee_humidity
           name: Tania

@@ -194,6 +194,8 @@ config:
         name: Heap libero
       - entity: sensor.opentherm_gateway_otgw_stats_max_block
         name: Blocco max
+      - entity: sensor.opentherm_gateway_otgw_stats_fragmentation
+        name: Fragmentation
       hours_to_show: 24
       title: OTGW - stato heap
       type: history-graph

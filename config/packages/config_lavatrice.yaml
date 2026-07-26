@@ -1,0 +1,60 @@
+# config_lavatrice_1.yaml
+# Package Casa Ginepro - Lavatrice Miele: energia e acqua
+# Estratto da configuration_186.yaml. Nome file = nome del package.
+
+template:
+  - triggers:
+      - trigger: state
+        entity_id:
+          - sensor.lavatricemielewci870_consumo_energia
+          - sensor.lavatricemielewci870_consumo_acqua
+      - trigger: homeassistant
+        event: start
+    sensor:
+      - name: "Lavatrice Acqua"
+        unique_id: "lavatrice_acqua"
+        unit_of_measurement: "L"
+        device_class: water
+        state_class: total_increasing
+        icon: mdi:washing-machine
+        state: >-
+          {% if has_value('sensor.lavatricemielewci870_consumo_acqua') %}
+            {{ states('sensor.lavatricemielewci870_consumo_acqua') | float(0) | round(2) }}
+          {% else %}
+            {{ this.state | float(0) | round(2) }}
+          {% endif %}
+
+      - name: "Lavatrice Energia"
+        unique_id: "lavatrice_energia"
+        unit_of_measurement: "kWh"
+        device_class: energy
+        state_class: total_increasing
+        icon: mdi:washing-machine
+        state: >-
+          {% if has_value('sensor.lavatricemielewci870_consumo_energia') %}
+            {{ states('sensor.lavatricemielewci870_consumo_energia') | float(0) | round(3) }}
+          {% else %}
+            {{ this.state | float(0) | round(3) }}
+          {% endif %}
+
+utility_meter:
+
+  # --- LAVATRICE MIELE ---
+  lavatrice_mese:
+    name: "Lavatrice Mese"
+    unique_id: lavatrice_mese
+    source: sensor.lavatrice_energia
+    cycle: monthly
+
+  lavatrice_totale:
+    name: "Lavatrice Totale"
+    unique_id: lavatrice_totale
+    source: sensor.lavatrice_energia
+
+  # --- LAVATRICE: acqua giornaliera (litri) ---
+  # Si azzera a mezzanotte, mentre acqua_reset_mezzanotte accumula alle 23:59:
+  # l'acqua eventualmente erogata in quel minuto non viene conteggiata.
+  lavatrice_acqua_oggi:
+    name: "Lavatrice Acqua Oggi"
+    source: sensor.lavatrice_acqua
+    cycle: daily
