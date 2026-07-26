@@ -1,0 +1,226 @@
+# config_elettricita_1.yaml
+# Package Casa Ginepro - Elettricita: consumi, costi, prezzo kWh, bolletta
+# Estratto da configuration_186.yaml. Nome file = nome del package.
+
+template:
+  - sensor:
+
+      - name: "Elettricita Mese Euro"
+        unique_id: "elettricita_mese_euro"
+        # configuration_159: aggiunta quota fissa mensile (€/mese Eni,
+        # indipendente dai giorni) per allineare il rilevato alla bolletta.
+        state: >-
+          {% if now().day == 1 and now().hour == 0 %}
+            0
+          {% else %}
+            {% set kwh = states('sensor.rete_energia_mese') | float(0) %}
+            {% set fissa = states('input_number.elettricita_quota_fissa_mese') | float(0) %}
+            {{ (kwh * states('input_number.elettricita_prezzo_kwh') | float(0) + fissa) | round(2) }}
+          {% endif %}
+        unit_of_measurement: "€"
+        state_class: measurement
+        icon: mdi:currency-eur
+  - sensor:
+
+      - name: "Elettricita Oggi Euro"
+        unique_id: "elettricita_oggi_euro"
+        state: >-
+          {% set grid = states('sensor.inverter_uflex_today_energy_import') | float(0) %}
+          {% set prezzo = states('input_number.elettricita_prezzo_kwh') | float(0) %}
+          {{ (grid * prezzo) | round(3) }}
+        unit_of_measurement: "€"
+        state_class: measurement
+        icon: mdi:currency-eur
+
+      - name: "Elettricita Oggi KWh"
+        unique_id: "elettricita_oggi_kwh"
+        state: >-
+          {{ states('sensor.inverter_uflex_today_energy_import') | float(0) | round(2) }}
+        unit_of_measurement: "kWh"
+        state_class: measurement
+        icon: mdi:transmission-tower
+
+      - name: "Elettricita Mese KWh"
+        unique_id: "elettricita_mese_kwh"
+        state: >-
+          {% if now().day == 1 and now().hour == 0 %}
+            0
+          {% else %}
+            {{ states('sensor.rete_energia_mese') | float(0) | round(2) }}
+          {% endif %}
+        unit_of_measurement: "kWh"
+        state_class: measurement
+        icon: mdi:transmission-tower
+
+      # ============================================================
+      # GSE: valore stimato vendita energia a rete (kWh × prezzo €/kWh)
+      # Mostra quanto teoricamente varrebbe l'energia ceduta alla rete
+      # al prezzo di acquisto corrente (input_number.elettricita_prezzo_kwh).
+      # ============================================================
+      - name: "A Rete Mese Euro"
+        unique_id: "a_rete_mese_euro"
+        state: >-
+          {% if now().day == 1 and now().hour == 0 %}
+            0
+          {% else %}
+            {% set kwh = states('sensor.a_rete_mese') | float(0) %}
+            {% set prezzo = states('input_number.elettricita_prezzo_kwh') | float(0) %}
+            {{ (kwh * prezzo) | round(2) }}
+          {% endif %}
+        unit_of_measurement: "€"
+        state_class: measurement
+        icon: mdi:transmission-tower-export
+
+      # NOTA: il sensore template "GSE Prezzo KWh" è stato RIMOSSO.
+      # Il calcolo del prezzo €/kWh pagato dal GSE avviene ora in
+      # salva_bolletta.py, che inietta le statistiche mensili sotto
+      # lo statistic_id sensor.gse_prezzo_kwh (mese pagamento ÷ kWh
+      # a rete di quel mese, da statistiche di sensor.a_rete_mese).
+      # Il grafico "Prezzo GSE €/kWh" della dashboard continua a
+      # leggere le stesse statistiche.
+
+      # ============================================================
+      # ELETTRICITA: prezzo a consumo (parte variabile) ricostruito da PUN
+      # (NUOVO – configuration_157)
+      # Contratto Plenitude "Trend Casa Base Luce" (monorario,
+      # indice PUN Index GME, aggiornamento mensile).
+      # Formula quota energia da bolletta:
+      #   Corrispettivo Luce Index x 1,1 (perdite)
+      #   + Contributo al consumo 0,022 x 1,1
+      #   + Dispacciamento 0,01752
+      # Componenti marginali aggiuntive (bolletta apr-mag 2026):
+      #   rete quota energia 0,01473
+      #   oneri ASOS 0,028657 + ARIM 0,0016380
+      #   accisa 0,0227
+      # Il tutto x 1,10 (IVA 10%).
+      # Il PUN Index GME mensile e' approssimato dalla media mensile
+      # mono-oraria di sensor.pun_mono_orario (integrazione HACS
+      # virtualdj/pun_sensor). Le costanti vanno riallineate quando
+      # cambiano le condizioni economiche o le tariffe ARERA.
+      # ============================================================
+      - name: "Elettricita Prezzo KWh Variabile"
+        unique_id: "elettricita_prezzo_kwh_variabile"
+        unit_of_measurement: "€/kWh"
+        state_class: measurement
+        icon: mdi:currency-eur
+        availability: >-
+          {{ has_value('sensor.pun_mono_orario') }}
+        state: >-
+          {% set pun = states('sensor.pun_mono_orario') | float(0) %}
+          {% set vendita = pun * 1.1 + 0.022 * 1.1 + 0.01752 %}
+          {% set rete = 0.01473 %}
+          {% set oneri = 0.028657 + 0.0016380 %}
+          {% set accisa = 0.0227 %}
+          {{ ((vendita + rete + oneri + accisa) * 1.10) | round(4) }}
+
+  # ============================================================
+  # CALDAIA: binary_sensor DHW effettivo (NUOVO – configuration_54)
+  # ============================================================
+  # PROBLEMA: binary_sensor.caldaia_opentherm_acqua_calda_2 è il bit
+  # DHW-ENABLE della master-word OTGW, tenuto sempre ON dall'automation
+  # otgw_dhw_override_on_avvio (dhw_override: 1).
+  # Quindi history_stats su quel sensore contava ≈ 24h/giorno.
+  #
+  # SOLUZIONE: binary_sensor "proxy" che è ON solo quando:
+  #   - fiamma accesa (binary_sensor.caldaia_opentherm_fiamma = on)
+  #   - modulazione ≥ 80%
+  # Per la Baxi Luna Duo-Tec IN+ 24 kW (combi senza serbatoio):
+  #   * Acqua sanitaria: riscaldamento istantaneo a piena potenza → mod ~100%
+  #   * Riscaldamento: SAT controlla temperatura di mandata bassa → mod <60%
+  # Soglia 80% separa i due regimi con buona affidabilità.
+  # Se la stima appare ancora troppo alta/bassa, aggiustare la soglia qui.
+  # ============================================================
+  # FV SURPLUS (NUOVO – configuration_161)
+  # CT1 (sensor.inverter_uflex_external_ct1_power): positivo =
+  # prelievo da rete, negativo = immissione (verificato sul campo).
+  # Surplus = immissione oltre la soglia. delay_on/off contro il
+  # flapping da passaggi nuvolosi.
+  # ============================================================
+
+input_number:
+
+  elettricita_totale_rilevato_kwh:
+    name: "Elettricità Totale Rilevato (kWh)"
+    min: 0
+    max: 999999
+    step: 0.01
+    unit_of_measurement: "kWh"
+    mode: box
+    icon: mdi:sigma
+
+  elettricita_totale_bollette_kwh:
+    name: "Elettricità Totale Bollette (kWh)"
+    min: 0
+    max: 999999
+    step: 0.01
+    unit_of_measurement: "kWh"
+    mode: box
+    icon: mdi:receipt-text-outline
+
+  elettricita_prezzo_kwh:
+    name: "Elettricità – Prezzo a consumo €/kWh"
+    min: 0
+    max: 9.999
+    step: 0.0001
+    unit_of_measurement: "€/kWh"
+    mode: box
+    icon: mdi:currency-eur
+
+  # NUOVO (configuration_159): quota fissa mensile elettricità da
+  # bolletta (fissa vendita/rete + quota potenza 4,5 kW, IVA 10%
+  # inclusa). Fatturata da Eni in €/mese, indipendente dai giorni.
+  elettricita_quota_fissa_mese:
+    name: "Elettricità – Quota fissa €/mese"
+    min: 0
+    max: 99
+    step: 0.01
+    unit_of_measurement: "€/mese"
+    mode: box
+    icon: mdi:currency-eur
+
+  bolletta_elec_kwh:
+    name: "Elettricità – Bolletta mese (kWh)"
+    min: 0
+    max: 99999
+    step: 0.001
+    unit_of_measurement: "kWh"
+    mode: box
+    icon: mdi:transmission-tower
+
+  bolletta_elec_euro:
+    name: "Elettricità – Bolletta mese (€)"
+    min: 0
+    max: 9999
+    step: 0.01
+    unit_of_measurement: "€"
+    mode: box
+    icon: mdi:currency-eur
+
+utility_meter:
+
+  auto_energia_oggi:
+    name: Auto Energia Oggi
+    source: sensor.solo_auto_contattore_energia_totale
+    cycle: daily
+
+  auto_energia_mese:
+    name: Auto Energia Mese
+    unique_id: auto_energia_mese
+    source: sensor.solo_auto_contattore_energia_totale
+    cycle: monthly
+
+  sauna_energia_oggi:
+    name: Sauna Energia Oggi
+    source: sensor.solo_sauna_contatore_energia_totale
+    cycle: daily
+
+  sauna_energia_mese:
+    name: Sauna Energia Mese
+    unique_id: sauna_energia_mese
+    source: sensor.solo_sauna_contatore_energia_totale
+    cycle: monthly
+
+  rete_energia_mese:
+    name: Rete Energia Mese
+    source: sensor.inverter_uflex_total_energy_import
+    cycle: monthly

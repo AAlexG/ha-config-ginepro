@@ -1,0 +1,284 @@
+# config_caldaia_1.yaml
+# Package Casa Ginepro - Caldaia Baxi / OTGW: DHW, costi termici, scelta fonte caldaia-PdC
+# Estratto da configuration_186.yaml. Nome file = nome del package.
+
+template:
+  - binary_sensor:
+      - name: "Caldaia DHW Attiva"
+        unique_id: "caldaia_dhw_attiva"
+        state: >-
+          {{ is_state('binary_sensor.opentherm_gateway_otgw_otgw_flame', 'on') and
+             states('sensor.opentherm_gateway_otgw_otgw_relative_modulation_level') | float(0) >= 80 }}
+        device_class: heat
+        icon: mdi:water-boiler
+
+  # ============================================================
+  # PORTONE BOX: sensore con logica invertita (configuration_128)
+  # binary_sensor.portone_box_sensore_zigbee_contact:
+  #   stato "off" (chiuso) = portone APERTO
+  #   stato "on"  (aperto) = portone CHIUSO
+  # Questo sensore proxy inverte la logica per mostrare correttamente
+  # "Aperto"/"Chiuso" nelle plance (device_class garage_door: on=Aperto, off=Chiuso)
+  # ============================================================
+  - sensor:
+
+      - name: "Caldaia DHW Durata Oggi Minuti"
+        unique_id: "caldaia_dhw_durata_oggi_minuti"
+        # Riscaldamento OFF (estate): legge input_number.caldaia_dhw_durata_acc,
+        #   accumulato minuto per minuto dall'automazione caldaia_dhw_accumula_minuti
+        #   quando binary_sensor.caldaia_opentherm_acqua_calda_2 è ON.
+        # Riscaldamento ON (inverno): restituisce il valore fisso configurabile
+        #   input_number.caldaia_dhw_durata_invernale (default 3 min).
+        state: >-
+          {% if is_state('climate.smart_autotune_thermostat_living_room', 'off') %}
+            {{ states('input_number.caldaia_dhw_durata_acc') | float(0) | round(1) }}
+          {% else %}
+            {{ states('input_number.caldaia_dhw_durata_invernale') | float(3) | round(1) }}
+          {% endif %}
+        unit_of_measurement: "min"
+        icon: mdi:clock-outline
+  - sensor:
+
+      # ============================================================
+      # GESTIONE CALDAIA/PDC (NUOVO – configuration_160)
+      # Costo di 1 kWh termico per ciascuna fonte, a prezzi correnti.
+      # Le quote fisse NON entrano nel confronto: si pagano comunque
+      # con entrambe le fonti e si cancellano nella differenza.
+      # ============================================================
+      # Caldaia: prezzo gas a consumo / (11,0078 kWh/Smc × rendimento).
+      # 11,0078 = PCS da bolletta 0,039628 GJ/Smc ÷ 0,0036 GJ/kWh.
+      - name: "Caldaia Costo KWh Termico"
+        unique_id: "caldaia_costo_kwh_termico"
+        unit_of_measurement: "€/kWh"
+        state_class: measurement
+        icon: mdi:fire
+        availability: >-
+          {{ states('input_number.caldaia_rendimento') | float(0) > 0
+             and states('input_number.gas_prezzo_mc') | float(0) > 0 }}
+        state: >-
+          {% set prezzo = states('input_number.gas_prezzo_mc') | float(0) %}
+          {% set eta = states('input_number.caldaia_rendimento') | float(0) %}
+          {{ (prezzo / (11.0078 * eta)) | round(4) }}
+
+      # PdC: prezzo elettricità effettivo / COP. Usa il COP reale
+      # quando la pompa lavora, altrimenti il COP di riserva.
+      # configuration_161: con surplus FV (binary_sensor.pv_surplus on)
+      # il prezzo effettivo è il mancato incasso GSE, non il P1.
+      - name: "PdC Costo KWh Termico"
+        unique_id: "pdc_costo_kwh_termico"
+        unit_of_measurement: "€/kWh"
+        state_class: measurement
+        icon: mdi:heat-pump
+        availability: >-
+          {{ states('input_number.elettricita_prezzo_kwh') | float(0) > 0
+             and (has_value('sensor.panasonic_cop_calcolato')
+                  or states('input_number.pdc_cop_fallback') | float(0) > 0) }}
+        state: >-
+          {% set surplus = is_state('binary_sensor.pv_surplus', 'on') %}
+          {% set gse = states('input_number.gse_prezzo_kwh_stima') | float(0) %}
+          {% set p1 = states('input_number.elettricita_prezzo_kwh') | float(0) %}
+          {% set prezzo = gse if (surplus and gse > 0) else p1 %}
+          {% set cop_reale = states('sensor.panasonic_cop_calcolato') | float(0) %}
+          {% set cop = cop_reale if cop_reale > 0.8
+                       else states('input_number.pdc_cop_fallback') | float(0) %}
+          {{ (prezzo / cop) | round(4) }}
+
+      # Verdetto: fonte più conveniente adesso. Attributi con i due
+      # costi e il risparmio %. Solo informativo: le automazioni di
+      # controllo (con isteresi) arriveranno in un passo successivo.
+      - name: "Riscaldamento Fonte Conveniente"
+        unique_id: "riscaldamento_fonte_conveniente"
+        icon: mdi:scale-balance
+        availability: >-
+          {{ has_value('sensor.pdc_costo_kwh_termico')
+             and has_value('sensor.caldaia_costo_kwh_termico') }}
+        state: >-
+          {% set pdc = states('sensor.pdc_costo_kwh_termico') | float(0) %}
+          {% set cal = states('sensor.caldaia_costo_kwh_termico') | float(0) %}
+          {{ 'PdC' if pdc <= cal else 'Caldaia' }}
+        attributes:
+          surplus_pv: "{{ is_state('binary_sensor.pv_surplus', 'on') }}"
+          pdc_eur_kwht: "{{ states('sensor.pdc_costo_kwh_termico') | float(0) }}"
+          caldaia_eur_kwht: "{{ states('sensor.caldaia_costo_kwh_termico') | float(0) }}"
+          risparmio_pct: >-
+            {% set pdc = states('sensor.pdc_costo_kwh_termico') | float(0) %}
+            {% set cal = states('sensor.caldaia_costo_kwh_termico') | float(0) %}
+            {% if pdc > 0 and cal > 0 %}
+              {{ ((1 - ([pdc, cal] | min) / ([pdc, cal] | max)) * 100) | round(1) }}
+            {% else %} 0 {% endif %}
+
+#--- OTGW – DESCRIZIONE FAULT BAXI LUNA DUO-TEC+ ---
+      - name: "OTGW Baxi Fault Descrizione"
+        unique_id: otgw_baxi_fault_descrizione
+        icon: mdi:alert-circle-outline
+        state: >
+          {% set code = states('sensor.opentherm_gateway_otgw_otgw_oemfaultcode') | int(-1) %}
+          {% set faults = {
+            9:   'E09 – Errore collegamento valvola gas | Chiamare assistenza',
+            10:  'E10 – Sensore sonda esterna guasto | Chiamare assistenza',
+            12:  'E12 – Mancata commutazione pressostato differenziale idraulico | Chiamare assistenza',
+            13:  'E13 – Contatti incollati pressostato differenziale idraulico | Chiamare assistenza',
+            15:  'E15 – Errore comando valvola gas | Chiamare assistenza',
+            18:  'E18 – Riempimento automatico circuito idraulico in corso | Attendere fine ciclo',
+            19:  'E19 – Anomalia nella fase riempimento impianto | Premere tasto R per 2 secondi',
+            20:  'E20 – Sensore NTC di mandata guasto | Chiamare assistenza',
+            28:  'E28 – Sensore NTC fumi guasto | Chiamare assistenza',
+            40:  'E40 – Sensore NTC di ritorno guasto | Chiamare assistenza',
+            50:  'E50 – Sensore NTC sanitario guasto | Chiamare assistenza',
+            53:  'E53 – Condotto fumi ostruito | Togliere alimentazione, se persiste chiamare assistenza',
+            55:  'E55 – Scheda elettronica non tarata | Chiamare assistenza',
+            83:  'E83 – Problema comunicazione scheda/unità comando | Chiamare assistenza',
+            84:  'E84 – Problema comunicazione scheda/unità comando | Chiamare assistenza',
+            85:  'E85 – Problema comunicazione scheda/unità comando | Chiamare assistenza',
+            86:  'E86 – Problema comunicazione scheda/unità comando | Chiamare assistenza',
+            87:  'E87 – Problema comunicazione scheda/unità comando | Chiamare assistenza',
+            92:  'E92 – Anomalia fumi (probabile ricircolo fumi) | Chiamare assistenza',
+            109: 'E109 – Presenza aria nel circuito caldaia | Chiamare assistenza',
+            110: 'E110 – Sovratemperatura (probabile pompa bloccata o aria) | Premere tasto R per 2 secondi',
+            117: 'E117 – Pressione circuito idraulico troppo alta (>2.7 bar) | Chiamare assistenza',
+            118: 'E118 – Pressione circuito idraulico troppo bassa | Verificare pressione impianto',
+            125: 'E125 – Mancanza circolazione (intervento sicurezza) | Premere tasto R per 2 secondi',
+            128: 'E128 – Perdita di fiamma | Premere tasto R per 2 secondi',
+            129: 'E129 – Perdita di fiamma in accensione | Chiamare assistenza',
+            130: 'E130 – Sovratemperatura sonda NTC fumi | Premere tasto R per 2 secondi',
+            133: 'E133 – Mancata accensione (5 tentativi) | Premere tasto R per 2 secondi',
+            134: 'E134 – Valvola gas bloccata | Premere tasto R per 2 secondi',
+            135: 'E135 – Errore interno di scheda | Premere tasto R per 2 secondi',
+            154: 'E154 – Test controllo sonda mandata/ritorno | Chiamare assistenza',
+            160: 'E160 – Anomalia funzionamento ventilatore | Chiamare assistenza',
+            178: 'E178 – Sovratemperatura su impianto bassa temperatura | Chiamare assistenza',
+            270: 'E270 – Surriscaldamento scambiatore | Chiamare assistenza',
+            317: 'E317 – Frequenza di alimentazione elettrica errata | Chiamare assistenza',
+            321: 'E321 – Sensore NTC sanitario guasto | Chiamare assistenza',
+            384: 'E384 – Fiamma parassita (anomalia interna) | Premere tasto R per 2 secondi',
+            385: 'E385 – Tensione di alimentazione troppo bassa | Ripristino automatico >175V, se persiste chiamare assistenza',
+            431: 'E431 – Sensore scambiatore guasto | Chiamare assistenza'
+          } %}
+          {% if code == -1 or states('sensor.opentherm_gateway_otgw_otgw_oemfaultcode') in ['unknown', 'unavailable'] %}
+            Nessun fault
+          {% elif code in faults %}
+            {{ faults[code] }}
+          {% else %}
+            Codice sconosciuto ({{ code }})
+          {% endif %}
+
+sensor:
+
+  # Durata giornaliera DHW caldaia (per stima consumo acqua calda)
+  # Usa binary_sensor.caldaia_dhw_attiva (fiamma + mod≥80%) invece di
+  # acqua_calda_2 che è sempre ON per via del dhw_override: 1
+  - platform: history_stats
+    name: "Caldaia DHW Durata Oggi"
+    entity_id: binary_sensor.caldaia_dhw_attiva
+    state: "on"
+    type: time
+    start: "{{ now().replace(hour=0, minute=0, second=0, microsecond=0).isoformat() }}"
+    end: "{{ now().isoformat() }}"
+
+input_number:
+
+  caldaia_dhw_setpoint:
+    name: Setpoint Sanitaria
+    min: 35
+    max: 60
+    step: 1
+    unit_of_measurement: "°C"
+    icon: mdi:water-boiler
+    mode: slider
+
+  # ============================================================
+  # GESTIONE CALDAIA/PDC (NUOVO – configuration_160)
+  # ============================================================
+  # Rendimento della Baxi su PCS (0,90–1,00 tipico condensazione;
+  # regolabile in base alla temperatura di ritorno).
+  caldaia_rendimento:
+    name: "Caldaia – Rendimento"
+    min: 0.5
+    max: 1.1
+    step: 0.01
+    mode: box
+    icon: mdi:fire
+
+  # COP usato quando la PdC è ferma e il COP reale non è disponibile
+  # (media stagionale stimata, da affinare con i dati).
+  pdc_cop_fallback:
+    name: "PdC – COP di riserva"
+    min: 1
+    max: 6
+    step: 0.1
+    mode: box
+    icon: mdi:heat-pump
+
+  # NUOVO (configuration_162): gestione automatica fonte caldaia/PdC.
+  # Vantaggio minimo % della fonte alternativa per commutare.
+  fonte_isteresi_pct:
+    name: "Fonte – Isteresi commutazione"
+    min: 5
+    max: 50
+    step: 1
+    unit_of_measurement: "%"
+    mode: box
+    icon: mdi:swap-horizontal
+
+  # Ore minime tra due manovre della valvola pompa-caldaia.
+  fonte_ore_minime:
+    name: "Fonte – Ore minime tra commutazioni"
+    min: 1
+    max: 24
+    step: 1
+    unit_of_measurement: "h"
+    mode: box
+    icon: mdi:timer-lock
+
+  # ============================================================
+  # CALDAIA DHW: durata sanitaria (NUOVO – configuration_70)
+  # ============================================================
+  # Durata fissa sanitaria in inverno (riscaldamento ON).
+  # Quando climate è in modalità heat, sensor.caldaia_dhw_durata_oggi_minuti
+  # restituisce sempre questo valore invece di accumulare minuto per minuto.
+  caldaia_dhw_durata_invernale:
+    name: "Durata caldaia x sanitaria al giorno in inverno"
+    min: 0
+    max: 60
+    step: 0.5
+    unit_of_measurement: "min"
+    mode: slider
+    icon: mdi:water-boiler-timer
+
+  # Accumulatore minuti DHW giornalieri (solo estate, riscaldamento OFF).
+  # Incrementato ogni minuto dall'automazione caldaia_dhw_accumula_minuti
+  # quando binary_sensor.caldaia_opentherm_acqua_calda_2 è ON.
+  # Azzerato ogni sera alle 23:00 da acqua_reset_mezzanotte.
+  caldaia_dhw_durata_acc:
+    name: "Accumulatore minuti DHW giornalieri"
+    min: 0
+    max: 1440
+    step: 1
+    unit_of_measurement: "min"
+    mode: box
+    icon: mdi:timer-sand
+
+input_datetime:
+  fonte_ultima_commutazione:
+    name: "Fonte – Ultima commutazione"
+    has_date: true
+    has_time: true
+    icon: mdi:history
+
+input_boolean:
+  # --- GESTIONE FONTE CALDAIA/PDC (configuration_162) ---
+  fonte_auto_attiva:
+    name: "Fonte – Gestione automatica"
+    icon: mdi:swap-horizontal-circle
+
+  caldaia_dhw_override:
+    name: "Caldaia – DHW Override"
+    initial: true
+    icon: mdi:water-boiler
+
+  caldaia_fault_notificato:
+    name: "Caldaia – Fault Notificato"
+    initial: false
+    icon: mdi:bell-check
+
+# generic_thermostat rimosso: sostituito da SAT (Smart Autotune Thermostat)

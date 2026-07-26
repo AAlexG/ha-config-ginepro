@@ -1,0 +1,25 @@
+# config_meteo_1.yaml
+# Package Casa Ginepro - Meteo: sensori statistici vento (HP1000SE Pro)
+# Estratto da configuration_186.yaml. Nome file = nome del package.
+
+#--- SENSORI STATISTICI ---
+sensor:
+  - platform: statistics
+    name: "Wind Gust Max Annuale"
+    unique_id: "wind_gust_max_annuale"
+    entity_id: sensor.hp1000se_pro_pro_v1_6_4_max_daily_gust
+    state_characteristic: value_max
+    max_age:
+      days: 365
+    sampling_size: 10000
+    precision: 1
+
+  - platform: statistics
+    name: "Wind Speed Media 1h"
+    unique_id: "wind_speed_media_1h"
+    entity_id: sensor.hp1000se_pro_pro_v1_6_4_wind_speed
+    state_characteristic: mean
+    max_age:
+      hours: 1
+    sampling_size: 120
+    precision: 1

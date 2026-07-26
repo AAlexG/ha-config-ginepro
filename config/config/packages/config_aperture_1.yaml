@@ -1,0 +1,79 @@
+# config_aperture_1.yaml
+# Package Casa Ginepro - Aperture e sicurezza: portone box, cancelli, pergola, tenda, sirena
+# Estratto da configuration_186.yaml. Nome file = nome del package.
+
+template:
+  - binary_sensor:
+      - name: "Portone Box Stato"
+        unique_id: "portone_box_stato_invertito"
+        state: >-
+          {{ is_state('binary_sensor.portone_box_sensore_zigbee_contact', 'off') }}
+        device_class: garage_door
+        icon: mdi:garage
+
+  # ============================================================
+  # TENDA GIARDINO: stato per plancia (configuration_174)
+  # Rispecchia input_boolean.tenda_giardino_aperta con
+  # device_class opening: on=Aperto, off=Chiuso nell'interfaccia.
+  # Il tap sulla tile in plancia commuta l'input_boolean sottostante.
+  # ============================================================
+  - binary_sensor:
+      - name: "Tenda Giardino Stato"
+        unique_id: "tenda_giardino_stato"
+        state: >-
+          {{ is_state('input_boolean.tenda_giardino_aperta', 'on') }}
+        device_class: opening
+        icon: mdi:roman-shade
+
+  # ============================================================
+  # ACQUA: sensori calcolati (NUOVO – configuration_53)
+  # ============================================================
+  # Soglie tariffarie ATO Genova 2025 (derive dalle bollette IRETI):
+  #   2 residenti pro-die (mc/giorno):
+  #   Agevolata  :  0 – 0.1765
+  #   Base       :  0.1765 – 0.3333
+  #   I° Eccedenza: 0.3333 – 0.5000
+  #   II° Eccedenza: 0.5000 – 0.6471
+  #   III° Eccedenza: > 0.6471
+  # Flusso di default sanitaria calda: 8 L/min
+  # C3 = ore_DHW × flusso_L_min × 0.06  (L/min × h × 60min/h / 1000 L/m³)
+
+input_boolean:
+
+  # --- GESTIONE MANUALE PERGOLA ---
+  # Si attiva quando l'utente tocca il toggle manuale in plancia (script.pergola_toggle_manuale).
+  # Blocca l'inseguimento solare e la sicurezza meteo fino al prossimo cambio giorno/notte (07:00/23:00).
+  pergola_blocco_manuale:
+    name: "Pergola - Gestione Manuale"
+    initial: false
+    icon: mdi:hand-back-left
+
+  # Si attiva quando l'automazione pergola_meteo_chiusura chiude per vento/pioggia/scarsa radiazione.
+  # Si disattiva da sola dopo 20 minuti con tutte le condizioni meteo rientrate.
+  pergola_meteo_chiusura:
+    name: "Pergola - Chiusura Sicurezza Meteo"
+    initial: false
+    icon: mdi:weather-windy
+
+  grande_cancello_status_helper:
+    name: Timer grande cancello aperto
+    initial: false
+    icon: mdi:timer
+
+  sirena_attiva:
+    name: "Sirena Attiva"
+    initial: false
+    icon: mdi:alarm-light
+
+  tenda_notifica_vento_oggi:
+    name: "Tenda – Notifica Vento Oggi"
+    initial: false
+    icon: mdi:bell-check
+
+  # Stato logico tenda giardino (la cover non ha feedback di stato).
+  # Gestito dagli script tenda_giardino_apri/chiudi e dalle chiusure
+  # automatiche (vento, vacanza). Correggibile a mano da plancia Tende.
+  # NIENTE "initial": lo stato deve sopravvivere ai riavvii.
+  tenda_giardino_aperta:
+    name: "Tenda Giardino – Aperta"
+    icon: mdi:roman-shade

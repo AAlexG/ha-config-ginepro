@@ -1,0 +1,221 @@
+# config_pompa_calore_1.yaml
+# Package Casa Ginepro - Pompa di calore Panasonic Aquarea: PID, COP, energia
+# Estratto da configuration_186.yaml. Nome file = nome del package.
+
+template:
+  - sensor:
+
+
+      - name: "Panasonic Energia Prodotta Acc Sensor"
+        unique_id: "panasonic_energia_prodotta_acc_sensor"
+        unit_of_measurement: "kWh"
+        device_class: energy
+        state_class: total_increasing
+        icon: mdi:heat-pump
+        availability: "{{ has_value('input_number.panasonic_energia_prodotta_acc') }}"
+        state: "{{ states('input_number.panasonic_energia_prodotta_acc') | float(0) | round(4) }}"
+
+      - name: "Panasonic Energia Consumata Acc Sensor"
+        unique_id: "panasonic_energia_consumata_acc_sensor"
+        unit_of_measurement: "kWh"
+        device_class: energy
+        state_class: total_increasing
+        icon: mdi:lightning-bolt
+        availability: "{{ has_value('input_number.panasonic_energia_consumata_acc') }}"
+        state: "{{ states('input_number.panasonic_energia_consumata_acc') | float(0) | round(4) }}"
+  - sensor:
+      # Potenza termica prodotta: calcolata da flow e delta T
+      # Usa Main_Outlet_Temp (mandata) e Main_Inlet_Temp (ritorno)
+      # Formula: flow (l/min) * delta_T (K) * 69.77 (W per l/min per K per acqua)
+      - name: "Panasonic Potenza Prodotta Calcolata"
+        unique_id: "panasonic_potenza_prodotta_calcolata"
+        unit_of_measurement: "W"
+        device_class: power
+        state_class: measurement
+        icon: mdi:heat-pump
+        state: >-
+          {% set flow = states('sensor.panasonic_heat_pump_main_pump_flow') | float(0) %}
+          {% set t_out = states('sensor.panasonic_heat_pump_main_main_outlet_temp') | float(0) %}
+          {% set t_in = states('sensor.panasonic_heat_pump_main_main_inlet_temp') | float(0) %}
+          {% set delta = (t_in - t_out) | abs %}
+          {% if flow > 0 and delta > 0.2 %}
+            {{ (flow * delta * 69.77) | round(0) }}
+          {% else %}
+            0
+          {% endif %}
+
+      # Potenza elettrica consumata: stimata da corrente compressore
+      # Formula: corrente * tensione (220V) * power factor (0.85)
+      - name: "Panasonic Potenza Consumata Calcolata"
+        unique_id: "panasonic_potenza_consumata_calcolata"
+        unit_of_measurement: "W"
+        device_class: power
+        state_class: measurement
+        icon: mdi:lightning-bolt
+        state: >-
+          {% set current = states('sensor.panasonic_heat_pump_main_compressor_current') | float(0) %}
+          {% if current > 0 %}
+            {{ (current * 220 * 0.85) | round(0) }}
+          {% else %}
+            0
+          {% endif %}
+
+      # COP reale: potenza prodotta / potenza consumata
+      - name: "Panasonic COP Calcolato"
+        unique_id: "panasonic_cop_calcolato"
+        state_class: measurement
+        icon: mdi:chart-line
+        availability: >-
+          {% set flow = states('sensor.panasonic_heat_pump_main_pump_flow') | float(-1) %}
+          {% set t_out = states('sensor.panasonic_heat_pump_main_main_outlet_temp') | float(-1) %}
+          {% set t_in = states('sensor.panasonic_heat_pump_main_main_inlet_temp') | float(-1) %}
+          {% set current = states('sensor.panasonic_heat_pump_main_compressor_current') | float(-1) %}
+          {% set delta = (t_in - t_out) | abs %}
+          {{ flow > 0 and delta > 0.2 and current > 0 and t_out >= 0 and t_in >= 0 }}
+        state: >-
+          {% set flow = states('sensor.panasonic_heat_pump_main_pump_flow') | float(0) %}
+          {% set t_out = states('sensor.panasonic_heat_pump_main_main_outlet_temp') | float(0) %}
+          {% set t_in = states('sensor.panasonic_heat_pump_main_main_inlet_temp') | float(0) %}
+          {% set delta = (t_in - t_out) | abs %}
+          {% set current = states('sensor.panasonic_heat_pump_main_compressor_current') | float(0) %}
+          {% set prod = flow * delta * 69.77 %}
+          {% set cons = current * 220 * 0.85 %}
+          {{ (prod / cons) | round(2) }}
+
+input_number:
+
+  # PID HEAT - stato interno separato da cooling
+  panasonic_pid_heat_integrale:
+    name: "Panasonic PID Heat Integrale"
+    min: -50
+    max: 50
+    step: 0.001
+    mode: box
+    icon: mdi:sigma
+
+  panasonic_pid_heat_errore_prec:
+    name: "Panasonic PID Heat Errore Precedente"
+    min: -20
+    max: 20
+    step: 0.001
+    mode: box
+    icon: mdi:delta
+
+  panasonic_pid_setpoint_heat:
+    name: "Panasonic Setpoint Mandata Riscaldamento"
+    min: 25
+    max: 55
+    step: 0.5
+    unit_of_measurement: "°C"
+    mode: box
+    icon: mdi:thermometer-water
+
+  # --- PID COOLING – stato interno ---
+  panasonic_pid_kp:
+    name: "Panasonic PID Kp"
+    min: 0
+    max: 200
+    step: 0.001
+    mode: box
+    icon: mdi:tune
+
+  panasonic_pid_ki:
+    name: "Panasonic PID Ki"
+    min: 0
+    max: 50
+    step: 0.0001
+    mode: box
+    icon: mdi:tune
+
+  panasonic_pid_kd:
+    name: "Panasonic PID Kd"
+    min: 0
+    max: 500
+    step: 0.001
+    mode: box
+    icon: mdi:tune
+
+  panasonic_pid_integrale:
+    name: "Panasonic PID Integrale"
+    min: -50
+    max: 50
+    step: 0.001
+    mode: box
+    icon: mdi:sigma
+
+  panasonic_pid_errore_prec:
+    name: "Panasonic PID Errore Precedente"
+    min: -20
+    max: 20
+    step: 0.001
+    mode: box
+    icon: mdi:delta
+
+  panasonic_target_mandata_manuale:
+    name: "Panasonic Target Mandata Manuale"
+    min: 10
+    max: 55
+    step: 1
+    unit_of_measurement: "°C"
+    mode: slider
+    icon: mdi:thermometer-water
+
+  panasonic_pid_setpoint_mandata:
+    name: "Panasonic Setpoint Mandata Calcolato"
+    min: 5
+    max: 25
+    step: 0.1
+    unit_of_measurement: "°C"
+    mode: box
+    icon: mdi:thermometer-water
+
+  # ============================================================
+  # PANASONIC – accumulatori energia (aggiornati ogni minuto)
+  # ============================================================
+  panasonic_energia_prodotta_acc:
+    name: "Panasonic Energia Prodotta Acc"
+    min: 0
+    max: 999999
+    step: 0.0001
+    unit_of_measurement: "kWh"
+    mode: box
+    icon: mdi:heat-pump
+
+  panasonic_energia_consumata_acc:
+    name: "Panasonic Energia Consumata Acc"
+    min: 0
+    max: 999999
+    step: 0.0001
+    unit_of_measurement: "kWh"
+    mode: box
+    icon: mdi:lightning-bolt
+
+utility_meter:
+
+  panasonic_prodotta_oggi:
+    name: "Panasonic Prodotta Oggi"
+    source: sensor.panasonic_energia_prodotta_acc_sensor
+    cycle: daily
+
+  panasonic_prodotta_mese:
+    name: "Panasonic Prodotta Mese"
+    source: sensor.panasonic_energia_prodotta_acc_sensor
+    cycle: monthly
+
+  panasonic_consumata_oggi:
+    name: "Panasonic Consumata Oggi"
+    source: sensor.panasonic_energia_consumata_acc_sensor
+    cycle: daily
+
+  panasonic_consumata_mese:
+    name: "Panasonic Consumata Mese"
+    unique_id: panasonic_consumata_mese
+    source: sensor.panasonic_energia_consumata_acc_sensor
+    cycle: monthly
+
+input_boolean:
+
+  # --- SISTEMA CLIMA ---
+  clima_pid_attivo:
+    name: "Clima PID Attivo"
+    icon: mdi:thermostat-auto

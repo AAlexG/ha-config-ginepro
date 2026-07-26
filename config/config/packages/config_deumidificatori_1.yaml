@@ -1,0 +1,64 @@
+# config_deumidificatori_1.yaml
+# Package Casa Ginepro - Deumidificatori cantina e armadio
+# Estratto da configuration_186.yaml. Nome file = nome del package.
+
+template:
+  - triggers:
+      - trigger: state
+        entity_id:
+          - sensor.deumidificatore_armadio_oggi
+          - sensor.box_deumidificatore_cantina_sonoff_energy_day
+      - trigger: time_pattern
+        minutes: "/5"
+      - trigger: homeassistant
+        event: start
+    sensor:
+      - name: "Consumo Deumidificatori Oggi"
+        unique_id: "consumo_deumidificatori_oggi"
+        unit_of_measurement: "kWh"
+        device_class: energy
+        state_class: total_increasing
+        icon: mdi:water-percent
+        availability: >-
+          {{ has_value('sensor.deumidificatore_armadio_oggi')
+             and has_value('sensor.box_deumidificatore_cantina_sonoff_energy_day') }}
+        state: >-
+          {% set nuovo = (states('sensor.deumidificatore_armadio_oggi') | float(0) +
+                          states('sensor.box_deumidificatore_cantina_sonoff_energy_day') | float(0))
+                         | round(3) %}
+          {% if now().hour == 0 and now().minute < 10 %}
+            {{ nuovo }}
+          {% else %}
+            {{ [nuovo, this.state | float(0)] | max | round(3) }}
+          {% endif %}
+
+utility_meter:
+
+  deumidificatore_armadio_oggi:
+    name: "Deumidificatore Armadio Oggi"
+    source: sensor.deumidificatore_armadio_zigbee_energy
+    cycle: daily
+
+  # --- DEUMIDIFICATORI (cantina + armadio) ---
+  deumidificatori_mese:
+    name: "Deumidificatori Mese"
+    unique_id: deumidificatori_mese
+    source: sensor.consumo_deumidificatori_oggi
+    cycle: monthly
+
+  deumidificatori_totale:
+    name: "Deumidificatori Totale"
+    unique_id: deumidificatori_totale
+    source: sensor.consumo_deumidificatori_oggi
+
+input_boolean:
+
+  deumidificatore_cantina_manuale:
+    name: "Deumidificatore Cantina - Gestione Manuale"
+    initial: false
+    icon: mdi:hand-back-right
+
+  deumidificatore_armadio_manuale:
+    name: "Deumidificatore Armadio - Gestione Manuale"
+    initial: false
+    icon: mdi:hand-back-right

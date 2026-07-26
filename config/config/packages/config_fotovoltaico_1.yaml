@@ -1,0 +1,437 @@
+# config_fotovoltaico_1.yaml
+# Package Casa Ginepro - Fotovoltaico: inverter UFLEX, pannelli Tigo, surplus, GSE
+# Estratto da configuration_186.yaml. Nome file = nome del package.
+
+template:
+  - sensor:
+      - name: "Panel Max Power Summary"
+        unique_id: "panel_max_power_summary"
+        state: >-
+          {% set entities = ['sensor.tetto_vs_ovest_panel_a1_power', 'sensor.tetto_vs_ovest_panel_a2_power', 'sensor.tetto_vs_ovest_panel_a3_power', 'sensor.tetto_vs_ovest_panel_a4_power', 'sensor.tetto_vs_ovest_panel_a5_power', 'sensor.tetto_vs_mare_panel_a6_power', 'sensor.tetto_vs_mare_panel_a7_power', 'sensor.tetto_vs_mare_panel_a8_power', 'sensor.tetto_vs_mare_panel_a9_power', 'sensor.tetto_vs_mare_panel_a10_power', 'sensor.sopra_pergola_panel_b1_power', 'sensor.sopra_pergola_panel_b2_power', 'sensor.sopra_pergola_panel_b3_power', 'sensor.sopra_pergola_panel_b4_power', 'sensor.sopra_pergola_panel_b5_power', 'sensor.sopra_tenda_giardino_panel_b6_power', 'sensor.sopra_tenda_giardino_panel_b7_power', 'sensor.sopra_tenda_giardino_panel_b8_power', 'sensor.sopra_tenda_giardino_panel_b9_power', 'sensor.sopra_pergola_panel_b10_power', 'sensor.sopra_tenda_giardino_panel_b11_power'] %}
+          {% set ns = namespace(best_id='', best_val= -999999) %}          {% for e in entities %}
+            {% set v = states(e) | float(0) %}
+            {% if v > ns.best_val %}
+              {% set ns.best_val = v %}
+              {% set ns.best_id = e %}
+            {% endif %}
+          {% endfor %}
+          {% if ns.best_id == '' %}
+            unknown
+          {% else %}
+            {{ ns.best_id.split('panel_')[1].split('_')[0] | upper }} = {{ ns.best_val | round(1) }} W
+          {% endif %}
+
+      - name: "Panel Min Power Summary"
+        unique_id: "panel_min_power_summary"
+        state: >-
+          {% set entities = ['sensor.tetto_vs_ovest_panel_a1_power', 'sensor.tetto_vs_ovest_panel_a2_power', 'sensor.tetto_vs_ovest_panel_a3_power', 'sensor.tetto_vs_ovest_panel_a4_power', 'sensor.tetto_vs_ovest_panel_a5_power', 'sensor.tetto_vs_mare_panel_a6_power', 'sensor.tetto_vs_mare_panel_a7_power', 'sensor.tetto_vs_mare_panel_a8_power', 'sensor.tetto_vs_mare_panel_a9_power', 'sensor.tetto_vs_mare_panel_a10_power', 'sensor.sopra_pergola_panel_b1_power', 'sensor.sopra_pergola_panel_b2_power', 'sensor.sopra_pergola_panel_b3_power', 'sensor.sopra_pergola_panel_b4_power', 'sensor.sopra_pergola_panel_b5_power', 'sensor.sopra_tenda_giardino_panel_b6_power', 'sensor.sopra_tenda_giardino_panel_b7_power', 'sensor.sopra_tenda_giardino_panel_b8_power', 'sensor.sopra_tenda_giardino_panel_b9_power', 'sensor.sopra_pergola_panel_b10_power', 'sensor.sopra_tenda_giardino_panel_b11_power'] %}
+          {% set ns = namespace(best_id='', best_val= 999999999) %}          {% for e in entities %}
+            {% set v = states(e) | float(0) %}
+            {% if v < ns.best_val %}
+              {% set ns.best_val = v %}
+              {% set ns.best_id = e %}
+            {% endif %}
+          {% endfor %}
+          {% if ns.best_id == '' %}
+            unknown
+          {% else %}
+            {{ ns.best_id.split('panel_')[1].split('_')[0] | upper }} = {{ ns.best_val | round(1) }} W
+          {% endif %}
+
+      - name: "Panel Max Strength Summary"
+        unique_id: "panel_max_strength_summary"
+        state: >-
+          {% set entities = ['sensor.panel_a1_signal_strength', 'sensor.panel_a2_signal_strength', 'sensor.panel_a3_signal_strength', 'sensor.panel_a4_signal_strength', 'sensor.panel_a5_signal_strength', 'sensor.panel_a6_signal_strength', 'sensor.panel_a7_signal_strength', 'sensor.panel_a8_signal_strength', 'sensor.panel_a9_signal_strength', 'sensor.panel_a10_signal_strength', 'sensor.panel_b1_signal_strength', 'sensor.panel_b2_signal_strength', 'sensor.panel_b3_signal_strength', 'sensor.panel_b4_signal_strength', 'sensor.panel_b5_signal_strength', 'sensor.panel_b6_signal_strength', 'sensor.panel_b7_signal_strength', 'sensor.panel_b8_signal_strength', 'sensor.panel_b9_signal_strength', 'sensor.panel_b10_signal_strength', 'sensor.panel_b11_signal_strength'] %}
+          {% set ns = namespace(best_id='', best_val= -999999) %}          {% for e in entities %}
+            {% set v = states(e) | float(0) %}
+            {% if v > ns.best_val %}
+              {% set ns.best_val = v %}
+              {% set ns.best_id = e %}
+            {% endif %}
+          {% endfor %}
+          {% if ns.best_id == '' %}
+            unknown
+          {% else %}
+            {{ ns.best_id.split('panel_')[1].split('_')[0] | upper }} = {{ ns.best_val | round(1) }}
+          {% endif %}
+
+      - name: "Panel Min Strength Summary"
+        unique_id: "panel_min_strength_summary"
+        state: >-
+          {% set entities = ['sensor.panel_a1_signal_strength', 'sensor.panel_a2_signal_strength', 'sensor.panel_a3_signal_strength', 'sensor.panel_a4_signal_strength', 'sensor.panel_a5_signal_strength', 'sensor.panel_a6_signal_strength', 'sensor.panel_a7_signal_strength', 'sensor.panel_a8_signal_strength', 'sensor.panel_a9_signal_strength', 'sensor.panel_a10_signal_strength', 'sensor.panel_b1_signal_strength', 'sensor.panel_b2_signal_strength', 'sensor.panel_b3_signal_strength', 'sensor.panel_b4_signal_strength', 'sensor.panel_b5_signal_strength', 'sensor.panel_b6_signal_strength', 'sensor.panel_b7_signal_strength', 'sensor.panel_b8_signal_strength', 'sensor.panel_b9_signal_strength', 'sensor.panel_b10_signal_strength', 'sensor.panel_b11_signal_strength'] %}
+          {% set ns = namespace(best_id='', best_val= 999999999) %}          {% for e in entities %}
+            {% set v = states(e) | float(0) %}
+            {% if v < ns.best_val %}
+              {% set ns.best_val = v %}
+              {% set ns.best_id = e %}
+            {% endif %}
+          {% endfor %}
+          {% if ns.best_id == '' %}
+            unknown
+          {% else %}
+             {{ ns.best_id.split('panel_')[1].split('_')[0] | upper }} = {{ ns.best_val | round(1) }}
+          {% endif %}
+
+      - name: "Panel Max Strength Value"
+        unique_id: "panel_max_strength_value"
+        availability: >-
+          {% set entities = ['sensor.panel_a1_signal_strength', 'sensor.panel_a2_signal_strength', 'sensor.panel_a3_signal_strength', 'sensor.panel_a4_signal_strength', 'sensor.panel_a5_signal_strength', 'sensor.panel_a6_signal_strength', 'sensor.panel_a7_signal_strength', 'sensor.panel_a8_signal_strength', 'sensor.panel_a9_signal_strength', 'sensor.panel_a10_signal_strength', 'sensor.panel_b1_signal_strength', 'sensor.panel_b2_signal_strength', 'sensor.panel_b3_signal_strength', 'sensor.panel_b4_signal_strength', 'sensor.panel_b5_signal_strength', 'sensor.panel_b6_signal_strength', 'sensor.panel_b7_signal_strength', 'sensor.panel_b8_signal_strength', 'sensor.panel_b9_signal_strength', 'sensor.panel_b10_signal_strength', 'sensor.panel_b11_signal_strength'] %}
+          {{ entities | select('has_value') | list | count > 0 }}
+        unit_of_measurement: "dBm"
+        state_class: measurement
+        state: >-
+          {% set entities = ['sensor.panel_a1_signal_strength', 'sensor.panel_a2_signal_strength', 'sensor.panel_a3_signal_strength', 'sensor.panel_a4_signal_strength', 'sensor.panel_a5_signal_strength', 'sensor.panel_a6_signal_strength', 'sensor.panel_a7_signal_strength', 'sensor.panel_a8_signal_strength', 'sensor.panel_a9_signal_strength', 'sensor.panel_a10_signal_strength', 'sensor.panel_b1_signal_strength', 'sensor.panel_b2_signal_strength', 'sensor.panel_b3_signal_strength', 'sensor.panel_b4_signal_strength', 'sensor.panel_b5_signal_strength', 'sensor.panel_b6_signal_strength', 'sensor.panel_b7_signal_strength', 'sensor.panel_b8_signal_strength', 'sensor.panel_b9_signal_strength', 'sensor.panel_b10_signal_strength', 'sensor.panel_b11_signal_strength'] %}
+          {% set ns = namespace(best_val=-999999) %}
+          {% for e in entities %}
+            {% set v = states(e) | float(None) %}
+            {% if v is not none and v > ns.best_val %}
+              {% set ns.best_val = v %}
+            {% endif %}
+          {% endfor %}
+          {{ ns.best_val }}
+
+      - name: "Panel Min Strength Value"
+        unique_id: "panel_min_strength_value"
+        availability: >-
+          {% set entities = ['sensor.panel_a1_signal_strength', 'sensor.panel_a2_signal_strength', 'sensor.panel_a3_signal_strength', 'sensor.panel_a4_signal_strength', 'sensor.panel_a5_signal_strength', 'sensor.panel_a6_signal_strength', 'sensor.panel_a7_signal_strength', 'sensor.panel_a8_signal_strength', 'sensor.panel_a9_signal_strength', 'sensor.panel_a10_signal_strength', 'sensor.panel_b1_signal_strength', 'sensor.panel_b2_signal_strength', 'sensor.panel_b3_signal_strength', 'sensor.panel_b4_signal_strength', 'sensor.panel_b5_signal_strength', 'sensor.panel_b6_signal_strength', 'sensor.panel_b7_signal_strength', 'sensor.panel_b8_signal_strength', 'sensor.panel_b9_signal_strength', 'sensor.panel_b10_signal_strength', 'sensor.panel_b11_signal_strength'] %}
+          {{ entities | select('has_value') | list | count > 0 }}
+        unit_of_measurement: "dBm"
+        state_class: measurement
+        state: >-
+          {% set entities = ['sensor.panel_a1_signal_strength', 'sensor.panel_a2_signal_strength', 'sensor.panel_a3_signal_strength', 'sensor.panel_a4_signal_strength', 'sensor.panel_a5_signal_strength', 'sensor.panel_a6_signal_strength', 'sensor.panel_a7_signal_strength', 'sensor.panel_a8_signal_strength', 'sensor.panel_a9_signal_strength', 'sensor.panel_a10_signal_strength', 'sensor.panel_b1_signal_strength', 'sensor.panel_b2_signal_strength', 'sensor.panel_b3_signal_strength', 'sensor.panel_b4_signal_strength', 'sensor.panel_b5_signal_strength', 'sensor.panel_b6_signal_strength', 'sensor.panel_b7_signal_strength', 'sensor.panel_b8_signal_strength', 'sensor.panel_b9_signal_strength', 'sensor.panel_b10_signal_strength', 'sensor.panel_b11_signal_strength'] %}
+          {% set ns = namespace(best_val=999999999) %}
+          {% for e in entities %}
+            {% set v = states(e) | float(None) %}
+            {% if v is not none and v < ns.best_val %}
+              {% set ns.best_val = v %}
+            {% endif %}
+          {% endfor %}
+          {{ ns.best_val }}
+
+      - name: "Panels Zero Production"
+        unique_id: "panels_zero_production"
+        state: >-
+          {% if is_state('sun.sun', 'above_horizon') %}
+            {% set entities = ['sensor.tetto_vs_ovest_panel_a1_power', 'sensor.tetto_vs_ovest_panel_a2_power', 'sensor.tetto_vs_ovest_panel_a3_power', 'sensor.tetto_vs_ovest_panel_a4_power', 'sensor.tetto_vs_ovest_panel_a5_power', 'sensor.tetto_vs_mare_panel_a6_power', 'sensor.tetto_vs_mare_panel_a7_power', 'sensor.tetto_vs_mare_panel_a8_power', 'sensor.tetto_vs_mare_panel_a9_power', 'sensor.tetto_vs_mare_panel_a10_power', 'sensor.sopra_pergola_panel_b1_power', 'sensor.sopra_pergola_panel_b2_power', 'sensor.sopra_pergola_panel_b3_power', 'sensor.sopra_pergola_panel_b4_power', 'sensor.sopra_pergola_panel_b5_power', 'sensor.sopra_tenda_giardino_panel_b6_power', 'sensor.sopra_tenda_giardino_panel_b7_power', 'sensor.sopra_tenda_giardino_panel_b8_power', 'sensor.sopra_tenda_giardino_panel_b9_power', 'sensor.sopra_pergola_panel_b10_power', 'sensor.sopra_tenda_giardino_panel_b11_power'] %}
+            {% set zeros = namespace(items=[]) %}            {% for e in entities %}
+              {% set v = states(e) | float(0) %}
+              {% if v == 0 %}
+                {% set zeros.items = zeros.items + [e.split('panel_')[1].split('_')[0] | upper] %}
+              {% endif %}
+            {% endfor %}
+            {% if zeros.items | length == 0 %}nessuno{% else %}{{ zeros.items | join(', ') }}{% endif %}
+          {% else %}
+            nessuno
+          {% endif %}
+
+      # --- PANNELLI (valore sempre numerico, unknown->0) ---
+      - name: "Panel A1 Power Safe"
+        unique_id: "panel_a1_power_safe"
+        state: >-
+          {% set v = states('sensor.tetto_vs_ovest_panel_a1_power') | float(0) %}
+          {{ v | round(1) }}
+        unit_of_measurement: "W"
+        device_class: power
+        state_class: measurement
+
+      - name: "Panel A2 Power Safe"
+        unique_id: "panel_a2_power_safe"
+        state: >-
+          {% set v = states('sensor.tetto_vs_ovest_panel_a2_power') | float(0) %}
+          {{ v | round(1) }}
+        unit_of_measurement: "W"
+        device_class: power
+        state_class: measurement
+
+      - name: "Panel A3 Power Safe"
+        unique_id: "panel_a3_power_safe"
+        state: >-
+          {% set v = states('sensor.tetto_vs_ovest_panel_a3_power') | float(0) %}
+          {{ v | round(1) }}
+        unit_of_measurement: "W"
+        device_class: power
+        state_class: measurement
+
+      - name: "Panel A4 Power Safe"
+        unique_id: "panel_a4_power_safe"
+        state: >-
+          {% set v = states('sensor.tetto_vs_ovest_panel_a4_power') | float(0) %}
+          {{ v | round(1) }}
+        unit_of_measurement: "W"
+        device_class: power
+        state_class: measurement
+
+      - name: "Panel A5 Power Safe"
+        unique_id: "panel_a5_power_safe"
+        state: >-
+          {% set v = states('sensor.tetto_vs_ovest_panel_a5_power') | float(0) %}
+          {{ v | round(1) }}
+        unit_of_measurement: "W"
+        device_class: power
+        state_class: measurement
+
+      - name: "Panel A6 Power Safe"
+        unique_id: "panel_a6_power_safe"
+        state: >-
+          {% set v = states('sensor.tetto_vs_mare_panel_a6_power') | float(0) %}
+          {{ v | round(1) }}
+        unit_of_measurement: "W"
+        device_class: power
+        state_class: measurement
+
+      - name: "Panel A7 Power Safe"
+        unique_id: "panel_a7_power_safe"
+        state: >-
+          {% set v = states('sensor.tetto_vs_mare_panel_a7_power') | float(0) %}
+          {{ v | round(1) }}
+        unit_of_measurement: "W"
+        device_class: power
+        state_class: measurement
+
+      - name: "Panel A8 Power Safe"
+        unique_id: "panel_a8_power_safe"
+        state: >-
+          {% set v = states('sensor.tetto_vs_mare_panel_a8_power') | float(0) %}
+          {{ v | round(1) }}
+        unit_of_measurement: "W"
+        device_class: power
+        state_class: measurement
+
+      - name: "Panel A9 Power Safe"
+        unique_id: "panel_a9_power_safe"
+        state: >-
+          {% set v = states('sensor.tetto_vs_mare_panel_a9_power') | float(0) %}
+          {{ v | round(1) }}
+        unit_of_measurement: "W"
+        device_class: power
+        state_class: measurement
+
+      - name: "Panel A10 Power Safe"
+        unique_id: "panel_a10_power_safe"
+        state: >-
+          {% set v = states('sensor.tetto_vs_mare_panel_a10_power') | float(0) %}
+          {{ v | round(1) }}
+        unit_of_measurement: "W"
+        device_class: power
+        state_class: measurement
+
+      - name: "Panel B1 Power Safe"
+        unique_id: "panel_b1_power_safe"
+        state: >-
+          {% set v = states('sensor.sopra_pergola_panel_b1_power') | float(0) %}
+          {{ v | round(1) }}
+        unit_of_measurement: "W"
+        device_class: power
+        state_class: measurement
+
+      - name: "Panel B2 Power Safe"
+        unique_id: "panel_b2_power_safe"
+        state: >-
+          {% set v = states('sensor.sopra_pergola_panel_b2_power') | float(0) %}
+          {{ v | round(1) }}
+        unit_of_measurement: "W"
+        device_class: power
+        state_class: measurement
+
+      - name: "Panel B3 Power Safe"
+        unique_id: "panel_b3_power_safe"
+        state: >-
+          {% set v = states('sensor.sopra_pergola_panel_b3_power') | float(0) %}
+          {{ v | round(1) }}
+        unit_of_measurement: "W"
+        device_class: power
+        state_class: measurement
+
+      - name: "Panel B4 Power Safe"
+        unique_id: "panel_b4_power_safe"
+        state: >-
+          {% set v = states('sensor.sopra_pergola_panel_b4_power') | float(0) %}
+          {{ v | round(1) }}
+        unit_of_measurement: "W"
+        device_class: power
+        state_class: measurement
+
+      - name: "Panel B5 Power Safe"
+        unique_id: "panel_b5_power_safe"
+        state: >-
+          {% set v = states('sensor.sopra_pergola_panel_b5_power') | float(0) %}
+          {{ v | round(1) }}
+        unit_of_measurement: "W"
+        device_class: power
+        state_class: measurement
+
+      - name: "Panel B6 Power Safe"
+        unique_id: "panel_b6_power_safe"
+        state: >-
+          {% set v = states('sensor.sopra_tenda_giardino_panel_b6_power') | float(0) %}
+          {{ v | round(1) }}
+        unit_of_measurement: "W"
+        device_class: power
+        state_class: measurement
+
+      - name: "Panel B7 Power Safe"
+        unique_id: "panel_b7_power_safe"
+        state: >-
+          {% set v = states('sensor.sopra_tenda_giardino_panel_b7_power') | float(0) %}
+          {{ v | round(1) }}
+        unit_of_measurement: "W"
+        device_class: power
+        state_class: measurement
+
+      - name: "Panel B8 Power Safe"
+        unique_id: "panel_b8_power_safe"
+        state: >-
+          {% set v = states('sensor.sopra_tenda_giardino_panel_b8_power') | float(0) %}
+          {{ v | round(1) }}
+        unit_of_measurement: "W"
+        device_class: power
+        state_class: measurement
+
+      - name: "Panel B9 Power Safe"
+        unique_id: "panel_b9_power_safe"
+        state: >-
+          {% set v = states('sensor.sopra_tenda_giardino_panel_b9_power') | float(0) %}
+          {{ v | round(1) }}
+        unit_of_measurement: "W"
+        device_class: power
+        state_class: measurement
+
+      - name: "Panel B10 Power Safe"
+        unique_id: "panel_b10_power_safe"
+        state: >-
+          {% set v = states('sensor.sopra_pergola_panel_b10_power') | float(0) %}
+          {{ v | round(1) }}
+        unit_of_measurement: "W"
+        device_class: power
+        state_class: measurement
+
+      - name: "Panel B11 Power Safe"
+        unique_id: "panel_b11_power_safe"
+        state: >-
+          {% set v = states('sensor.sopra_tenda_giardino_panel_b11_power') | float(0) %}
+          {{ v | round(1) }}
+        unit_of_measurement: "W"
+        device_class: power
+        state_class: measurement
+
+  # --- LEAK DETECTOR: batteria binaria (0=OK, 1=Bassa) ---
+  - binary_sensor:
+      - name: "PV Surplus"
+        unique_id: "pv_surplus"
+        device_class: power
+        icon: mdi:solar-power-variant
+        delay_on: "00:02:00"
+        delay_off: "00:05:00"
+        availability: >-
+          {{ has_value('sensor.inverter_uflex_external_ct1_power')
+             and states('input_number.pv_surplus_soglia') | float(0) > 0 }}
+        state: >-
+          {{ states('sensor.inverter_uflex_external_ct1_power') | float(0)
+             < -(states('input_number.pv_surplus_soglia') | float(0)) }}
+
+command_line:
+
+  - sensor:
+      name: PV Tabella Mensile
+      unique_id: pv_tabella_mensile
+      command: "cat /config/pv_tabella_mensile.json 2>/dev/null"
+      scan_interval: 3600
+      value_template: "{{ value_json.mesi | length }}"
+      json_attributes:
+        - mesi
+
+input_number:
+
+  # NUOVO (configuration_161): soglia di immissione in rete oltre la
+  # quale si considera surplus FV disponibile per la PdC.
+  pv_surplus_soglia:
+    name: "FV – Soglia surplus"
+    min: 0
+    max: 6000
+    step: 50
+    unit_of_measurement: "W"
+    mode: box
+    icon: mdi:solar-power
+
+  # NUOVO (configuration_161): prezzo €/kWh pagato dal GSE (stima
+  # manuale dal grafico "Prezzo GSE €/kWh" in plancia Consumi).
+  # Con surplus FV, usare la PdC costa solo il mancato incasso GSE.
+  gse_prezzo_kwh_stima:
+    name: "GSE – Prezzo €/kWh stimato"
+    min: 0
+    max: 1
+    step: 0.001
+    unit_of_measurement: "€/kWh"
+    mode: box
+    icon: mdi:currency-eur
+
+  # Importo mensile pagato dal GSE per l'energia ceduta alla rete.
+  # Da inserire manualmente quando arriva il bonifico GSE.
+  # Storicizzato da salva_bolletta.py, che ricalcola anche il prezzo
+  # €/kWh GSE per ogni mese (statistiche sensor.gse_prezzo_kwh).
+  bolletta_gse_euro:
+    name: "GSE – Pagato mese (€)"
+    min: 0
+    max: 9999
+    step: 0.01
+    unit_of_measurement: "€"
+    mode: box
+    icon: mdi:solar-power-variant
+
+  # ============================================================
+  # FOTOVOLTAICO – risparmio storico (aggiornati da totali_consumi.py)
+  # ============================================================
+  pv_risparmio_euro:
+    name: "FV – Risparmio autoconsumo (€)"
+    min: 0
+    max: 99999
+    step: 0.01
+    unit_of_measurement: "€"
+    mode: box
+    icon: mdi:solar-power
+
+  pv_gse_euro:
+    name: "FV – Pagamenti GSE (€)"
+    min: 0
+    max: 99999
+    step: 0.01
+    unit_of_measurement: "€"
+    mode: box
+    icon: mdi:cash-multiple
+
+  pv_totale_euro:
+    name: "FV – Risparmio totale (€)"
+    min: 0
+    max: 99999
+    step: 0.01
+    unit_of_measurement: "€"
+    mode: box
+    icon: mdi:piggy-bank
+
+  pv_recupero_pct:
+    name: "FV – Recupero investimento (%)"
+    min: 0
+    max: 100
+    step: 0.01
+    unit_of_measurement: "%"
+    mode: box
+    icon: mdi:percent
+
+utility_meter:
+
+  rete_export_mese:
+    name: A Rete Mese
+    unique_id: rete_export_mese
+    source: sensor.inverter_uflex_total_energy_export
+    cycle: monthly
+
+  produzione_mese:
+    name: Produzione Mese
+    unique_id: produzione_mese
+    source: sensor.inverter_uflex_total_production
+    cycle: monthly
+
+  produzione_anno:
+    name: Produzione Anno
+    source: sensor.inverter_uflex_total_production
+    cycle: yearly

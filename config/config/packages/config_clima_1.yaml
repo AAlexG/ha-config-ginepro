@@ -1,0 +1,469 @@
+# config_clima_1.yaml
+# Package Casa Ginepro - Clima: fancoil, free cooling/heating, target temperatura, consumi
+# Estratto da configuration_186.yaml. Nome file = nome del package.
+
+template:
+  - sensor:
+
+      - name: "Clima Media Esterna 7gg"
+        unique_id: "clima_media_esterna_7gg"
+        unit_of_measurement: "°C"
+        device_class: temperature
+        state_class: measurement
+        icon: mdi:thermometer
+        state: >-
+          {% set t = states('sensor.hp1000se_pro_pro_v1_6_4_outdoor_temperature') | float(15) %}
+          {% set media = states('input_number.clima_media_esterna_7gg') | float(15) %}
+          {{ (media * 0.979 + t * 0.021) | round(2) }}
+
+#--- PANASONIC AQUAREA (TEMPLATE SENSORS) ---
+  - sensor:
+
+#--- CONSUMO TOTALE DEUMIDIFICATORI: vedi blocco trigger-based a fine sezione template ---
+
+#--- CONSUMO STIMATO FANCOIL A VELOCITA' MINIMA ---
+# Stima basata su: ore di accensione oggi (history_stats) x potenza a velocità
+# minima da datasheet ufficiale Daikin (catalogo Fan Coil Units 2026, pag. 25,
+# tabella FWM-DAT/DAF).
+# Tania/Georgi = taglia 03 (FWM03DATN6V3, targhetta confermata), Power input
+# Low = 0.03 kW.
+# Sala = taglia 06 (FWM06DATN6V3) NON CONFERMATA da targhetta, solo probabile.
+# Power input Low taglia 06 = 0.05 kW: valore da aggiornare/rimuovere appena
+# la targhetta di Sala viene letta.
+# NOTA: è una stima al ribasso — se il fancoil lavora a velocità media/alta
+# (selezionata dal termostato esterno), il consumo reale è più alto.
+      - name: "Consumo Fancoil Tania Oggi Stimato"
+        unique_id: "consumo_fancoil_tania_oggi_stimato"
+        unit_of_measurement: "kWh"
+        device_class: energy
+        state_class: total_increasing
+        icon: mdi:fan
+        availability: "{{ has_value('sensor.fancoil_tania_durata_oggi') }}"
+        state: >-
+          {{ (states('sensor.fancoil_tania_durata_oggi') | float(0) * 0.03) | round(3) }}
+
+      - name: "Consumo Fancoil Georgi Oggi Stimato"
+        unique_id: "consumo_fancoil_georgi_oggi_stimato"
+        unit_of_measurement: "kWh"
+        device_class: energy
+        state_class: total_increasing
+        icon: mdi:fan
+        availability: "{{ has_value('sensor.fancoil_georgi_durata_oggi') }}"
+        state: >-
+          {{ (states('sensor.fancoil_georgi_durata_oggi') | float(0) * 0.03) | round(3) }}
+
+      - name: "Consumo Fancoil Sala Oggi Stimato"
+        unique_id: "consumo_fancoil_sala_oggi_stimato"
+        unit_of_measurement: "kWh"
+        device_class: energy
+        state_class: total_increasing
+        icon: mdi:fan-alert
+        availability: "{{ has_value('sensor.fancoil_sala_durata_oggi') }}"
+        state: >-
+          {{ (states('sensor.fancoil_sala_durata_oggi') | float(0) * 0.05) | round(3) }}
+
+#--- SOMME MONOTONE (protezione anti-reset spurio) -------------------------
+# Le somme di piu' sorgenti giornaliere possono CALARE se una sorgente riporta
+# un valore stantio/azzerato pur restando disponibile (tipico del cloud eWeLink).
+# HA interpreta ogni calo di un total_increasing come RESET del contatore e
+# riparte sommando da capo l'intero valore corrente: 3 cali/giorno hanno gonfiato
+# le statistiche deumidificatori fino a 821 kWh in un giorno (max reale 5.6 kWh).
+# Soluzione: sensori trigger-based che trattengono il massimo raggiunto nella
+# giornata (pavimento). Se una sorgente sparisce il totale resta fermo, non cala.
+# Nei primi 10 minuti dopo la mezzanotte il pavimento e' disattivato, per lasciare
+# passare il vero azzeramento giornaliero delle sorgenti.
+  - triggers:
+      - trigger: state
+        entity_id:
+          - sensor.consumo_fancoil_tania_oggi_stimato
+          - sensor.consumo_fancoil_georgi_oggi_stimato
+          - sensor.consumo_fancoil_sala_oggi_stimato_non_verificato
+      - trigger: time_pattern
+        minutes: "/5"
+      - trigger: homeassistant
+        event: start
+    sensor:
+      - name: "Consumo Fancoil Totale Oggi"
+        unique_id: "consumo_fancoil_totale_oggi"
+        unit_of_measurement: "kWh"
+        device_class: energy
+        state_class: total_increasing
+        icon: mdi:fan
+        availability: >-
+          {{ has_value('sensor.consumo_fancoil_tania_oggi_stimato')
+             and has_value('sensor.consumo_fancoil_georgi_oggi_stimato')
+             and has_value('sensor.consumo_fancoil_sala_oggi_stimato_non_verificato') }}
+        state: >-
+          {% set nuovo = (states('sensor.consumo_fancoil_tania_oggi_stimato') | float(0) +
+                          states('sensor.consumo_fancoil_georgi_oggi_stimato') | float(0) +
+                          states('sensor.consumo_fancoil_sala_oggi_stimato_non_verificato') | float(0))
+                         | round(3) %}
+          {% if now().hour == 0 and now().minute < 10 %}
+            {{ nuovo }}
+          {% else %}
+            {{ [nuovo, this.state | float(0)] | max | round(3) }}
+          {% endif %}
+
+#--- LAVATRICE MIELE: sorgente sempre numerica ------------------------------
+# sensor.lavatricemielewci870_consumo_energia va in 'unknown' quando la lavatrice
+# e' spenta. Utility Meter eredita unita' e device_class dalla sorgente al primo
+# stato valido: se al riavvio la sorgente e' unknown, i contatori restano senza
+# kWh e senza device_class energy (quindi inutilizzabili nel cruscotto Energia).
+# Questo wrapper trattiene l'ultimo valore noto quando la sorgente sparisce e
+# dichiara unita' e device_class in modo esplicito. Gli azzeramenti di fine ciclo
+# restano visibili e vengono gestiti normalmente da Utility Meter.
+
+sensor:
+
+  # Durata giornaliera accensione fancoil (per stima consumo energetico
+  # a velocità minima, moltiplicando le ore per la potenza da targhetta)
+  - platform: history_stats
+    name: "Fancoil Tania Durata Oggi"
+    entity_id: switch.camerageorgi_shelly_fancoil_georgi
+    state: "on"
+    type: time
+    start: "{{ now().replace(hour=0, minute=0, second=0, microsecond=0).isoformat() }}"
+    end: "{{ now().isoformat() }}"
+
+  - platform: history_stats
+    name: "Fancoil Georgi Durata Oggi"
+    entity_id: switch.camerageorgi_shelly_fancoil_georgi_2
+    state: "on"
+    type: time
+    start: "{{ now().replace(hour=0, minute=0, second=0, microsecond=0).isoformat() }}"
+    end: "{{ now().isoformat() }}"
+
+  - platform: history_stats
+    name: "Fancoil Sala Durata Oggi"
+    entity_id: switch.sala_fancoil_sala_shelly_1gen4
+    state: "on"
+    type: time
+    start: "{{ now().replace(hour=0, minute=0, second=0, microsecond=0).isoformat() }}"
+    end: "{{ now().isoformat() }}"
+
+input_number:
+  # ============================================================
+  # SISTEMA CLIMA COMPLETO – parametri PID e stato
+  # ============================================================
+
+  # --- TARGET TEMPERATURA per modalità ---
+  clima_target_comfort:
+    name: "Clima Target Comfort"
+    min: 18
+    max: 30
+    step: 0.5
+    unit_of_measurement: "°C"
+    mode: slider
+    icon: mdi:thermometer
+
+  clima_target_eco:
+    name: "Clima Target Eco"
+    min: 18
+    max: 30
+    step: 0.5
+    unit_of_measurement: "°C"
+    mode: slider
+    icon: mdi:thermometer
+
+  clima_target_notte:
+    name: "Clima Target Notte"
+    min: 18
+    max: 30
+    step: 0.5
+    unit_of_measurement: "°C"
+    mode: slider
+    icon: mdi:thermometer
+
+  clima_target_assenza:
+    name: "Clima Target Assenza"
+    min: 18
+    max: 32
+    step: 0.5
+    unit_of_measurement: "°C"
+    mode: slider
+    icon: mdi:thermometer
+
+  # --- TARGET TEMPERATURA DUAL-ZONE ---
+  # ESTATE - temperatura MASSIMA tollerata (raffrescamento)
+  maxtemp_giorno_estate_sala:
+    name: "Max Temp Giorno Estate Sala"
+    min: 18
+    max: 32
+    step: 0.5
+    unit_of_measurement: "°C"
+    mode: slider
+    icon: mdi:thermometer
+
+  maxtemp_giorno_estate_letto:
+    name: "Max Temp Giorno Estate Letto"
+    min: 18
+    max: 32
+    step: 0.5
+    unit_of_measurement: "°C"
+    mode: slider
+    icon: mdi:bed-outline
+
+  maxtemp_notte_estate_sala:
+    name: "Max Temp Notte Estate Sala"
+    min: 18
+    max: 32
+    step: 0.5
+    unit_of_measurement: "°C"
+    mode: slider
+    icon: mdi:thermometer
+
+  maxtemp_notte_estate_letto:
+    name: "Max Temp Notte Estate Letto"
+    min: 18
+    max: 32
+    step: 0.5
+    unit_of_measurement: "°C"
+    mode: slider
+    icon: mdi:bed-outline
+
+  # INVERNO - temperatura MINIMA garantita (riscaldamento)
+  mintemp_giorno_inverno_sala:
+    name: "Min Temp Giorno Inverno Sala"
+    min: 14
+    max: 26
+    step: 0.5
+    unit_of_measurement: "°C"
+    mode: slider
+    icon: mdi:thermometer
+
+  mintemp_giorno_inverno_letto:
+    name: "Min Temp Giorno Inverno Letto"
+    min: 14
+    max: 26
+    step: 0.5
+    unit_of_measurement: "°C"
+    mode: slider
+    icon: mdi:bed-outline
+
+  mintemp_notte_inverno_sala:
+    name: "Min Temp Notte Inverno Sala"
+    min: 14
+    max: 26
+    step: 0.5
+    unit_of_measurement: "°C"
+    mode: slider
+    icon: mdi:thermometer
+
+  mintemp_notte_inverno_letto:
+    name: "Min Temp Notte Inverno Letto"
+    min: 14
+    max: 26
+    step: 0.5
+    unit_of_measurement: "°C"
+    mode: slider
+    icon: mdi:bed-outline
+
+  # EMERGENZA - soglia antigelo sala durante vacanze in inverno
+  clima_target_emergenza_antigelo:
+    name: "Emergenza Antigelo Sala (Vacanze)"
+    min: 10
+    max: 18
+    step: 0.5
+    unit_of_measurement: "°C"
+    mode: slider
+    icon: mdi:snowflake-alert
+
+  # --- SOGLIE SISTEMA ---
+  clima_soglia_solare_boost:
+    name: "Soglia Solare Boost W"
+    min: 0
+    max: 6000
+    step: 100
+    unit_of_measurement: "W"
+    mode: box
+    icon: mdi:solar-power
+
+  clima_boost_solare_delta:
+    name: "Boost Solare Delta Mandata"
+    min: 0
+    max: 5
+    step: 0.5
+    unit_of_measurement: "°C"
+    mode: box
+    icon: mdi:delta
+
+  clima_soglia_inverno:
+    name: "Soglia Temperatura Inverno"
+    min: 5
+    max: 20
+    step: 0.5
+    unit_of_measurement: "°C"
+    mode: box
+    icon: mdi:snowflake
+
+  clima_media_esterna_7gg:
+    name: "Media Temperatura Esterna 7gg"
+    min: -20
+    max: 45
+    step: 0.01
+    unit_of_measurement: "°C"
+    mode: box
+    icon: mdi:thermometer
+
+  # --- FREE COOLING / FREE HEATING NATURALE ---
+  clima_delta_naturale_base:
+    name: "Delta Naturale Base"
+    min: 0
+    max: 10
+    step: 0.5
+    unit_of_measurement: "°C"
+    mode: box
+    icon: mdi:weather-windy
+
+  clima_delta_naturale_vento_bonus:
+    name: "Delta Naturale Bonus Vento"
+    min: 0
+    max: 10
+    step: 0.5
+    unit_of_measurement: "°C"
+    mode: box
+    icon: mdi:weather-windy
+
+  clima_soglia_vento_naturale:
+    name: "Soglia Vento Naturale"
+    min: 0
+    max: 40
+    step: 0.5
+    unit_of_measurement: "km/h"
+    mode: box
+    icon: mdi:weather-windy
+
+  clima_freecooling_setpoint_offset:
+    name: "Free Cooling Setpoint Offset"
+    min: 0
+    max: 15
+    step: 0.5
+    unit_of_measurement: "°C"
+    mode: box
+    icon: mdi:thermometer-chevron-up
+
+  clima_freecooling_setpoint_max:
+    name: "Free Cooling Setpoint Max"
+    min: 10
+    max: 30
+    step: 0.5
+    unit_of_measurement: "°C"
+    mode: box
+    icon: mdi:thermometer-chevron-up
+
+  clima_freeheating_setpoint_offset:
+    name: "Free Heating Setpoint Offset"
+    min: 0
+    max: 15
+    step: 0.5
+    unit_of_measurement: "°C"
+    mode: box
+    icon: mdi:thermometer-chevron-down
+
+  clima_freeheating_setpoint_min:
+    name: "Free Heating Setpoint Min"
+    min: 10
+    max: 55
+    step: 0.5
+    unit_of_measurement: "°C"
+    mode: box
+    icon: mdi:thermometer-chevron-down
+
+input_select:
+  # --- MODALITÀ CLIMA ---
+  clima_modalita:
+    name: "Clima Modalità"
+    options:
+      - "giorno"
+      - "notte"
+      - "assenza"
+      - "manuale"
+      - "comfort"
+      - "eco"
+    icon: mdi:home-thermometer
+
+  clima_stagione:
+    name: "Clima Stagione"
+    options:
+      - "estate"
+      - "inverno"
+    icon: mdi:weather-sunny
+
+utility_meter:
+
+  # --- FANCOIL (stima da durata accensione) ---
+  fancoil_mese:
+    name: "Fancoil Mese"
+    unique_id: fancoil_mese
+    source: sensor.consumo_fancoil_totale_oggi
+    cycle: monthly
+
+  fancoil_totale:
+    name: "Fancoil Totale"
+    unique_id: fancoil_totale
+    source: sensor.consumo_fancoil_totale_oggi
+
+input_boolean:
+
+  clima_boost_solare_attivo:
+    name: "Clima Boost Solare Attivo"
+    initial: false
+    icon: mdi:solar-power
+
+  clima_preraffrescamento_attivo:
+    name: "Clima Pre-raffrescamento Attivo"
+    initial: false
+    icon: mdi:thermometer-chevron-down
+
+  clima_autotune_attivo:
+    name: "Clima Autotuning Attivo"
+    initial: false
+    icon: mdi:tune-vertical
+
+  # --- GESTIONE MANUALE FANCOIL E DEUMIDIFICATORE ---
+  # Si attivano quando l'utente tocca lo switch a mano (toggle plancia o app Shelly).
+  # Bloccano le automazioni di controllo fino al prossimo cambio giorno/notte (07:00/23:00).
+  fancoil_georgi_manuale:
+    name: "Fancoil Georgi - Gestione Manuale"
+    initial: false
+    icon: mdi:hand-back-right
+
+  fancoil_georgi2_manuale:
+    name: "Fancoil Georgi 2 - Gestione Manuale"
+    initial: false
+    icon: mdi:hand-back-right
+
+  fancoil_sala_manuale:
+    name: "Fancoil Sala - Gestione Manuale"
+    initial: false
+    icon: mdi:hand-back-right
+
+  # --- FREE COOLING / FREE HEATING NATURALE ---
+  clima_freecooling_attivo:
+    name: "Clima – Free Cooling Attivo"
+    initial: false
+    icon: mdi:weather-windy
+
+  clima_freeheating_attivo:
+    name: "Clima – Free Heating Attivo"
+    initial: false
+    icon: mdi:weather-sunny
+
+  clima_freecooling_notifica_oggi:
+    name: "Clima – Free Cooling Notifica Oggi"
+    initial: false
+    icon: mdi:bell-check
+
+  # Acceso quando il free cooling ferma i fancoil (porte finestre
+  # presumibilmente aperte); spento dalla notifica di riaccensione
+  # del primo fancoil (automations_clima: fancoil_riaccensione_dopo_freecooling)
+  clima_freecooling_finestre:
+    name: "Free cooling – Finestre aperte"
+    icon: mdi:window-open-variant
+
+  clima_freeheating_notifica_oggi:
+    name: "Clima – Free Heating Notifica Oggi"
+    initial: false
+    icon: mdi:bell-check
+
+# generic_thermostat rimosso: sostituito da SAT (Smart Autotune Thermostat)

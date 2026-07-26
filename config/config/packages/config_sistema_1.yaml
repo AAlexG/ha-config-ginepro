@@ -1,0 +1,73 @@
+# config_sistema_1.yaml
+# Package Casa Ginepro - Sistema: monitoraggio Raspberry, shell_command, bollette, vacanza
+# Estratto da configuration_186.yaml. Nome file = nome del package.
+
+#--- MONITORAGGIO HARDWARE ---
+command_line:
+  - sensor:
+      name: RPi CPU Temperature
+      command: "cat /sys/class/thermal/thermal_zone0/temp"
+      unit_of_measurement: "°C"
+      icon: mdi:thermometer
+      scan_interval: 30
+      value_template: "{{ (value | int / 1000) | round(1) }}"
+
+  - sensor:
+      name: RPi Fan Speed
+      command: "cat /sys/class/hwmon/hwmon*/fan1_input 2>/dev/null | head -1 || echo '0'"
+      unit_of_measurement: "RPM"
+      icon: mdi:fan
+      scan_interval: 15
+      value_template: "{{ value | int(0) }}"
+  - sensor:
+      name: "Ultima Modifica Configurazione"
+      command: "find . -maxdepth 2 -name '*.yaml' -exec stat -c '%Y' {} + | sort -n | tail -1"
+      scan_interval: 120
+      value_template: "{{ value | int(none) }}"
+
+input_select:
+
+  # Mese di riferimento per inserimento bollette.
+  # Le opzioni (ultimi 12 mesi) vengono aggiornate automaticamente
+  # all'avvio di HA e ogni 1° del mese dall'automazione aggiorna_bolletta_mese.
+  bolletta_mese_sel:
+    name: "Bolletta – Mese di riferimento"
+    options:
+      - "-- seleziona --"
+      - "06/2025"
+      - "07/2025"
+      - "08/2025"
+      - "09/2025"
+      - "10/2025"
+      - "11/2025"
+      - "12/2025"
+      - "01/2026"
+      - "02/2026"
+      - "03/2026"
+      - "04/2026"
+      - "05/2026"
+    initial: "-- seleziona --"
+    icon: mdi:calendar-month
+
+shell_command:
+  avvia_vivino_proxy: "python3 /config/vivino_proxy.py &"
+  # Chiama lo script Python che legge mese + valori bolletta dal DB HA,
+  # inietta le statistiche mensili e ricalcola input_number.elettricita_prezzo_kwh
+  # e input_number.gas_prezzo_mc.
+  # Stdout = JSON letto da script.salva_bolletta (response_variable).
+  # Log diagnostico su /config/bolletta_log.txt (scritto dallo script stesso).
+  salva_bolletta: "python3 /config/salva_bolletta.py 2>> /config/bolletta_log.txt"
+  calcola_totali_consumi: "python3 /config/totali_consumi.py 2>> /config/totali_consumi.log"
+  calcola_pv_tabella: "python3 /config/pv_tabella_mensile.py > /config/pv_tabella_mensile.json 2>/config/pv_tabella_mensile.log"
+
+input_boolean:
+
+  # --- FLAG VACANZA ---
+  # Acceso da spegnimento_inizio_vacanza (analisi calendario), spento da riscaldamento_rientro_vacanza.
+  # Con flag acceso restano ferme: pergola, tenda giardino, canto uccelli
+  # (fancoil gia' coperti da clima_modalita = assenza).
+  # Girano comunque: sicurezza, deumidificatori, irrigazione, antigelo, notifiche, sistema.
+  # NOTA: niente "initial" di proposito - lo stato deve sopravvivere a un riavvio di HA in vacanza.
+  vacanza:
+    name: "Vacanza"
+    icon: mdi:beach

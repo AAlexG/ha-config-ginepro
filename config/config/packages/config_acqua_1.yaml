@@ -1,0 +1,225 @@
+# config_acqua_1.yaml
+# Package Casa Ginepro - Acqua: sanitaria, consumi, costi e bolletta IRETI
+# Estratto da configuration_186.yaml. Nome file = nome del package.
+
+template:
+  - sensor:
+      - name: "Leak Detector Battery Status"
+        unique_id: "leak_detector_battery_status"
+        state: >-
+          {{ 'OK' if states('sensor.hp1000se_pro_pro_v1_6_4_leak_detection_4_battery') | int(0) == 0 else 'Bassa' }}
+        icon: >-
+          {{ 'mdi:battery' if states('sensor.hp1000se_pro_pro_v1_6_4_leak_detection_4_battery') | int(0) == 0 else 'mdi:battery-alert' }}
+
+  # --- IRRIGAZIONE: stato del programma automatico ---
+  # salta_oggi OFF = programma attivo (parte agli orari O1/O2 se il meteo lo permette)
+  # salta_oggi ON  = programma saltato per oggi (auto-ripristino a mezzanotte)
+  - sensor:
+
+      - name: "Acqua Mese Euro"
+        unique_id: "acqua_mese_euro"
+        # configuration_175: aggiunta quota fissa mensile acqua (€/mese
+        # IRETI, indipendente dal consumo) per allineare il rilevato
+        # alla bolletta, come già fatto per gas ed elettricità.
+        state: >-
+          {% if now().day == 1 and now().hour == 0 %}
+            0
+          {% else %}
+            {% set consumo = ([states('input_number.acqua_costo_acc') | float(0) -
+                 states('input_number.acqua_costo_inizio_mese') | float(0), 0] | max) %}
+            {{ (consumo + states('input_number.acqua_quota_fissa_mese') | float(0)) | round(2) }}
+          {% endif %}
+        unit_of_measurement: "€"
+        state_class: measurement
+        icon: mdi:currency-eur
+
+      - name: "Acqua Mese MC"
+        unique_id: "acqua_mese_mc"
+        state: >-
+          {% if now().day == 1 and now().hour == 0 %}
+            0
+          {% else %}
+            {{ ([states('input_number.acqua_consumo_acc') | float(0) -
+                 states('input_number.acqua_mc_inizio_mese') | float(0), 0] | max) | round(4) }}
+          {% endif %}
+        unit_of_measurement: "m³"
+        state_class: measurement
+        icon: mdi:water
+
+
+  # --- CALDAIA OTGW: consumo gas stimato ---
+  # Baxi Luna Duo-Tec IN+ 24 kW
+  # Portata termica nominale riscaldamento: 20.6 kW
+  # PCI metano: 9.59 kWh/m³
+  # Consumo massimo: 20.6 / 9.59 = 2.148 m³/h
+  # Modulazione 1:7 → minimo ~14.3% → 0.307 m³/h
+  - sensor:
+
+      - name: "Acqua Sanitaria Calda Stimata"
+        unique_id: "acqua_sanitaria_calda_stimata"
+        state: >-
+          {% set minuti = states('sensor.caldaia_dhw_durata_oggi_minuti') | float(0) %}
+          {% set flusso = states('input_number.acqua_flusso_doccia') | float(8) %}
+          {{ (minuti / 60 * flusso * 0.06) | round(4) }}
+        unit_of_measurement: "m³"
+        state_class: measurement
+        icon: mdi:water-boiler
+
+      - name: "Acqua Sanitaria Totale"
+        unique_id: "acqua_sanitaria_totale"
+        state: >-
+          {% set C3 = states('sensor.acqua_sanitaria_calda_stimata') | float(0) %}
+          {% set C4 = states('input_number.acqua_sanitaria_manuale') | float(0) %}
+          {{ (C3 + C4) | round(4) }}
+        unit_of_measurement: "m³"
+        state_class: measurement
+        icon: mdi:water
+
+      - name: "Acqua Lavatrice Oggi"
+        unique_id: "acqua_lavatrice_oggi"
+        # Litri consumati oggi dalla lavatrice (utility_meter giornaliero sul
+        # wrapper sensor.lavatrice_acqua), convertiti in m³.
+        state: >-
+          {{ (states('sensor.lavatrice_acqua_oggi') | float(0) / 1000) | round(4) }}
+        unit_of_measurement: "m³"
+        state_class: measurement
+        icon: mdi:washing-machine
+
+      - name: "Acqua Oggi MC"
+        unique_id: "acqua_oggi_mc"
+        state: >-
+          {% set C2 = states('sensor.acqua_irrigazione_oggi') | float(0) %}
+          {% set C5 = states('sensor.acqua_sanitaria_totale') | float(0) %}
+          {% set C6 = states('sensor.acqua_lavatrice_oggi') | float(0) %}
+          {{ (C2 + C5 + C6) | round(4) }}
+        unit_of_measurement: "m³"
+        state_class: measurement
+        icon: mdi:water-check
+
+      - name: "Acqua Oggi Euro"
+        unique_id: "acqua_oggi_euro"
+        state: >-
+          {% set q = states('sensor.acqua_oggi_mc') | float(0) %}
+          {% set tariffa = states('input_number.acqua_tariffa') | float(5.5) %}
+          {{ (q * tariffa) | round(2) }}
+        unit_of_measurement: "€"
+        state_class: measurement
+        icon: mdi:currency-eur
+
+input_number:
+
+  acqua_totale_rilevato_mc:
+    name: "Acqua Totale Rilevato (m³)"
+    min: 0
+    max: 999999
+    step: 0.001
+    unit_of_measurement: "m³"
+    mode: box
+    icon: mdi:sigma
+
+  acqua_totale_bollette_mc:
+    name: "Acqua Totale Bollette (m³)"
+    min: 0
+    max: 999999
+    step: 0.001
+    unit_of_measurement: "m³"
+    mode: box
+    icon: mdi:receipt-text-outline
+
+  acqua_flusso_doccia:
+    name: "Acqua calda – Flusso sanitaria"
+    min: 1
+    max: 25
+    step: 0.1
+    unit_of_measurement: "L/min"
+    mode: box
+    icon: mdi:shower
+
+  acqua_sanitaria_manuale:
+    name: "Acqua sanitaria totale giorno (C4)"
+    min: 0
+    max: 20
+    step: 0.001
+    unit_of_measurement: "m³"
+    mode: box
+    icon: mdi:water-pump
+
+  # Accumulatore costo acqua per storico mensile.
+  # Inizializzato a 1068.71 (Ago'24–Dic'25) dall'automazione acqua_setup_iniziale
+  # (solo al primo avvio, quando il valore è 0).
+  # NON specificare initial: altrimenti si azzererebbe a ogni riavvio.
+  acqua_costo_acc:
+    name: "Acqua – Accumulatore costo (€)"
+    min: 0
+    max: 999999
+    step: 0.01
+    unit_of_measurement: "€"
+    mode: box
+    icon: mdi:currency-eur
+
+  acqua_consumo_acc:
+    name: "Acqua – Accumulatore consumo (m³)"
+    min: 0
+    max: 999999
+    step: 0.0001
+    unit_of_measurement: "m³"
+    mode: box
+    icon: mdi:water
+
+  acqua_costo_inizio_mese:
+    name: "Acqua – Costo acc inizio mese (€)"
+    min: 0
+    max: 999999
+    step: 0.01
+    mode: box
+    icon: mdi:currency-eur
+
+  acqua_mc_inizio_mese:
+    name: "Acqua – m³ acc inizio mese"
+    min: 0
+    max: 999999
+    step: 0.0001
+    mode: box
+    icon: mdi:water
+
+  # configuration_175: acqua_tariffa diventa prezzo A CONSUMO €/m³
+  # (variabile + fognatura + oneri, IVA 10% inclusa), media effettiva
+  # da bolletta IRETI. Le quote fisse sono in acqua_quota_fissa_mese.
+  acqua_tariffa:
+    name: "Acqua – Prezzo a consumo €/m³"
+    min: 0.01
+    max: 20
+    step: 0.01
+    unit_of_measurement: "€/m³"
+    mode: box
+    icon: mdi:currency-eur
+
+  # NUOVO (configuration_175): quote fisse mensili acqua da bolletta
+  # IRETI (Acquedotto + Fognatura Quota Fissa, €/unità/anno / 12,
+  # IVA 10% inclusa). Aggiornare quando cambiano le tariffe ARERA.
+  acqua_quota_fissa_mese:
+    name: "Acqua – Quota fissa €/mese"
+    min: 0
+    max: 99
+    step: 0.01
+    unit_of_measurement: "€/mese"
+    mode: box
+    icon: mdi:currency-eur
+
+  bolletta_acqua_mc:
+    name: "Acqua – Bolletta (m³)"
+    min: 0
+    max: 9999
+    step: 0.001
+    unit_of_measurement: "m³"
+    mode: box
+    icon: mdi:water
+
+  bolletta_acqua_euro:
+    name: "Acqua – Bolletta (€)"
+    min: 0
+    max: 9999
+    step: 0.01
+    unit_of_measurement: "€"
+    mode: box
+    icon: mdi:currency-eur

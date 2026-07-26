@@ -1,0 +1,120 @@
+# config_irrigazione_1.yaml
+# Package Casa Ginepro - Irrigazione: Sonoff 4CHPRoR3, tre circuiti, orari e blocchi
+# Estratto da configuration_186.yaml. Nome file = nome del package.
+
+template:
+  - sensor:
+      - name: "Irrigazione Attiva"
+        unique_id: "irrigazione_attiva"
+        state: >-
+          {{ 'Saltata oggi' if is_state('input_boolean.irrigazione_salta_oggi', 'on') else 'Programmata' }}
+        icon: >-
+          {{ 'mdi:water-pump-off' if is_state('input_boolean.irrigazione_salta_oggi', 'on') else 'mdi:water-pump' }}
+
+  - sensor:
+      - name: "Acqua Irrigazione Oggi"
+        unique_id: "acqua_irrigazione_oggi"
+        # Consumo = minuti-canale erogati oggi × m³/min per canale.
+        state: >-
+          {% set minuti = states('counter.irrigazione_minuti_oggi') | int(0) %}
+          {% set flusso = states('input_number.acqua_consumo_per_minuto') | float(0) %}
+          {{ (minuti * flusso) | round(4) }}
+        unit_of_measurement: "m³"
+        state_class: measurement
+        icon: mdi:sprinkler
+
+counter:
+  # Minuti-canale di irrigazione erogati oggi (reset a mezzanotte).
+  # +1 ogni minuto con un canale ON. Interblocco HW: max 1 canale acceso => 1 tick = 1 minuto-canale.
+  # Copre cicli programmati e accensioni manuali (anche di singolo canale).
+  irrigazione_minuti_oggi:
+    name: "Minuti irrigazione oggi"
+    initial: 0
+    step: 1
+    restore: true
+
+input_number:
+
+  irrigazione_soglia_umidita:
+    name: "Irrigazione - Soglia umidità massima"
+    min: 0
+    max: 100
+    step: 1
+    unit_of_measurement: "%"
+    mode: box
+    icon: mdi:water-percent
+
+  # ============================================================
+  # ACQUA: input manuali (NUOVO – configuration_53)
+  # ============================================================
+  # Durate per singolo canale (T1/T2/T3). Usate dal ciclo programmato e da "Cicla ora".
+  irrigazione_durata_c1:
+    name: "Irrigazione – Durata C1 (T1)"
+    min: 0
+    max: 180
+    step: 1
+    unit_of_measurement: "min"
+    mode: box
+    icon: mdi:numeric-1-box
+  irrigazione_durata_c2:
+    name: "Irrigazione – Durata C2 (T2)"
+    min: 0
+    max: 180
+    step: 1
+    unit_of_measurement: "min"
+    mode: box
+    icon: mdi:numeric-2-box
+  irrigazione_durata_c3:
+    name: "Irrigazione – Durata C3 (T3)"
+    min: 0
+    max: 180
+    step: 1
+    unit_of_measurement: "min"
+    mode: box
+    icon: mdi:numeric-3-box
+
+  # m³ al minuto PER SINGOLO CANALE (impostare 0.0333).
+  # Consumo irrigazione = minuti-canale erogati oggi × questo valore.
+  acqua_consumo_per_minuto:
+    name: "Irrigazione – m³/min per canale"
+    min: 0
+    max: 1
+    step: 0.0001
+    unit_of_measurement: "m³/min"
+    mode: box
+    icon: mdi:water-pump
+
+input_datetime:
+
+  # Orari del programma irrigazione (modificabili da plancia). Solo ora, niente data.
+  # NIENTE "initial": con initial il valore torna al default a ogni riavvio/reload
+  # (initial sovrascrive restore_state). Senza, lo stato scelto da plancia persiste.
+  irrigazione_ora_mattino:
+    name: "Irrigazione - Ora mattino (O1)"
+    has_date: false
+    has_time: true
+    icon: mdi:weather-sunset-up
+  irrigazione_ora_sera:
+    name: "Irrigazione - Ora sera (O2)"
+    has_date: false
+    has_time: true
+    icon: mdi:weather-sunset-down
+
+input_text:
+  # Messaggio mostrato in plancia (Casa Ginepro) con l'esito dell'ultima
+  # valutazione irrigazione: motivi di blocco (pioggia, umidità, vento,
+  # previsioni) oppure conferma di irrigazione permessa. Scritto dalle
+  # ciclo programmato e dagli script irrigazione (cicla_ora, stop, salta_toggle).
+  irrigazione_motivo_blocco:
+    name: "Irrigazione – Motivo blocco"
+    max: 255
+    icon: mdi:sprinkler-variant
+
+input_boolean:
+
+  # Salta il programma automatico SOLO per oggi. Auto-reset a mezzanotte (auto-ripristino).
+  # I canali restano comandabili a mano e "Cicla ora" funziona comunque.
+  irrigazione_salta_oggi:
+    name: "Irrigazione – Salta programma oggi"
+    initial: false
+    icon: mdi:hand-back-right
