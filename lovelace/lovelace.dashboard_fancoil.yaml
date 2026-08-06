@@ -5,10 +5,99 @@ config:
     path: fancoil
     sections:
     - cards:
+      - heading: "Temperature & Umidit\xE0"
+        heading_style: title
+        icon: mdi:home-thermometer-outline
+        type: heading
+      - entities:
+        - entity: sensor.hp1000se_pro_pro_v1_6_4_indoor_temperature
+          name: Temp.Sala
+        - entity: sensor.termometro_georgi_zigbee_temperature
+          name: Georgi
+        - entity: sensor.termometro_tania_zigbee_temperature
+          name: Tania
+        - entity: sensor.hp1000se_pro_pro_v1_6_4_outdoor_temperature
+          name: Esterna
+        - entity: sensor.hp1000se_pro_pro_v1_6_4_indoor_humidity
+          name: Humid.Sala
+        - entity: sensor.termometro_georgi_zigbee_humidity
+          name: Georgi
+        - entity: sensor.termometro_tania_zigbee_humidity
+          name: Tania
+        - entity: sensor.hp1000se_pro_pro_v1_6_4_humidity
+          name: Esterna
+        grid_options:
+          columns: full
+          rows: auto
+        hours_to_show: 24
+        refresh_interval: 60
+        type: history-graph
+      - entity: sensor.panasonic_heat_pump_main_main_target_temp
+        features_position: bottom
+        name: PompaTarget
+        type: tile
+        vertical: false
+      - entity: sensor.panasonic_heat_pump_main_main_outlet_temp
+        features_position: bottom
+        name: PompaOut
+        type: tile
+        vertical: false
+      - entity: sensor.opentherm_gateway_otgw_otgw_control_setpoint
+        features_position: bottom
+        name: RiscalTarget
+        type: tile
+        vertical: false
+      - entity: sensor.opentherm_gateway_otgw_otgw_boiler_flow_water_temperature
+        features_position: bottom
+        name: RiscalOUT
+        type: tile
+        vertical: false
+      - entity: sensor.opentherm_gateway_otgw_otgw_dhw_setpoint
+        features_position: bottom
+        name: Sanit.Target
+        type: tile
+        vertical: false
+      - entity: sensor.opentherm_gateway_otgw_otgw_dhw_temperature
+        features_position: bottom
+        name: Sanit.Ora
+        type: tile
+        vertical: false
+      type: grid
+    - cards:
       - heading: Gestione Manuale
         heading_style: title
         icon: mdi:hand-back-right
         type: heading
+      - entity: switch.panasonic_heat_pump_main_heatpump_state
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        name: Pompa
+        tap_action:
+          action: none
+        type: tile
+        vertical: false
+      - grid_options:
+          columns: 6
+        icon: mdi:heat-pump
+        icon_height: 20px
+        name: Pompa ON/OFF
+        show_icon: true
+        show_name: true
+        show_state: false
+        tap_action:
+          action: perform-action
+          perform_action: script.panasonic_toggle
+        type: button
+      - entity: binary_sensor.panasonic_heat_pump_lwt
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        name: Pompa Online
+        type: tile
+        vertical: false
       - heading: Blocca automatismi fino cambio giorno/notte (07:00 / 23:00)
         heading_style: subtitle
         icon: ''
@@ -114,65 +203,6 @@ config:
         tap_action:
           action: perform-action
           perform_action: script.deumidificatore_armadio_toggle_manuale
-        type: tile
-        vertical: false
-      type: grid
-    - cards:
-      - heading: "Temperature & Umidit\xE0"
-        heading_style: title
-        icon: mdi:home-thermometer-outline
-        type: heading
-      - entities:
-        - entity: sensor.hp1000se_pro_pro_v1_6_4_indoor_temperature
-          name: Temp.Sala
-        - entity: sensor.termometro_georgi_zigbee_temperature
-          name: Georgi
-        - entity: sensor.termometro_tania_zigbee_temperature
-          name: Tania
-        - entity: sensor.hp1000se_pro_pro_v1_6_4_outdoor_temperature
-          name: Esterna
-        - entity: sensor.hp1000se_pro_pro_v1_6_4_indoor_humidity
-          name: Humid.Sala
-        - entity: sensor.termometro_georgi_zigbee_humidity
-          name: Georgi
-        - entity: sensor.termometro_tania_zigbee_humidity
-          name: Tania
-        - entity: sensor.hp1000se_pro_pro_v1_6_4_humidity
-          name: Esterna
-        grid_options:
-          columns: full
-          rows: auto
-        hours_to_show: 24
-        refresh_interval: 60
-        type: history-graph
-      - entity: sensor.panasonic_heat_pump_main_main_target_temp
-        features_position: bottom
-        name: PompaTarget
-        type: tile
-        vertical: false
-      - entity: sensor.panasonic_heat_pump_main_main_outlet_temp
-        features_position: bottom
-        name: PompaOut
-        type: tile
-        vertical: false
-      - entity: sensor.opentherm_gateway_otgw_otgw_control_setpoint
-        features_position: bottom
-        name: RiscalTarget
-        type: tile
-        vertical: false
-      - entity: sensor.opentherm_gateway_otgw_otgw_boiler_flow_water_temperature
-        features_position: bottom
-        name: RiscalOUT
-        type: tile
-        vertical: false
-      - entity: sensor.opentherm_gateway_otgw_otgw_dhw_setpoint
-        features_position: bottom
-        name: Sanit.Target
-        type: tile
-        vertical: false
-      - entity: sensor.opentherm_gateway_otgw_otgw_dhw_temperature
-        features_position: bottom
-        name: Sanit.Ora
         type: tile
         vertical: false
       type: grid

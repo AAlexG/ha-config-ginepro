@@ -93,6 +93,13 @@ config:
           rows: 2
         square: false
         type: grid
+      - clock_size: small
+        clock_style: digital
+        face_style: markers
+        no_background: false
+        show_seconds: false
+        time_zone: Europe/Rome
+        type: clock
       - heading: SCORCIATOIE
         heading_style: subtitle
         icon: mdi:water
@@ -276,18 +283,6 @@ config:
           action: none
         type: tile
         vertical: false
-      - grid_options:
-          columns: 6
-        icon: mdi:heat-pump
-        icon_height: 20px
-        name: Pompa ON/OFF
-        show_icon: true
-        show_name: true
-        show_state: false
-        tap_action:
-          action: perform-action
-          perform_action: script.panasonic_toggle
-        type: button
       - entity: binary_sensor.panasonic_heat_pump_lwt
         features_position: bottom
         grid_options:
