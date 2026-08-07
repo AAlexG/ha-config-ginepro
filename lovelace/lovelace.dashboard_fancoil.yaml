@@ -912,7 +912,7 @@ config:
           rows: auto
         period: day
         stat_types:
-        - change
+        - state
         type: statistics-graph
       - heading: 'Lavatrice Miele al giorno:'
         heading_style: subtitle

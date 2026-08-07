@@ -1,4 +1,4 @@
-# config_sistema_1.yaml
+# config_sistema_2.yaml
 # Package Casa Ginepro - Sistema: monitoraggio Raspberry, shell_command, bollette, vacanza
 # Estratto da configuration_186.yaml. Nome file = nome del package.
 
@@ -32,20 +32,16 @@ input_select:
   # all'avvio di HA e ogni 1° del mese dall'automazione aggiorna_bolletta_mese.
   bolletta_mese_sel:
     name: "Bolletta – Mese di riferimento"
+    # Solo il placeholder: la lista dei 12 mesi e' generata a runtime
+    # dall'automazione aggiorna_bolletta_mese (automations.yaml, n. 28).
+    # NON reinserire qui un elenco di mesi: le opzioni impostate con
+    # input_select.set_options vivono in memoria e a ogni ricarica YAML
+    # HA rimette esattamente cio' che e' scritto sotto (async_update_config).
+    # Un elenco statico tornerebbe quindi a mostrarsi silenziosamente
+    # obsoleto. Con il solo placeholder un eventuale guasto e' visibile
+    # subito e l'automazione ripristina la lista entro pochi secondi.
     options:
       - "-- seleziona --"
-      - "06/2025"
-      - "07/2025"
-      - "08/2025"
-      - "09/2025"
-      - "10/2025"
-      - "11/2025"
-      - "12/2025"
-      - "01/2026"
-      - "02/2026"
-      - "03/2026"
-      - "04/2026"
-      - "05/2026"
     initial: "-- seleziona --"
     icon: mdi:calendar-month
 

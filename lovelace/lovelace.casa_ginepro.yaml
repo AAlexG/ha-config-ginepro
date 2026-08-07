@@ -100,6 +100,20 @@ config:
         show_seconds: false
         time_zone: Europe/Rome
         type: clock
+      - entity: sensor.alba_oggi
+        grid_options:
+          columns: 6
+          rows: 1
+        icon: mdi:weather-sunset-up
+        name: Alba
+        type: tile
+      - entity: sensor.tramonto_oggi
+        grid_options:
+          columns: 6
+          rows: 1
+        icon: mdi:weather-sunset-down
+        name: Tramonto
+        type: tile
       - heading: SCORCIATOIE
         heading_style: subtitle
         icon: mdi:water

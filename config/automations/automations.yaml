@@ -1,4 +1,4 @@
-# automations_121.yaml
+# automations_122.yaml
 #prova
 #==================================================================================
 # 1. IRRIGAZIONE – Ciclo programmato (O1/O2) con gate meteo
@@ -445,39 +445,62 @@
 #==================================================================================
 # 28. BOLLETTE – Aggiorna lista mesi nel combo box
 #
-# All'avvio di HA e ogni 1° del mese aggiorna le opzioni di
-# input_select.bolletta_mese_sel con gli ultimi 12 mesi + placeholder.
-# Formato opzioni: "MM/YYYY" (es. "05/2026").
+# Mantiene input_select.bolletta_mese_sel allineato agli ultimi 12 mesi
+# + placeholder. Formato opzioni: "MM/YYYY" (es. "08/2026").
+#
+# Le opzioni impostate con input_select.set_options vivono solo in memoria:
+# qualsiasi ricarica della configurazione YAML (input_select.reload,
+# homeassistant.reload_all) le riporta ai valori scritti in
+# packages/config_sistema.yaml. Per questo l'automazione e' AUTORIPARANTE:
+#   - avvio HA            -> ripristino immediato dopo ogni riavvio
+#   - attributo "options" -> ripristino immediato dopo ogni ricarica YAML
+#   - ogni ora            -> cambio mese e rete di sicurezza
+# La condizione confronta le opzioni attuali con quelle attese e agisce solo
+# se differiscono: nessun loop quando e' l'automazione stessa a cambiarle.
+#
+# La lista attesa e' calcolata in "variables", che HA renderizza PRIMA delle
+# condizioni, quindi e' un'unica fonte di verita' per condizione e azione.
+# Aritmetica su indice assoluto dei mesi (anno*12 + mese-1): niente gestione
+# manuale del cambio anno. Zero-padding per concatenazione, senza il filtro
+# format e senza str.format (bloccato dalla sandbox Jinja di HA).
 #==================================================================================
 - id: aggiorna_bolletta_mese
   alias: "Bollette – Aggiorna lista mesi"
   mode: single
+  max_exceeded: silent
+  variables:
+    mesi_attesi: >
+      {% set ns = namespace(o=["-- seleziona --"]) %}
+      {% set idx = now().year * 12 + now().month - 1 %}
+      {% for j in range(11, -1, -1) %}
+        {% set k = idx - j %}
+        {% set mm = k % 12 + 1 %}
+        {% set ns.o = ns.o + [ ('0' ~ mm if mm < 10 else mm | string) ~ '/' ~ (k // 12) ] %}
+      {% endfor %}
+      {{ ns.o }}
   triggers:
-    - platform: homeassistant
+    - trigger: homeassistant
       event: start
-    - platform: time
-      at: "00:00:00"
-  condition:
+      id: avvio
+    - trigger: state
+      entity_id: input_select.bolletta_mese_sel
+      attribute: options
+      id: opzioni_cambiate
+    - trigger: time_pattern
+      hours: "/1"
+      minutes: 0
+      seconds: 0
+      id: orario
+  conditions:
     - condition: template
       value_template: >
-        {{ trigger.platform == 'homeassistant' or now().day == 1 }}
-  action:
+        {{ (state_attr('input_select.bolletta_mese_sel', 'options') or []) | list != mesi_attesi }}
+  actions:
     - action: input_select.set_options
       target:
         entity_id: input_select.bolletta_mese_sel
       data:
-        options: >
-          {% set ns = namespace(opts=["-- seleziona --"]) %}
-          {% for j in range(11, -1, -1) %}
-            {% set m = now().month - j %}
-            {% set y = now().year %}
-            {% if m <= 0 %}
-              {% set m = m + 12 %}
-              {% set y = y - 1 %}
-            {% endif %}
-            {% set ns.opts = ns.opts + ["%02d/%d" | format(m, y)] %}
-          {% endfor %}
-          {{ ns.opts }}
+        options: "{{ mesi_attesi }}"
 
 #==================================================================================
 # 29. ACQUA – Reset dhw_durata_acc all'avvio di HA

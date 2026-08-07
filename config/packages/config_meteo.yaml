@@ -1,5 +1,6 @@
-# config_meteo_1.yaml
+# config_meteo_2.yaml
 # Package Casa Ginepro - Meteo: sensori statistici vento (HP1000SE Pro)
+#                        + alba e tramonto di oggi
 # Estratto da configuration_186.yaml. Nome file = nome del package.
 
 #--- SENSORI STATISTICI ---
@@ -23,3 +24,70 @@ sensor:
       hours: 1
     sampling_size: 120
     precision: 1
+
+#==================================================================================
+# ALBA E TRAMONTO DI OGGI
+# sun.sun espone solo il PROSSIMO evento: dopo l'alba next_rising punta a domani.
+# Questi sensori catturano i valori alle 00:00:30, quando entrambi sono ancora
+# riferiti a oggi, e li mantengono per tutta la giornata.
+# Lo stato dei sensori trigger-based viene ripristinato al riavvio di HA.
+# Fallback: se HA e' rimasto spento a cavallo della mezzanotte si usa
+# l'evento di domani meno 24h (errore massimo circa 2 minuti), autocorretto
+# alla mezzanotte successiva.
+#==================================================================================
+template:
+  - trigger:
+      - trigger: time
+        at: "00:00:30"
+      - trigger: homeassistant
+        event: start
+    sensor:
+      - name: "Alba Oggi"
+        unique_id: alba_oggi
+        icon: mdi:weather-sunset-up
+        state: >
+          {% set r = state_attr('sun.sun', 'next_rising') %}
+          {% if r is none %}
+            {{ this.state }}
+          {% else %}
+            {% set a = r | as_datetime | as_local %}
+            {% if a.date() == now().date() %}
+              {{ a.strftime('%H:%M') }}
+            {% elif this.attributes.get('data_calcolo', '') == now().date().isoformat() %}
+              {{ this.state }}
+            {% else %}
+              {{ (a - timedelta(days=1)).strftime('%H:%M') }}
+            {% endif %}
+          {% endif %}
+        attributes:
+          data_calcolo: >
+            {% if state_attr('sun.sun', 'next_rising') is none %}
+              {{ this.attributes.get('data_calcolo', '') }}
+            {% else %}
+              {{ now().date().isoformat() }}
+            {% endif %}
+
+      - name: "Tramonto Oggi"
+        unique_id: tramonto_oggi
+        icon: mdi:weather-sunset-down
+        state: >
+          {% set r = state_attr('sun.sun', 'next_setting') %}
+          {% if r is none %}
+            {{ this.state }}
+          {% else %}
+            {% set t = r | as_datetime | as_local %}
+            {% if t.date() == now().date() %}
+              {{ t.strftime('%H:%M') }}
+            {% elif this.attributes.get('data_calcolo', '') == now().date().isoformat() %}
+              {{ this.state }}
+            {% else %}
+              {{ (t - timedelta(days=1)).strftime('%H:%M') }}
+            {% endif %}
+          {% endif %}
+        attributes:
+          data_calcolo: >
+            {% if state_attr('sun.sun', 'next_setting') is none %}
+              {{ this.attributes.get('data_calcolo', '') }}
+            {% else %}
+              {{ now().date().isoformat() }}
+            {% endif %}

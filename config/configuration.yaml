@@ -1,9 +1,9 @@
-# configuration_187.yaml
+# configuration_188.yaml
 #==================================================================================
 # INDICE. Tutta la configurazione dei sottosistemi vive in /config/packages/.
 # Un file per sottosistema, il nome del file e' il nome del package.
 # Qui restano solo le integrazioni che NON si possono spezzare tra package
-# (recorder, http, frontend, logger) e i riferimenti a automazioni/script/scene.
+# (recorder, frontend, logger) e i riferimenti a automazioni/script/scene.
 #==================================================================================
 default_config:
 
@@ -33,12 +33,6 @@ recorder:
       - sensor.inverter_uflex_*_l1_*
       - sensor.inverter_uflex_*_current
       - sensor.inverter_uflex_external_ct1_*
-
-http:
-  use_x_forwarded_for: true
-  trusted_proxies:
-    - 172.30.33.0/24
-    - 127.0.0.1
 
 frontend:
   themes: !include_dir_merge_named themes
