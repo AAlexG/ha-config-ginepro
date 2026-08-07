@@ -1,0 +1,328 @@
+# automations_irrigazione_4.yaml
+#==================================================================================
+# WATCHDOG IRRIGAZIONE - Casa Ginepro
+#
+# Motivazione (incidente 07/08/2026):
+#   C1 acceso alle 07:30:00, connessione WiFi del Sonoff caduta 34 secondi dopo la
+#   commutazione del rele'. Il turn_off delle 07:33 si e' perso. HA ha continuato a
+#   vedere il canale "on" per 242 minuti consecutivi senza che nulla intervenisse:
+#   l'acqua e' stata chiusa solo togliendo corrente al dispositivo alle 14:00.
+#
+# Principio di progetto:
+#   Nessun "delay". Solo trigger periodici e di stato, quindi immune ai riavvii di
+#   HA e alla morte di uno script a meta' sequenza. Il ritentativo a ogni minuto
+#   sfrutta le finestre di riconnessione del Sonoff: il primo comando che passa
+#   chiude la valvola.
+#
+# Soglia per canale: max(durata_cX, 3) + 2 minuti.
+#   ATTENZIONE: taglia anche le accensioni manuali oltre questa soglia. Per irrigare
+#   a mano piu' a lungo, alzare prima input_number.irrigazione_durata_cX.
+#
+# Modifiche versione 2:
+#   - W1: ritentativo esteso al dispositivo "unavailable". Il comando viene comunque
+#     inviato, cosi' parte nell'istante in cui la connessione torna. Vincolato da tre
+#     guardie per non interrompere cicli legittimi: irraggiungibile da almeno 15 min
+#     (un ciclo regolare dura 9 min), da meno di 120 min (evita ritentativi infiniti
+#     a Sonoff spento a mano), e sequenza non in esecuzione.
+#   - W1: scrittura di input_text e notifica persistente solo alla rilevazione reale
+#     di canale acceso oltre soglia, non durante il ritentativo alla cieca.
+#   - W3: aggiunto for 00:02:00, per non generare allarmi sonori sui blip WiFi brevi.
+#
+# Modifiche versione 3:
+#   - Aggiunta W4: Sonoff irrigazione irraggiungibile da 3 ore. Notifica informativa
+#     (nessun alarm_stream): a rele' aperti non scorre acqua, il rischio e' solo che
+#     l'irrigazione non parta. Il messaggio riporta anche lo stato del tracker
+#     Netgear, risolto per MAC 9a:da:c4:b3:47:56 (indirizzo riscritto dal RE650).
+#
+# Modifiche versione 4:
+#   - Aggiunta W5: ritorno online del Sonoff. Notifica informativa che chiude il
+#     ciclo aperto da W3 o W4 e cancella le relative notifiche persistenti.
+#==================================================================================
+
+#==================================================================================
+# W1. SPEGNIMENTO FORZATO CON RITENTATIVO (silenzioso)
+#==================================================================================
+- id: irrigazione_watchdog_spegnimento
+  alias: "Irrigazione - Watchdog spegnimento forzato"
+  mode: single
+  max_exceeded: silent
+  triggers:
+    - platform: time_pattern
+      minutes: "/1"
+  variables:
+    # Canale acceso oltre la soglia: rilevazione certa, HA vede lo stato reale.
+    sfora: >
+      {% set ns = namespace(v=false) %}
+      {% for i in [1, 2, 3] %}
+        {% set e = 'switch.irrigazione_sonoff_switch_4chpror3_sonoff_10028b1d36_' ~ i %}
+        {% set d = states('input_number.irrigazione_durata_c' ~ i) | float(5) %}
+        {% set lim = ([d, 3] | max) + 2 %}
+        {% if is_state(e, 'on') and states[e] is not none
+              and (now() - states[e].last_changed).total_seconds() > lim * 60 %}
+          {% set ns.v = true %}
+        {% endif %}
+      {% endfor %}
+      {{ ns.v }}
+    # Dispositivo sparito: HA non sa se il rele' e' chiuso. Si invia comunque il
+    # comando, cosi' viene recapitato appena la connessione torna.
+    ritenta_alla_cieca: >
+      {% set ns = namespace(v=false) %}
+      {% if not is_state('script.irrigazione_esegui_sequenza', 'on') %}
+        {% for i in [1, 2, 3] %}
+          {% set e = 'switch.irrigazione_sonoff_switch_4chpror3_sonoff_10028b1d36_' ~ i %}
+          {% if is_state(e, 'unavailable') and states[e] is not none %}
+            {% set t = (now() - states[e].last_changed).total_seconds() %}
+            {% if t > 900 and t < 7200 %}
+              {% set ns.v = true %}
+            {% endif %}
+          {% endif %}
+        {% endfor %}
+      {% endif %}
+      {{ ns.v }}
+  condition:
+    - condition: template
+      value_template: "{{ sfora | bool or ritenta_alla_cieca | bool }}"
+  action:
+    # continue_on_error: se la chiamata fallisce (dispositivo irraggiungibile) la
+    # sequenza non si interrompe e il tick successivo ritenta.
+    - action: switch.turn_off
+      continue_on_error: true
+      target:
+        entity_id:
+          - switch.irrigazione_sonoff_switch_4chpror3_sonoff_10028b1d36_1
+          - switch.irrigazione_sonoff_switch_4chpror3_sonoff_10028b1d36_2
+          - switch.irrigazione_sonoff_switch_4chpror3_sonoff_10028b1d36_3
+    # Traccia e notifica solo sulla rilevazione certa, per non inondare il logbook
+    # durante i ritentativi alla cieca.
+    - if:
+        - condition: template
+          value_template: "{{ sfora | bool }}"
+      then:
+        - action: input_text.set_value
+          continue_on_error: true
+          target:
+            entity_id: input_text.irrigazione_motivo_blocco
+          data:
+            value: "🛑 Watchdog: spegnimento forzato {{ now().strftime('%d/%m/%Y %H:%M') }}"
+        # notification_id fisso: la notifica persistente viene sovrascritta, non duplicata.
+        - action: persistent_notification.create
+          continue_on_error: true
+          data:
+            title: "🛑 Irrigazione - Watchdog intervenuto"
+            message: >
+              Un canale risultava acceso oltre la durata prevista. Inviato spegnimento
+              forzato alle {{ now().strftime('%d/%m/%Y %H:%M:%S') }}. Il comando viene
+              ritentato ogni minuto finche' il canale non risulta spento.
+            notification_id: watchdog_irrigazione
+
+#==================================================================================
+# W2. ESCALATION - CANALE ANCORA ACCESO DOPO 10 MINUTI
+#
+# Se W1 ha gia' tentato per diversi minuti e il canale e' ancora "on", i comandi
+# non stanno arrivando al dispositivo. Notifica sonora: serve intervento umano
+# (togliere corrente al Sonoff).
+#==================================================================================
+- id: irrigazione_watchdog_escalation
+  alias: "Irrigazione - Watchdog escalation 10 min"
+  mode: single
+  triggers:
+    - platform: state
+      entity_id:
+        - switch.irrigazione_sonoff_switch_4chpror3_sonoff_10028b1d36_1
+        - switch.irrigazione_sonoff_switch_4chpror3_sonoff_10028b1d36_2
+        - switch.irrigazione_sonoff_switch_4chpror3_sonoff_10028b1d36_3
+      to: "on"
+      for: "00:10:00"
+  action:
+    - action: notify.mobile_app_cph2653
+      continue_on_error: true
+      data:
+        title: "🛑 Irrigazione - Canale bloccato acceso"
+        message: >
+          {{ trigger.to_state.name }} risulta acceso da 10 minuti. Lo spegnimento
+          automatico non sta andando a buon fine: probabile perdita di connessione
+          del Sonoff. Valutare il distacco della corrente al dispositivo.
+        data:
+          priority: high
+          ttl: 0
+          persistent: "true"
+          channel: alarm_stream
+    - action: persistent_notification.create
+      continue_on_error: true
+      data:
+        title: "🛑 Irrigazione - Canale bloccato acceso"
+        message: >
+          {{ trigger.to_state.name }} acceso da 10 minuti alle
+          {{ now().strftime('%d/%m/%Y %H:%M') }}. Spegnimento automatico non riuscito.
+        notification_id: watchdog_irrigazione_bloccato
+
+#==================================================================================
+# W3. DISPOSITIVO SCOMPARSO CON UN CANALE ACCESO
+#
+# Caso peggiore: il canale era "on" e il Sonoff diventa irraggiungibile. HA smette
+# di vedere lo stato reale ma il rele' resta fisicamente chiuso e l'acqua scorre.
+# E' esattamente quanto avvenuto il 07/08/2026 alle 11:32:06.
+#
+# for 00:02:00: il Sonoff ha blip di connessione frequenti (07:30:34, 07:54:27,
+# 11:31:51 del 07/08). Senza attesa, ogni blip durante un ciclo regolare farebbe
+# scattare un allarme sonoro a impianto funzionante.
+#==================================================================================
+- id: irrigazione_watchdog_dispositivo_perso
+  alias: "Irrigazione - Watchdog dispositivo perso con canale acceso"
+  mode: single
+  triggers:
+    - platform: state
+      entity_id:
+        - switch.irrigazione_sonoff_switch_4chpror3_sonoff_10028b1d36_1
+        - switch.irrigazione_sonoff_switch_4chpror3_sonoff_10028b1d36_2
+        - switch.irrigazione_sonoff_switch_4chpror3_sonoff_10028b1d36_3
+      from: "on"
+      to: "unavailable"
+      for: "00:02:00"
+  action:
+    - action: notify.mobile_app_cph2653
+      continue_on_error: true
+      data:
+        title: "🛑 Irrigazione - Sonoff perso con canale acceso"
+        message: >
+          {{ trigger.to_state.name }} era acceso quando il Sonoff e' diventato
+          irraggiungibile alle {{ now().strftime('%d/%m/%Y %H:%M:%S') }}.
+          Il rele' e' probabilmente ancora chiuso e l'acqua sta scorrendo.
+        data:
+          priority: high
+          ttl: 0
+          persistent: "true"
+          channel: alarm_stream
+    - action: persistent_notification.create
+      continue_on_error: true
+      data:
+        title: "🛑 Irrigazione - Sonoff perso con canale acceso"
+        message: >
+          {{ trigger.to_state.name }} acceso al momento della perdita di connessione,
+          {{ now().strftime('%d/%m/%Y %H:%M:%S') }}. Verificare fisicamente l'impianto.
+        notification_id: watchdog_irrigazione_perso
+
+#==================================================================================
+# W4. SONOFF IRRIGAZIONE IRRAGGIUNGIBILE DA 3 ORE
+#
+# Diverso da W3: quello segnala la perdita di connessione CON UN CANALE ACCESO
+# (acqua che scorre, emergenza). Questo segnala il dispositivo semplicemente
+# offline a rele' chiusi: nessuna acqua, ma l'irrigazione programmata non partira'.
+#
+# Trigger sul solo canale 1, usato come battito cardiaco del dispositivo: i tre
+# canali diventano "unavailable" insieme, sorvegliarli tutti darebbe tre notifiche.
+#
+# Soglia 3 ore: il Sonoff ha blip di connessione frequenti e brevi. Abbassarla
+# genererebbe notifiche ripetute su disconnessioni che si risolvono da sole.
+#==================================================================================
+- id: irrigazione_watchdog_sonoff_offline
+  alias: "Irrigazione - Watchdog Sonoff offline da 3 ore"
+  mode: single
+  triggers:
+    - platform: state
+      entity_id: switch.irrigazione_sonoff_switch_4chpror3_sonoff_10028b1d36_1
+      to: "unavailable"
+      for: "03:00:00"
+  variables:
+    # Il tracker Netgear non ha entity_id fisso: si risolve per MAC.
+    netgear: >
+      {% set ns = namespace(e=none) %}
+      {% for t in integration_entities('netgear') if t.startswith('device_tracker.') %}
+        {% if (state_attr(t, 'mac') or '') | lower == '9a:da:c4:b3:47:56' %}
+          {% set ns.e = t %}
+        {% endif %}
+      {% endfor %}
+      {{ ns.e }}
+    dettaglio_rete: >
+      {% if netgear in [none, 'None', ''] %}
+        tracker Netgear non trovato per il MAC 9a:da:c4:b3:47:56
+      {% else %}
+        tracker Netgear: {{ states(netgear) }}{% if state_attr(netgear, 'ip') %} (IP {{ state_attr(netgear, 'ip') }}){% endif %}
+      {% endif %}
+  action:
+    - action: notify.mobile_app_cph2653
+      continue_on_error: true
+      data:
+        title: "📡 Irrigazione - Sonoff offline da 3 ore"
+        message: >
+          Il Sonoff 4CHPROR3 dell'irrigazione risulta irraggiungibile da almeno 3 ore.
+          Nessun canale era acceso, quindi non scorre acqua, ma i cicli programmati
+          non verranno eseguiti. {{ dettaglio_rete }}.
+        data:
+          priority: high
+          ttl: 0
+          persistent: "true"
+    - action: persistent_notification.create
+      continue_on_error: true
+      data:
+        title: "📡 Irrigazione - Sonoff offline da 3 ore"
+        message: >
+          Sonoff irrigazione irraggiungibile da almeno 3 ore alle
+          {{ now().strftime('%d/%m/%Y %H:%M') }}. {{ dettaglio_rete }}.
+        notification_id: watchdog_irrigazione_offline
+
+#==================================================================================
+# W5. SONOFF IRRIGAZIONE TORNATO ONLINE
+#
+# Chiude il ciclo aperto da W3 (dispositivo perso con canale acceso) e W4 (offline
+# da 3 ore): quando sei fuori casa, sapere che il dispositivo e' tornato raggiungibile
+# vale quanto sapere che era caduto.
+#
+# for 00:02:00: evita di notificare riconnessioni istantanee che ricadono subito.
+# Simmetrico all'attesa di W3.
+#
+# Riporta lo stato dei tre canali al ritorno: se un canale risulta ancora acceso,
+# significa che il rele' era rimasto chiuso durante l'assenza di connessione. In quel
+# caso W1 sta gia' ritentando lo spegnimento e W2 escalera' dopo 10 minuti.
+#
+# Le notifiche persistenti di W3 e W4 vengono cancellate: hanno esaurito la funzione.
+#==================================================================================
+- id: irrigazione_watchdog_sonoff_online
+  alias: "Irrigazione - Watchdog Sonoff tornato online"
+  mode: single
+  triggers:
+    - platform: state
+      entity_id: switch.irrigazione_sonoff_switch_4chpror3_sonoff_10028b1d36_1
+      from: "unavailable"
+      to:
+        - "on"
+        - "off"
+      for: "00:02:00"
+  variables:
+    stato_canali: >
+      {% set ns = namespace(l=[]) %}
+      {% for i in [1, 2, 3] %}
+        {% set e = 'switch.irrigazione_sonoff_switch_4chpror3_sonoff_10028b1d36_' ~ i %}
+        {% set ns.l = ns.l + ['C' ~ i ~ '=' ~ states(e)] %}
+      {% endfor %}
+      {{ ns.l | join(' ') }}
+    qualche_canale_acceso: >
+      {% set ns = namespace(v=false) %}
+      {% for i in [1, 2, 3] %}
+        {% if is_state('switch.irrigazione_sonoff_switch_4chpror3_sonoff_10028b1d36_' ~ i, 'on') %}
+          {% set ns.v = true %}
+        {% endif %}
+      {% endfor %}
+      {{ ns.v }}
+  action:
+    - action: notify.mobile_app_cph2653
+      continue_on_error: true
+      data:
+        title: "✅ Irrigazione - Sonoff tornato online"
+        message: >
+          Il Sonoff 4CHPROR3 dell'irrigazione e' di nuovo raggiungibile alle
+          {{ now().strftime('%d/%m/%Y %H:%M') }}. Stato canali: {{ stato_canali }}.
+          {% if qualche_canale_acceso | bool %}Un canale risulta ACCESO: spegnimento
+          automatico in corso.{% else %}Tutti i canali sono spenti.{% endif %}
+        data:
+          priority: high
+          ttl: 0
+          persistent: "true"
+    - action: persistent_notification.dismiss
+      continue_on_error: true
+      data:
+        notification_id: watchdog_irrigazione_offline
+    - action: persistent_notification.dismiss
+      continue_on_error: true
+      data:
+        notification_id: watchdog_irrigazione_perso
