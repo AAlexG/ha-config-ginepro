@@ -1,4 +1,4 @@
-# salva_bolletta_9.py
+# salva_bolletta_10.py
 # Legge mese selezionato e valori bolletta da HA DB, inietta statistiche mensili.
 # Ricalcola inoltre:
 #   prezzo MEDIO elettricità = somma € bollette elettriche / somma kWh bollette
@@ -18,6 +18,19 @@
 # sensor.gse_prezzo_kwh vengono cancellate e reinserite integralmente ad ogni
 # esecuzione: i mesi passati si correggono retroattivamente. Il sensore
 # template omonimo è stato rimosso da configuration.yaml.
+#
+# NUOVO (v10): mese e valori bolletta arrivano come ARGOMENTI da riga di
+# comando, non piu' letti dalla tabella states del recorder.
+# Motivo: get_state() legge l'ultima riga scritta su disco dal recorder.
+# Premendo "Salva bolletta" pochi secondi dopo aver digitato un importo il
+# recorder non ha ancora scritto quella riga e lo script leggeva il valore
+# precedente (tipicamente 0), saltando la scrittura senza segnalare errori.
+# Ora i valori vengono presi dallo stato vivo di HA con un template in
+# shell_command e passati in argv: la corsa col recorder e' eliminata.
+# Ordine argomenti (o tutti o nessuno):
+#   1 mese MM/YYYY  2 elec_kwh  3 elec_euro  4 gas_mc  5 gas_euro
+#   6 acqua_mc      7 acqua_euro  8 gse_euro
+# Senza argomenti si ricade sulla lettura dal DB (esecuzione manuale).
 #
 # Chiamato da shell_command.salva_bolletta tramite script HA (script.salva_bolletta).
 # Log diagnostico scritto direttamente su /config/bolletta_log.txt (funzione log()).
@@ -162,8 +175,25 @@ def main():
     now_ts = time.time()
     now_s  = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000000")
 
+    # ── Origine dei dati: argv (stato vivo HA) oppure DB ────────────────────
+    # ARGV_KEYS[1:] ha lo stesso ordine di ENTITIES.
+    ARGV_KEYS = ["mese", "elec_kwh", "elec_euro", "gas_mc", "gas_euro",
+                 "acqua_mc", "acqua_euro", "gse_euro"]
+    da_argv = len(sys.argv) - 1 >= len(ARGV_KEYS)
+    if da_argv:
+        argv_val = dict(zip(ARGV_KEYS, sys.argv[1:1 + len(ARGV_KEYS)]))
+        log(f"Valori da argv (stato vivo HA): {argv_val}")
+    else:
+        argv_val = {}
+        if len(sys.argv) > 1:
+            log(f"ATTENZIONE: attesi {len(ARGV_KEYS)} argomenti, ricevuti "
+                f"{len(sys.argv) - 1} - fallback lettura dal DB")
+        else:
+            log("Nessun argomento - lettura valori dal DB (recorder)")
+
     # ── Legge mese selezionato ──────────────────────────────────────────────
-    mese_str = get_state(cur, "input_select.bolletta_mese_sel")
+    mese_str = (argv_val["mese"] if da_argv
+                else get_state(cur, "input_select.bolletta_mese_sel"))
     if not mese_str or mese_str == "-- seleziona --":
         log("ERRORE: nessun mese selezionato in input_select.bolletta_mese_sel")
         conn.close()
@@ -191,8 +221,8 @@ def main():
     ]
 
     saved = 0
-    for eid, unit, uc, hm, hs, label in ENTITIES:
-        val_str = get_state(cur, eid)
+    for (eid, unit, uc, hm, hs, label), chiave in zip(ENTITIES, ARGV_KEYS[1:]):
+        val_str = argv_val[chiave] if da_argv else get_state(cur, eid)
         try:
             val = float(val_str) if val_str else 0.0
         except ValueError:

@@ -1,4 +1,4 @@
-# scripts_50.yaml
+# scripts_51.yaml
 
 #==================================================================================
 # SCRIPT: APRI CANCELLO CASA
@@ -297,7 +297,22 @@ salva_bolletta:
   alias: "Bollette – Salva nel DB"
   mode: single
   sequence:
+    # I valori sono presi QUI dallo stato vivo di HA e passati come argomenti
+    # a salva_bolletta.py (v10). In precedenza lo script li rileggeva dalla
+    # tabella states del recorder: se il salvataggio avveniva pochi secondi
+    # dopo aver digitato un importo, il recorder non aveva ancora scritto la
+    # riga su disco e lo script leggeva il valore precedente (di norma 0),
+    # saltando la scrittura senza segnalare alcun errore.
     - action: shell_command.salva_bolletta
+      data:
+        mese: "{{ states('input_select.bolletta_mese_sel') }}"
+        elec_kwh: "{{ states('input_number.bolletta_elec_kwh') | float(0) }}"
+        elec_euro: "{{ states('input_number.bolletta_elec_euro') | float(0) }}"
+        gas_mc: "{{ states('input_number.bolletta_gas_mc') | float(0) }}"
+        gas_euro: "{{ states('input_number.bolletta_gas_euro') | float(0) }}"
+        acqua_mc: "{{ states('input_number.bolletta_acqua_mc') | float(0) }}"
+        acqua_euro: "{{ states('input_number.bolletta_acqua_euro') | float(0) }}"
+        gse_euro: "{{ states('input_number.bolletta_gse_euro') | float(0) }}"
       response_variable: risultato
     - variables:
         dati: "{{ risultato.stdout | from_json }}"
@@ -305,8 +320,7 @@ salva_bolletta:
         - condition: template
           value_template: "{{ dati.ok }}"
       then:
-        # NUOVO (scripts_41): aggiorna il prezzo GSE stimato con
-        # l'ultimo mese calcolato da salva_bolletta_9 (se disponibile).
+        # Aggiorna il prezzo GSE stimato con l'ultimo mese calcolato.
         - if:
             - condition: template
               value_template: "{{ (dati.gse_prezzo_ultimo | default(0) | float(0)) > 0 }}"
@@ -316,12 +330,16 @@ salva_bolletta:
                 entity_id: input_number.gse_prezzo_kwh_stima
               data:
                 value: "{{ dati.gse_prezzo_ultimo | float(0) | round(4) }}"
+        # Ricalcola subito i totali storici (Da GSE, risparmio FV, totali
+        # rilevato/bollette). Senza questa chiamata la plancia restava ferma
+        # fino alla successiva esecuzione oraria dell'automazione 30.
+        - action: script.aggiorna_totali_consumi
         - action: notify.mobile_app_cph2653
           data:
             title: "💾 Bolletta salvata"
             message: >
-              Dati salvati per {{ states('input_select.bolletta_mese_sel') }}.
-              Salvataggio completato.
+              {{ dati.saved }} valori salvati per {{ dati.mese }}.
+              Totali aggiornati.
               Dettagli in /config/bolletta_log.txt
       else:
         - action: notify.mobile_app_cph2653
@@ -330,6 +348,70 @@ salva_bolletta:
             message: >-
               {{ dati.errore | default('errore sconosciuto') }} – vedi /config/bolletta_log.txt
 
+#==================================================================================
+# SCRIPT: AGGIORNA TOTALI CONSUMI
+# Chiama totali_consumi.py e riversa il JSON di ritorno nei 10 input_number
+# dei totali storici. Estratto dall'automazione 30 (automations_123) per
+# poter essere richiamato anche subito dopo un salvataggio bolletta.
+#==================================================================================
+aggiorna_totali_consumi:
+  alias: "Consumi – Aggiorna totali storici"
+  mode: single
+  sequence:
+    - action: shell_command.calcola_totali_consumi
+      response_variable: totali
+    - variables:
+        t: "{{ totali.stdout | from_json }}"
+    - action: input_number.set_value
+      target:
+        entity_id: input_number.gas_totale_rilevato_mc
+      data:
+        value: "{{ t.gas_rilevato }}"
+    - action: input_number.set_value
+      target:
+        entity_id: input_number.gas_totale_bollette_mc
+      data:
+        value: "{{ t.gas_bollette }}"
+    - action: input_number.set_value
+      target:
+        entity_id: input_number.elettricita_totale_rilevato_kwh
+      data:
+        value: "{{ t.elec_rilevato }}"
+    - action: input_number.set_value
+      target:
+        entity_id: input_number.elettricita_totale_bollette_kwh
+      data:
+        value: "{{ t.elec_bollette }}"
+    - action: input_number.set_value
+      target:
+        entity_id: input_number.acqua_totale_rilevato_mc
+      data:
+        value: "{{ t.acqua_rilevato }}"
+    - action: input_number.set_value
+      target:
+        entity_id: input_number.acqua_totale_bollette_mc
+      data:
+        value: "{{ t.acqua_bollette }}"
+    - action: input_number.set_value
+      target:
+        entity_id: input_number.pv_risparmio_euro
+      data:
+        value: "{{ t.pv_risparmio }}"
+    - action: input_number.set_value
+      target:
+        entity_id: input_number.pv_gse_euro
+      data:
+        value: "{{ t.pv_gse }}"
+    - action: input_number.set_value
+      target:
+        entity_id: input_number.pv_totale_euro
+      data:
+        value: "{{ t.pv_totale }}"
+    - action: input_number.set_value
+      target:
+        entity_id: input_number.pv_recupero_pct
+      data:
+        value: "{{ t.pv_recupero_pct }}"
 #==================================================================================
 # SCRIPT: IRRIGAZIONE – ESEGUI SEQUENZA C1 -> C2 -> C3
 # Accende in sequenza i tre canali per le durate T1/T2/T3 (turn_off esplicito tra

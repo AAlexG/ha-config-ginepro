@@ -1,4 +1,4 @@
-# config_sistema_2.yaml
+# config_sistema_3.yaml
 # Package Casa Ginepro - Sistema: monitoraggio Raspberry, shell_command, bollette, vacanza
 # Estratto da configuration_186.yaml. Nome file = nome del package.
 
@@ -47,12 +47,19 @@ input_select:
 
 shell_command:
   avvia_vivino_proxy: "python3 /config/vivino_proxy.py &"
-  # Chiama lo script Python che legge mese + valori bolletta dal DB HA,
-  # inietta le statistiche mensili e ricalcola input_number.elettricita_prezzo_kwh
-  # e input_number.gas_prezzo_mc.
+  # Chiama lo script Python che inietta le statistiche mensili delle bollette.
+  # Mese e valori sono passati come ARGOMENTI, resi dallo stato vivo di HA
+  # da script.salva_bolletta: NON vanno letti dal DB del recorder, che puo'
+  # non aver ancora scritto su disco l'importo appena digitato (v10).
+  # Ordine: mese elec_kwh elec_euro gas_mc gas_euro acqua_mc acqua_euro gse_euro
   # Stdout = JSON letto da script.salva_bolletta (response_variable).
   # Log diagnostico su /config/bolletta_log.txt (scritto dallo script stesso).
-  salva_bolletta: "python3 /config/salva_bolletta.py 2>> /config/bolletta_log.txt"
+  salva_bolletta: >-
+    python3 /config/salva_bolletta.py
+    '{{ mese }}' '{{ elec_kwh }}' '{{ elec_euro }}'
+    '{{ gas_mc }}' '{{ gas_euro }}'
+    '{{ acqua_mc }}' '{{ acqua_euro }}' '{{ gse_euro }}'
+    2>> /config/bolletta_log.txt
   calcola_totali_consumi: "python3 /config/totali_consumi.py 2>> /config/totali_consumi.log"
   calcola_pv_tabella: "python3 /config/pv_tabella_mensile.py > /config/pv_tabella_mensile.json 2>/config/pv_tabella_mensile.log"
 

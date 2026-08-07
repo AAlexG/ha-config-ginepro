@@ -1,4 +1,4 @@
-# automations_122.yaml
+# automations_123.yaml
 #prova
 #==================================================================================
 # 1. IRRIGAZIONE – Ciclo programmato (O1/O2) con gate meteo
@@ -522,74 +522,34 @@
         value: "0"
 
 #==================================================================================
-# 30. TOTALI CONSUMI – Aggiorna input_number rilevato/bollette via script Python
-# Lo script stampa un JSON su stdout; response_variable lo legge e imposta
-# i 6 input_number con set_value – nessun token necessario.
-# Trigger: avvio HA (delay 60s per recorder pronto) + ogni ora.
+# 30. TOTALI CONSUMI – Aggiorna input_number rilevato/bollette
+#
+# Il corpo e' stato spostato in script.aggiorna_totali_consumi (scripts.yaml)
+# per poterlo richiamare anche da script.salva_bolletta subito dopo un
+# salvataggio: prima i totali si aggiornavano solo al giro d'orologio
+# successivo e la plancia restava ferma fino a un'ora.
+#
+# Il ritardo di 60 secondi serve solo all'avvio di HA, per dare tempo al
+# recorder di essere pronto: sulle esecuzioni orarie e su quelle richiamate
+# a mano sarebbe solo attesa inutile, quindi e' condizionato al trigger.
 #==================================================================================
 - id: calcola_totali_consumi
   alias: "Consumi – Aggiorna totali rilevato e bollette"
   mode: single
   triggers:
-    - platform: homeassistant
+    - trigger: homeassistant
       event: start
-    - platform: time_pattern
+      id: avvio
+    - trigger: time_pattern
       hours: "/1"
-  action:
-    - delay: "00:01:00"
-    - action: shell_command.calcola_totali_consumi
-      response_variable: totali
-    - action: input_number.set_value
-      target:
-        entity_id: input_number.gas_totale_rilevato_mc
-      data:
-        value: "{{ (totali.stdout | from_json).gas_rilevato }}"
-    - action: input_number.set_value
-      target:
-        entity_id: input_number.gas_totale_bollette_mc
-      data:
-        value: "{{ (totali.stdout | from_json).gas_bollette }}"
-    - action: input_number.set_value
-      target:
-        entity_id: input_number.elettricita_totale_rilevato_kwh
-      data:
-        value: "{{ (totali.stdout | from_json).elec_rilevato }}"
-    - action: input_number.set_value
-      target:
-        entity_id: input_number.elettricita_totale_bollette_kwh
-      data:
-        value: "{{ (totali.stdout | from_json).elec_bollette }}"
-    - action: input_number.set_value
-      target:
-        entity_id: input_number.acqua_totale_rilevato_mc
-      data:
-        value: "{{ (totali.stdout | from_json).acqua_rilevato }}"
-    - action: input_number.set_value
-      target:
-        entity_id: input_number.acqua_totale_bollette_mc
-      data:
-        value: "{{ (totali.stdout | from_json).acqua_bollette }}"
-    - action: input_number.set_value
-      target:
-        entity_id: input_number.pv_risparmio_euro
-      data:
-        value: "{{ (totali.stdout | from_json).pv_risparmio }}"
-    - action: input_number.set_value
-      target:
-        entity_id: input_number.pv_gse_euro
-      data:
-        value: "{{ (totali.stdout | from_json).pv_gse }}"
-    - action: input_number.set_value
-      target:
-        entity_id: input_number.pv_totale_euro
-      data:
-        value: "{{ (totali.stdout | from_json).pv_totale }}"
-    - action: input_number.set_value
-      target:
-        entity_id: input_number.pv_recupero_pct
-      data:
-        value: "{{ (totali.stdout | from_json).pv_recupero_pct }}"
-
+      id: orario
+  actions:
+    - if:
+        - condition: trigger
+          id: avvio
+      then:
+        - delay: "00:01:00"
+    - action: script.aggiorna_totali_consumi
 #==================================================================================
 # 31. YAMAHA WS-B1A KEEPALIVE – Suono uccelli via Google Mini
 #
