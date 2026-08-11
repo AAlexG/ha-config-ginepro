@@ -68,6 +68,19 @@ config:
       square: false
       title: Zigbee
       type: grid
+    - entity: input_button.aggiorna_wifi_tabella
+      icon: mdi:refresh
+      name: Aggiorna elenco WiFi
+      show_state: false
+      tap_action:
+        action: perform-action
+        perform_action: input_button.press
+        target:
+          entity_id: input_button.aggiorna_wifi_tabella
+      type: button
+    - content: 'Ultimo aggiornamento elenco: **{{ state_attr(''sensor.wifi_tabella'',
+        ''aggiornato'') | default(''mai'', true) }}**'
+      type: markdown
     - columns:
       - data: righe
         modify: x.nome
