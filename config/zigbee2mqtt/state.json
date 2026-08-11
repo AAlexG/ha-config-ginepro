@@ -35,7 +35,7 @@
         "power_outage_memory": "restore",
         "indicator_mode": "off/on",
         "child_lock": "UNLOCK",
-        "voltage": 220.6,
+        "voltage": 220.7,
         "power": 0,
         "current": 0,
         "linkquality": 136

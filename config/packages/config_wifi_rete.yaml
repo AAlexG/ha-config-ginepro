@@ -1,4 +1,4 @@
-# config_wifi_rete_1.yaml
+# config_wifi_rete_4.yaml
 # Package Casa Ginepro - Rete WiFi: whitelist MAC e tabella dispositivi
 # Estratto da configuration_186.yaml. Nome file = nome del package.
 
@@ -81,7 +81,15 @@ template:
             } }}
 
   #--- WIFI: TABELLA DINAMICA PER PLANCIA (righe da tracker Netgear) ---
-  - sensor:
+  # Sensore TRIGGER-BASED: il template usa integration_entities()/device_id()/
+  # device_entities(), che NON registrano listener sui cambi di stato: senza
+  # trigger resterebbe congelato alla prima valutazione. Unico trigger: la
+  # pressione del pulsante sulla plancia Wi-Fi (funziona da browser e da app).
+  # Stato e attributi dei sensori trigger-based sono ripristinati al riavvio.
+  - trigger:
+      - platform: state
+        entity_id: input_button.aggiorna_wifi_tabella
+    sensor:
       - name: "WiFi Tabella"
         unique_id: wifi_tabella
         icon: mdi:table-network
@@ -94,6 +102,7 @@ template:
           {% endfor %}
           {{ ns.n }}
         attributes:
+          aggiornato: "{{ now().strftime('%d/%m/%Y %H:%M:%S') }}"
           righe: >-
             {# Itera la WHITELIST: ogni MAC produce sempre una riga, anche se il  #}
             {# tracker Netgear e' assente/disabilitato o non fornisce un IP.       #}
@@ -135,3 +144,12 @@ template:
             {{ (righe.list | selectattr('casa') | sort(attribute='nome') | list) + (righe.list | rejectattr('casa') | sort(attribute='nome') | list) }}
 
   #--- TIGO / PANNELLI (TEMPLATE SENSOR) ---
+
+#==================================================================================
+# PULSANTE DI AGGIORNAMENTO TABELLA WIFI
+# Unico trigger di sensor.wifi_tabella. Esposto sulla plancia Wi-Fi.
+#==================================================================================
+input_button:
+  aggiorna_wifi_tabella:
+    name: Aggiorna elenco WiFi
+    icon: mdi:refresh
