@@ -70,7 +70,10 @@ config:
       type: grid
     - entity: input_button.aggiorna_wifi_tabella
       icon: mdi:refresh
+      icon_height: 20px
       name: Aggiorna elenco WiFi
+      show_icon: true
+      show_name: true
       show_state: false
       tap_action:
         action: perform-action
