@@ -24,8 +24,8 @@
     "0xa4c138e6a0d06219": {
         "voltage": 2500,
         "battery": 51,
-        "temperature": 28.15,
-        "humidity": 60.87,
+        "temperature": 28.02,
+        "humidity": 60.23,
         "linkquality": 100
     },
     "0xa4c1385040d042fb": {
@@ -35,7 +35,7 @@
         "power_outage_memory": "restore",
         "indicator_mode": "off/on",
         "child_lock": "UNLOCK",
-        "voltage": 226.7,
+        "voltage": 220.8,
         "power": 0,
         "current": 0,
         "linkquality": 136
@@ -47,7 +47,7 @@
         "power_outage_memory": "restore",
         "indicator_mode": "off/on",
         "child_lock": "UNLOCK",
-        "voltage": 224.7,
+        "voltage": 221.1,
         "linkquality": 156,
         "power": 0,
         "current": 0
@@ -59,7 +59,7 @@
         "power_outage_memory": "restore",
         "indicator_mode": "off/on",
         "child_lock": "UNLOCK",
-        "voltage": 225,
+        "voltage": 220.6,
         "power": 0,
         "current": 0,
         "update": {
@@ -78,15 +78,15 @@
         "indicator_mode": "off/on",
         "power": 0,
         "current": 0,
-        "voltage": 228,
+        "voltage": 224,
         "energy": 0,
         "linkquality": 192
     },
     "0xa4c1380eff54ffff": {
         "battery": 100,
-        "temperature": 29.5,
+        "temperature": 29.4,
         "voltage": 3200,
-        "humidity": 63,
+        "humidity": 62.7,
         "temperature_sensor_select": "internal",
         "comfort_temperature_min": 19,
         "comfort_temperature_max": 35.2,
