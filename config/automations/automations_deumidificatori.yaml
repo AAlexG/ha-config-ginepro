@@ -87,11 +87,11 @@
 # finche' e' alimentato lavora. L'igrostato lo fa quindi questa automazione, con
 # il sensore sensor.termometro_cantina_zigbee_humidity.
 #
-# ACCENDE se: FV >= 1000 W  E  umidità >= 60%
-# SPEGNE se:  FV < 1000 W   O  umidità <= 55%
+# ACCENDE se: FV >= 1000 W  E  umidità >= 55%
+# SPEGNE se:  FV < 1000 W   O  umidità <= 50%
 # Isteresi di 5 punti percentuali per evitare cicli continui on/off della presa.
-# 60/55% e' la finestra che tiene la cantina fuori dalla zona di rischio muffa
-# (>65%) senza asciugare oltre il necessario sprecando energia.
+# 55/50% e' la finestra che tiene la cantina fuori dalla zona di rischio muffa
+# (>60%) senza asciugare oltre il necessario sprecando energia.
 #
 # Se il sensore di umidità e' unavailable/unknown l'automazione torna al solo
 # criterio fotovoltaico (comportamento precedente): un sensore che sparisce non
@@ -103,7 +103,7 @@
   alias: "Deumidificatore Cantina – Controllo Periodico FV"
   description: >
     Ogni 5 minuti accende switch.box_deumidificatore_cantina_sonoff se produzione FV
-    supera 1000W e umidità cantina >= 60%, spegne se FV sotto soglia o umidità <= 55%.
+    supera 1000W e umidità cantina >= 55%, spegne se FV sotto soglia o umidità <= 50%.
     Bloccato se in gestione manuale.
   mode: single
   triggers:
@@ -124,7 +124,7 @@
             - condition: template
               value_template: >-
                 {{ fv >= 1000 and not presa_on
-                   and (not umid_ok or umid >= 60) }}
+                   and (not umid_ok or umid >= 55) }}
           sequence:
             - action: switch.turn_on
               target:
@@ -133,7 +133,7 @@
             - condition: template
               value_template: >-
                 {{ presa_on
-                   and (fv < 1000 or (umid_ok and umid <= 55)) }}
+                   and (fv < 1000 or (umid_ok and umid <= 50)) }}
           sequence:
             - action: switch.turn_off
               target:
