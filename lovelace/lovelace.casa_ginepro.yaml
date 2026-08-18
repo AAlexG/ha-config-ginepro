@@ -1660,7 +1660,7 @@ config:
         name: Term. Georgi
         type: tile
         vertical: false
-      - entity: sensor.termometro_cantina_sonoff_battery
+      - entity: sensor.termometro_cantina_zigbee_battery
         features_position: bottom
         name: Term. Cantina
         type: tile

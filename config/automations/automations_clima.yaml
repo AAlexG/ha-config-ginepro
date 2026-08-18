@@ -1,4 +1,4 @@
-# automations_clima_45.yaml
+# automations_clima_47.yaml
 
 
 
@@ -638,86 +638,6 @@
       target:
         entity_id: switch.sala_fancoil_sala_shelly_1gen4
 
-
-#==================================================================================
-# DEUMIDIFICATORE CANTINA – CONTROLLO PERIODICO SU PRODUZIONE FV
-# Ogni 5 minuti verifica produzione FV e decide stato presa deumidificatore.
-# Soglia: 1000W. Robusto contro riavvii o eventi mancati.
-# L'umidità è gestita dall'igrostat interno del deumidificatore.
-# Rispetta input_boolean.deumidificatore_cantina_manuale.
-#==================================================================================
-- id: deumidificatore_cantina_controllo
-  alias: "Deumidificatore Cantina – Controllo Periodico FV"
-  description: >
-    Ogni 5 minuti accende switch.box_deumidificatore_cantina_sonoff se produzione FV
-    supera 1000W, spegne se sotto soglia. Bloccato se in gestione manuale.
-  mode: single
-  triggers:
-    - trigger: time_pattern
-      minutes: "/5"
-  conditions:
-    - condition: state
-      entity_id: input_boolean.deumidificatore_cantina_manuale
-      state: "off"
-  actions:
-    - variables:
-        fv: "{{ states('sensor.inverter_uflex_pv_power') | float(0) }}"
-        presa_on: "{{ is_state('switch.box_deumidificatore_cantina_sonoff', 'on') }}"
-    - choose:
-        - conditions:
-            - condition: template
-              value_template: "{{ fv >= 1000 and not presa_on }}"
-          sequence:
-            - action: switch.turn_on
-              target:
-                entity_id: switch.box_deumidificatore_cantina_sonoff
-        - conditions:
-            - condition: template
-              value_template: "{{ fv < 1000 and presa_on }}"
-          sequence:
-            - action: switch.turn_off
-              target:
-                entity_id: switch.box_deumidificatore_cantina_sonoff
-
-#==================================================================================
-# DEUMIDIFICATORE TANIA (ex armadio) – CONTROLLO PERIODICO SU PRODUZIONE FV
-# Ogni 5 minuti verifica produzione FV e decide stato presa deumidificatore.
-# Soglia: 1000W. Robusto contro riavvii o eventi mancati.
-# L'umidità è gestita dall'igrostat interno del deumidificatore.
-# Rispetta input_boolean.deumidificatore_armadio_manuale.
-#==================================================================================
-- id: deumidificatore_armadio_controllo
-  alias: "Deumidificatore armadio  – Controllo Periodico FV"
-  description: >
-    Ogni 5 minuti accende switch.deumidificatore_armadio_zigbee
-    se produzione FV supera 1000W, spegne se sotto soglia. Bloccato se in gestione manuale.
-  mode: single
-  triggers:
-    - trigger: time_pattern
-      minutes: "/5"
-  conditions:
-    - condition: state
-      entity_id: input_boolean.deumidificatore_armadio_manuale
-      state: "off"
-  actions:
-    - variables:
-        fv: "{{ states('sensor.inverter_uflex_pv_power') | float(0) }}"
-        presa_on: "{{ is_state('switch.deumidificatore_armadio_zigbee', 'on') }}"
-    - choose:
-        - conditions:
-            - condition: template
-              value_template: "{{ fv >= 1000 and not presa_on }}"
-          sequence:
-            - action: switch.turn_on
-              target:
-                entity_id: switch.deumidificatore_armadio_zigbee
-        - conditions:
-            - condition: template
-              value_template: "{{ fv < 1000 and presa_on }}"
-          sequence:
-            - action: switch.turn_off
-              target:
-                entity_id: switch.deumidificatore_armadio_zigbee
 
 #==================================================================================
 # 7. PANSONIC - PID – RAFFRESCAMENTO COMPLETO (PID con D)

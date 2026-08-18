@@ -16,7 +16,7 @@ config:
           name: Georgi
         - entity: sensor.termometro_tania_zigbee_temperature
           name: Tania
-        - entity: sensor.termometro_cantina_sonoff_temperature
+        - entity: sensor.termometro_cantina_zigbee_temperature
           name: Cantina
         - entity: sensor.hp1000se_pro_pro_v1_6_4_outdoor_temperature
           name: Esterna
@@ -26,7 +26,7 @@ config:
           name: Georgi
         - entity: sensor.termometro_tania_zigbee_humidity
           name: Tania
-        - entity: sensor.termometro_cantina_sonoff_humidity
+        - entity: sensor.termometro_cantina_zigbee_humidity
           name: Cantina
         - entity: sensor.hp1000se_pro_pro_v1_6_4_humidity
           name: Esterna
@@ -549,29 +549,29 @@ config:
         heading_style: title
         icon: mdi:coolant-temperature
         type: heading
-      - entity: sensor.termometro_cantina_sonoff_temperature
+      - entity: sensor.termometro_cantina_zigbee_temperature
         features_position: bottom
         name: Temperatura
         type: tile
         vertical: false
-      - entity: sensor.termometro_cantina_sonoff_humidity
+      - entity: sensor.termometro_cantina_zigbee_humidity
         features_position: bottom
         name: "Umidit\xE0 "
         type: tile
         vertical: false
-      - entity: sensor.termometro_cantina_sonoff_battery
+      - entity: sensor.termometro_cantina_zigbee_battery
         features_position: bottom
         name: Batteria
         type: tile
         vertical: false
-      - entity: sensor.0xa4c1380f0678ffff_linkquality
+      - entity: sensor.termometro_cantina_zigbee_linkquality
         features:
         - type: trend-graph
         features_position: bottom
         name: LinkQuality
         type: tile
         vertical: false
-      - entity: sensor.termometro_cantina_sonoff_voltage
+      - entity: sensor.termometro_cantina_zigbee_voltage
         features_position: bottom
         name: Tensione
         type: tile
