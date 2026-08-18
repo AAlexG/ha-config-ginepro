@@ -432,11 +432,11 @@ config:
             type: state
           type: column
           yaxis_id: kwh
-        - entity: sensor.lavatricemielewci870_consumo_energia
+        - entity: sensor.lavatrice_energia
           name: Lavatrice
           statistics:
             period: day
-            type: state
+            type: change
           type: column
           yaxis_id: kwh
         - entity: sensor.auto_energia_oggi
@@ -678,7 +678,7 @@ config:
             type: change
           type: column
           yaxis_id: kwh
-        - entity: sensor.lavatricemielewci870_consumo_energia
+        - entity: sensor.lavatrice_energia
           name: Lavatrice
           statistics:
             period: month
@@ -775,7 +775,7 @@ config:
           name: Fancoil
         - entity: sensor.consumo_deumidificatori_oggi
           name: Deumidif.
-        - entity: sensor.lavatricemielewci870_consumo_energia
+        - entity: sensor.lavatrice_energia
           name: Lavatrice
         - entity: sensor.auto_energia_oggi
           name: Auto

@@ -1,4 +1,4 @@
-# config_clima_1.yaml
+# config_clima_2.yaml
 # Package Casa Ginepro - Clima: fancoil, free cooling/heating, target temperatura, consumi
 # Estratto da configuration_186.yaml. Nome file = nome del package.
 
@@ -371,15 +371,14 @@ input_number:
 
 input_select:
   # --- MODALITÀ CLIMA ---
+  # Casa vuota: NON è più una modalità qui, è input_boolean.vacanza (v2).
+  # Rimosse anche "comfort" ed "eco": definite ma mai lette da nessuna automazione.
   clima_modalita:
     name: "Clima Modalità"
     options:
       - "giorno"
       - "notte"
-      - "assenza"
       - "manuale"
-      - "comfort"
-      - "eco"
     icon: mdi:home-thermometer
 
   clima_stagione:

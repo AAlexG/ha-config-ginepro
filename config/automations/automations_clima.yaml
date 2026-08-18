@@ -1,4 +1,4 @@
-# automations_clima_47.yaml
+# automations_clima_48.yaml
 
 
 
@@ -212,7 +212,7 @@
 #==================================================================================
 # 4. FANCOIL - CLIMA – COMMUTAZIONE MODALITÀ GIORNALIERA
 # Comfort: 07:00-20:00 / Eco: 20:00-23:00 / Notte: 23:00-07:00
-# Solo se non in modalità assenza o manuale
+# Solo se non in modalità manuale e casa non in vacanza
 #==================================================================================
 - id: clima_modalita_giorno
   alias: "Clima – Modalità Giorno (07:00)"
@@ -220,11 +220,12 @@
     - trigger: time
       at: "07:00:00"
   conditions:
+    # Casa vuota: flag unico input_boolean.vacanza (v48)
+    - condition: state
+      entity_id: input_boolean.vacanza
+      state: "off"
     - condition: not
       conditions:
-        - condition: state
-          entity_id: input_select.clima_modalita
-          state: "assenza"
         - condition: state
           entity_id: input_select.clima_modalita
           state: "manuale"
@@ -256,11 +257,12 @@
     - trigger: time
       at: "23:00:00"
   conditions:
+    # Casa vuota: flag unico input_boolean.vacanza (v48)
+    - condition: state
+      entity_id: input_boolean.vacanza
+      state: "off"
     - condition: not
       conditions:
-        - condition: state
-          entity_id: input_select.clima_modalita
-          state: "assenza"
         - condition: state
           entity_id: input_select.clima_modalita
           state: "manuale"
@@ -315,9 +317,6 @@
       conditions:
         - condition: state
           entity_id: input_select.clima_modalita
-          state: "assenza"
-        - condition: state
-          entity_id: input_select.clima_modalita
           state: "manuale"
     - condition: state
       entity_id: switch.panasonic_heat_pump_main_heatpump_state
@@ -355,9 +354,6 @@
       state: "off"
     - condition: not
       conditions:
-        - condition: state
-          entity_id: input_select.clima_modalita
-          state: "assenza"
         - condition: state
           entity_id: input_select.clima_modalita
           state: "manuale"
@@ -477,9 +473,6 @@
       conditions:
         - condition: state
           entity_id: input_select.clima_modalita
-          state: "assenza"
-        - condition: state
-          entity_id: input_select.clima_modalita
           state: "manuale"
     - condition: state
       entity_id: switch.sala_fancoil_sala_shelly_1gen4
@@ -574,9 +567,6 @@
       conditions:
         - condition: state
           entity_id: input_select.clima_modalita
-          state: "assenza"
-        - condition: state
-          entity_id: input_select.clima_modalita
           state: "manuale"
     - condition: time
       after: "07:00:00"
@@ -652,6 +642,10 @@
     - trigger: time_pattern
       minutes: "/5"
   conditions:
+    # Casa vuota: flag unico input_boolean.vacanza (v48)
+    - condition: state
+      entity_id: input_boolean.vacanza
+      state: "off"
     # Interruttore generale PID (toggle "PID Attivo" in plancia clima)
     - condition: state
       entity_id: input_boolean.clima_pid_attivo
@@ -668,9 +662,6 @@
         - condition: state
           entity_id: input_select.clima_modalita
           state: "manuale"
-        - condition: state
-          entity_id: input_select.clima_modalita
-          state: "assenza"
   actions:
     - variables:
         mod: "{{ states('input_select.clima_modalita') }}"
@@ -793,10 +784,8 @@
         soglia_vento: "{{ states('input_number.clima_soglia_vento_naturale') | float(6) }}"
         delta: "{{ t_ext - target }}"
         flag_on: "{{ is_state('input_boolean.clima_freecooling_attivo', 'on') }}"
-        # Vacanza/assenza: nessuna attivazione né notifica; flag ripulito se acceso
-        assenza: >
-          {{ is_state('input_select.clima_modalita', 'assenza')
-             or is_state('input_boolean.vacanza', 'on') }}
+        # Vacanza: nessuna attivazione né notifica; flag ripulito se acceso
+        vacanza_on: "{{ is_state('input_boolean.vacanza', 'on') }}"
         # Condizione di attivazione (soglie base)
         cond_on: >
           {{ delta < base or (delta < (base + bonus) and vento >= soglia_vento) }}
@@ -808,7 +797,7 @@
         # --- ATTIVA: solo in Cool, condizione soddisfatta, flag spento ---
         - conditions:
             - condition: template
-              value_template: "{{ not assenza and mode in ['Cool', 'Cool only'] and cond_on and not flag_on }}"
+              value_template: "{{ not vacanza_on and mode in ['Cool', 'Cool only'] and cond_on and not flag_on }}"
           sequence:
             - action: input_boolean.turn_on
               target:
@@ -839,7 +828,7 @@
             - condition: template
               value_template: >
                 {{ flag_on and
-                   (assenza
+                   (vacanza_on
                     or (mode in ['Cool', 'Cool only'] and cond_off)
                     or (mode not in ['Cool', 'Cool only', 'unavailable', 'unknown', 'none'])) }}
           sequence:
@@ -1151,6 +1140,10 @@
     - trigger: time_pattern
       minutes: "/5"
   conditions:
+    # Casa vuota: flag unico input_boolean.vacanza (v48)
+    - condition: state
+      entity_id: input_boolean.vacanza
+      state: "off"
     # Interruttore generale PID (toggle "PID Attivo" in plancia clima)
     - condition: state
       entity_id: input_boolean.clima_pid_attivo
@@ -1164,9 +1157,6 @@
         - condition: state
           entity_id: input_select.clima_modalita
           state: "manuale"
-        - condition: state
-          entity_id: input_select.clima_modalita
-          state: "assenza"
   actions:
     - variables:
         mod: "{{ states('input_select.clima_modalita') }}"
@@ -1273,10 +1263,8 @@
         base: "{{ states('input_number.clima_delta_naturale_base') | float(3) }}"
         delta: "{{ target - t_ext }}"
         flag_on: "{{ is_state('input_boolean.clima_freeheating_attivo', 'on') }}"
-        # Vacanza/assenza: nessuna attivazione né notifica; flag ripulito se acceso
-        assenza: >
-          {{ is_state('input_select.clima_modalita', 'assenza')
-             or is_state('input_boolean.vacanza', 'on') }}
+        # Vacanza: nessuna attivazione né notifica; flag ripulito se acceso
+        vacanza_on: "{{ is_state('input_boolean.vacanza', 'on') }}"
         cond_on: "{{ delta < base }}"
         # Disattivazione: fuori soglia con margine 0.5 C di isteresi
         cond_off: "{{ delta >= (base + 0.5) }}"
@@ -1284,7 +1272,7 @@
         # --- ATTIVA: solo in Heat, condizione soddisfatta, flag spento ---
         - conditions:
             - condition: template
-              value_template: "{{ not assenza and mode in ['Heat', 'Heat only'] and cond_on and not flag_on }}"
+              value_template: "{{ not vacanza_on and mode in ['Heat', 'Heat only'] and cond_on and not flag_on }}"
           sequence:
             - action: input_boolean.turn_on
               target:
@@ -1309,7 +1297,7 @@
             - condition: template
               value_template: >
                 {{ flag_on and
-                   (assenza
+                   (vacanza_on
                     or (mode in ['Heat', 'Heat only'] and cond_off)
                     or (mode not in ['Heat', 'Heat only', 'unavailable', 'unknown', 'none'])) }}
           sequence:
@@ -1342,8 +1330,8 @@
       minutes: "/30"
   conditions:
     - condition: state
-      entity_id: input_select.clima_modalita
-      state: "assenza"
+      entity_id: input_boolean.vacanza
+      state: "on"
     - condition: template
       value_template: >
         {{ states('select.panasonic_heat_pump_main_operating_mode_state')
@@ -1394,6 +1382,10 @@
     - trigger: state
       entity_id: sensor.termometro_georgi_zigbee_temperature
   conditions:
+    # Casa vuota: flag unico input_boolean.vacanza (v48)
+    - condition: state
+      entity_id: input_boolean.vacanza
+      state: "off"
     - condition: state
       entity_id: switch.panasonic_heat_pump_main_heatpump_state
       state: "off"
@@ -1406,9 +1398,6 @@
         - condition: state
           entity_id: input_select.clima_modalita
           state: "manuale"
-        - condition: state
-          entity_id: input_select.clima_modalita
-          state: "assenza"
     - condition: template
       value_template: >
         {% set mod = states('input_select.clima_modalita') %}
@@ -1807,7 +1796,8 @@
   description: >
     1 ora dopo l'inizio di un evento con 'Vacanza' nel titolo
     (durato più di 1 giorno), spegne riscaldamento (away), acqua sanitaria,
-    pompa di calore e fancoil; accende input_boolean.vacanza; chiude pergola
+    pompa di calore e fancoil; accende input_boolean.vacanza (flag unico che
+    blocca tutte le automazioni clima); chiude pergola
     e tenda giardino; ferma il canto degli uccelli.
     Il controllo sull'evento è nell'action (if/then) così il lancio manuale
     funziona sempre; il filtro blocca solo trigger da eventi non-vacanza.
@@ -1856,11 +1846,11 @@
           data:
             topic: "OTGW/set/otgw-84CCA8ADE1AD/command"
             payload: "HW=0"
-        - action: input_select.select_option
+        # Flag unico casa vuota: attivato PRIMA di spegnere, così nessuna
+        # automazione può riaccendere pompa o fancoil nel frattempo (v48)
+        - action: input_boolean.turn_on
           target:
-            entity_id: input_select.clima_modalita
-          data:
-            option: "assenza"
+            entity_id: input_boolean.vacanza
         - action: switch.turn_off
           target:
             entity_id: switch.panasonic_heat_pump_main_heatpump_state
@@ -1871,10 +1861,6 @@
               - switch.camerageorgi_shelly_fancoil_georgi
               - switch.camerageorgi_shelly_fancoil_georgi_2
               - switch.sala_fancoil_sala_shelly_1gen4
-        # Flag vacanza: ferma pergola, tenda giardino e canto uccelli
-        - action: input_boolean.turn_on
-          target:
-            entity_id: input_boolean.vacanza
         # Pulizia flag pergola (il blocco manuale non deve sopravvivere alla partenza)
         - action: input_boolean.turn_off
           target:
