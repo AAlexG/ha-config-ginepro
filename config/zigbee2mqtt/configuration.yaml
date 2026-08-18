@@ -74,4 +74,4 @@ devices:
     temperature_calibration: 0
     humidity_calibration: 0
   '0xa4c1380f0678ffff':
-    friendly_name: Termometro cantina sonoff
+    friendly_name: Termometro cantina zigbee
