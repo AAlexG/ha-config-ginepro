@@ -85,7 +85,10 @@ config:
         grid_options:
           columns: 6
           rows: auto
-        name: Stato
+        name: Stato / apertura lamelle %
+        state_content:
+        - state
+        - current_tilt_position
         type: tile
         vertical: false
       - entity: input_boolean.pergola_blocco_manuale

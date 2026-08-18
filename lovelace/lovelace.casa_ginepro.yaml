@@ -1660,6 +1660,11 @@ config:
         name: Term. Georgi
         type: tile
         vertical: false
+      - entity: sensor.termometro_cantina_sonoff_battery
+        features_position: bottom
+        name: Term. Cantina
+        type: tile
+        vertical: false
       - heading: UPS
         heading_style: subtitle
         type: heading
