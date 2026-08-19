@@ -1,4 +1,4 @@
-# config_clima_2.yaml
+# config_clima_4.yaml
 # Package Casa Ginepro - Clima: fancoil, free cooling/heating, target temperatura, consumi
 # Estratto da configuration_186.yaml. Nome file = nome del package.
 
@@ -146,42 +146,10 @@ input_number:
   # SISTEMA CLIMA COMPLETO – parametri PID e stato
   # ============================================================
 
-  # --- TARGET TEMPERATURA per modalità ---
-  clima_target_comfort:
-    name: "Clima Target Comfort"
-    min: 18
-    max: 30
-    step: 0.5
-    unit_of_measurement: "°C"
-    mode: slider
-    icon: mdi:thermometer
-
-  clima_target_eco:
-    name: "Clima Target Eco"
-    min: 18
-    max: 30
-    step: 0.5
-    unit_of_measurement: "°C"
-    mode: slider
-    icon: mdi:thermometer
-
-  clima_target_notte:
-    name: "Clima Target Notte"
-    min: 18
-    max: 30
-    step: 0.5
-    unit_of_measurement: "°C"
-    mode: slider
-    icon: mdi:thermometer
-
-  clima_target_assenza:
-    name: "Clima Target Assenza"
-    min: 18
-    max: 32
-    step: 0.5
-    unit_of_measurement: "°C"
-    mode: slider
-    icon: mdi:thermometer
+  # clima_target_comfort / eco / notte / assenza rimossi: erano definiti e
+  # inizializzati ad ogni avvio, ma nessuna automazione, nessuno script e
+  # nessuna plancia li leggeva. I target realmente usati sono i quattro
+  # maxtemp_* estivi e i quattro mintemp_* invernali qui sotto.
 
   # --- TARGET TEMPERATURA DUAL-ZONE ---
   # ESTATE - temperatura MASSIMA tollerata (raffrescamento)
@@ -221,6 +189,19 @@ input_number:
     mode: slider
     icon: mdi:bed-outline
 
+  # Camera Tania: zona autonoma con termometro Zigbee dedicato
+  # (sensor.termometro_tania_zigbee_temperature). I fancoil camera lavorano
+  # solo nella fascia 21:00-07:00, quindi servono i soli target notte: non
+  # vengono creati equivalenti "giorno" per non aggiungere helper mai letti.
+  maxtemp_notte_estate_tania:
+    name: "Max Temp Notte Estate Tania"
+    min: 18
+    max: 32
+    step: 0.5
+    unit_of_measurement: "°C"
+    mode: slider
+    icon: mdi:bed-outline
+
   # INVERNO - temperatura MINIMA garantita (riscaldamento)
   mintemp_giorno_inverno_sala:
     name: "Min Temp Giorno Inverno Sala"
@@ -251,6 +232,15 @@ input_number:
 
   mintemp_notte_inverno_letto:
     name: "Min Temp Notte Inverno Letto"
+    min: 14
+    max: 26
+    step: 0.5
+    unit_of_measurement: "°C"
+    mode: slider
+    icon: mdi:bed-outline
+
+  mintemp_notte_inverno_tania:
+    name: "Min Temp Notte Inverno Tania"
     min: 14
     max: 26
     step: 0.5
@@ -333,23 +323,12 @@ input_number:
     mode: box
     icon: mdi:weather-windy
 
-  clima_freecooling_setpoint_offset:
-    name: "Free Cooling Setpoint Offset"
-    min: 0
-    max: 15
-    step: 0.5
-    unit_of_measurement: "°C"
-    mode: box
-    icon: mdi:thermometer-chevron-up
-
-  clima_freecooling_setpoint_max:
-    name: "Free Cooling Setpoint Max"
-    min: 10
-    max: 30
-    step: 0.5
-    unit_of_measurement: "°C"
-    mode: box
-    icon: mdi:thermometer-chevron-up
+  # clima_freecooling_setpoint_offset e clima_freecooling_setpoint_max rimossi:
+  # servivano ad "ammorbidire" il setpoint di mandata durante il free cooling.
+  # Da automations_clima_49 il free cooling spegne direttamente la pompa, quindi
+  # non c'e' piu' alcun setpoint da correggere. Gli equivalenti invernali
+  # restano: in inverno il circuito e' condiviso con la caldaia (valvola
+  # switch.shelly_box, gestione fonte) e la pompa non va spenta.
 
   clima_freeheating_setpoint_offset:
     name: "Free Heating Setpoint Offset"
@@ -436,6 +415,16 @@ input_boolean:
     name: "Fancoil Sala - Gestione Manuale"
     initial: false
     icon: mdi:hand-back-right
+
+  # --- LATCH NOTTURNO POMPA DI CALORE ---
+  # Acceso dal PID cooling quando, in fascia notte, la temperatura della camera
+  # rientra sotto il target: la pompa viene fermata e non deve piu' ripartire
+  # fino alle 07:00, perche' con i fancoil fermi la stanza non risale in modo
+  # significativo. Sblocco di sicurezza in panasonic_cooling_riaccensione se si
+  # superano comunque i target + 2 C. Spento ai cambi giorno/notte (07:00/23:00).
+  clima_pompa_latch_notte:
+    name: "Clima – Latch Notturno Pompa"
+    icon: mdi:lock-clock
 
   # --- FREE COOLING / FREE HEATING NATURALE ---
   clima_freecooling_attivo:

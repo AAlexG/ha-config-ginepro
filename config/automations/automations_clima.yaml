@@ -1,4 +1,4 @@
-# automations_clima_48.yaml
+# automations_clima_51.yaml
 
 
 
@@ -41,154 +41,54 @@
 #==================================================================================
 - id: clima_inizializzazione
   alias: "Clima – Inizializzazione Valori Default"
-  description: "Imposta valori default PID e soglie al primo avvio"
+  description: >
+    Al riavvio ripristina un default SOLO per gli helper ancora senza stato
+    (prima installazione, o restore_state fallito). Gli helper gia' valorizzati
+    non vengono toccati: le regolazioni fatte in plancia e i guadagni PID
+    sopravvivono ai riavvii di Home Assistant.
   triggers:
     - trigger: homeassistant
       event: start
   actions:
-    - action: input_number.set_value
-      target:
-        entity_id: input_number.clima_target_comfort
-      data:
-        value: 25
-    - action: input_number.set_value
-      target:
-        entity_id: input_number.clima_target_eco
-      data:
-        value: 26
-    - action: input_number.set_value
-      target:
-        entity_id: input_number.clima_target_notte
-      data:
-        value: 27
-    - action: input_number.set_value
-      target:
-        entity_id: input_number.clima_target_assenza
-      data:
-        value: 29
-    - action: input_number.set_value
-      target:
-        entity_id: input_number.clima_soglia_solare_boost
-      data:
-        value: 2500
-    - action: input_number.set_value
-      target:
-        entity_id: input_number.clima_boost_solare_delta
-      data:
-        value: 2
-    - action: input_number.set_value
-      target:
-        entity_id: input_number.clima_soglia_inverno
-      data:
-        value: 13
-    - action: input_number.set_value
-      target:
-        entity_id: input_number.panasonic_pid_kp
-      data:
-        value: 2.0
-    - action: input_number.set_value
-      target:
-        entity_id: input_number.panasonic_pid_ki
-      data:
-        value: 0.05
-    - action: input_number.set_value
-      target:
-        entity_id: input_number.panasonic_pid_kd
-      data:
-        value: 1.0
-    # --- TARGET DUAL-ZONE estate (max) ---
-    - action: input_number.set_value
-      target:
-        entity_id: input_number.maxtemp_giorno_estate_sala
-      data:
-        value: 25
-    - action: input_number.set_value
-      target:
-        entity_id: input_number.maxtemp_giorno_estate_letto
-      data:
-        value: 29
-    - action: input_number.set_value
-      target:
-        entity_id: input_number.maxtemp_notte_estate_sala
-      data:
-        value: 29
-    - action: input_number.set_value
-      target:
-        entity_id: input_number.maxtemp_notte_estate_letto
-      data:
-        value: 25
-    # --- TARGET DUAL-ZONE inverno (min) ---
-    - action: input_number.set_value
-      target:
-        entity_id: input_number.mintemp_giorno_inverno_sala
-      data:
-        value: 22
-    - action: input_number.set_value
-      target:
-        entity_id: input_number.mintemp_giorno_inverno_letto
-      data:
-        value: 20
-    - action: input_number.set_value
-      target:
-        entity_id: input_number.mintemp_notte_inverno_sala
-      data:
-        value: 20
-    - action: input_number.set_value
-      target:
-        entity_id: input_number.mintemp_notte_inverno_letto
-      data:
-        value: 22
-    - action: input_number.set_value
-      target:
-        entity_id: input_number.clima_target_emergenza_antigelo
-      data:
-        value: 15
-    - action: input_number.set_value
-      target:
-        entity_id: input_number.panasonic_pid_heat_integrale
-      data:
-        value: 0
-    - action: input_number.set_value
-      target:
-        entity_id: input_number.panasonic_pid_heat_errore_prec
-      data:
-        value: 0
-    # --- FREE COOLING / FREE HEATING (naturale) ---
-    - action: input_number.set_value
-      target:
-        entity_id: input_number.clima_delta_naturale_base
-      data:
-        value: 3
-    - action: input_number.set_value
-      target:
-        entity_id: input_number.clima_delta_naturale_vento_bonus
-      data:
-        value: 2
-    - action: input_number.set_value
-      target:
-        entity_id: input_number.clima_soglia_vento_naturale
-      data:
-        value: 6
-    - action: input_number.set_value
-      target:
-        entity_id: input_number.clima_freecooling_setpoint_offset
-      data:
-        value: 5
-    - action: input_number.set_value
-      target:
-        entity_id: input_number.clima_freecooling_setpoint_max
-      data:
-        value: 22
-    - action: input_number.set_value
-      target:
-        entity_id: input_number.clima_freeheating_setpoint_offset
-      data:
-        value: 5
-    - action: input_number.set_value
-      target:
-        entity_id: input_number.clima_freeheating_setpoint_min
-      data:
-        value: 20
+    - variables:
+        valori_default:
+          input_number.clima_soglia_solare_boost: 2500
+          input_number.clima_boost_solare_delta: 2
+          input_number.clima_soglia_inverno: 13
+          input_number.panasonic_pid_kp: 2.0
+          input_number.panasonic_pid_ki: 0.05
+          input_number.panasonic_pid_kd: 1.0
+          input_number.maxtemp_giorno_estate_sala: 25
+          input_number.maxtemp_giorno_estate_letto: 29
+          input_number.maxtemp_notte_estate_sala: 29
+          input_number.maxtemp_notte_estate_letto: 25
+          input_number.maxtemp_notte_estate_tania: 25
+          input_number.mintemp_giorno_inverno_sala: 22
+          input_number.mintemp_giorno_inverno_letto: 20
+          input_number.mintemp_notte_inverno_sala: 20
+          input_number.mintemp_notte_inverno_letto: 22
+          input_number.mintemp_notte_inverno_tania: 22
+          input_number.clima_target_emergenza_antigelo: 15
+          input_number.panasonic_pid_heat_integrale: 0
+          input_number.panasonic_pid_heat_errore_prec: 0
+          input_number.clima_delta_naturale_base: 3
+          input_number.clima_delta_naturale_vento_bonus: 2
+          input_number.clima_soglia_vento_naturale: 6
+          input_number.clima_freeheating_setpoint_offset: 5
+          input_number.clima_freeheating_setpoint_min: 20
+    - repeat:
+        for_each: "{{ valori_default | list }}"
+        sequence:
+          - if:
+              - condition: template
+                value_template: >
+                  {{ states(repeat.item) in ['unknown', 'unavailable', 'none', ''] }}
+            then:
+              - action: input_number.set_value
+                target:
+                  entity_id: "{{ repeat.item }}"
+                data:
+                  value: "{{ valori_default[repeat.item] }}"
 
 #==================================================================================
 # 3. CLIMA – MEDIA TEMPERATURA ESTERNA 7 GIORNI
@@ -235,8 +135,11 @@
         entity_id: input_select.clima_modalita
       data:
         option: "giorno"
-    # Alle 07:00 spegni fancoil_georgi_2 (quello notturno), sempre, senza flag
-    # fancoil_georgi era già spento alle 23:00
+    # Mappatura reale degli switch (i nomi entita' sono storici):
+    #   switch.camerageorgi_shelly_fancoil_georgi    -> fancoil CAMERA TANIA
+    #   switch.camerageorgi_shelly_fancoil_georgi_2  -> fancoil CAMERA GEORGI
+    # Alle 07:00 spegni il fancoil camera Georgi (quello notturno), sempre,
+    # senza flag. Il fancoil camera Tania era gia' spento alle 23:00.
     - action: switch.turn_off
       target:
         entity_id: switch.camerageorgi_shelly_fancoil_georgi_2
@@ -250,6 +153,7 @@
           - input_boolean.deumidificatore_cantina_manuale
           - input_boolean.deumidificatore_armadio_manuale
           - input_boolean.pergola_blocco_manuale
+          - input_boolean.clima_pompa_latch_notte
 
 - id: clima_modalita_notte
   alias: "Clima – Modalità Notte (23:00)"
@@ -272,8 +176,9 @@
         entity_id: input_select.clima_modalita
       data:
         option: "notte"
-    # Alle 23:00 spegni fancoil_georgi (solo prelavoro 21-23), sempre, senza flag
-    # fancoil_georgi_2 resta acceso tutta la notte fino alle 07:00
+    # Alle 23:00 spegni il fancoil camera Tania (attivo solo nel prelavoro
+    # 21-23), sempre, senza flag. Il fancoil camera Georgi resta acceso tutta
+    # la notte fino alle 07:00.
     - action: switch.turn_off
       target:
         entity_id: switch.camerageorgi_shelly_fancoil_georgi
@@ -287,6 +192,7 @@
           - input_boolean.deumidificatore_cantina_manuale
           - input_boolean.deumidificatore_armadio_manuale
           - input_boolean.pergola_blocco_manuale
+          - input_boolean.clima_pompa_latch_notte
 
 #==================================================================================
 # GESTIONE MANUALE FANCOIL E DEUMIDIFICATORE
@@ -303,8 +209,9 @@
   alias: "Fancoil Georgi – Prelavoro Serale (21:00)"
   description: >
     Alle 21:00 innesca il controllo periodico accendendo entrambi i fancoil
-    se le condizioni sono soddisfatte. Il controllo periodico fancoil_georgi_controllo
-    mantiene poi lo stato corretto ogni 5 minuti.
+    (camera Tania e camera Georgi) se le condizioni sono soddisfatte. Il
+    controllo periodico fancoil_georgi_controllo mantiene poi lo stato corretto
+    ogni 5 minuti.
   triggers:
     - trigger: time
       at: "21:00:00"
@@ -329,20 +236,32 @@
         skip_condition: false
 
 #==================================================================================
-# 6. FANCOIL - CAMERA GEORGI – CONTROLLO PERIODICO (ogni 5 minuti)
-# Unica automazione che gestisce accensione/spegnimento fancoil in base a:
+# 6. FANCOIL - CAMERE TANIA E GEORGI – CONTROLLO PERIODICO (ogni 5 minuti)
+# Unica automazione che gestisce accensione/spegnimento dei due fancoil in
+# base a:
 # - Orario (prelavoro 21-23 o notte 23-07)
 # - T_georgi vs target stagionale
 # - outlet_temp vs soglia efficacia acqua
 # Robusta: funziona anche dopo riavvii o eventi mancati
+# Le due camere sono zone autonome: ognuna ha il proprio termometro Zigbee e
+# i propri target notte, regolabili in plancia clima.
+#   camera Tania  -> sensor.termometro_tania_zigbee_temperature
+#                    maxtemp_notte_estate_tania / mintemp_notte_inverno_tania
+#   camera Georgi -> sensor.termometro_georgi_zigbee_temperature
+#                    maxtemp_notte_estate_letto / mintemp_notte_inverno_letto
+# I due relay stanno entrambi fisicamente in camera Georgi, ma comandano il
+# fancoil di una camera ciascuno.
 #==================================================================================
 - id: fancoil_georgi_controllo
   alias: "Fancoil Georgi – Controllo Periodico"
   description: >
-    Ogni 5 minuti decide lo stato dei fancoil camera Georgi.
-    Prelavoro 21-23: controlla entrambi fancoil_georgi e fancoil_georgi_2.
-    Notte 23-07: controlla solo fancoil_georgi_2 (fancoil_georgi sempre spento).
-    Decisione basata su T_georgi vs target E outlet_temp vs soglia efficacia.
+    Ogni 5 minuti decide lo stato dei fancoil delle camere Tania e Georgi.
+    Ogni camera decide in autonomia sul proprio termometro e sui propri target.
+    Prelavoro 21-23: controlla entrambi (camera Tania e camera Georgi).
+    Notte 23-07: controlla solo il fancoil camera Georgi; quello camera Tania
+    resta sempre spento.
+    Decisione per camera: T_camera vs target camera E outlet_temp vs soglia
+    di efficacia dell'acqua calcolata sul target di quella camera.
   mode: single
   triggers:
     - trigger: time_pattern
@@ -363,89 +282,98 @@
   actions:
     - variables:
         mode: "{{ states('select.panasonic_heat_pump_main_operating_mode_state') }}"
-        t_georgi: "{{ states('sensor.termometro_georgi_zigbee_temperature') | float(25) }}"
         outlet: "{{ states('sensor.panasonic_heat_pump_main_main_outlet_temp') | float(20) }}"
         ora: "{{ now().hour }}"
-        # Prelavoro: 21:00-22:59 — entrambi i fancoil attivi
-        # Notte: 23:00-06:59 — solo fancoil_georgi_2
+        # Prelavoro: 21:00-22:59 — entrambi i fancoil attivi (Tania + Georgi)
+        # Notte: 23:00-06:59 — solo il fancoil camera Georgi
         periodo_prelavoro: "{{ ora >= 21 and ora < 23 }}"
-        # Soglie estate
-        target_estate: "{{ states('input_number.maxtemp_notte_estate_letto') | float(25) }}"
-        soglia_acqua_estate: "{{ states('input_number.maxtemp_notte_estate_letto') | float(25) - 4 }}"
-        # Soglie inverno
-        target_inverno: "{{ states('input_number.mintemp_notte_inverno_letto') | float(22) }}"
-        soglia_acqua_inverno: "{{ states('input_number.mintemp_notte_inverno_letto') | float(22) + 6 }}"
-        # Calcolo condizione ON per ogni stagione
-        acqua_efficace_estate: "{{ outlet <= soglia_acqua_estate }}"
-        acqua_efficace_inverno: "{{ outlet >= soglia_acqua_inverno }}"
-        temp_fuori_target_estate: "{{ t_georgi > target_estate }}"
-        temp_fuori_target_inverno: "{{ t_georgi < target_inverno }}"
+        # --- Camera Georgi ---
+        t_georgi: "{{ states('sensor.termometro_georgi_zigbee_temperature') | float(25) }}"
+        target_estate_georgi: "{{ states('input_number.maxtemp_notte_estate_letto') | float(25) }}"
+        target_inverno_georgi: "{{ states('input_number.mintemp_notte_inverno_letto') | float(22) }}"
+        # --- Camera Tania ---
+        # Se il termometro Tania non risponde la camera viene esclusa dal
+        # controllo (fancoil spento) invece di ripiegare su un valore inventato.
+        tania_viva: "{{ has_value('sensor.termometro_tania_zigbee_temperature') }}"
+        t_tania: "{{ states('sensor.termometro_tania_zigbee_temperature') | float(25) }}"
+        target_estate_tania: "{{ states('input_number.maxtemp_notte_estate_tania') | float(25) }}"
+        target_inverno_tania: "{{ states('input_number.mintemp_notte_inverno_tania') | float(22) }}"
+        # Efficacia acqua: calcolata sul target della singola camera
+        # (estate: almeno 4 C sotto; inverno: almeno 6 C sopra)
+        acqua_ok_georgi_estate: "{{ outlet <= target_estate_georgi - 4 }}"
+        acqua_ok_georgi_inverno: "{{ outlet >= target_inverno_georgi + 6 }}"
+        acqua_ok_tania_estate: "{{ outlet <= target_estate_tania - 4 }}"
+        acqua_ok_tania_inverno: "{{ outlet >= target_inverno_tania + 6 }}"
         # Free cooling/heating naturale attivo: fancoil sempre spenti,
         # in ogni fascia oraria (prelavoro 21-23 e notte 23-07)
         freecooling_on: "{{ is_state('input_boolean.clima_freecooling_attivo', 'on') }}"
         freeheating_on: "{{ is_state('input_boolean.clima_freeheating_attivo', 'on') }}"
-        # Decisione finale: accendere i fancoil?
-        fancoil_on: >
+        # Latch notturno: quando entrambe le camere hanno raggiunto il target
+        # la pompa viene fermata fino alle 07:00 e i fancoil restano spenti.
+        latch_notte: "{{ is_state('input_boolean.clima_pompa_latch_notte', 'on') }}"
+        # Decisione per camera Georgi
+        fancoil_georgi_on: >
           {% if mode in ['Cool', 'Cool only'] %}
-            {{ temp_fuori_target_estate and acqua_efficace_estate and not freecooling_on }}
+            {{ t_georgi > target_estate_georgi and acqua_ok_georgi_estate
+               and not freecooling_on and not latch_notte }}
           {% elif mode in ['Heat', 'Heat only'] %}
-            {{ temp_fuori_target_inverno and acqua_efficace_inverno and not freeheating_on }}
+            {{ t_georgi < target_inverno_georgi and acqua_ok_georgi_inverno
+               and not freeheating_on }}
           {% else %}
             false
           {% endif %}
-    - choose:
-        # --- ACCENSIONE ---
-        - conditions:
+        # Decisione per camera Tania
+        fancoil_tania_on: >
+          {% if not tania_viva %}
+            false
+          {% elif mode in ['Cool', 'Cool only'] %}
+            {{ t_tania > target_estate_tania and acqua_ok_tania_estate
+               and not freecooling_on and not latch_notte }}
+          {% elif mode in ['Heat', 'Heat only'] %}
+            {{ t_tania < target_inverno_tania and acqua_ok_tania_inverno
+               and not freeheating_on }}
+          {% else %}
+            false
+          {% endif %}
+    # --- CAMERA GEORGI (switch ..._fancoil_georgi_2) ---
+    # Attivo sia nel prelavoro sia di notte. Solo se non in gestione manuale.
+    - if:
+        - condition: state
+          entity_id: input_boolean.fancoil_georgi2_manuale
+          state: "off"
+      then:
+        - if:
             - condition: template
-              value_template: "{{ fancoil_on }}"
-          sequence:
-            # fancoil_georgi_2: sempre acceso se fancoil_on (prelavoro e notte)
-            # Solo se non in gestione manuale
-            - if:
-                - condition: state
-                  entity_id: input_boolean.fancoil_georgi2_manuale
-                  state: "off"
-              then:
-                - action: switch.turn_on
-                  target:
-                    entity_id: switch.camerageorgi_shelly_fancoil_georgi_2
-            # fancoil_georgi: solo nel prelavoro 21-23, solo se non in gestione manuale
-            - if:
-                - condition: template
-                  value_template: "{{ periodo_prelavoro }}"
-                - condition: state
-                  entity_id: input_boolean.fancoil_georgi_manuale
-                  state: "off"
-              then:
-                - action: switch.turn_on
-                  target:
-                    entity_id: switch.camerageorgi_shelly_fancoil_georgi
-        # --- SPEGNIMENTO ---
-        - conditions:
+              value_template: "{{ fancoil_georgi_on }}"
+          then:
+            - action: switch.turn_on
+              target:
+                entity_id: switch.camerageorgi_shelly_fancoil_georgi_2
+          else:
+            - action: switch.turn_off
+              target:
+                entity_id: switch.camerageorgi_shelly_fancoil_georgi_2
+    # --- CAMERA TANIA (switch ..._fancoil_georgi) ---
+    # Attivo solo nel prelavoro 21-23: di notte resta spento e viene spento
+    # comunque alle 23:00 da clima_modalita_notte.
+    - if:
+        - condition: template
+          value_template: "{{ periodo_prelavoro }}"
+        - condition: state
+          entity_id: input_boolean.fancoil_georgi_manuale
+          state: "off"
+      then:
+        - if:
             - condition: template
-              value_template: "{{ not fancoil_on }}"
-          sequence:
-            # Solo se non in gestione manuale
-            - if:
-                - condition: state
-                  entity_id: input_boolean.fancoil_georgi2_manuale
-                  state: "off"
-              then:
-                - action: switch.turn_off
-                  target:
-                    entity_id: switch.camerageorgi_shelly_fancoil_georgi_2
-            # fancoil_georgi: spegni solo se siamo in prelavoro (di notte è già spento)
-            # e non in gestione manuale
-            - if:
-                - condition: template
-                  value_template: "{{ periodo_prelavoro }}"
-                - condition: state
-                  entity_id: input_boolean.fancoil_georgi_manuale
-                  state: "off"
-              then:
-                - action: switch.turn_off
-                  target:
-                    entity_id: switch.camerageorgi_shelly_fancoil_georgi
+              value_template: "{{ fancoil_tania_on }}"
+          then:
+            - action: switch.turn_on
+              target:
+                entity_id: switch.camerageorgi_shelly_fancoil_georgi
+          else:
+            - action: switch.turn_off
+              target:
+                entity_id: switch.camerageorgi_shelly_fancoil_georgi
 
 - id: fancoil_sala_accendi
   alias: "Fancoil Sala – Accendi (fuori target)"
@@ -636,7 +564,8 @@
   alias: "Panasonic – PID Cooling Dual-Zone"
   description: >
     Giorno (07-23): sensore sala vs maxtemp_giorno_estate_sala.
-    Notte (23-07): sensore camera vs maxtemp_notte_estate_letto.
+    Notte (23-07): camera Georgi e camera Tania, ognuna col proprio termometro
+    e col proprio target; comanda la camera piu' lontana dal target.
     Spegne pompa se temperatura gia sotto target (isteresi 0.5C al riavvio).
   triggers:
     - trigger: time_pattern
@@ -665,96 +594,116 @@
   actions:
     - variables:
         mod: "{{ states('input_select.clima_modalita') }}"
-        t_attivo: >
-          {% if mod == 'notte' %}
-            {{ states('sensor.termometro_georgi_zigbee_temperature') | float(25) }}
-          {% else %}
-            {{ states('sensor.hp1000se_pro_pro_v1_6_4_indoor_temperature') | float(25) }}
-          {% endif %}
-        target: >
-          {% if mod == 'notte' %}
-            {{ states('input_number.maxtemp_notte_estate_letto') | float(25) }}
-          {% else %}
-            {{ states('input_number.maxtemp_giorno_estate_sala') | float(25) }}
-          {% endif %}
+        # Di notte comandano DUE camere indipendenti: l'errore che pilota il PID
+        # e' quello della camera piu' lontana dal proprio target (caso peggiore),
+        # cosi' la pompa si ferma solo quando entrambe sono rientrate.
+        # Una camera con termometro non disponibile viene esclusa (-99).
+        delta_georgi: >
+          {{ (states('sensor.termometro_georgi_zigbee_temperature') | float(25)
+              - states('input_number.maxtemp_notte_estate_letto') | float(25))
+             if has_value('sensor.termometro_georgi_zigbee_temperature') else -99 }}
+        delta_tania: >
+          {{ (states('sensor.termometro_tania_zigbee_temperature') | float(25)
+              - states('input_number.maxtemp_notte_estate_tania') | float(25))
+             if has_value('sensor.termometro_tania_zigbee_temperature') else -99 }}
+        delta_sala: >
+          {{ states('sensor.hp1000se_pro_pro_v1_6_4_indoor_temperature') | float(25)
+             - states('input_number.maxtemp_giorno_estate_sala') | float(25) }}
         kp: "{{ states('input_number.panasonic_pid_kp') | float(2.0) }}"
         ki: "{{ states('input_number.panasonic_pid_ki') | float(0.05) }}"
         kd: "{{ states('input_number.panasonic_pid_kd') | float(1.0) }}"
         integrale_prec: "{{ states('input_number.panasonic_pid_integrale') | float(0) }}"
         errore_prec: "{{ states('input_number.panasonic_pid_errore_prec') | float(0) }}"
-        errore: "{{ t_attivo - target }}"
+        # Se entrambi i termometri camera sono fuori uso si ripiega sulla sala,
+        # non si spegne la pompa.
+        errore: >
+          {% if mod == 'notte' %}
+            {% set e = [delta_georgi, delta_tania] | max %}
+            {{ delta_sala if e < -50 else e }}
+          {% else %}
+            {{ delta_sala }}
+          {% endif %}
         dt: 5
         nuovo_integrale: >
           {{ [[integrale_prec + errore * dt / 60, -8] | max, 8] | min }}
         derivativo: "{{ (errore - errore_prec) / (dt / 60) }}"
-        boost_delta: >
-          {% set prod = states('sensor.inverter_uflex_pv_power') | float(0) %}
-          {% set soglia = states('input_number.clima_soglia_solare_boost') | float(2500) %}
-          {% if prod > soglia %}
-            {{ states('input_number.clima_boost_solare_delta') | float(2) }}
-          {% else %}
-            0
-          {% endif %}
-        freecooling_on: "{{ is_state('input_boolean.clima_freecooling_attivo', 'on') }}"
-        freecooling_offset: >
-          {{ states('input_number.clima_freecooling_setpoint_offset') | float(5) if freecooling_on else 0 }}
-        setpoint_max: >
-          {{ states('input_number.clima_freecooling_setpoint_max') | float(22) if freecooling_on else 18 }}
+        pompa_accesa: "{{ is_state('switch.panasonic_heat_pump_main_heatpump_state', 'on') }}"
+        # In free cooling la pompa viene spenta da clima_freecooling_controllo:
+        # non serve piu' alcun offset di "ammorbidimento" del setpoint.
         setpoint: >
           {% set prod = states('sensor.inverter_uflex_pv_power') | float(0) %}
           {% set soglia = states('input_number.clima_soglia_solare_boost') | float(2500) %}
           {% set bd = states('input_number.clima_boost_solare_delta') | float(2) if prod > soglia else 0 %}
-          {% set fc = states('input_number.clima_freecooling_setpoint_offset') | float(5) if freecooling_on else 0 %}
-          {% set smax = states('input_number.clima_freecooling_setpoint_max') | float(22) if freecooling_on else 18 %}
-          {% set raw = 18 - (errore | float(0) * kp | float(2)) - (nuovo_integrale | float(0) * ki | float(0.05)) - (derivativo | float(0) * kd | float(1)) - bd + fc %}
-          {{ [[raw, 10] | max, smax] | min | round(0) | int }}
-    - if:
-        - condition: template
-          value_template: "{{ t_attivo <= target }}"
-      then:
-        - action: switch.turn_off
-          target:
-            entity_id: switch.panasonic_heat_pump_main_heatpump_state
-      else:
-        - action: input_number.set_value
-          target:
-            entity_id: input_number.panasonic_pid_integrale
-          data:
-            value: "{{ nuovo_integrale | round(3) }}"
-        - action: input_number.set_value
-          target:
-            entity_id: input_number.panasonic_pid_errore_prec
-          data:
-            value: "{{ errore | round(3) }}"
-        - action: input_number.set_value
-          target:
-            entity_id: input_number.panasonic_pid_setpoint_mandata
-          data:
-            value: "{{ setpoint }}"
-        - if:
+          {% set raw = 18 - (errore | float(0)) * (kp | float(2)) - (nuovo_integrale | float(0)) * (ki | float(0.05)) - (derivativo | float(0)) * (kd | float(1)) - bd %}
+          {{ [[raw, 10] | max, 18] | min | round(0) | int }}
+    - choose:
+        # --- TARGET RAGGIUNTO ---
+        # Ferma la pompa solo se e' davvero accesa (evita di ripetere il comando
+        # a HeishaMon ogni 5 minuti) e, se siamo in fascia notte, arma il latch
+        # che impedisce le riaccensioni fino alle 07:00.
+        - conditions:
             - condition: template
-              value_template: >
-                {{ states('sensor.inverter_uflex_pv_power') | float(0) > states('input_number.clima_soglia_solare_boost') | float(2500) }}
-          then:
-            - action: input_boolean.turn_on
+              value_template: "{{ errore <= 0 }}"
+          sequence:
+            - if:
+                - condition: template
+                  value_template: "{{ pompa_accesa }}"
+              then:
+                - action: switch.turn_off
+                  target:
+                    entity_id: switch.panasonic_heat_pump_main_heatpump_state
+            - if:
+                - condition: template
+                  value_template: "{{ mod == 'notte' }}"
+              then:
+                - action: input_boolean.turn_on
+                  target:
+                    entity_id: input_boolean.clima_pompa_latch_notte
+        # --- FUORI TARGET: PID normale ---
+        - conditions:
+            - condition: template
+              value_template: "{{ errore > 0 }}"
+          sequence:
+            - action: input_number.set_value
               target:
-                entity_id: input_boolean.clima_boost_solare_attivo
-          else:
-            - action: input_boolean.turn_off
+                entity_id: input_number.panasonic_pid_integrale
+              data:
+                value: "{{ nuovo_integrale | round(3) }}"
+            - action: input_number.set_value
               target:
-                entity_id: input_boolean.clima_boost_solare_attivo
-        - action: mqtt.publish
-          data:
-            topic: "panasonic_heat_pump/commands/SetZ1CoolRequestTemperature"
-            payload: "{{ setpoint }}"
+                entity_id: input_number.panasonic_pid_errore_prec
+              data:
+                value: "{{ errore | round(3) }}"
+            - action: input_number.set_value
+              target:
+                entity_id: input_number.panasonic_pid_setpoint_mandata
+              data:
+                value: "{{ setpoint }}"
+            - if:
+                - condition: template
+                  value_template: >
+                    {{ states('sensor.inverter_uflex_pv_power') | float(0) > states('input_number.clima_soglia_solare_boost') | float(2500) }}
+              then:
+                - action: input_boolean.turn_on
+                  target:
+                    entity_id: input_boolean.clima_boost_solare_attivo
+              else:
+                - action: input_boolean.turn_off
+                  target:
+                    entity_id: input_boolean.clima_boost_solare_attivo
+            - action: mqtt.publish
+              data:
+                topic: "panasonic_heat_pump/commands/SetZ1CoolRequestTemperature"
+                payload: "{{ setpoint }}"
 
 #==================================================================================
 # 7b. CLIMA – FREE COOLING NATURALE – CONTROLLO PERIODICO (ogni 5 minuti)
 # Se il delta T_esterna-target e' sotto soglia, o sotto soglia+bonus con vento
 # medio 1h >= soglia_vento, il raffrescamento naturale e' sufficiente:
-# ammorbidisce il PID (setpoint piu' alto = pompa meno aggressiva, non spenta)
-# e i controlli periodici fancoil leggono il flag e spengono entro 5 minuti,
-# in ogni fascia oraria (giorno, prelavoro 21-23, notte).
+# spegne la pompa di calore (i fancoil sono gli unici emettitori del circuito
+# in raffrescamento: tenerla accesa "ammorbidita" vuol dire lavorare a carico
+# nullo) e i controlli periodici fancoil leggono il flag e spengono entro
+# 5 minuti, in ogni fascia oraria (giorno, prelavoro 21-23, notte).
 # Il target usato per il delta segue clima_modalita (notte -> letto, altrimenti
 # sala). Controllo periodico (non a fronte): robusto contro riavvii, freeze
 # HeishaMon e trigger persi. Isteresi 0.5 C al posto del vecchio for: 10 min.
@@ -774,10 +723,16 @@
     - variables:
         mode: "{{ states('select.panasonic_heat_pump_main_operating_mode_state') }}"
         t_ext: "{{ states('sensor.hp1000se_pro_pro_v1_6_4_outdoor_temperature') | float(25) }}"
+        # Di notte il target di riferimento e' il PIU' BASSO fra le due camere:
+        # e' quello piu' difficile da ottenere con il solo raffrescamento
+        # naturale, quindi il criterio piu' prudente.
         target: >
-          {{ states('input_number.maxtemp_notte_estate_letto') | float(25)
-             if states('input_select.clima_modalita') == 'notte'
-             else states('input_number.maxtemp_giorno_estate_sala') | float(25) }}
+          {% if states('input_select.clima_modalita') == 'notte' %}
+            {{ [ states('input_number.maxtemp_notte_estate_letto') | float(25),
+                 states('input_number.maxtemp_notte_estate_tania') | float(25) ] | min }}
+          {% else %}
+            {{ states('input_number.maxtemp_giorno_estate_sala') | float(25) }}
+          {% endif %}
         vento: "{{ states('sensor.wind_speed_media_1h') | float(0) }}"
         base: "{{ states('input_number.clima_delta_naturale_base') | float(3) }}"
         bonus: "{{ states('input_number.clima_delta_naturale_vento_bonus') | float(2) }}"
@@ -802,6 +757,24 @@
             - action: input_boolean.turn_on
               target:
                 entity_id: input_boolean.clima_freecooling_attivo
+            # I fancoil sono gli unici emettitori del circuito Panasonic in
+            # raffrescamento: con tutti i fancoil fermi tenere la pompa accesa
+            # "ammorbidita" significa produrre acqua fredda a carico nullo.
+            # In free cooling la pompa si spegne. Solo se il PID ha il controllo
+            # (interruttore generale ON e modalita' non manuale).
+            - if:
+                - condition: state
+                  entity_id: input_boolean.clima_pid_attivo
+                  state: "on"
+                - condition: not
+                  conditions:
+                    - condition: state
+                      entity_id: input_select.clima_modalita
+                      state: "manuale"
+              then:
+                - action: switch.turn_off
+                  target:
+                    entity_id: switch.panasonic_heat_pump_main_heatpump_state
             # Fancoil in pausa: arma la notifica di riaccensione
             # (porte finestre presumibilmente aperte)
             - action: input_boolean.turn_on
@@ -901,25 +874,30 @@
         {% else %}
           false
         {% endif %}
+  mode: single
   actions:
+    # Abbassa di 1 C il target realmente usato da PID e fancoil sala
+    # (maxtemp_giorno_estate_sala) e lo ripristina al valore che aveva prima,
+    # non a una costante: le regolazioni fatte in plancia non vengono perse.
+    - variables:
+        target_originale: "{{ states('input_number.maxtemp_giorno_estate_sala') | float(25) }}"
     - action: input_boolean.turn_on
       target:
         entity_id: input_boolean.clima_preraffrescamento_attivo
     - action: input_number.set_value
       target:
-        entity_id: input_number.clima_target_comfort
+        entity_id: input_number.maxtemp_giorno_estate_sala
       data:
-        value: >
-          {{ (states('input_number.clima_target_comfort') | float(25) - 1) | round(1) }}
+        value: "{{ (target_originale - 1) | round(1) }}"
     - delay: "02:00:00"
     - action: input_boolean.turn_off
       target:
         entity_id: input_boolean.clima_preraffrescamento_attivo
     - action: input_number.set_value
       target:
-        entity_id: input_number.clima_target_comfort
+        entity_id: input_number.maxtemp_giorno_estate_sala
       data:
-        value: 25
+        value: "{{ target_originale }}"
 
 #==================================================================================
 # 9. PANASONIC - CLIMA – COMMUTAZIONE STAGIONALE AUTOMATICA
@@ -1070,12 +1048,20 @@
     - variables:
         t_massima: "{{ states('sensor.hp1000se_pro_pro_v1_6_4_indoor_temperature') | float(25) }}"
         ampiezza: "{{ ((t_massima - t_minima) | abs) / 2 }}"
+        # Formula del rele': Ku = 4d / (pi * a), con d = 4 C (meta' dell'escursione
+        # di setpoint 10<->18) e a = ampiezza della risposta misurata.
+        # La parentesi esterna e' necessaria: in Jinja i filtri legano piu' delle
+        # operazioni aritmetiche, quindi senza di essa round(3) si applicava
+        # ad ampiezza e non al risultato.
         ku: >
           {% if ampiezza > 0 %}
-            {{ (4 * 4) / (3.14159 * ampiezza) | round(3) }}
+            {{ ((4 * 4) / (3.14159 * ampiezza)) | round(3) }}
           {% else %}
             2.0
           {% endif %}
+        # ATTENZIONE: Tu qui non e' il periodo ultimo misurato, e' il periodo
+        # imposto dalla prova (due semiperiodi da 1 ora). I guadagni che ne
+        # derivano sono quindi indicativi, non un vero Ziegler-Nichols.
         tu: 120
         kp_new: "{{ (0.6 * ku) | round(3) }}"
         ki_new: "{{ (1.2 * ku / tu) | round(4) }}"
@@ -1134,7 +1120,8 @@
   alias: "Panasonic - PID Heating Dual-Zone"
   description: >
     Giorno: sala vs mintemp_giorno_inverno_sala.
-    Notte: camera vs mintemp_notte_inverno_letto.
+    Notte: camera Georgi e camera Tania, ognuna col proprio termometro e col
+    proprio target; comanda la camera piu' lontana dal target.
     Isteresi 0.5C, topic SetZ1HeatRequestTemperature.
   triggers:
     - trigger: time_pattern
@@ -1160,34 +1147,40 @@
   actions:
     - variables:
         mod: "{{ states('input_select.clima_modalita') }}"
-        t_attivo: >
-          {% if mod == 'notte' %}
-            {{ states('sensor.termometro_georgi_zigbee_temperature') | float(20) }}
-          {% else %}
-            {{ states('sensor.hp1000se_pro_pro_v1_6_4_indoor_temperature') | float(20) }}
-          {% endif %}
-        target: >
-          {% if mod == 'notte' %}
-            {{ states('input_number.mintemp_notte_inverno_letto') | float(22) }}
-          {% else %}
-            {{ states('input_number.mintemp_giorno_inverno_sala') | float(22) }}
-          {% endif %}
+        # Di notte comandano DUE camere indipendenti: l'errore che pilota il PID
+        # e' quello della camera piu' fredda rispetto al proprio target (caso
+        # peggiore). Una camera con termometro non disponibile e' esclusa (-99).
+        delta_georgi: >
+          {{ (states('input_number.mintemp_notte_inverno_letto') | float(22)
+              - states('sensor.termometro_georgi_zigbee_temperature') | float(20))
+             if has_value('sensor.termometro_georgi_zigbee_temperature') else -99 }}
+        delta_tania: >
+          {{ (states('input_number.mintemp_notte_inverno_tania') | float(22)
+              - states('sensor.termometro_tania_zigbee_temperature') | float(20))
+             if has_value('sensor.termometro_tania_zigbee_temperature') else -99 }}
+        delta_sala: >
+          {{ states('input_number.mintemp_giorno_inverno_sala') | float(22)
+             - states('sensor.hp1000se_pro_pro_v1_6_4_indoor_temperature') | float(20) }}
         pompa_accesa: "{{ is_state('switch.panasonic_heat_pump_main_heatpump_state', 'on') }}"
         kp: "{{ states('input_number.panasonic_pid_kp') | float(2.0) }}"
         ki: "{{ states('input_number.panasonic_pid_ki') | float(0.05) }}"
         kd: "{{ states('input_number.panasonic_pid_kd') | float(1.0) }}"
         integrale_prec: "{{ states('input_number.panasonic_pid_heat_integrale') | float(0) }}"
         errore_prec: "{{ states('input_number.panasonic_pid_heat_errore_prec') | float(0) }}"
-        errore: "{{ target - t_attivo }}"
+        # Se entrambi i termometri camera sono fuori uso si ripiega sulla sala,
+        # non si spegne la pompa.
+        errore: >
+          {% if mod == 'notte' %}
+            {% set e = [delta_georgi, delta_tania] | max %}
+            {{ delta_sala if e < -50 else e }}
+          {% else %}
+            {{ delta_sala }}
+          {% endif %}
         dt: 5
         nuovo_integrale: >
           {{ [[integrale_prec + errore * dt / 60, -8] | max, 8] | min }}
         derivativo: "{{ (errore - errore_prec) / (dt / 60) }}"
         freeheating_on: "{{ is_state('input_boolean.clima_freeheating_attivo', 'on') }}"
-        freeheating_offset: >
-          {{ states('input_number.clima_freeheating_setpoint_offset') | float(5) if freeheating_on else 0 }}
-        setpoint_min: >
-          {{ states('input_number.clima_freeheating_setpoint_min') | float(20) if freeheating_on else 25 }}
         setpoint_raw: >
           {% set fh = states('input_number.clima_freeheating_setpoint_offset') | float(5) if freeheating_on else 0 %}
           {{ 35 + (errore * kp) + (nuovo_integrale * ki) + (derivativo * kd) - fh }}
@@ -1197,14 +1190,14 @@
     - choose:
         - conditions:
             - condition: template
-              value_template: "{{ t_attivo >= target and pompa_accesa }}"
+              value_template: "{{ errore <= 0 and pompa_accesa }}"
           sequence:
             - action: switch.turn_off
               target:
                 entity_id: switch.panasonic_heat_pump_main_heatpump_state
         - conditions:
             - condition: template
-              value_template: "{{ t_attivo < (target - 0.5) }}"
+              value_template: "{{ errore > 0.5 }}"
           sequence:
             - if:
                 - condition: template
@@ -1256,10 +1249,16 @@
     - variables:
         mode: "{{ states('select.panasonic_heat_pump_main_operating_mode_state') }}"
         t_ext: "{{ states('sensor.hp1000se_pro_pro_v1_6_4_outdoor_temperature') | float(15) }}"
+        # Di notte il target di riferimento e' il PIU' ALTO fra le due camere:
+        # e' quello piu' difficile da ottenere con il solo apporto passivo,
+        # quindi il criterio piu' prudente.
         target: >
-          {{ states('input_number.mintemp_notte_inverno_letto') | float(22)
-             if states('input_select.clima_modalita') == 'notte'
-             else states('input_number.mintemp_giorno_inverno_sala') | float(22) }}
+          {% if states('input_select.clima_modalita') == 'notte' %}
+            {{ [ states('input_number.mintemp_notte_inverno_letto') | float(22),
+                 states('input_number.mintemp_notte_inverno_tania') | float(22) ] | max }}
+          {% else %}
+            {{ states('input_number.mintemp_giorno_inverno_sala') | float(22) }}
+          {% endif %}
         base: "{{ states('input_number.clima_delta_naturale_base') | float(3) }}"
         delta: "{{ target - t_ext }}"
         flag_on: "{{ is_state('input_boolean.clima_freeheating_attivo', 'on') }}"
@@ -1381,6 +1380,8 @@
       entity_id: sensor.hp1000se_pro_pro_v1_6_4_indoor_temperature
     - trigger: state
       entity_id: sensor.termometro_georgi_zigbee_temperature
+    - trigger: state
+      entity_id: sensor.termometro_tania_zigbee_temperature
   conditions:
     # Casa vuota: flag unico input_boolean.vacanza (v48)
     - condition: state
@@ -1398,18 +1399,39 @@
         - condition: state
           entity_id: input_select.clima_modalita
           state: "manuale"
+    # Free cooling attivo: il raffrescamento naturale basta, la pompa resta ferma
+    - condition: state
+      entity_id: input_boolean.clima_freecooling_attivo
+      state: "off"
+    # Isteresi di riaccensione, sulla camera piu' lontana dal proprio target
+    # (di notte comandano sia Tania sia Georgi; di giorno la sala).
+    # Con il latch notturno armato la soglia sale da +0.5 a +2.0 C: e' lo
+    # sblocco di sicurezza, la pompa riparte solo se una camera si scalda
+    # davvero. Il latch viene poi rilasciato nelle azioni.
     - condition: template
       value_template: >
-        {% set mod = states('input_select.clima_modalita') %}
-        {% if mod == 'notte' %}
-          {% set t = states('sensor.termometro_georgi_zigbee_temperature') | float(25) %}
-          {% set target = states('input_number.maxtemp_notte_estate_letto') | float(25) %}
+        {% if states('input_select.clima_modalita') == 'notte' %}
+          {% set dg = (states('sensor.termometro_georgi_zigbee_temperature') | float(25)
+                       - states('input_number.maxtemp_notte_estate_letto') | float(25))
+                      if has_value('sensor.termometro_georgi_zigbee_temperature') else -99 %}
+          {% set dt = (states('sensor.termometro_tania_zigbee_temperature') | float(25)
+                       - states('input_number.maxtemp_notte_estate_tania') | float(25))
+                      if has_value('sensor.termometro_tania_zigbee_temperature') else -99 %}
+          {% set errore = [dg, dt] | max %}
         {% else %}
-          {% set t = states('sensor.hp1000se_pro_pro_v1_6_4_indoor_temperature') | float(25) %}
-          {% set target = states('input_number.maxtemp_giorno_estate_sala') | float(25) %}
+          {% set errore = states('sensor.hp1000se_pro_pro_v1_6_4_indoor_temperature') | float(25)
+                          - states('input_number.maxtemp_giorno_estate_sala') | float(25) %}
         {% endif %}
-        {{ t > (target + 0.5) }}
+        {% set latch = is_state('input_boolean.clima_pompa_latch_notte', 'on') %}
+        {{ errore > (2.0 if latch else 0.5) }}
   actions:
+    # Se si arriva qui con il latch armato significa che e' scattata la soglia
+    # di sicurezza target + 2 C: il latch va rilasciato insieme alla pompa,
+    # altrimenti i fancoil resterebbero fermi e la pompa lavorerebbe a vuoto.
+    # Il PID lo riarmera' da solo appena il target notte sara' di nuovo dentro.
+    - action: input_boolean.turn_off
+      target:
+        entity_id: input_boolean.clima_pompa_latch_notte
     - action: switch.turn_on
       target:
         entity_id: switch.panasonic_heat_pump_main_heatpump_state

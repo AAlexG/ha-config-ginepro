@@ -175,7 +175,7 @@ config:
         type: history-graph
       type: grid
     - cards:
-      - heading: MAX TEMP DA NON SUPERARE IN ESTATE
+      - heading: 'ESTATE: MAX TEMP DA NON SUPERARE '
         heading_style: title
         icon: mdi:white-balance-sunny
         type: heading
@@ -209,6 +209,14 @@ config:
         name: Georgi
         type: tile
         vertical: false
+      - entity: input_number.maxtemp_notte_estate_tania
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        name: Tania
+        type: tile
+        vertical: false
       - entity: input_number.maxtemp_notte_estate_sala
         features_position: bottom
         grid_options:
@@ -219,7 +227,7 @@ config:
         vertical: false
       type: grid
     - cards:
-      - heading: MIN TEMP DA TENERE IN INVERNO
+      - heading: 'INVERNO: MIN TEMP DA TENERE'
         heading_style: title
         icon: mdi:weather-snowy
         type: heading
@@ -251,6 +259,14 @@ config:
           columns: 6
           rows: 1
         name: Georgi
+        type: tile
+        vertical: false
+      - entity: input_number.mintemp_notte_inverno_tania
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        name: Tania
         type: tile
         vertical: false
       - entity: input_number.mintemp_notte_inverno_sala
