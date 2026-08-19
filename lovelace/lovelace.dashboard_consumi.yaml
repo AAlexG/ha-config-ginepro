@@ -244,6 +244,16 @@ config:
         name: Lavatrice totale
         type: tile
         vertical: false
+      - color: '#7E57C2'
+        entity: sensor.altri_apparecchi_oggi
+        features_position: bottom
+        grid_options:
+          columns: 3
+          rows: 1
+        icon: mdi:home-lightning-bolt-outline
+        name: Altri apparecchi oggi
+        type: tile
+        vertical: false
       - content: '{% set d = state_attr(''sensor.pv_tabella_mensile'', ''mesi'') %}
           {%
 

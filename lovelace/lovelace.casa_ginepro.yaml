@@ -740,6 +740,21 @@ config:
         show_entity_picture: false
         type: tile
         vertical: false
+      - color: '#7E57C2'
+        entity: sensor.altri_apparecchi_oggi
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        hide_state: false
+        icon: mdi:home-lightning-bolt-outline
+        icon_tap_action:
+          action: navigate
+          navigation_path: /dashboard-consumi/elettricita
+        name: Altri apparecchi
+        show_entity_picture: false
+        type: tile
+        vertical: false
       - heading: Mese
         heading_style: subtitle
         icon: ''

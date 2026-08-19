@@ -1,4 +1,4 @@
-# config_elettricita_2.yaml
+# config_elettricita_3.yaml
 # Package Casa Ginepro - Elettricita: consumi, costi, prezzo kWh, bolletta
 # Estratto da configuration_186.yaml. Nome file = nome del package.
 
@@ -113,31 +113,48 @@ template:
           {% set accisa = 0.0227 %}
           {{ ((vendita + rete + oneri + accisa) * 1.10) | round(4) }}
 
-      # ============================================================
-      # ALTRI APPARECCHI OGGI
-      # Consumo domestico non coperto da alcun contatore dedicato.
-      # Base: sensor.inverter_uflex_today_load_consumption, ossia il
-      # "CONSUMO OGGI" della card flusso energia (gia' al netto di
-      # produzione, prelievo, cessione e bilancio batteria).
-      # Sottrae i sei contatori esistenti. Il risultato e' il carico
-      # di fondo della casa: frigo, congelatore, cucina, luci,
-      # rete/Raspberry, standby.
-      # Se un contatore e' non disponibile il suo contributo vale 0 e
-      # il residuo risulta piu' alto: l'elenco delle fonti mancanti e'
-      # nell'attributo "non_disponibili".
-      # ============================================================
+  # ============================================================
+  # ALTRI APPARECCHI - consumo domestico senza contatore dedicato
+  # ------------------------------------------------------------
+  # OGGI: base sensor.inverter_uflex_today_load_consumption, ossia il
+  # "CONSUMO OGGI" della card flusso energia (gia' al netto di
+  # produzione, prelievo, cessione e bilancio batteria). Sottrae i sei
+  # contatori giornalieri esistenti. Il residuo e' il carico di fondo:
+  # frigo, congelatore, cucina, luci, rete/Raspberry, standby.
+  #
+  # Somma monotona come Deumidificatori e Fancoil: trattiene il massimo
+  # raggiunto nella giornata, cosi' un calo momentaneo di una sorgente
+  # non viene letto da HA come reset del contatore. Pavimento disattivo
+  # nei primi 10 minuti dopo mezzanotte, per lasciar passare
+  # l'azzeramento vero.
+  # ============================================================
+  - triggers:
+      - trigger: state
+        entity_id:
+          - sensor.inverter_uflex_today_load_consumption
+          - sensor.panasonic_consumata_oggi
+          - sensor.consumo_deumidificatori_oggi
+          - sensor.consumo_fancoil_totale_oggi
+          - sensor.lavatrice_energia
+          - sensor.sauna_energia_oggi
+          - sensor.auto_energia_oggi
+      - trigger: time_pattern
+        minutes: "/5"
+      - trigger: homeassistant
+        event: start
+    sensor:
       - name: "Altri Apparecchi Oggi"
         unique_id: "altri_apparecchi_oggi"
         unit_of_measurement: "kWh"
         device_class: energy
-        state_class: measurement
+        state_class: total_increasing
         icon: mdi:home-lightning-bolt-outline
         availability: >-
           {{ has_value('sensor.inverter_uflex_today_load_consumption') }}
         state: >-
           {% set casa = states('sensor.inverter_uflex_today_load_consumption') | float(0) %}
           {% set fonti = [
-               'sensor.panasonic_consumata_oggi',
+             'sensor.panasonic_consumata_oggi',
                'sensor.consumo_deumidificatori_oggi',
                'sensor.consumo_fancoil_totale_oggi',
                'sensor.lavatrice_energia',
@@ -147,18 +164,23 @@ template:
           {% for f in fonti %}
             {% set ns.tot = ns.tot + (states(f) | float(0)) %}
           {% endfor %}
-          {{ [casa - ns.tot, 0] | max | round(2) }}
+          {% set nuovo = [casa - ns.tot, 0] | max | round(2) %}
+          {% if now().hour == 0 and now().minute < 10 %}
+            {{ nuovo }}
+          {% else %}
+            {{ [nuovo, this.state | float(0)] | max | round(2) }}
+          {% endif %}
         attributes:
           consumo_casa: >-
             {{ states('sensor.inverter_uflex_today_load_consumption') | float(0) | round(2) }}
           monitorato: >-
             {% set fonti = [
-                 'sensor.panasonic_consumata_oggi',
-                 'sensor.consumo_deumidificatori_oggi',
-                 'sensor.consumo_fancoil_totale_oggi',
-                 'sensor.lavatrice_energia',
-                 'sensor.sauna_energia_oggi',
-                 'sensor.auto_energia_oggi' ] %}
+             'sensor.panasonic_consumata_oggi',
+               'sensor.consumo_deumidificatori_oggi',
+               'sensor.consumo_fancoil_totale_oggi',
+               'sensor.lavatrice_energia',
+               'sensor.sauna_energia_oggi',
+               'sensor.auto_energia_oggi' ] %}
             {% set ns = namespace(tot=0.0) %}
             {% for f in fonti %}
               {% set ns.tot = ns.tot + (states(f) | float(0)) %}
@@ -167,12 +189,12 @@ template:
           percentuale: >-
             {% set casa = states('sensor.inverter_uflex_today_load_consumption') | float(0) %}
             {% set fonti = [
-                 'sensor.panasonic_consumata_oggi',
-                 'sensor.consumo_deumidificatori_oggi',
-                 'sensor.consumo_fancoil_totale_oggi',
-                 'sensor.lavatrice_energia',
-                 'sensor.sauna_energia_oggi',
-                 'sensor.auto_energia_oggi' ] %}
+             'sensor.panasonic_consumata_oggi',
+               'sensor.consumo_deumidificatori_oggi',
+               'sensor.consumo_fancoil_totale_oggi',
+               'sensor.lavatrice_energia',
+               'sensor.sauna_energia_oggi',
+               'sensor.auto_energia_oggi' ] %}
             {% set ns = namespace(tot=0.0) %}
             {% for f in fonti %}
               {% set ns.tot = ns.tot + (states(f) | float(0)) %}
@@ -180,13 +202,67 @@ template:
             {{ (100 * ([casa - ns.tot, 0] | max) / casa) | round(0) if casa > 0 else 0 }}
           non_disponibili: >-
             {% set fonti = [
-                 'sensor.panasonic_consumata_oggi',
-                 'sensor.consumo_deumidificatori_oggi',
-                 'sensor.consumo_fancoil_totale_oggi',
-                 'sensor.lavatrice_energia',
-                 'sensor.sauna_energia_oggi',
-                 'sensor.auto_energia_oggi' ] %}
+             'sensor.panasonic_consumata_oggi',
+               'sensor.consumo_deumidificatori_oggi',
+               'sensor.consumo_fancoil_totale_oggi',
+               'sensor.lavatrice_energia',
+               'sensor.sauna_energia_oggi',
+               'sensor.auto_energia_oggi' ] %}
             {{ fonti | reject('has_value') | list | join(', ') or 'nessuna' }}
+
+  # ============================================================
+  # ALTRI APPARECCHI ORA (W)
+  # Base sensor.inverter_uflex_load_power (essential_power della card
+  # flusso). Sottrae solo cio' che e' misurato davvero in watt.
+  # I fancoil non hanno sensore di potenza: si usano le stesse costanti
+  # di targa Daikin gia' adottate per la stima giornaliera in
+  # config_clima (taglia 03 = 30 W, taglia 06 = 50 W a velocita' Low).
+  # La lavatrice Miele NON espone potenza istantanea: durante un
+  # lavaggio il suo assorbimento ricade qui dentro.
+  # ============================================================
+  - sensor:
+
+      - name: "Altri Apparecchi Ora"
+        unique_id: "altri_apparecchi_ora"
+        unit_of_measurement: "W"
+        device_class: power
+        state_class: measurement
+        icon: mdi:home-lightning-bolt-outline
+        availability: >-
+          {{ has_value('sensor.inverter_uflex_load_power') }}
+        state: >-
+          {% set casa = states('sensor.inverter_uflex_load_power') | float(0) %}
+          {% set misurati = [
+               'sensor.panasonic_potenza_consumata_calcolata',
+               'sensor.solo_auto_contattore_potenza_di_fase_a',
+               'sensor.box_deumidificatore_cantina_sonoff_power',
+               'sensor.deumidificatore_armadio_zigbee_power',
+               'sensor.solo_sauna_contatore_potenza_di_fase_a' ] %}
+          {% set ns = namespace(tot=0.0) %}
+          {% for f in misurati %}
+            {% set ns.tot = ns.tot + (states(f) | float(0)) %}
+          {% endfor %}
+          {% if is_state('switch.camerageorgi_shelly_fancoil_georgi', 'on') %}
+            {% set ns.tot = ns.tot + 30 %}
+          {% endif %}
+          {% if is_state('switch.camerageorgi_shelly_fancoil_georgi_2', 'on') %}
+            {% set ns.tot = ns.tot + 30 %}
+          {% endif %}
+          {% if is_state('switch.sala_fancoil_sala_shelly_1gen4', 'on') %}
+            {% set ns.tot = ns.tot + 50 %}
+          {% endif %}
+          {{ [casa - ns.tot, 0] | max | round(0) }}
+        attributes:
+          carico_casa: >-
+            {{ states('sensor.inverter_uflex_load_power') | float(0) | round(0) }}
+          non_disponibili: >-
+            {% set misurati = [
+                 'sensor.panasonic_potenza_consumata_calcolata',
+                 'sensor.solo_auto_contattore_potenza_di_fase_a',
+                 'sensor.box_deumidificatore_cantina_sonoff_power',
+                 'sensor.deumidificatore_armadio_zigbee_power',
+                 'sensor.solo_sauna_contatore_potenza_di_fase_a' ] %}
+            {{ misurati | reject('has_value') | list | join(', ') or 'nessuna' }}
 
   # ============================================================
   # CALDAIA: binary_sensor DHW effettivo (NUOVO – configuration_54)
@@ -298,4 +374,13 @@ utility_meter:
   rete_energia_mese:
     name: Rete Energia Mese
     source: sensor.inverter_uflex_total_energy_import
+    cycle: monthly
+
+  # --- ALTRI APPARECCHI ---
+  # Sorgente: il giornaliero monotono qui sopra, stesso schema di
+  # deumidificatori_mese (sorgente che si azzera a mezzanotte).
+  altri_apparecchi_mese:
+    name: "Altri Apparecchi Mese"
+    unique_id: altri_apparecchi_mese
+    source: sensor.altri_apparecchi_oggi
     cycle: monthly
