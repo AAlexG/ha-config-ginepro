@@ -170,7 +170,7 @@ config:
     path: elettricita
     sections:
     - cards:
-      - heading: 'Totale (solo mesi dove esistono tutti dati):'
+      - heading: 'TOTALE (solo mesi dove esistono tutti dati):'
         heading_style: subtitle
         type: heading
       - entity: input_number.elettricita_totale_rilevato_kwh
@@ -179,7 +179,7 @@ config:
           columns: 6
           rows: auto
         icon: mdi:solar-power
-        name: Totale rilevato
+        name: Rilevato
         type: tile
         vertical: false
       - entity: input_number.elettricita_totale_bollette_kwh
@@ -187,7 +187,7 @@ config:
         grid_options:
           columns: 6
           rows: auto
-        name: Totale bollette
+        name: Bollette
         type: tile
         vertical: false
       - entity: sensor.solo_auto_contattore_energia_totale
@@ -196,7 +196,7 @@ config:
           columns: 3
           rows: 1
         icon: mdi:flash-auto
-        name: Auto totale
+        name: Auto
         type: tile
         vertical: false
       - entity: sensor.solo_sauna_contatore_energia_totale
@@ -205,7 +205,7 @@ config:
           columns: 3
           rows: 1
         icon: mdi:spa-outline
-        name: Sauna totale
+        name: Sauna
         type: tile
         vertical: false
       - entity: sensor.panasonic_energia_consumata_acc_sensor
@@ -214,7 +214,7 @@ config:
           columns: 3
           rows: 1
         icon: mdi:heat-pump
-        name: Pompa totale
+        name: Pompa
         type: tile
         vertical: false
       - entity: sensor.fancoil_totale
@@ -223,7 +223,7 @@ config:
           columns: 3
           rows: 1
         icon: mdi:fan
-        name: Fancoil totale
+        name: Fancoil
         type: tile
         vertical: false
       - entity: sensor.deumidificatori_totale
@@ -232,7 +232,7 @@ config:
           columns: 3
           rows: 1
         icon: mdi:air-humidifier
-        name: Deumidif. totale
+        name: Deumidificatori
         type: tile
         vertical: false
       - entity: sensor.lavatrice_totale
@@ -241,7 +241,7 @@ config:
           columns: 3
           rows: 1
         icon: mdi:washing-machine
-        name: Lavatrice totale
+        name: Lavatrice
         type: tile
         vertical: false
       - color: '#7E57C2'
@@ -490,7 +490,7 @@ config:
           decimals: 1
           id: kwh
           opposite: true
-      - heading: 'Ultimo mese:'
+      - heading: 'ULTIMO MESE:'
         heading_style: subtitle
         type: heading
       - entity: sensor.produzione_mese
@@ -499,7 +499,7 @@ config:
           columns: 4
           rows: 1
         icon: mdi:solar-power
-        name: Produz. mese
+        name: Produzione
         type: tile
         vertical: false
       - entity: sensor.a_rete_mese
@@ -508,7 +508,7 @@ config:
           columns: 3
           rows: 1
         icon: mdi:transmission-tower-export
-        name: A rete mese
+        name: A rete
         type: tile
         vertical: false
       - entity: sensor.elettricita_mese_kwh
@@ -517,7 +517,7 @@ config:
           columns: 3
           rows: 1
         icon: mdi:transmission-tower-import
-        name: Da rete mese
+        name: Da rete kwh
         type: tile
         vertical: false
       - entity: sensor.elettricita_mese_euro
@@ -525,7 +525,7 @@ config:
         grid_options:
           columns: 3
           rows: 1
-        name: Da rete mese
+        name: Da rete euro
         type: tile
         vertical: false
       - entity: sensor.panasonic_consumata_mese
@@ -533,7 +533,7 @@ config:
         grid_options:
           columns: 3
           rows: 1
-        name: Pompa mese
+        name: Pompa
         type: tile
         vertical: false
       - entity: sensor.fancoil_mese
@@ -542,7 +542,7 @@ config:
           columns: 3
           rows: 1
         icon: mdi:fan
-        name: Fancoil mese
+        name: Fancoil
         type: tile
         vertical: false
       - entity: sensor.deumidificatori_mese
@@ -551,7 +551,7 @@ config:
           columns: 3
           rows: 1
         icon: mdi:air-humidifier
-        name: Deumidif. mese
+        name: Deumidificatori
         type: tile
         vertical: false
       - entity: sensor.lavatrice_mese
@@ -560,7 +560,7 @@ config:
           columns: 3
           rows: 1
         icon: mdi:washing-machine
-        name: Lavatrice mese
+        name: Lavatrice
         type: tile
         vertical: false
       - entity: sensor.auto_energia_mese
@@ -569,7 +569,7 @@ config:
           columns: 3
           rows: 1
         icon: mdi:flash-auto
-        name: Auto mese
+        name: Auto
         type: tile
         vertical: false
       - entity: sensor.sauna_energia_mese
@@ -578,7 +578,7 @@ config:
           columns: 3
           rows: 1
         icon: mdi:spa-outline
-        name: Sauna mese
+        name: Sauna
         type: tile
         vertical: false
       - color: '#7E57C2'
@@ -817,6 +817,8 @@ config:
           name: Auto
         - entity: sensor.sauna_energia_oggi
           name: Sauna
+        - entity: sensor.altri_apparecchi_oggi
+          name: 'Altri apparecchi '
         grid_options:
           columns: 12
           rows: auto
