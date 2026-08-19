@@ -1,4 +1,4 @@
-# config_elettricita_1.yaml
+# config_elettricita_2.yaml
 # Package Casa Ginepro - Elettricita: consumi, costi, prezzo kWh, bolletta
 # Estratto da configuration_186.yaml. Nome file = nome del package.
 
@@ -112,6 +112,81 @@ template:
           {% set oneri = 0.028657 + 0.0016380 %}
           {% set accisa = 0.0227 %}
           {{ ((vendita + rete + oneri + accisa) * 1.10) | round(4) }}
+
+      # ============================================================
+      # ALTRI APPARECCHI OGGI
+      # Consumo domestico non coperto da alcun contatore dedicato.
+      # Base: sensor.inverter_uflex_today_load_consumption, ossia il
+      # "CONSUMO OGGI" della card flusso energia (gia' al netto di
+      # produzione, prelievo, cessione e bilancio batteria).
+      # Sottrae i sei contatori esistenti. Il risultato e' il carico
+      # di fondo della casa: frigo, congelatore, cucina, luci,
+      # rete/Raspberry, standby.
+      # Se un contatore e' non disponibile il suo contributo vale 0 e
+      # il residuo risulta piu' alto: l'elenco delle fonti mancanti e'
+      # nell'attributo "non_disponibili".
+      # ============================================================
+      - name: "Altri Apparecchi Oggi"
+        unique_id: "altri_apparecchi_oggi"
+        unit_of_measurement: "kWh"
+        device_class: energy
+        state_class: measurement
+        icon: mdi:home-lightning-bolt-outline
+        availability: >-
+          {{ has_value('sensor.inverter_uflex_today_load_consumption') }}
+        state: >-
+          {% set casa = states('sensor.inverter_uflex_today_load_consumption') | float(0) %}
+          {% set fonti = [
+               'sensor.panasonic_consumata_oggi',
+               'sensor.consumo_deumidificatori_oggi',
+               'sensor.consumo_fancoil_totale_oggi',
+               'sensor.lavatrice_energia',
+               'sensor.sauna_energia_oggi',
+               'sensor.auto_energia_oggi' ] %}
+          {% set ns = namespace(tot=0.0) %}
+          {% for f in fonti %}
+            {% set ns.tot = ns.tot + (states(f) | float(0)) %}
+          {% endfor %}
+          {{ [casa - ns.tot, 0] | max | round(2) }}
+        attributes:
+          consumo_casa: >-
+            {{ states('sensor.inverter_uflex_today_load_consumption') | float(0) | round(2) }}
+          monitorato: >-
+            {% set fonti = [
+                 'sensor.panasonic_consumata_oggi',
+                 'sensor.consumo_deumidificatori_oggi',
+                 'sensor.consumo_fancoil_totale_oggi',
+                 'sensor.lavatrice_energia',
+                 'sensor.sauna_energia_oggi',
+                 'sensor.auto_energia_oggi' ] %}
+            {% set ns = namespace(tot=0.0) %}
+            {% for f in fonti %}
+              {% set ns.tot = ns.tot + (states(f) | float(0)) %}
+            {% endfor %}
+            {{ ns.tot | round(2) }}
+          percentuale: >-
+            {% set casa = states('sensor.inverter_uflex_today_load_consumption') | float(0) %}
+            {% set fonti = [
+                 'sensor.panasonic_consumata_oggi',
+                 'sensor.consumo_deumidificatori_oggi',
+                 'sensor.consumo_fancoil_totale_oggi',
+                 'sensor.lavatrice_energia',
+                 'sensor.sauna_energia_oggi',
+                 'sensor.auto_energia_oggi' ] %}
+            {% set ns = namespace(tot=0.0) %}
+            {% for f in fonti %}
+              {% set ns.tot = ns.tot + (states(f) | float(0)) %}
+            {% endfor %}
+            {{ (100 * ([casa - ns.tot, 0] | max) / casa) | round(0) if casa > 0 else 0 }}
+          non_disponibili: >-
+            {% set fonti = [
+                 'sensor.panasonic_consumata_oggi',
+                 'sensor.consumo_deumidificatori_oggi',
+                 'sensor.consumo_fancoil_totale_oggi',
+                 'sensor.lavatrice_energia',
+                 'sensor.sauna_energia_oggi',
+                 'sensor.auto_energia_oggi' ] %}
+            {{ fonti | reject('has_value') | list | join(', ') or 'nessuna' }}
 
   # ============================================================
   # CALDAIA: binary_sensor DHW effettivo (NUOVO – configuration_54)
