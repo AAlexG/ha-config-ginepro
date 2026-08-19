@@ -463,6 +463,14 @@ config:
             type: state
           type: column
           yaxis_id: kwh
+        - color: '#7E57C2'
+          entity: sensor.altri_apparecchi_oggi
+          name: Altri apparecchi
+          statistics:
+            period: day
+            type: state
+          type: column
+          yaxis_id: kwh
         type: custom:apexcharts-card
         yaxis:
         - apex_config:
@@ -571,6 +579,16 @@ config:
           rows: 1
         icon: mdi:spa-outline
         name: Sauna mese
+        type: tile
+        vertical: false
+      - color: '#7E57C2'
+        entity: sensor.altri_apparecchi_mese
+        features_position: bottom
+        grid_options:
+          columns: 3
+          rows: 1
+        icon: mdi:home-lightning-bolt-outline
+        name: Altri apparecchi mese
         type: tile
         vertical: false
       - heading: 'Risparmio fotovoltaico (storico):'
@@ -704,6 +722,14 @@ config:
           yaxis_id: kwh
         - entity: sensor.sauna_energia_oggi
           name: Sauna
+          statistics:
+            period: month
+            type: change
+          type: column
+          yaxis_id: kwh
+        - color: '#7E57C2'
+          entity: sensor.altri_apparecchi_oggi
+          name: Altri apparecchi
           statistics:
             period: month
             type: change

@@ -667,6 +667,19 @@ config:
         name: Sauna
         type: tile
         vertical: false
+      - color: '#7E57C2'
+        entity: sensor.altri_apparecchi_ora
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        icon: mdi:home-lightning-bolt-outline
+        icon_tap_action:
+          action: navigate
+          navigation_path: /dashboard-consumi/elettricita
+        name: Altri apparecchi
+        type: tile
+        vertical: false
       - heading: Oggi
         heading_style: subtitle
         icon: ''
@@ -824,6 +837,19 @@ config:
           action: navigate
           navigation_path: /dashboard-fancoil/fancoil
         name: Lavatrice
+        type: tile
+        vertical: false
+      - color: '#7E57C2'
+        entity: sensor.altri_apparecchi_mese
+        features_position: bottom
+        grid_options:
+          columns: 3
+          rows: 1
+        icon: mdi:home-lightning-bolt-outline
+        icon_tap_action:
+          action: navigate
+          navigation_path: /dashboard-consumi/elettricita
+        name: Altri apparecchi
         type: tile
         vertical: false
       - heading: Totale
