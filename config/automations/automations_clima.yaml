@@ -1,4 +1,4 @@
-# automations_clima_52.yaml
+# automations_clima_53.yaml
 
 
 
@@ -42,55 +42,98 @@
 - id: clima_inizializzazione
   alias: "Clima – Inizializzazione Valori Default"
   description: >
-    Al riavvio ripristina un default SOLO per gli helper ancora senza stato
-    (prima installazione, o restore_state fallito). Gli helper gia' valorizzati
-    non vengono toccati: le regolazioni fatte in plancia e i guadagni PID
-    sopravvivono ai riavvii di Home Assistant.
+    Applica i valori di default SOLO ai lotti non ancora applicati, tracciati da
+    input_number.clima_default_versione.
+
+    Perche' non basta controllare lo stato: un input_number appena creato non e'
+    mai 'unknown'. Senza uno stato da ripristinare Home Assistant lo posiziona
+    sul proprio 'min', quindi un helper nuovo sembra gia' configurato e un
+    controllo su unknown/unavailable non scatta mai. E' cosi' che
+    panasonic_mandata_cool_min e _max sono partiti a 10 e 12 invece che ai
+    default previsti.
+
+    Nemmeno "vale il min, quindi non e' configurato" funziona: mettere a zero un
+    guadagno o una soglia per disattivare una funzione e' una scelta legittima,
+    e verrebbe silenziosamente annullata ad ogni riavvio.
+
+    Il contatore parte da 2 perche' il suo 'min' e' 2: alla creazione vale 2,
+    cioe' "lotti 1 e 2 gia' acquisiti", e su questo impianto non viene toccato
+    nulla. Quando si aggiungono nuovi helper si accoda un lotto con numero
+    superiore: solo quelli vengono scritti, e il contatore avanza da solo.
+    Portare a mano il contatore a 0 forza la riapplicazione di tutti i default.
   triggers:
     - trigger: homeassistant
       event: start
   actions:
     - variables:
+        versione_attesa: 2
+        versione_applicata: "{{ states('input_number.clima_default_versione') | int(2) }}"
+        # Terne [lotto, entita', valore]
         valori_default:
-          input_number.clima_soglia_solare_boost: 2500
-          input_number.clima_boost_solare_delta: 2
-          input_number.clima_soglia_inverno: 13
-          input_number.panasonic_pid_kp: 2.0
-          input_number.panasonic_pid_ki: 0.05
-          input_number.panasonic_pid_kd: 1.0
-          input_number.panasonic_mandata_cool_min: 14
-          input_number.panasonic_mandata_cool_max: 18
-          input_number.maxtemp_giorno_estate_sala: 25
-          input_number.maxtemp_giorno_estate_letto: 29
-          input_number.maxtemp_notte_estate_sala: 29
-          input_number.maxtemp_notte_estate_letto: 25
-          input_number.maxtemp_notte_estate_tania: 25
-          input_number.mintemp_giorno_inverno_sala: 22
-          input_number.mintemp_giorno_inverno_letto: 20
-          input_number.mintemp_notte_inverno_sala: 20
-          input_number.mintemp_notte_inverno_letto: 22
-          input_number.mintemp_notte_inverno_tania: 22
-          input_number.clima_target_emergenza_antigelo: 15
-          input_number.panasonic_pid_heat_integrale: 0
-          input_number.panasonic_pid_heat_errore_prec: 0
-          input_number.clima_delta_naturale_base: 3
-          input_number.clima_delta_naturale_vento_bonus: 2
-          input_number.clima_soglia_vento_naturale: 6
-          input_number.clima_freeheating_setpoint_offset: 5
-          input_number.clima_freeheating_setpoint_min: 20
+          # --- Lotto 1: parametri storici del sistema clima ---
+          - [1, input_number.clima_soglia_solare_boost, 2500]
+          - [1, input_number.clima_boost_solare_delta, 2]
+          - [1, input_number.clima_soglia_inverno, 13]
+          - [1, input_number.panasonic_pid_kp, 2.0]
+          - [1, input_number.panasonic_pid_ki, 0.05]
+          - [1, input_number.panasonic_pid_kd, 0.2]
+          - [1, input_number.maxtemp_giorno_estate_sala, 25]
+          - [1, input_number.maxtemp_giorno_estate_letto, 29]
+          - [1, input_number.maxtemp_notte_estate_sala, 29]
+          - [1, input_number.maxtemp_notte_estate_letto, 25]
+          - [1, input_number.maxtemp_notte_estate_tania, 25]
+          - [1, input_number.mintemp_giorno_inverno_sala, 22]
+          - [1, input_number.mintemp_giorno_inverno_letto, 20]
+          - [1, input_number.mintemp_notte_inverno_sala, 20]
+          - [1, input_number.mintemp_notte_inverno_letto, 22]
+          - [1, input_number.mintemp_notte_inverno_tania, 22]
+          - [1, input_number.clima_target_emergenza_antigelo, 15]
+          - [1, input_number.panasonic_pid_heat_integrale, 0]
+          - [1, input_number.panasonic_pid_heat_errore_prec, 0]
+          - [1, input_number.clima_delta_naturale_base, 3]
+          - [1, input_number.clima_delta_naturale_vento_bonus, 2]
+          - [1, input_number.clima_soglia_vento_naturale, 6]
+          - [1, input_number.clima_freeheating_setpoint_offset, 5]
+          - [1, input_number.clima_freeheating_setpoint_min, 20]
+          # --- Lotto 2: limiti di mandata in raffrescamento ---
+          - [2, input_number.panasonic_mandata_cool_min, 14]
+          - [2, input_number.panasonic_mandata_cool_max, 19]
+        da_applicare: >
+          {% set ns = namespace(elenco=[]) %}
+          {% for v in valori_default %}
+            {% if v[0] | int > versione_applicata | int %}
+              {% set ns.elenco = ns.elenco + [v] %}
+            {% endif %}
+          {% endfor %}
+          {{ ns.elenco }}
     - repeat:
-        for_each: "{{ valori_default | list }}"
+        for_each: "{{ da_applicare }}"
         sequence:
-          - if:
-              - condition: template
-                value_template: >
-                  {{ states(repeat.item) in ['unknown', 'unavailable', 'none', ''] }}
-            then:
-              - action: input_number.set_value
-                target:
-                  entity_id: "{{ repeat.item }}"
-                data:
-                  value: "{{ valori_default[repeat.item] }}"
+          - action: input_number.set_value
+            target:
+              entity_id: "{{ repeat.item[1] }}"
+            data:
+              value: "{{ repeat.item[2] }}"
+    - if:
+        - condition: template
+          value_template: "{{ versione_applicata | int < versione_attesa | int }}"
+      then:
+        - action: input_number.set_value
+          target:
+            entity_id: input_number.clima_default_versione
+          data:
+            value: "{{ versione_attesa }}"
+        - if:
+            - condition: template
+              value_template: "{{ da_applicare | count > 0 }}"
+          then:
+            - action: notify.mobile_app_cph2653
+              data:
+                title: "Clima – default applicati"
+                message: >
+                  Applicati {{ da_applicare | count }} valori di default
+                  (lotti fino al {{ versione_attesa }}):
+                  {{ da_applicare | map(attribute=1) | map('replace', 'input_number.', '') | join(', ') }}.
 
 #==================================================================================
 # 3. CLIMA – MEDIA TEMPERATURA ESTERNA 7 GIORNI

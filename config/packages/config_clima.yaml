@@ -1,4 +1,4 @@
-# config_clima_4.yaml
+# config_clima_5.yaml
 # Package Casa Ginepro - Clima: fancoil, free cooling/heating, target temperatura, consumi
 # Estratto da configuration_186.yaml. Nome file = nome del package.
 
@@ -257,6 +257,24 @@ input_number:
     unit_of_measurement: "°C"
     mode: slider
     icon: mdi:snowflake-alert
+
+  # --- TRACCIAMENTO DEFAULT APPLICATI ---
+  # Contatore dei lotti di valori di default gia' scritti da
+  # clima_inizializzazione. Il 'min' e' volutamente 2, non 0: un input_number
+  # appena creato non parte da 'unknown' ma dal proprio minimo, quindi alla
+  # creazione questo contatore vale 2 = "lotti 1 e 2 gia' acquisiti" e su questo
+  # impianto non viene riscritto nulla di gia' configurato a mano.
+  # Quando si aggiungono nuovi helper si accoda in automazione un lotto 3, 4...
+  # e solo quello viene applicato. Portarlo a mano a 0 riapplica tutti i default.
+  # NON aumentare mai questo 'min': un valore salvato inferiore al minimo viene
+  # scartato al riavvio e i lotti nuovi non partirebbero piu'.
+  clima_default_versione:
+    name: "Clima – Versione Default Applicati"
+    min: 2
+    max: 99
+    step: 1
+    mode: box
+    icon: mdi:counter
 
   # --- SOGLIE SISTEMA ---
   clima_soglia_solare_boost:

@@ -302,6 +302,14 @@ config:
         name: Massima
         type: tile
         vertical: false
+      - entity: input_number.clima_default_versione
+        features_position: bottom
+        grid_options:
+          columns: 12
+          rows: 1
+        name: Versione default applicati
+        type: tile
+        vertical: false
       - entity: input_boolean.clima_autotune_attivo
         features_position: bottom
         grid_options:
