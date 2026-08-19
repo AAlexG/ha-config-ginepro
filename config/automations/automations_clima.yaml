@@ -1,4 +1,4 @@
-# automations_clima_51.yaml
+# automations_clima_52.yaml
 
 
 
@@ -58,6 +58,8 @@
           input_number.panasonic_pid_kp: 2.0
           input_number.panasonic_pid_ki: 0.05
           input_number.panasonic_pid_kd: 1.0
+          input_number.panasonic_mandata_cool_min: 14
+          input_number.panasonic_mandata_cool_max: 18
           input_number.maxtemp_giorno_estate_sala: 25
           input_number.maxtemp_giorno_estate_letto: 29
           input_number.maxtemp_notte_estate_sala: 29
@@ -624,18 +626,47 @@
             {{ delta_sala }}
           {% endif %}
         dt: 5
-        nuovo_integrale: >
-          {{ [[integrale_prec + errore * dt / 60, -8] | max, 8] | min }}
         derivativo: "{{ (errore - errore_prec) / (dt / 60) }}"
         pompa_accesa: "{{ is_state('switch.panasonic_heat_pump_main_heatpump_state', 'on') }}"
+        # --- Limiti di mandata, regolabili in plancia clima ---
+        # Il minimo NON e' piu' cablato a 10 C. Acqua troppo fredda nel circuito
+        # fancoil condensa su tubazioni e collettori non coibentati senza dare
+        # capacita' proporzionale in cambio: quando il target ambiente non e'
+        # raggiungibile con gli emettitori disponibili, il PID satura e resterebbe
+        # al minimo per ore. Il massimo e' anche la mandata a errore nullo.
+        smin: "{{ states('input_number.panasonic_mandata_cool_min') | float(14) }}"
+        smax: "{{ states('input_number.panasonic_mandata_cool_max') | float(18) }}"
+        # Boost solare: mandata piu' fredda quando il fotovoltaico produce
+        bd: >
+          {% set prod = states('sensor.inverter_uflex_pv_power') | float(0) %}
+          {% set soglia = states('input_number.clima_soglia_solare_boost') | float(2500) %}
+          {{ states('input_number.clima_boost_solare_delta') | float(2) if prod > soglia else 0 }}
+        # --- ANTI-WINDUP (integrazione condizionata) ---
+        # Si calcola prima l'uscita che si otterrebbe integrando: se e' gia'
+        # fuori dai limiti e l'errore continua a spingere nella stessa direzione,
+        # l'integrale viene congelato invece di gonfiarsi. Senza questo, a target
+        # irraggiungibile l'integrale corre fino al clamp e poi tiene la mandata
+        # al minimo anche dopo che l'ambiente e' rientrato (sovra-raffrescamento).
+        integrale_candidato: "{{ integrale_prec + errore * dt / 60 }}"
+        raw_candidato: >
+          {{ smax - (errore | float(0)) * (kp | float(2))
+                  - (integrale_candidato | float(0)) * (ki | float(0.05))
+                  - (derivativo | float(0)) * (kd | float(1)) - bd }}
+        nuovo_integrale: >
+          {% if raw_candidato < smin and errore > 0 %}
+            {{ integrale_prec }}
+          {% elif raw_candidato > smax and errore < 0 %}
+            {{ integrale_prec }}
+          {% else %}
+            {{ [[integrale_candidato, -8] | max, 8] | min }}
+          {% endif %}
         # In free cooling la pompa viene spenta da clima_freecooling_controllo:
         # non serve piu' alcun offset di "ammorbidimento" del setpoint.
         setpoint: >
-          {% set prod = states('sensor.inverter_uflex_pv_power') | float(0) %}
-          {% set soglia = states('input_number.clima_soglia_solare_boost') | float(2500) %}
-          {% set bd = states('input_number.clima_boost_solare_delta') | float(2) if prod > soglia else 0 %}
-          {% set raw = 18 - (errore | float(0)) * (kp | float(2)) - (nuovo_integrale | float(0)) * (ki | float(0.05)) - (derivativo | float(0)) * (kd | float(1)) - bd %}
-          {{ [[raw, 10] | max, 18] | min | round(0) | int }}
+          {% set raw = smax - (errore | float(0)) * (kp | float(2))
+                            - (nuovo_integrale | float(0)) * (ki | float(0.05))
+                            - (derivativo | float(0)) * (kd | float(1)) - bd %}
+          {{ [[raw, smin] | max, smax] | min | round(0) | int }}
     - choose:
         # --- TARGET RAGGIUNTO ---
         # Ferma la pompa solo se e' davvero accesa (evita di ripetere il comando
@@ -1031,19 +1062,17 @@
       data:
         title: "🔧 Autotuning PID Avviato"
         message: "Misurazione risposta sistema. Durata ~2 ore. Non modificare setpoint."
-    - variables:
-        t_iniziale: "{{ states('sensor.hp1000se_pro_pro_v1_6_4_indoor_temperature') | float(25) }}"
     - action: mqtt.publish
       data:
         topic: "panasonic_heat_pump/commands/SetZ1CoolRequestTemperature"
-        payload: "10"
+        payload: "{{ states('input_number.panasonic_mandata_cool_min') | float(14) | round(0) | int }}"
     - delay: "01:00:00"
     - variables:
         t_minima: "{{ states('sensor.hp1000se_pro_pro_v1_6_4_indoor_temperature') | float(25) }}"
     - action: mqtt.publish
       data:
         topic: "panasonic_heat_pump/commands/SetZ1CoolRequestTemperature"
-        payload: "18"
+        payload: "{{ states('input_number.panasonic_mandata_cool_max') | float(18) | round(0) | int }}"
     - delay: "01:00:00"
     - variables:
         t_massima: "{{ states('sensor.hp1000se_pro_pro_v1_6_4_indoor_temperature') | float(25) }}"
@@ -1177,15 +1206,27 @@
             {{ delta_sala }}
           {% endif %}
         dt: 5
-        nuovo_integrale: >
-          {{ [[integrale_prec + errore * dt / 60, -8] | max, 8] | min }}
         derivativo: "{{ (errore - errore_prec) / (dt / 60) }}"
         freeheating_on: "{{ is_state('input_boolean.clima_freeheating_attivo', 'on') }}"
+        fh: >
+          {{ states('input_number.clima_freeheating_setpoint_offset') | float(5) if freeheating_on else 0 }}
+        smin: >
+          {{ states('input_number.clima_freeheating_setpoint_min') | float(20) if freeheating_on else 25 }}
+        # --- ANTI-WINDUP (integrazione condizionata), speculare al cooling ---
+        integrale_candidato: "{{ integrale_prec + errore * dt / 60 }}"
+        raw_candidato: >
+          {{ 35 + (errore * kp) + (integrale_candidato * ki) + (derivativo * kd) - fh }}
+        nuovo_integrale: >
+          {% if raw_candidato > 55 and errore > 0 %}
+            {{ integrale_prec }}
+          {% elif raw_candidato < smin and errore < 0 %}
+            {{ integrale_prec }}
+          {% else %}
+            {{ [[integrale_candidato, -8] | max, 8] | min }}
+          {% endif %}
         setpoint_raw: >
-          {% set fh = states('input_number.clima_freeheating_setpoint_offset') | float(5) if freeheating_on else 0 %}
           {{ 35 + (errore * kp) + (nuovo_integrale * ki) + (derivativo * kd) - fh }}
         setpoint: >
-          {% set smin = states('input_number.clima_freeheating_setpoint_min') | float(20) if freeheating_on else 25 %}
           {{ [[setpoint_raw, smin] | max, 55] | min | round(0) | int }}
     - choose:
         - conditions:

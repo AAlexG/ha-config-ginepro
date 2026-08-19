@@ -1,4 +1,4 @@
-# config_pompa_calore_1.yaml
+# config_pompa_calore_2.yaml
 # Package Casa Ginepro - Pompa di calore Panasonic Aquarea: PID, COP, energia
 # Estratto da configuration_186.yaml. Nome file = nome del package.
 
@@ -150,6 +150,31 @@ input_number:
     step: 0.001
     mode: box
     icon: mdi:delta
+
+  # --- LIMITI DI MANDATA IN RAFFRESCAMENTO ---
+  # Sostituiscono i valori 10 e 18 che erano cablati dentro il PID cooling.
+  # Il minimo e' il vincolo di sicurezza contro la condensa: sotto ai 12-13 C
+  # tubazioni e collettori non coibentati del circuito fancoil grondano, e
+  # quando il target ambiente non e' raggiungibile con gli emettitori attivi
+  # il PID satura e ci resterebbe per ore senza guadagnare capacita' utile.
+  # Il massimo e' anche la mandata a errore nullo, da cui il PID sottrae.
+  panasonic_mandata_cool_min:
+    name: "Panasonic Mandata Minima Raffrescamento"
+    min: 10
+    max: 20
+    step: 0.5
+    unit_of_measurement: "°C"
+    mode: slider
+    icon: mdi:thermometer-chevron-down
+
+  panasonic_mandata_cool_max:
+    name: "Panasonic Mandata Massima Raffrescamento"
+    min: 12
+    max: 25
+    step: 0.5
+    unit_of_measurement: "°C"
+    mode: slider
+    icon: mdi:thermometer-chevron-up
 
   panasonic_target_mandata_manuale:
     name: "Panasonic Target Mandata Manuale"

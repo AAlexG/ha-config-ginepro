@@ -175,7 +175,7 @@ config:
         type: history-graph
       type: grid
     - cards:
-      - heading: 'ESTATE: MAX TEMP DA NON SUPERARE '
+      - heading: MAX TEMP DA NON SUPERARE IN ESTATE
         heading_style: title
         icon: mdi:white-balance-sunny
         type: heading
@@ -227,7 +227,7 @@ config:
         vertical: false
       type: grid
     - cards:
-      - heading: 'INVERNO: MIN TEMP DA TENERE'
+      - heading: MIN TEMP DA TENERE IN INVERNO
         heading_style: title
         icon: mdi:weather-snowy
         type: heading
@@ -283,6 +283,25 @@ config:
         heading_style: title
         icon: mdi:tune-vertical
         type: heading
+      - heading: Limiti mandata raffrescamento
+        heading_style: subtitle
+        type: heading
+      - entity: input_number.panasonic_mandata_cool_min
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        name: Minima
+        type: tile
+        vertical: false
+      - entity: input_number.panasonic_mandata_cool_max
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        name: Massima
+        type: tile
+        vertical: false
       - entity: input_boolean.clima_autotune_attivo
         features_position: bottom
         grid_options:
