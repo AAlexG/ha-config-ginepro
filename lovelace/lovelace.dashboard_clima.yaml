@@ -137,7 +137,7 @@ config:
         vertical: false
       - entities:
         - entity: input_number.panasonic_pid_setpoint_mandata
-          name: Target TempOut estate
+          name: Target TempOut
         - entity: sensor.panasonic_heat_pump_main_main_target_temp
           name: TempOUT ora
         grid_options:

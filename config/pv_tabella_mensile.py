@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# pv_tabella_mensile_13.py
+# pv_tabella_mensile_15.py
 # Calcola per ogni mese con produzione FV:
 #   - produzione (kWh)
 #   - autoconsumo = produzione - export (kWh)
@@ -14,11 +14,16 @@
 #   - carica batteria (kWh)
 #   - scarica batteria (kWh)
 #   - % perdita batteria = (carica - scarica) / carica * 100
+# Colonne apparecchi arrotondate a 1 decimale (v14): con gli interi le
+# utenze piccole (fancoil, lavatrice, sauna) sparivano a 0.
 # Aggiunge inoltre i consumi mensili per apparecchio (v11):
-#   pompa, fancoil, deumidificatori, lavatrice, auto, sauna
-#   piu' "altri" = consumo_tot meno le sei voci misurate (v13). Ricavato
-#   per differenza e non dal sensore altri_apparecchi_oggi, che ha
-#   statistiche solo da agosto 2026: cosi' la riga quadra su ogni mese.
+#   pompa, fancoil, deumidificatori, lavatrice, auto, sauna, altri
+# "altri" e' il valore accumulato da sensor.altri_apparecchi_oggi, letto
+# dalle statistiche come tutte le altre colonne (v15). NON piu' ricavato
+# per differenza da consumo_tot: era un calcolo, non una misura.
+# Conseguenza nota: quel sensore ha statistiche solo da agosto 2026, quindi
+# sui mesi precedenti la colonna resta vuota e la somma di riga non quadra
+# con "Totale consumi". E' il prezzo del dato misurato.
 # Il totale mensile NON viene duplicato: la tabella apparecchi legge
 # direttamente consumo_tot, la stessa chiave della tabella "Totali" (v12).
 # Prima riga = TOTALI con % ricalcolate sui totali
@@ -36,18 +41,38 @@ def get_mid(cur, statistic_id):
     return r[0] if r else None
 
 def monthly_delta(cur, mid):
+    # Delta mensile = MAX(sum) del mese - MAX(sum) del mese precedente.
+    # NON MAX(sum)-MIN(sum) dentro il mese (v14): quella formula perdeva il
+    # consumo avvenuto nella prima ora registrata del mese, che finiva in
+    # MIN(sum) e veniva usato come base invece che come consumo. Su utenze
+    # accese di rado (sauna) poteva azzerare il mese intero. Questa e' la
+    # stessa logica della statistica "change" di Home Assistant.
     if not mid:
         return {}
     rows = cur.execute("""
         SELECT strftime('%Y-%m', datetime(start_ts,'unixepoch','localtime')) AS ym,
-               MAX(sum) - MIN(sum) AS delta
+               MAX(sum) AS fine
         FROM statistics
         WHERE metadata_id=? AND sum IS NOT NULL
         GROUP BY ym
-        HAVING delta > 0
         ORDER BY ym
     """, (mid,)).fetchall()
-    return {ym: round(float(delta)) for ym, delta in rows}
+
+    out = {}
+    prec = None
+    for ym, fine in rows:
+        # Primo mese in assoluto: la base e' 0, non MIN(sum). Il campo sum
+        # delle statistiche HA parte da zero alla prima riga registrata (non
+        # dal valore del contatore), quindi MAX(sum) del primo mese e' gia'
+        # il consumo del mese. Usare MIN(sum) buttava via tutto cio' che era
+        # stato consumato nella prima ora: e' il caso della sauna a giugno
+        # 2026 (0,16 kWh invece di 2,29).
+        base = prec if prec is not None else 0.0
+        delta = float(fine) - base
+        if delta > 0:
+            out[ym] = round(delta, 1)
+        prec = float(fine)
+    return out
 
 def fmt_mese(ym):
     y, m = ym.split("-")
@@ -73,6 +98,7 @@ def main():
         mid_lavatrice = get_mid(cur, "sensor.lavatrice_energia")
         mid_auto      = get_mid(cur, "sensor.auto_energia_oggi")
         mid_sauna     = get_mid(cur, "sensor.sauna_energia_oggi")
+        mid_altri     = get_mid(cur, "sensor.altri_apparecchi_oggi")
 
         prod    = monthly_delta(cur, mid_prod)
         export  = monthly_delta(cur, mid_export)
@@ -87,6 +113,7 @@ def main():
         lavatrice = monthly_delta(cur, mid_lavatrice)
         auto      = monthly_delta(cur, mid_auto)
         sauna     = monthly_delta(cur, mid_sauna)
+        altri     = monthly_delta(cur, mid_altri)
 
         conn.close()
 
@@ -122,11 +149,7 @@ def main():
             ap_lavatrice = lavatrice.get(ym, 0.0)
             ap_auto      = auto.get(ym, 0.0)
             ap_sauna     = sauna.get(ym, 0.0)
-
-            # "Altri" per differenza: quanto resta del consumo di casa una
-            # volta tolte le sei utenze misurate singolarmente.
-            ap_altri = max(0.0, consumo_tot - (ap_pompa + ap_fancoil
-                           + ap_deumid + ap_lavatrice + ap_auto + ap_sauna))
+            ap_altri     = altri.get(ym, 0.0)
 
             t_pompa     += ap_pompa
             t_fancoil   += ap_fancoil
@@ -148,13 +171,13 @@ def main():
                 "batt_scarica":  round(bd),
                 "pct_batt_loss": pct_batt_loss,
                 # --- apparecchi (v11) ---
-                "pompa":         round(ap_pompa),
-                "fancoil":       round(ap_fancoil),
-                "deumid":        round(ap_deumid),
-                "lavatrice":     round(ap_lavatrice),
-                "auto":          round(ap_auto),
-                "sauna":         round(ap_sauna),
-                "altri":         round(ap_altri),
+                "pompa":         round(ap_pompa, 1),
+                "fancoil":       round(ap_fancoil, 1),
+                "deumid":        round(ap_deumid, 1),
+                "lavatrice":     round(ap_lavatrice, 1),
+                "auto":          round(ap_auto, 1),
+                "sauna":         round(ap_sauna, 1),
+                "altri":         round(ap_altri, 1),
             })
 
         # Riga totali con % ricalcolate sui totali
@@ -173,13 +196,13 @@ def main():
             "batt_scarica":  round(t_bd),
             "pct_batt_loss": tot_pct_batt_loss,
             # --- apparecchi (v11) ---
-            "pompa":         round(t_pompa),
-            "fancoil":       round(t_fancoil),
-            "deumid":        round(t_deumid),
-            "lavatrice":     round(t_lavatrice),
-            "auto":          round(t_eauto),
-            "sauna":         round(t_sauna),
-            "altri":         round(t_altri),
+            "pompa":         round(t_pompa, 1),
+            "fancoil":       round(t_fancoil, 1),
+            "deumid":        round(t_deumid, 1),
+            "lavatrice":     round(t_lavatrice, 1),
+            "auto":          round(t_eauto, 1),
+            "sauna":         round(t_sauna, 1),
+            "altri":         round(t_altri, 1),
         }
 
         # Totali in prima posizione, poi mesi dal più recente
