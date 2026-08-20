@@ -1,4 +1,4 @@
-# config_elettricita_5.yaml
+# config_elettricita_7.yaml
 # Package Casa Ginepro - Elettricita: consumi, costi, prezzo kWh, bolletta
 # Estratto da configuration_186.yaml. Nome file = nome del package.
 
@@ -115,8 +115,12 @@ template:
 
       # ============================================================
       # ALTRI APPARECCHI - consumo domestico senza contatore dedicato.
-      # Sottrazione secca, nessun pavimento monotono: il valore puo'
-      # salire e scendere e mostra sempre lo stato reale.
+      # Sottrazione secca, nessun pavimento monotono.
+      # state_class total_increasing (non measurement): serve perche' le
+      # statistiche a lungo termine registrino "state" e "sum", i due
+      # valori letti dai grafici kWh/gg (type: state) e kWh/mese
+      # (type: change). Con measurement HA registra solo media/min/max
+      # e le serie risultano N/A.
       # availability: tutte le sorgenti devono avere un valore, perche'
       # con '| float(0)' una sorgente mancante varrebbe zero e il
       # residuo inglobrerebbe il suo consumo.
@@ -125,7 +129,7 @@ template:
         unique_id: "altri_apparecchi_oggi"
         unit_of_measurement: "kWh"
         device_class: energy
-        state_class: measurement
+        state_class: total_increasing
         icon: mdi:home-lightning-bolt-outline
         availability: >-
           {{ has_value('sensor.inverter_uflex_today_load_consumption')
@@ -150,7 +154,7 @@ template:
         unique_id: "altri_apparecchi_mese_calc"
         unit_of_measurement: "kWh"
         device_class: energy
-        state_class: measurement
+        state_class: total_increasing
         icon: mdi:home-lightning-bolt-outline
         availability: >-
           {{ has_value('sensor.casa_consumo_mese')
@@ -172,11 +176,15 @@ template:
           consumo_casa: "{{ states('sensor.casa_consumo_mese') }}"
 
       # ============================================================
-      # ALTRI APPARECCHI ORA (W). I fancoil non hanno sensore di
-      # potenza: costanti di targa Daikin gia' usate in config_clima
-      # (taglia 03 = 30 W, taglia 06 = 50 W a velocita' Low).
+      # ALTRI APPARECCHI ORA (W). measurement e' corretto qui: e' una
+      # potenza istantanea, non un contatore.
+      # I fancoil non hanno sensore di potenza: costanti di targa Daikin
+      # gia' usate in config_clima (taglia 03 = 30 W, taglia 06 = 50 W).
       # La lavatrice Miele non espone potenza istantanea: durante un
       # lavaggio il suo assorbimento ricade qui dentro.
+      # Il contattore sauna e' alimentato solo a sauna accesa: da spenta
+      # risulta unavailable e vale 0, per questo l'availability qui e'
+      # permissiva.
       # ============================================================
       - name: "Altri Apparecchi Ora"
         unique_id: "altri_apparecchi_ora"
@@ -313,6 +321,5 @@ utility_meter:
 
   casa_consumo_mese:
     name: "Casa Consumo Mese"
-    unique_id: casa_consumo_mese
     source: sensor.inverter_uflex_total_load_consumption
     cycle: monthly

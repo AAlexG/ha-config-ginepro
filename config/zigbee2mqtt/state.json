@@ -87,7 +87,7 @@
         "battery": 100,
         "temperature": 27.6,
         "voltage": 3200,
-        "humidity": 70.6,
+        "humidity": 71.6,
         "temperature_sensor_select": "internal",
         "comfort_temperature_min": 19,
         "comfort_temperature_max": 35.2,
