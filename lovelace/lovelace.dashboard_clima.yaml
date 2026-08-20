@@ -6,7 +6,7 @@ config:
     path: clima
     sections:
     - cards:
-      - heading: STATO ATTUALE
+      - heading: STATO ATTUALE SISTEMA
         heading_style: title
         icon: mdi:thermometer-check
         type: heading
@@ -80,6 +80,12 @@ config:
         hours_to_show: 24
         refresh_interval: 60
         type: history-graph
+      type: grid
+    - cards:
+      - heading: STATO DEVICES PRINCIPALI
+        heading_style: title
+        icon: mdi:thermometer-check
+        type: heading
       - heading: Fancoil & Deumidificatori
         heading_style: title
         icon: mdi:heat-pump
@@ -175,7 +181,7 @@ config:
         type: history-graph
       type: grid
     - cards:
-      - heading: MAX TEMP DA NON SUPERARE IN ESTATE
+      - heading: 'ESTATE: MAX TEMP DA NON SUPERARE '
         heading_style: title
         icon: mdi:white-balance-sunny
         type: heading
@@ -227,7 +233,7 @@ config:
         vertical: false
       type: grid
     - cards:
-      - heading: MIN TEMP DA TENERE IN INVERNO
+      - heading: 'INVERNO: MIN TEMP DA TENERE'
         heading_style: title
         icon: mdi:weather-snowy
         type: heading
@@ -279,37 +285,10 @@ config:
         vertical: false
       type: grid
     - cards:
-      - heading: PARAMETRI PID E SISTEMA
+      - heading: PARAMETRI SISTEMA
         heading_style: title
         icon: mdi:tune-vertical
         type: heading
-      - heading: Limiti mandata raffrescamento
-        heading_style: subtitle
-        type: heading
-      - entity: input_number.panasonic_mandata_cool_min
-        features_position: bottom
-        grid_options:
-          columns: 6
-          rows: 1
-        name: Minima
-        type: tile
-        vertical: false
-      - entity: input_number.panasonic_mandata_cool_max
-        features_position: bottom
-        grid_options:
-          columns: 6
-          rows: 1
-        name: Massima
-        type: tile
-        vertical: false
-      - entity: input_boolean.clima_autotune_attivo
-        features_position: bottom
-        grid_options:
-          columns: 12
-          rows: 1
-        name: Avvia Autotuning
-        type: tile
-        vertical: false
       - heading: Free cooling naturale
         heading_style: subtitle
         type: heading
@@ -400,6 +379,39 @@ config:
           columns: 6
           rows: 1
         name: Delta Boost
+        type: tile
+        vertical: false
+      type: grid
+    - cards:
+      - heading: 'PARAMETRI PID '
+        heading_style: title
+        icon: mdi:tune-vertical
+        type: heading
+      - heading: Limiti mandata raffrescamento
+        heading_style: subtitle
+        type: heading
+      - entity: input_number.panasonic_mandata_cool_min
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        name: Minima
+        type: tile
+        vertical: false
+      - entity: input_number.panasonic_mandata_cool_max
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        name: Massima
+        type: tile
+        vertical: false
+      - entity: input_boolean.clima_autotune_attivo
+        features_position: bottom
+        grid_options:
+          columns: 12
+          rows: 1
+        name: Avvia Autotuning
         type: tile
         vertical: false
       - heading: Coefficienti PID (Cool e Heat)

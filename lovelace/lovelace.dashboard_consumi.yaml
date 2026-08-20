@@ -754,6 +754,35 @@ config:
           decimals: 1
           id: kwh
           opposite: true
+      - content: '{% set d = state_attr(''sensor.pv_tabella_mensile'', ''mesi'') %}
+          {% if d is none %} _Dati non disponibili_ {% else %} {% set mesi = d | reverse
+          | list %} <div style="overflow-x:auto;overflow-y:auto;max-height:400px;font-size:11px">
+          <table style="border-collapse:collapse;width:100%;white-space:nowrap"> <thead><tr
+          style="position:sticky;top:0;background:#1a1a2e;color:#e0e0e0"> <th style="padding:4px
+          6px;border:1px solid #444">Mese</th> <th style="padding:4px 6px;border:1px
+          solid #444">Pompa</th> <th style="padding:4px 6px;border:1px solid #444">Fancoil</th>
+          <th style="padding:4px 6px;border:1px solid #444">Deumid.</th> <th style="padding:4px
+          6px;border:1px solid #444">Lavatr.</th> <th style="padding:4px 6px;border:1px
+          solid #444">Auto</th> <th style="padding:4px 6px;border:1px solid #444">Sauna</th>
+          <th style="padding:4px 6px;border:1px solid #444">Altri</th> <th style="padding:4px
+          6px;border:1px solid #444">Totale consumi</th> </tr></thead> <tbody> {%
+          for r in mesi %} {% if loop.first or loop.last %} <tr style="font-weight:bold;background:#2a2a3e">
+          {% else %} <tr> {% endif %} <td style="padding:3px 6px;border:1px solid
+          #333">{{ r.mese }}</td> <td style="padding:3px 6px;border:1px solid #333;text-align:right">{{
+          r.get(''pompa'', 0) }}</td> <td style="padding:3px 6px;border:1px solid
+          #333;text-align:right">{{ r.get(''fancoil'', 0) }}</td> <td style="padding:3px
+          6px;border:1px solid #333;text-align:right">{{ r.get(''deumid'', 0) }}</td>
+          <td style="padding:3px 6px;border:1px solid #333;text-align:right">{{ r.get(''lavatrice'',
+          0) }}</td> <td style="padding:3px 6px;border:1px solid #333;text-align:right">{{
+          r.get(''auto'', 0) }}</td> <td style="padding:3px 6px;border:1px solid #333;text-align:right">{{
+          r.get(''sauna'', 0) }}</td> <td style="padding:3px 6px;border:1px solid
+          #333;text-align:right">{{ r.get(''altri'', 0) }}</td> <td style="padding:3px
+          6px;border:1px solid #333;text-align:right">{{ r.get(''consumo_tot'', 0)
+          }}</td> </tr> {% endfor %} </tbody></table></div> {% endif %} '
+        grid_options:
+          columns: full
+          rows: auto
+        type: markdown
       - chart_type: bar
         days_to_show: 365
         entities:

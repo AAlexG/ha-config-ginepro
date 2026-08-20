@@ -1,4 +1,4 @@
-# automations_123.yaml
+# automations_124.yaml
 #prova
 #==================================================================================
 # 1. IRRIGAZIONE – Ciclo programmato (O1/O2) con gate meteo
@@ -797,6 +797,12 @@
       hours: "/1"
   action:
     - action: shell_command.calcola_pv_tabella
+    # Il command_line sensor ha scan_interval 3600: senza questo forzamento
+    # il JSON appena riscritto resterebbe invisibile fino alla lettura
+    # successiva, con le tabelle ferme ai valori precedenti (v124).
+    - action: homeassistant.update_entity
+      data:
+        entity_id: sensor.pv_tabella_mensile
 
 
 #==================================================================================
