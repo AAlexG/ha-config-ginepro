@@ -1,4 +1,4 @@
-# automations_clima_56.yaml
+# automations_clima_57.yaml
 
 
 
@@ -203,11 +203,11 @@
 - id: clima_modalita_notte
   alias: "Clima – Modalità Notte (21:00 estate / 23:00 inverno)"
   description: >
-    In raffrescamento la notte inizia alle 21:00: dalle 21 la zona comandante
-    diventano le camere (PID, riaccensione pompa e free cooling leggono tutti
-    clima_modalita) e la sala viene abbandonata. In riscaldamento resta alle
-    23:00, perche' fino a quell'ora la sala e' occupata e deve continuare a
-    essere servita dal PID heating e dal setpoint SAT.
+    D'estate la notte inizia alle 21:00: dalle 21 la zona comandante diventano
+    le camere (PID, riaccensione pompa e free cooling leggono tutti
+    clima_modalita) e la sala viene abbandonata. D'inverno resta alle 23:00,
+    perche' fino a quell'ora la sala e' occupata e deve continuare a essere
+    servita dal PID heating e dal setpoint SAT.
     Il fancoil camera Tania NON viene piu' spento qui: nella fascia 21-23 e'
     parte del ciclo serale e lo spegne fancoil_tania_spegnimento_notte alle
     23:00.
@@ -228,26 +228,23 @@
         - condition: state
           entity_id: input_select.clima_modalita
           state: "manuale"
-    # Un solo orario e' valido per volta, in base alla stagione reale della
-    # pompa: alle 21 solo in Cool, alle 23 solo fuori da Cool.
+    # Un solo orario e' valido per volta, in base a input_select.clima_stagione.
+    # NON si usa il modo operativo della pompa: clima_commutazione_stagionale
+    # cambia clima_stagione alle 06:00 ma il modo Panasonic lo si cambia a mano,
+    # quindi nella finestra fra i due il sistema avrebbe due stagioni diverse.
+    # clima_sync_sat_target, che e' l'automazione da proteggere dall'anticipo a
+    # 21:00, si regola gia' su clima_stagione: qui si usa la stessa sorgente.
     - condition: template
       value_template: >
-        {% set cool = states('select.panasonic_heat_pump_main_operating_mode_state')
-                      in ['Cool', 'Cool only'] %}
-        {{ (trigger.id == 'estate' and cool)
-           or (trigger.id == 'inverno' and not cool) }}
+        {% set estate = is_state('input_select.clima_stagione', 'estate') %}
+        {{ (trigger.id == 'estate' and estate)
+           or (trigger.id == 'inverno' and not estate) }}
   actions:
     - action: input_select.select_option
       target:
         entity_id: input_select.clima_modalita
       data:
         option: "notte"
-    # Free cooling: non esiste di notte (v55). Spento subito qui, senza
-    # aspettare il controllo periodico, altrimenti per un massimo di 5 minuti
-    # terrebbe fermi i fancoil delle camere proprio all'avvio del ciclo serale.
-    - action: input_boolean.turn_off
-      target:
-        entity_id: input_boolean.clima_freecooling_attivo
     # Reset di tutti i blocchi manuali: ad ogni cambio giorno/notte si riparte sempre puliti
     - action: input_boolean.turn_off
       target:
@@ -844,12 +841,20 @@
   alias: "Clima – Free Cooling Naturale – Controllo Periodico"
   description: >
     Ogni 5 minuti allinea input_boolean.clima_freecooling_attivo alla condizione
-    di raffrescamento naturale. Attiva se delta < base (o < base+bonus con vento),
-    disattiva solo oltre 0.5 C di isteresi. Notifica una volta al giorno.
+    di raffrescamento naturale. Attiva se la condizione e' matura da un'ora
+    (binary_sensor.clima_condizione_free_cooling), disattiva solo oltre 0.5 C di
+    isteresi. Notifica una volta al giorno.
+    PROPRIETARIO UNICO del flag (v57): nessun'altra automazione lo scrive. Il
+    trigger sul passaggio a clima_modalita = notte serve a far girare subito
+    questo controllo alle 21:00, cosi' il flag si spegne senza attendere il
+    ciclo dei 5 minuti e senza che il flag venga scritto da fuori.
   mode: single
   triggers:
     - trigger: time_pattern
       minutes: "/5"
+    - trigger: state
+      entity_id: input_select.clima_modalita
+      to: "notte"
   actions:
     - variables:
         mode: "{{ states('select.panasonic_heat_pump_main_operating_mode_state') }}"
@@ -1475,6 +1480,12 @@
 #==================================================================================
 - id: panasonic_cooling_riaccensione
   alias: "Panasonic - Riaccensione Cooling (isteresi)"
+  description: >
+    Unica automazione che riaccende la pompa in raffrescamento. Oltre ai cambi
+    di stato dei termometri, si attiva anche allo spegnimento del flag free
+    cooling (v57): senza quel trigger, dopo la fine del free cooling la pompa
+    resterebbe ferma fino al successivo aggiornamento di un termometro, che con
+    una stanza termicamente stabile puo' tardare parecchio.
   mode: single
   triggers:
     - trigger: state
@@ -1483,6 +1494,10 @@
       entity_id: sensor.termometro_georgi_zigbee_temperature
     - trigger: state
       entity_id: sensor.termometro_tania_zigbee_temperature
+    - trigger: state
+      entity_id: input_boolean.clima_freecooling_attivo
+      from: "on"
+      to: "off"
   conditions:
     # Casa vuota: flag unico input_boolean.vacanza (v48)
     - condition: state
@@ -1827,6 +1842,7 @@
   trigger:
     - platform: state
       entity_id: input_boolean.vacanza
+      from: "on"
       to: "off"
   action:
     # Modalita' coerente con l'ora del rientro: in raffrescamento la notte
@@ -1912,6 +1928,7 @@
   trigger:
     - platform: state
       entity_id: input_boolean.vacanza
+      from: "off"
       to: "on"
   action:
     - action: climate.set_hvac_mode
@@ -2009,18 +2026,11 @@
 # flag è ora attivabile anche a mano dalla plancia clima: questa garantisce lo
 # spegnimento in ogni caso, anche con fancoil in gestione manuale.
 #==================================================================================
-- id: fancoil_spegnimento_vacanza
-  alias: "Fancoil – Spegnimento all'attivazione Vacanza"
-  mode: single
-  triggers:
-    - trigger: state
-      entity_id: input_boolean.vacanza
-      from: "off"
-      to: "on"
-  actions:
-    - action: switch.turn_off
-      target:
-        entity_id:
-          - switch.camerageorgi_shelly_fancoil_georgi
-          - switch.camerageorgi_shelly_fancoil_georgi_2
-          - switch.sala_fancoil_sala_shelly_1gen4
+# (RIMOSSA in automations_clima_57) fancoil_spegnimento_vacanza
+# Era scattata su input_boolean.vacanza off->on e spegneva i tre fancoil.
+# Dalla v55 spegnimento_inizio_vacanza ha lo stesso identico trigger e spegne
+# gli stessi tre fancoil: erano due automazioni sovrapposte. Lo standard dei
+# flag prevede una sola automazione di transizione per verso, quindi resta solo
+# spegnimento_inizio_vacanza. Tutte le altre automazioni leggono il flag e si
+# astengono, senza scriverlo.
+#==================================================================================
