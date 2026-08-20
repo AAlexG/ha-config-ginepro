@@ -310,6 +310,49 @@ config:
         name: Avvia Autotuning
         type: tile
         vertical: false
+      - heading: Free cooling naturale
+        heading_style: subtitle
+        type: heading
+      - entity: binary_sensor.clima_condizione_free_cooling
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        name: Condizione 1h
+        type: tile
+        vertical: false
+      - entity: input_boolean.clima_freecooling_attivo
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        name: Attivo
+        type: tile
+        vertical: false
+      - entity: input_number.clima_delta_naturale_base
+        features_position: bottom
+        grid_options:
+          columns: 12
+          rows: 1
+        name: Delta Base
+        type: tile
+        vertical: false
+      - entity: input_number.clima_delta_naturale_vento_bonus
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        name: Bonus Vento
+        type: tile
+        vertical: false
+      - entity: input_number.clima_soglia_vento_naturale
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        name: Soglia Vento
+        type: tile
+        vertical: false
       - heading: "Vacanze \u2013 Antigelo"
         heading_style: subtitle
         type: heading

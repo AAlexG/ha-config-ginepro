@@ -1,4 +1,4 @@
-# config_clima_6.yaml
+# config_clima_7.yaml
 # Package Casa Ginepro - Clima: fancoil, free cooling/heating, target temperatura, consumi
 # Estratto da configuration_186.yaml. Nome file = nome del package.
 
@@ -112,6 +112,43 @@ template:
 # Questo wrapper trattiene l'ultimo valore noto quando la sorgente sparisce e
 # dichiara unita' e device_class in modo esplicito. Gli azzeramenti di fine ciclo
 # restano visibili e vengono gestiti normalmente da Utility Meter.
+
+#--- CONDIZIONE FREE COOLING CON PERSISTENZA 1 ORA ---
+# Riproduce la sola condizione meteo di attivazione del free cooling (delta
+# T_esterna - target sala sotto soglia base, oppure sotto base+bonus con vento
+# medio 1h oltre la soglia vento). Il valore di questo sensore e' il "grezzo";
+# delay_on impone che resti vero per un'ora continuativa prima che il sensore
+# passi a 'on'. E' l'automazione clima_freecooling_controllo a leggerlo.
+# Serve a evitare che un abbassamento passeggero della temperatura esterna
+# fermi pompa e fancoil: il raffrescamento naturale ha senso solo se la
+# condizione e' stabile.
+# Lo spegnimento e' immediato (nessun delay_off): la disattivazione del free
+# cooling deve poter avvenire subito, ed e' comunque protetta dall'isteresi di
+# 0.5 C gia' presente nell'automazione.
+# delay_on e' un valore fisso e non un template su input_number: la resa a
+# template di delay_on non viene rivalutata al cambio delle entita' referenziate
+# (home-assistant/core issue 133512), quindi un helper qui non funzionerebbe in
+# modo affidabile. Per cambiare la durata si modifica questo file.
+# Il target di riferimento e' sempre quello della sala: dalla v55 il free
+# cooling esiste solo in modalita giorno.
+  - binary_sensor:
+
+      - name: "Clima Condizione Free Cooling"
+        unique_id: "clima_condizione_free_cooling"
+        icon: mdi:weather-windy
+        delay_on: "01:00:00"
+        availability: >
+          {{ has_value('sensor.hp1000se_pro_pro_v1_6_4_outdoor_temperature')
+             and has_value('sensor.wind_speed_media_1h') }}
+        state: >
+          {% set t_ext = states('sensor.hp1000se_pro_pro_v1_6_4_outdoor_temperature') | float(25) %}
+          {% set target = states('input_number.maxtemp_giorno_estate_sala') | float(25) %}
+          {% set vento = states('sensor.wind_speed_media_1h') | float(0) %}
+          {% set base = states('input_number.clima_delta_naturale_base') | float(3) %}
+          {% set bonus = states('input_number.clima_delta_naturale_vento_bonus') | float(2) %}
+          {% set soglia_vento = states('input_number.clima_soglia_vento_naturale') | float(6) %}
+          {% set delta = t_ext - target %}
+          {{ delta < base or (delta < (base + bonus) and vento >= soglia_vento) }}
 
 sensor:
 

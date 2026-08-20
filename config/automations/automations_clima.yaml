@@ -1,4 +1,4 @@
-# automations_clima_54.yaml
+# automations_clima_56.yaml
 
 
 
@@ -242,6 +242,12 @@
         entity_id: input_select.clima_modalita
       data:
         option: "notte"
+    # Free cooling: non esiste di notte (v55). Spento subito qui, senza
+    # aspettare il controllo periodico, altrimenti per un massimo di 5 minuti
+    # terrebbe fermi i fancoil delle camere proprio all'avvio del ciclo serale.
+    - action: input_boolean.turn_off
+      target:
+        entity_id: input_boolean.clima_freecooling_attivo
     # Reset di tutti i blocchi manuali: ad ogni cambio giorno/notte si riparte sempre puliti
     - action: input_boolean.turn_off
       target:
@@ -819,10 +825,19 @@
 # spegne la pompa di calore (i fancoil sono gli unici emettitori del circuito
 # in raffrescamento: tenerla accesa "ammorbidita" vuol dire lavorare a carico
 # nullo) e i controlli periodici fancoil leggono il flag e spengono entro
-# 5 minuti, in ogni fascia oraria (giorno, prelavoro 21-23, notte).
-# Il target usato per il delta segue clima_modalita (notte -> letto, altrimenti
-# sala). Controllo periodico (non a fronte): robusto contro riavvii, freeze
-# HeishaMon e trigger persi. Isteresi 0.5 C al posto del vecchio for: 10 min.
+# 5 minuti.
+# SOLO IN MODALITA GIORNO (v55). Il free cooling presuppone porte e finestre
+# aperte: di notte, con la casa chiusa e nessuno che possa aprire, il ricambio
+# d'aria non avviene e il flag bloccherebbe i fancoil delle camere senza che
+# nulla raffreschi davvero. All'ingresso in notte il flag viene spento da
+# clima_modalita_notte, e questo controllo lo tiene spento fino alle 07:00.
+# Il target del delta e' quindi sempre quello della sala.
+# Controllo periodico (non a fronte): robusto contro riavvii, freeze
+# HeishaMon e trigger persi. Isteresi 0.5 C sulla disattivazione.
+# PERSISTENZA (v56): l'attivazione richiede che la condizione meteo sia vera da
+# almeno un'ora continuativa. Il conteggio e' delegato a
+# binary_sensor.clima_condizione_free_cooling (delay_on 1h, config_clima_7):
+# qui si legge solo il suo stato. La disattivazione resta immediata.
 # Se il mode Panasonic e' unavailable/unknown il flag non viene toccato.
 #==================================================================================
 - id: clima_freecooling_controllo
@@ -839,16 +854,10 @@
     - variables:
         mode: "{{ states('select.panasonic_heat_pump_main_operating_mode_state') }}"
         t_ext: "{{ states('sensor.hp1000se_pro_pro_v1_6_4_outdoor_temperature') | float(25) }}"
-        # Di notte il target di riferimento e' il PIU' BASSO fra le due camere:
-        # e' quello piu' difficile da ottenere con il solo raffrescamento
-        # naturale, quindi il criterio piu' prudente.
-        target: >
-          {% if states('input_select.clima_modalita') == 'notte' %}
-            {{ [ states('input_number.maxtemp_notte_estate_letto') | float(25),
-                 states('input_number.maxtemp_notte_estate_tania') | float(25) ] | min }}
-          {% else %}
-            {{ states('input_number.maxtemp_giorno_estate_sala') | float(25) }}
-          {% endif %}
+        # Il free cooling esiste solo in modalita giorno, quindi il target di
+        # riferimento e' sempre quello della sala. Il ramo notte e' stato
+        # rimosso in v55 insieme al free cooling notturno.
+        target: "{{ states('input_number.maxtemp_giorno_estate_sala') | float(25) }}"
         vento: "{{ states('sensor.wind_speed_media_1h') | float(0) }}"
         base: "{{ states('input_number.clima_delta_naturale_base') | float(3) }}"
         bonus: "{{ states('input_number.clima_delta_naturale_vento_bonus') | float(2) }}"
@@ -857,9 +866,11 @@
         flag_on: "{{ is_state('input_boolean.clima_freecooling_attivo', 'on') }}"
         # Vacanza: nessuna attivazione né notifica; flag ripulito se acceso
         vacanza_on: "{{ is_state('input_boolean.vacanza', 'on') }}"
-        # Condizione di attivazione (soglie base)
-        cond_on: >
-          {{ delta < base or (delta < (base + bonus) and vento >= soglia_vento) }}
+        # Free cooling ammesso solo in modalita giorno (v55)
+        giorno_on: "{{ is_state('input_select.clima_modalita', 'giorno') }}"
+        # Condizione di attivazione: la soglia meteo deve essere soddisfatta da
+        # almeno un'ora continuativa. Il ritardo e' nel delay_on del sensore.
+        cond_on: "{{ is_state('binary_sensor.clima_condizione_free_cooling', 'on') }}"
         # Condizione di disattivazione: fuori soglia con margine 0.5 C di isteresi
         cond_off: >
           {{ not (delta < (base + 0.5)
@@ -868,7 +879,7 @@
         # --- ATTIVA: solo in Cool, condizione soddisfatta, flag spento ---
         - conditions:
             - condition: template
-              value_template: "{{ not vacanza_on and mode in ['Cool', 'Cool only'] and cond_on and not flag_on }}"
+              value_template: "{{ giorno_on and not vacanza_on and mode in ['Cool', 'Cool only'] and cond_on and not flag_on }}"
           sequence:
             - action: input_boolean.turn_on
               target:
@@ -917,7 +928,8 @@
             - condition: template
               value_template: >
                 {{ flag_on and
-                   (vacanza_on
+                   (not giorno_on
+                    or vacanza_on
                     or (mode in ['Cool', 'Cool only'] and cond_off)
                     or (mode not in ['Cool', 'Cool only', 'unavailable', 'unknown', 'none'])) }}
           sequence:
@@ -1802,48 +1814,33 @@
 - id: clima_ rientro_vacanza
   alias: "Clima - rientro vacanza"
   description: >
-    Alle 15:00 del giorno di fine vacanza ripristina la casa, con qualsiasi
-    temperatura: spegne il flag vacanza, modalita' clima "giorno", riattiva
-    acqua sanitaria e canto degli uccelli. Riscaldamento acceso solo se
-    T esterna < 17; in alternativa riattiva il cooling se la PdC e' in Cool.
-    Fancoil e pergola NON vengono comandati direttamente: ripartono da soli
-    dalle rispettive automazioni una volta spento il flag e tornata la
-    modalita' "giorno".
+    Parte quando input_boolean.vacanza viene spento a mano dalla plancia clima:
+    ripristina la casa con qualsiasi temperatura, riattiva acqua sanitaria e
+    canto degli uccelli. Riscaldamento acceso solo se T esterna < 17; in
+    alternativa riattiva il cooling se la PdC e' in Cool. Fancoil e pergola NON
+    vengono comandati direttamente: ripartono da soli dalle rispettive
+    automazioni una volta spento il flag.
+    Dalla v55 il trigger orario delle 15:00 con condizione sul calendario e'
+    stato eliminato: il rientro puo' avvenire a qualsiasi ora, quindi la
+    modalita' clima viene scelta in base all'ora e alla stagione invece di
+    essere forzata a "giorno".
   trigger:
-    - platform: time
-      at: "15:00:00"
-  condition:
-    - condition: template
-      value_template: >
-        {% set cal = 'calendar.aagorine_gmail_com' %}
-        {% set title = state_attr(cal, 'message') | default('') %}
-        {% set desc = state_attr(cal, 'description') | default('') %}
-        {% set end = state_attr(cal, 'end_time') %}
-
-        {% if end %}
-          {% set end_dt = strptime(end, '%Y-%m-%d %H:%M:%S') %}
-          {% set oggi = now().date() %}
-
-          {# Oggi deve essere esattamente il giorno di fine evento #}
-          {% set e_giorno_di_rientro = (end_dt.date() == oggi) %}
-
-          {# La parola chiave deve essere nel titolo o descrizione #}
-          {% set e_vacanza = 'vacanza' in (title ~ desc) | lower %}
-
-          {{ e_giorno_di_rientro and e_vacanza }}
-        {% else %}
-          false
-        {% endif %}
+    - platform: state
+      entity_id: input_boolean.vacanza
+      to: "off"
   action:
-    # Ripristini incondizionati (con qualsiasi temperatura)
-    - action: input_boolean.turn_off
-      target:
-        entity_id: input_boolean.vacanza
+    # Modalita' coerente con l'ora del rientro: in raffrescamento la notte
+    # inizia alle 21:00, in riscaldamento alle 23:00 (vedi clima_modalita_notte).
     - action: input_select.select_option
       target:
         entity_id: input_select.clima_modalita
       data:
-        option: "giorno"
+        option: >
+          {% set cool = states('select.panasonic_heat_pump_main_operating_mode_state')
+                        in ['Cool', 'Cool only'] %}
+          {% set h = now().hour %}
+          {% set inizio_notte = 21 if cool else 23 %}
+          {{ 'notte' if (h >= inizio_notte or h < 7) else 'giorno' }}
     - action: mqtt.publish
       data:
         topic: "OTGW/set/otgw-84CCA8ADE1AD/command"
@@ -1905,99 +1902,67 @@
 - id: spegnimento_inizio_vacanza
   alias: "Clima - inizio vacanza"
   description: >
-    1 ora dopo l'inizio di un evento con 'Vacanza' nel titolo
-    (durato più di 1 giorno), spegne riscaldamento (away), acqua sanitaria,
-    pompa di calore e fancoil; accende input_boolean.vacanza (flag unico che
-    blocca tutte le automazioni clima); chiude pergola
-    e tenda giardino; ferma il canto degli uccelli.
-    Il controllo sull'evento è nell'action (if/then) così il lancio manuale
-    funziona sempre; il filtro blocca solo trigger da eventi non-vacanza.
+    Parte quando input_boolean.vacanza viene acceso a mano dalla plancia clima:
+    spegne riscaldamento (away), acqua sanitaria, pompa di calore e fancoil;
+    chiude pergola e tenda giardino; ferma il canto degli uccelli.
+    Dalla v55 il trigger da calendario e' stato eliminato: il riconoscimento
+    della parola "vacanza" negli eventi non era affidabile e l'automazione
+    scattava a vuoto. Il flag e' ora l'unica sorgente di verita' e si comanda
+    solo a mano.
   trigger:
-    - platform: calendar
-      event: start
-      offset: "01:00:00"
-      entity_id: calendar.aagorine_gmail_com
+    - platform: state
+      entity_id: input_boolean.vacanza
+      to: "on"
   action:
-    - if:
-        - condition: template
-          value_template: >
-            {% set event = trigger.calendar_event | default(none) %}
-            {% if event is none or event is not mapping %}
-              true
-            {% else %}
-              {% set title = event.summary | default('') %}
-              {% set start_str = event.start | string %}
-              {% set end_str = event.end | string %}
-              {% if start_str not in ['None',''] and end_str not in ['None',''] %}
-                {% if 'T' in start_str %}
-                  {% set start_dt = strptime(start_str[:19], '%Y-%m-%dT%H:%M:%S') %}
-                  {% set end_dt   = strptime(end_str[:19],   '%Y-%m-%dT%H:%M:%S') %}
-                {% else %}
-                  {% set start_dt = strptime(start_str[:10], '%Y-%m-%d') %}
-                  {% set end_dt   = strptime(end_str[:10],   '%Y-%m-%d') %}
-                {% endif %}
-                {% set duration_days = ((end_dt - start_dt).total_seconds() / 86400) | round(1) %}
-                {{ duration_days > 1 and 'vacanza' in title | lower }}
-              {% else %}
-                false
-              {% endif %}
-            {% endif %}
-      then:
-        - action: climate.set_hvac_mode
-          target:
-            entity_id: climate.smart_autotune_thermostat_living_room
-          data:
-            hvac_mode: "off"
-        - action: climate.set_preset_mode
-          target:
-            entity_id: climate.smart_autotune_thermostat_living_room
-          data:
-            preset_mode: "away"
-        - action: mqtt.publish
-          data:
-            topic: "OTGW/set/otgw-84CCA8ADE1AD/command"
-            payload: "HW=0"
-        # Flag unico casa vuota: attivato PRIMA di spegnere, così nessuna
-        # automazione può riaccendere pompa o fancoil nel frattempo (v48)
-        - action: input_boolean.turn_on
-          target:
-            entity_id: input_boolean.vacanza
-        - action: switch.turn_off
-          target:
-            entity_id: switch.panasonic_heat_pump_main_heatpump_state
-        # Spegni tutti i fancoil (camera + sala), sempre, anche se in gestione manuale
-        - action: switch.turn_off
-          target:
-            entity_id:
-              - switch.camerageorgi_shelly_fancoil_georgi
-              - switch.camerageorgi_shelly_fancoil_georgi_2
-              - switch.sala_fancoil_sala_shelly_1gen4
-        # Pulizia flag pergola (il blocco manuale non deve sopravvivere alla partenza)
-        - action: input_boolean.turn_off
-          target:
-            entity_id:
-              - input_boolean.pergola_blocco_manuale
-              - input_boolean.pergola_meteo_chiusura
-              # Stato logico tenda giardino: chiusa (v40)
-              - input_boolean.tenda_giardino_aperta
-        # Chiusura pergola e tenda giardino
-        - action: cover.close_cover
-          target:
-            entity_id:
-              - cover.terrazzo_pergola_terrazza
-              - cover.all_house_tenda_terrazzo
-        # Stop canto uccelli (la Yamaha andra' in auto-standby dopo 8h: voluto)
-        - action: media_player.media_stop
-          target:
-            entity_id: media_player.googlehome8851
-        - action: notify.mobile_app_cph2653
-          data:
-            title: "✈️ Vacanza iniziata"
-            message: >
-              Riscaldamento away, acqua sanitaria spenta, pompa di calore spenta,
-              fancoil spenti, pergola e tenda giardino chiuse, canto uccelli fermato.
-              Evento: {{ state_attr('calendar.aagorine_gmail_com', 'message') }}
-              Buona vacanza!
+    - action: climate.set_hvac_mode
+      target:
+        entity_id: climate.smart_autotune_thermostat_living_room
+      data:
+        hvac_mode: "off"
+    - action: climate.set_preset_mode
+      target:
+        entity_id: climate.smart_autotune_thermostat_living_room
+      data:
+        preset_mode: "away"
+    - action: mqtt.publish
+      data:
+        topic: "OTGW/set/otgw-84CCA8ADE1AD/command"
+        payload: "HW=0"
+    - action: switch.turn_off
+      target:
+        entity_id: switch.panasonic_heat_pump_main_heatpump_state
+    # Spegni tutti i fancoil (camera + sala), sempre, anche se in gestione manuale
+    - action: switch.turn_off
+      target:
+        entity_id:
+          - switch.camerageorgi_shelly_fancoil_georgi
+          - switch.camerageorgi_shelly_fancoil_georgi_2
+          - switch.sala_fancoil_sala_shelly_1gen4
+    # Pulizia flag pergola (il blocco manuale non deve sopravvivere alla partenza)
+    - action: input_boolean.turn_off
+      target:
+        entity_id:
+          - input_boolean.pergola_blocco_manuale
+          - input_boolean.pergola_meteo_chiusura
+          # Stato logico tenda giardino: chiusa (v40)
+          - input_boolean.tenda_giardino_aperta
+    # Chiusura pergola e tenda giardino
+    - action: cover.close_cover
+      target:
+        entity_id:
+          - cover.terrazzo_pergola_terrazza
+          - cover.all_house_tenda_terrazzo
+    # Stop canto uccelli (la Yamaha andra' in auto-standby dopo 8h: voluto)
+    - action: media_player.media_stop
+      target:
+        entity_id: media_player.googlehome8851
+    - action: notify.mobile_app_cph2653
+      data:
+        title: "✈️ Vacanza iniziata"
+        message: >
+          Riscaldamento away, acqua sanitaria spenta, pompa di calore spenta,
+          fancoil spenti, pergola e tenda giardino chiuse, canto uccelli fermato.
+          Buona vacanza!
 #==================================================================================
 # 27. CALDAIA - OTGW – PRESSIONE CIRCUITO CH FUORI RANGE
 #
@@ -2040,7 +2005,7 @@
 
 #==================================================================================
 # 28. FANCOIL – SPEGNIMENTO IMMEDIATO ALL'ATTIVAZIONE VACANZA
-# L'automazione di partenza vacanza (calendario) spegne già i fancoil, ma il
+# L'automazione di partenza vacanza (flag manuale) spegne già i fancoil, ma il
 # flag è ora attivabile anche a mano dalla plancia clima: questa garantisce lo
 # spegnimento in ogni caso, anche con fancoil in gestione manuale.
 #==================================================================================

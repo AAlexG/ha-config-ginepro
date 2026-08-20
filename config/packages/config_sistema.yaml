@@ -1,4 +1,4 @@
-# config_sistema_3.yaml
+# config_sistema_4.yaml
 # Package Casa Ginepro - Sistema: monitoraggio Raspberry, shell_command, bollette, vacanza
 # Estratto da configuration_186.yaml. Nome file = nome del package.
 
@@ -66,9 +66,14 @@ shell_command:
 input_boolean:
 
   # --- FLAG VACANZA ---
-  # Acceso da spegnimento_inizio_vacanza (analisi calendario), spento da riscaldamento_rientro_vacanza.
+  # Comandato SOLO A MANO dalla plancia clima: dalla v55 delle automazioni
+  # clima il calendario non c'entra piu' nulla. Accendendolo parte
+  # spegnimento_inizio_vacanza, spegnendolo parte clima_ rientro_vacanza.
+  # Il riconoscimento della parola "vacanza" negli eventi del calendario non
+  # era affidabile ed e' stato eliminato.
   # Con flag acceso restano ferme: pergola, tenda giardino, canto uccelli
-  # (fancoil gia' coperti da clima_modalita = assenza).
+  # (i fancoil vengono spenti da spegnimento_inizio_vacanza e restano fermi
+  # perche' tutte le automazioni fancoil hanno il flag fra le condizioni).
   # Girano comunque: sicurezza, deumidificatori, irrigazione, antigelo, notifiche, sistema.
   # NOTA: niente "initial" di proposito - lo stato deve sopravvivere a un riavvio di HA in vacanza.
   vacanza:
