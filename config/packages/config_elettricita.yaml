@@ -1,4 +1,4 @@
-# config_elettricita_9.yaml
+# config_elettricita_10.yaml
 # Package Casa Ginepro - Elettricita: consumi, costi, prezzo kWh, bolletta
 # Estratto da configuration_186.yaml. Nome file = nome del package.
 
@@ -300,6 +300,11 @@ utility_meter:
   # nessun disallineamento fra contatori nati in momenti diversi.
   altri_apparecchi_mese:
     name: "Altri Apparecchi Mese"
-    unique_id: altri_apparecchi_mese
+    # unique_id nuovo di proposito: il vecchio misuratore (ora rinominato
+    # sensor.altri_apparecchi e disabilitato) occupa gia' la chiave
+    # altri_apparecchi_mese_single_tariff, che HA genererebbe da
+    # "altri_apparecchi_mese". Riusandola, il nuovo contatore erediterebbe
+    # quella voce di registro, nome vecchio e stato disabilitato inclusi.
+    unique_id: altri_apparecchi_mese_um
     source: sensor.altri_apparecchi_oggi
     cycle: monthly
