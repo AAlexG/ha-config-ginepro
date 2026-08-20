@@ -684,18 +684,6 @@ config:
         heading_style: subtitle
         icon: ''
         type: heading
-      - entity: sensor.sauna_energia_oggi
-        features_position: bottom
-        grid_options:
-          columns: 4
-          rows: 1
-        icon: mdi:spa-outline
-        icon_tap_action:
-          action: navigate
-          navigation_path: /dashboard-fancoil
-        name: Sauna
-        type: tile
-        vertical: false
       - entity: sensor.panasonic_consumata_oggi
         features_position: bottom
         grid_options:
@@ -751,6 +739,18 @@ config:
           navigation_path: /dashboard-fancoil
         name: Lavatrice
         show_entity_picture: false
+        type: tile
+        vertical: false
+      - entity: sensor.sauna_energia_oggi
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        icon: mdi:spa-outline
+        icon_tap_action:
+          action: navigate
+          navigation_path: /dashboard-fancoil
+        name: Sauna
         type: tile
         vertical: false
       - color: '#7E57C2'
@@ -828,6 +828,30 @@ config:
         name: Auto
         type: tile
         vertical: false
+      - entity: sensor.fancoil_mese
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        hide_state: false
+        icon_tap_action:
+          action: navigate
+          navigation_path: /dashboard-fancoil/fancoil
+        name: Fancoil
+        show_entity_picture: false
+        type: tile
+        vertical: false
+      - entity: sensor.deumidificatori_mese
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: auto
+        icon_tap_action:
+          action: navigate
+          navigation_path: /dashboard-fancoil/fancoil
+        name: Deumidif.
+        type: tile
+        vertical: false
       - entity: sensor.lavatrice_mese
         features_position: bottom
         grid_options:
@@ -839,8 +863,20 @@ config:
         name: Lavatrice
         type: tile
         vertical: false
+      - entity: sensor.sauna_energia_mese
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        icon: mdi:spa-outline
+        icon_tap_action:
+          action: navigate
+          navigation_path: /dashboard-fancoil
+        name: Sauna
+        type: tile
+        vertical: false
       - color: '#7E57C2'
-        entity: sensor.altri_apparecchi_mese
+        entity: sensor.altri_apparecchi_mese_2
         features_position: bottom
         grid_options:
           columns: 3

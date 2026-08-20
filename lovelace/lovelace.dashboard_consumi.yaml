@@ -582,7 +582,7 @@ config:
         type: tile
         vertical: false
       - color: '#7E57C2'
-        entity: sensor.altri_apparecchi_mese
+        entity: sensor.altri_apparecchi_mese_2
         features_position: bottom
         grid_options:
           columns: 3

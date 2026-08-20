@@ -1,4 +1,4 @@
-# config_clima_5.yaml
+# config_clima_6.yaml
 # Package Casa Ginepro - Clima: fancoil, free cooling/heating, target temperatura, consumi
 # Estratto da configuration_186.yaml. Nome file = nome del package.
 
@@ -406,10 +406,10 @@ input_boolean:
     initial: false
     icon: mdi:solar-power
 
-  clima_preraffrescamento_attivo:
-    name: "Clima Pre-raffrescamento Attivo"
-    initial: false
-    icon: mdi:thermometer-chevron-down
+  # clima_preraffrescamento_attivo rimosso in config_clima_6: l'automazione
+  # clima_preraffrescamento_meteo che lo accendeva e' stata eliminata in
+  # automations_clima_54. Il pre-raffrescamento serale e' ora la modalita notte
+  # anticipata alle 21:00, gestita da input_select.clima_modalita.
 
   clima_autotune_attivo:
     name: "Clima Autotuning Attivo"

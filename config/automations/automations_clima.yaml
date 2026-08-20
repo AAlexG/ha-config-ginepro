@@ -1,4 +1,4 @@
-# automations_clima_53.yaml
+# automations_clima_54.yaml
 
 
 
@@ -201,10 +201,23 @@
           - input_boolean.clima_pompa_latch_notte
 
 - id: clima_modalita_notte
-  alias: "Clima – Modalità Notte (23:00)"
+  alias: "Clima – Modalità Notte (21:00 estate / 23:00 inverno)"
+  description: >
+    In raffrescamento la notte inizia alle 21:00: dalle 21 la zona comandante
+    diventano le camere (PID, riaccensione pompa e free cooling leggono tutti
+    clima_modalita) e la sala viene abbandonata. In riscaldamento resta alle
+    23:00, perche' fino a quell'ora la sala e' occupata e deve continuare a
+    essere servita dal PID heating e dal setpoint SAT.
+    Il fancoil camera Tania NON viene piu' spento qui: nella fascia 21-23 e'
+    parte del ciclo serale e lo spegne fancoil_tania_spegnimento_notte alle
+    23:00.
   triggers:
     - trigger: time
+      at: "21:00:00"
+      id: "estate"
+    - trigger: time
       at: "23:00:00"
+      id: "inverno"
   conditions:
     # Casa vuota: flag unico input_boolean.vacanza (v48)
     - condition: state
@@ -215,18 +228,20 @@
         - condition: state
           entity_id: input_select.clima_modalita
           state: "manuale"
+    # Un solo orario e' valido per volta, in base alla stagione reale della
+    # pompa: alle 21 solo in Cool, alle 23 solo fuori da Cool.
+    - condition: template
+      value_template: >
+        {% set cool = states('select.panasonic_heat_pump_main_operating_mode_state')
+                      in ['Cool', 'Cool only'] %}
+        {{ (trigger.id == 'estate' and cool)
+           or (trigger.id == 'inverno' and not cool) }}
   actions:
     - action: input_select.select_option
       target:
         entity_id: input_select.clima_modalita
       data:
         option: "notte"
-    # Alle 23:00 spegni il fancoil camera Tania (attivo solo nel prelavoro
-    # 21-23), sempre, senza flag. Il fancoil camera Georgi resta acceso tutta
-    # la notte fino alle 07:00.
-    - action: switch.turn_off
-      target:
-        entity_id: switch.camerageorgi_shelly_fancoil_georgi
     # Reset di tutti i blocchi manuali: ad ogni cambio giorno/notte si riparte sempre puliti
     - action: input_boolean.turn_off
       target:
@@ -424,7 +439,7 @@
   alias: "Fancoil Sala – Accendi (fuori target)"
   description: >
     Accende il fancoil sala appena T_sala esce dal target E l'acqua e ancora
-    efficace. Attivo 07:00-23:00.
+    efficace. Attivo solo in modalita giorno.
   triggers:
     - trigger: numeric_state
       entity_id: sensor.hp1000se_pro_pro_v1_6_4_indoor_temperature
@@ -439,14 +454,13 @@
     - condition: state
       entity_id: input_boolean.vacanza
       state: "off"
-    - condition: time
-      after: "07:00:00"
-      before: "23:00:00"
-    - condition: not
-      conditions:
-        - condition: state
-          entity_id: input_select.clima_modalita
-          state: "manuale"
+    # La sala e' servita solo in modalita giorno. Sostituisce la vecchia
+    # finestra oraria 07:00-23:00: cosi' l'orario di fine e' uno solo, quello
+    # del passaggio a notte (21:00 in estate, 23:00 in inverno), e non c'e' un
+    # secondo orologio da tenere allineato. "giorno" esclude gia' "manuale".
+    - condition: state
+      entity_id: input_select.clima_modalita
+      state: "giorno"
     - condition: state
       entity_id: switch.sala_fancoil_sala_shelly_1gen4
       state: "off"
@@ -481,7 +495,7 @@
   alias: "Fancoil Sala – Spegni (target raggiunto 10 min)"
   description: >
     Spegne il fancoil sala se T_sala e rientrata nel target per 10 minuti
-    consecutivi. Attivo 07:00-23:00.
+    consecutivi. Attivo solo in modalita giorno.
   triggers:
     - trigger: numeric_state
       entity_id: sensor.hp1000se_pro_pro_v1_6_4_indoor_temperature
@@ -496,9 +510,9 @@
         minutes: 10
       id: "inverno"
   conditions:
-    - condition: time
-      after: "07:00:00"
-      before: "23:00:00"
+    - condition: state
+      entity_id: input_select.clima_modalita
+      state: "giorno"
     - condition: state
       entity_id: switch.sala_fancoil_sala_shelly_1gen4
       state: "on"
@@ -526,7 +540,7 @@
   description: >
     Ogni 5 minuti verifica e corregge lo stato del fancoil sala in base a
     T_sala vs target giorno e outlet_temp. Rete di sicurezza per riallineare
-    lo stato dopo riavvii o eventi mancati. Attivo 07:00-23:00.
+    lo stato dopo riavvii o eventi mancati. Attivo solo in modalita giorno.
   mode: single
   triggers:
     - trigger: time_pattern
@@ -536,14 +550,10 @@
     - condition: state
       entity_id: input_boolean.vacanza
       state: "off"
-    - condition: not
-      conditions:
-        - condition: state
-          entity_id: input_select.clima_modalita
-          state: "manuale"
-    - condition: time
-      after: "07:00:00"
-      before: "23:00:00"
+    # La sala e' servita solo in modalita giorno (vedi fancoil_sala_accendi).
+    - condition: state
+      entity_id: input_select.clima_modalita
+      state: "giorno"
     - condition: state
       entity_id: input_boolean.fancoil_sala_manuale
       state: "off"
@@ -592,14 +602,39 @@
 # Garanzia di spegnimento anche se le altre automazioni hanno perso un evento.
 #==================================================================================
 - id: fancoil_sala_spegnimento_notte
-  alias: "Fancoil Sala – Spegnimento Notte (23:00)"
+  alias: "Fancoil Sala – Spegnimento all'ingresso in Notte"
+  description: >
+    Spegne il fancoil sala quando clima_modalita passa a notte (21:00 in
+    estate, 23:00 in inverno). Il secondo trigger alle 23:00 e' la rete di
+    sicurezza: garantisce lo spegnimento anche se il cambio di stato e' andato
+    perso (riavvio HA, modalita' forzata a mano).
   triggers:
+    - trigger: state
+      entity_id: input_select.clima_modalita
+      to: "notte"
     - trigger: time
       at: "23:00:00"
   actions:
     - action: switch.turn_off
       target:
         entity_id: switch.sala_fancoil_sala_shelly_1gen4
+
+#==================================================================================
+# 6f. FANCOIL CAMERA TANIA – SPEGNIMENTO ALLE 23:00
+# Camera Tania partecipa solo al ciclo serale 21-23. Alle 23:00 il suo fancoil
+# si spegne e resta spento per tutta la notte: da quell'ora il controllo
+# periodico gestisce la sola camera Georgi.
+# Mappatura switch: ..._fancoil_georgi -> camera TANIA (nome entita' storico).
+#==================================================================================
+- id: fancoil_tania_spegnimento_notte
+  alias: "Fancoil Tania – Spegnimento Notte (23:00)"
+  triggers:
+    - trigger: time
+      at: "23:00:00"
+  actions:
+    - action: switch.turn_off
+      target:
+        entity_id: switch.camerageorgi_shelly_fancoil_georgi
 
 
 #==================================================================================
@@ -726,9 +761,16 @@
                 - action: switch.turn_off
                   target:
                     entity_id: switch.panasonic_heat_pump_main_heatpump_state
+            # Il latch si arma solo dalle 23:00 in poi. Nella fascia serale
+            # 21-23 la modalita e' gia' "notte" ma il ciclo di raffrescamento
+            # delle camere e' ancora in corso: alzare la soglia di riaccensione
+            # a +2.0 C lascerebbe una camera calda proprio all'ora di coricarsi.
+            # Fino alle 23 vale l'isteresi normale a +0.5 C.
             - if:
                 - condition: template
-                  value_template: "{{ mod == 'notte' }}"
+                  value_template: >
+                    {{ mod == 'notte'
+                       and (now().hour >= 23 or now().hour < 7) }}
               then:
                 - action: input_boolean.turn_on
                   target:
@@ -922,56 +964,19 @@
         entity_id: input_boolean.clima_freecooling_finestre
 
 #==================================================================================
-# 8. PANASONIC - CLIMA – PRE-RAFFRESCAMENTO DA PREVISIONI METEO
+# 8. (LIBERO) - la vecchia automazione clima_preraffrescamento_meteo e' stata
+# rimossa in automations_clima_54.
+# Motivo: abbassava di 1 C il target sala alle 07:30/10:00 se la previsione
+# superava i 30 C. Due problemi. Primo, la condizione usava
+# state_attr('weather.casa', 'forecast'): quell'attributo e' stato rimosso da
+# Home Assistant 2024.4, quindi il template cadeva sempre sul ramo "false" e
+# l'automazione non e' mai partita da sola. Secondo, e piu' importante, il
+# pre-raffrescamento serale e' ora la modalita notte anticipata alle 21:00:
+# la zona comandante diventa le camere e il target su cui lavorano pompa e
+# fancoil e' gia' quello notte, quindi non resta nulla da anticipare.
+# Rimosso con l'automazione anche l'helper input_boolean.clima_preraffrescamento_attivo
+# (config_clima_6).
 #==================================================================================
-- id: clima_preraffrescamento_meteo
-  alias: "Clima – Pre-raffrescamento Meteo"
-  description: "Anticipa raffrescamento se previsto caldo nelle prossime ore"
-  triggers:
-    - trigger: time
-      at: "07:30:00"
-    - trigger: time
-      at: "10:00:00"
-  conditions:
-    - condition: state
-      entity_id: switch.panasonic_heat_pump_main_heatpump_state
-      state: "on"
-    - condition: template
-      value_template: >
-        {{ states('select.panasonic_heat_pump_main_operating_mode_state')
-           in ['Cool', 'Cool only'] }}
-    - condition: template
-      value_template: >
-        {% set t_prev = state_attr('weather.casa', 'forecast') %}
-        {% if t_prev and t_prev | length > 0 %}
-          {{ t_prev[0].temperature | float(0) > 30 }}
-        {% else %}
-          false
-        {% endif %}
-  mode: single
-  actions:
-    # Abbassa di 1 C il target realmente usato da PID e fancoil sala
-    # (maxtemp_giorno_estate_sala) e lo ripristina al valore che aveva prima,
-    # non a una costante: le regolazioni fatte in plancia non vengono perse.
-    - variables:
-        target_originale: "{{ states('input_number.maxtemp_giorno_estate_sala') | float(25) }}"
-    - action: input_boolean.turn_on
-      target:
-        entity_id: input_boolean.clima_preraffrescamento_attivo
-    - action: input_number.set_value
-      target:
-        entity_id: input_number.maxtemp_giorno_estate_sala
-      data:
-        value: "{{ (target_originale - 1) | round(1) }}"
-    - delay: "02:00:00"
-    - action: input_boolean.turn_off
-      target:
-        entity_id: input_boolean.clima_preraffrescamento_attivo
-    - action: input_number.set_value
-      target:
-        entity_id: input_number.maxtemp_giorno_estate_sala
-      data:
-        value: "{{ target_originale }}"
 
 #==================================================================================
 # 9. PANASONIC - CLIMA – COMMUTAZIONE STAGIONALE AUTOMATICA
