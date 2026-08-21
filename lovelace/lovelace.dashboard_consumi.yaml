@@ -1,176 +1,14 @@
 config:
   views:
-  - header:
-      card:
-        content: "CONSUMI \u2013 Gas"
-        text_only: true
-        type: markdown
-    path: gas
-    sections:
-    - cards:
-      - heading: 'Totale (solo mesi dove esistono tutti dati):'
-        heading_style: subtitle
-        type: heading
-      - entity: input_number.gas_totale_rilevato_mc
-        features_position: bottom
-        grid_options:
-          columns: 6
-          rows: auto
-        name: Totale rilevato
-        type: tile
-        vertical: false
-      - entity: input_number.gas_totale_bollette_mc
-        features_position: bottom
-        grid_options:
-          columns: 6
-          rows: auto
-        name: Totale bollette
-        type: tile
-        vertical: false
-      - heading: 'Ultimo mese:'
-        heading_style: subtitle
-        type: heading
-      - entity: sensor.gas_mese_mc
-        features_position: bottom
-        grid_options:
-          columns: 6
-          rows: 1
-        name: Gas mese
-        type: tile
-        vertical: false
-      - entity: sensor.gas_mese_euro
-        features_position: bottom
-        grid_options:
-          columns: 3
-          rows: 1
-        name: "Gas mese \u20AC"
-        type: tile
-        vertical: false
-      - heading: 'Oggi:'
-        heading_style: subtitle
-        type: heading
-      - entity: sensor.gas_oggi_mc
-        features:
-        - type: trend-graph
-        features_position: bottom
-        grid_options:
-          columns: 3
-          rows: 1
-        name: Gas oggi
-        type: tile
-        vertical: false
-      - entity: sensor.gas_oggi_euro
-        features_position: bottom
-        grid_options:
-          columns: 3
-          rows: 1
-        name: "Gas oggi \u20AC"
-        type: tile
-        vertical: false
-      - graph_span: 30d
-        grid_options:
-          columns: 12
-          rows: auto
-        header:
-          show: true
-          title: "Gas, m\xB3 e Euro/gg"
-        series:
-        - entity: sensor.gas_oggi_mc
-          name: "m\xB3 oggi"
-          statistics:
-            period: day
-            type: max
-          type: column
-          yaxis_id: mc
-        - entity: sensor.gas_oggi_euro
-          name: Euro oggi
-          statistics:
-            period: day
-            type: max
-          type: column
-          yaxis_id: euro
-        type: custom:apexcharts-card
-        yaxis:
-        - apex_config:
-            title:
-              text: "m\xB3"
-          decimals: 2
-          id: mc
-        - apex_config:
-            title:
-              text: Euro
-          decimals: 2
-          id: euro
-          opposite: true
-      - chart_type: bar
-        days_to_show: 365
-        entities:
-        - entity: sensor.gas_mese_mc
-          name: "m\xB3 rilevato"
-        - entity: input_number.bolletta_gas_mc
-          name: "m\xB3 bolletta"
-        grid_options:
-          columns: 12
-          rows: auto
-        period: month
-        stat_types:
-        - max
-        title: "Gas, m\xB3/mese"
-        type: statistics-graph
-      - chart_type: bar
-        days_to_show: 365
-        entities:
-        - entity: sensor.gas_mese_euro
-          name: "\u20AC rilevato"
-        - entity: input_number.bolletta_gas_euro
-          name: "\u20AC bolletta"
-        grid_options:
-          columns: 12
-          rows: auto
-        period: month
-        stat_types:
-        - max
-        title: Gas, Euro/mese
-        type: statistics-graph
-      - chart_type: bar
-        days_to_show: 730
-        entities:
-        - entity: sensor.gas_mese_mc
-          name: "m\xB3 rilevato"
-        - entity: input_number.bolletta_gas_mc
-          name: "m\xB3 bolletta"
-        grid_options:
-          columns: 12
-          rows: auto
-        period: year
-        stat_types:
-        - max
-        title: "Gas, m\xB3/anno"
-        type: statistics-graph
-      - entity: input_number.gas_prezzo_mc
-        grid_options:
-          columns: 6
-          rows: 2
-        name: "Prezzo a consumo (1 m\xB3)"
-        type: entity
-      - entity: input_number.gas_quota_fissa_mese
-        grid_options:
-          columns: 6
-          rows: 2
-        name: Quota fissa mensile
-        type: entity
-      type: grid
-    title: Gas
-    type: sections
-  - header:
-      card:
-        content: "CONSUMI \u2013 Elettricit\xE0"
-        text_only: true
-        type: markdown
+  - cards: []
+    header: {}
     path: elettricita
     sections:
     - cards:
-      - heading: 'TOTALE (solo mesi dove esistono tutti dati):'
+      - heading: TOTALI
+        heading_style: title
+        type: heading
+      - heading: 'DA SEMPRE (solo mesi dove esistono rilevato e bolette):'
         heading_style: subtitle
         type: heading
       - entity: input_number.elettricita_totale_rilevato_kwh
@@ -190,70 +28,9 @@ config:
         name: Bollette
         type: tile
         vertical: false
-      - entity: sensor.solo_auto_contattore_energia_totale
-        features_position: bottom
-        grid_options:
-          columns: 3
-          rows: 1
-        icon: mdi:flash-auto
-        name: Auto
-        type: tile
-        vertical: false
-      - entity: sensor.solo_sauna_contatore_energia_totale
-        features_position: bottom
-        grid_options:
-          columns: 3
-          rows: 1
-        icon: mdi:spa-outline
-        name: Sauna
-        type: tile
-        vertical: false
-      - entity: sensor.panasonic_energia_consumata_acc_sensor
-        features_position: bottom
-        grid_options:
-          columns: 3
-          rows: 1
-        icon: mdi:heat-pump
-        name: Pompa
-        type: tile
-        vertical: false
-      - entity: sensor.fancoil_totale
-        features_position: bottom
-        grid_options:
-          columns: 3
-          rows: 1
-        icon: mdi:fan
-        name: Fancoil
-        type: tile
-        vertical: false
-      - entity: sensor.deumidificatori_totale
-        features_position: bottom
-        grid_options:
-          columns: 3
-          rows: 1
-        icon: mdi:air-humidifier
-        name: Deumidificatori
-        type: tile
-        vertical: false
-      - entity: sensor.lavatrice_totale
-        features_position: bottom
-        grid_options:
-          columns: 3
-          rows: 1
-        icon: mdi:washing-machine
-        name: Lavatrice
-        type: tile
-        vertical: false
-      - color: '#7E57C2'
-        entity: sensor.altri_apparecchi_oggi
-        features_position: bottom
-        grid_options:
-          columns: 3
-          rows: 1
-        icon: mdi:home-lightning-bolt-outline
-        name: Altri apparecchi oggi
-        type: tile
-        vertical: false
+      - heading: TOTALI MENSILI
+        heading_style: subtitle
+        type: heading
       - content: '{% set d = state_attr(''sensor.pv_tabella_mensile'', ''mesi'') %}
           {%
 
@@ -334,7 +111,128 @@ config:
           columns: full
           rows: auto
         type: markdown
-      - heading: '30gg e dati di oggi sotto ogni grafico '
+      - grid_options:
+          columns: full
+          rows: auto
+        icon: mdi:solar-panel-large
+        icon_height: 15px
+        name: Panel Analytics
+        show_icon: true
+        show_name: true
+        show_state: false
+        tap_action:
+          action: perform-action
+          data:
+            data:
+              package_name: appinventor.ai_aagorine.PanelAnalytics
+            message: command_launch_app
+          perform_action: notify.mobile_app_cph2653
+        type: button
+      - heading: TOTALI MENSILI x TIPO APPARECCHI
+        heading_style: subtitle
+        type: heading
+      - content: '{% set d = state_attr(''sensor.pv_tabella_mensile'', ''mesi'') %}
+          {% if d is none %} _Dati non disponibili_ {% else %} {% set mesi = d | reverse
+          | list %} <div style="overflow-x:auto;overflow-y:auto;max-height:400px;font-size:11px">
+          <table style="border-collapse:collapse;width:100%;white-space:nowrap"> <thead><tr
+          style="position:sticky;top:0;background:#1a1a2e;color:#e0e0e0"> <th style="padding:4px
+          6px;border:1px solid #444">Mese</th> <th style="padding:4px 6px;border:1px
+          solid #444">Pompa</th> <th style="padding:4px 6px;border:1px solid #444">Fancoil</th>
+          <th style="padding:4px 6px;border:1px solid #444">Deumid.</th> <th style="padding:4px
+          6px;border:1px solid #444">Lavatr.</th> <th style="padding:4px 6px;border:1px
+          solid #444">Auto</th> <th style="padding:4px 6px;border:1px solid #444">Sauna</th>
+          <th style="padding:4px 6px;border:1px solid #444">Altri</th> <th style="padding:4px
+          6px;border:1px solid #444">Totale consumi</th> </tr></thead> <tbody> {%
+          for r in mesi %} {% if loop.first or loop.last %} <tr style="font-weight:bold;background:#2a2a3e">
+          {% else %} <tr> {% endif %} <td style="padding:3px 6px;border:1px solid
+          #333">{{ r.mese }}</td> <td style="padding:3px 6px;border:1px solid #333;text-align:right">{{
+          (r.get(''pompa'', 0) | string) | replace(''.'', '','') }}</td> <td style="padding:3px
+          6px;border:1px solid #333;text-align:right">{{ (r.get(''fancoil'', 0) |
+          string) | replace(''.'', '','') }}</td> <td style="padding:3px 6px;border:1px
+          solid #333;text-align:right">{{ (r.get(''deumid'', 0) | string) | replace(''.'',
+          '','') }}</td> <td style="padding:3px 6px;border:1px solid #333;text-align:right">{{
+          (r.get(''lavatrice'', 0) | string) | replace(''.'', '','') }}</td> <td style="padding:3px
+          6px;border:1px solid #333;text-align:right">{{ (r.get(''auto'', 0) | string)
+          | replace(''.'', '','') }}</td> <td style="padding:3px 6px;border:1px solid
+          #333;text-align:right">{{ (r.get(''sauna'', 0) | string) | replace(''.'',
+          '','') }}</td> <td style="padding:3px 6px;border:1px solid #333;text-align:right">{{
+          (r.get(''altri'', 0) | string) | replace(''.'', '','') }}</td> <td style="padding:3px
+          6px;border:1px solid #333;text-align:right">{{ r.get(''consumo_tot'', 0)
+          }}</td> </tr> {% endfor %} </tbody></table></div> {% endif %} '
+        grid_options:
+          columns: full
+          rows: auto
+        type: markdown
+      - grid_options:
+          columns: full
+          rows: auto
+        icon: mdi:devices
+        icon_height: 15px
+        name: Detagli Devices
+        show_icon: true
+        show_name: true
+        show_state: false
+        tap_action:
+          action: navigate
+          navigation_path: /dashboard-fancoil/fancoil
+        type: button
+      - heading: 'Risparmio fotovoltaico (storico):'
+        heading_style: subtitle
+        type: heading
+      - entity: input_number.pv_totale_euro
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        icon: mdi:piggy-bank
+        name: Totale
+        type: tile
+        vertical: false
+      - entity: input_number.pv_risparmio_euro
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        icon: mdi:solar-power
+        name: Autoconsumo
+        type: tile
+        vertical: false
+      - entity: input_number.pv_gse_euro
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        icon: mdi:cash-multiple
+        name: Da GSE
+        type: tile
+        vertical: false
+      - entity: input_number.pv_recupero_pct
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        icon: mdi:percent
+        name: '% recupero'
+        type: tile
+        vertical: false
+      - entity: input_number.elettricita_prezzo_kwh
+        grid_options:
+          columns: 12
+          rows: 2
+        name: Prezzo a consumo (1 kWh)
+        type: entity
+      - entity: input_number.elettricita_quota_fissa_mese
+        grid_options:
+          columns: 12
+          rows: 2
+        name: Quota fissa mensile
+        type: entity
+    - cards:
+      - heading: ULTIMI 30 GG
+        heading_style: title
+        icon: mdi:lightning-bolt
+        type: heading
+      - heading: Produzione e a rete, kWh/gg
         heading_style: subtitle
         type: heading
       - graph_span: 30d
@@ -343,42 +241,6 @@ config:
           rows: auto
         header:
           show: true
-          title: Da rete, kWh e Euro/gg
-        series:
-        - entity: sensor.elettricita_oggi_kwh
-          name: Da rete oggi
-          statistics:
-            period: day
-            type: max
-          type: column
-          yaxis_id: kwh
-        - entity: sensor.elettricita_oggi_euro
-          name: Da rete oggi
-          statistics:
-            period: day
-            type: max
-          type: column
-          yaxis_id: euro
-        type: custom:apexcharts-card
-        yaxis:
-        - apex_config:
-            title:
-              text: kWh
-          decimals: 1
-          id: kwh
-        - apex_config:
-            title:
-              text: Euro
-          decimals: 2
-          id: euro
-          opposite: true
-      - graph_span: 30d
-        grid_options:
-          columns: 12
-          rows: auto
-        header:
-          show: true
-          title: Produzione e a rete, kWh/gg
         series:
         - entity: sensor.inverter_uflex_today_production
           name: production oggi
@@ -413,13 +275,53 @@ config:
           decimals: 1
           id: kwh
           opposite: true
+      - heading: Da rete, kWh e Euro/gg
+        heading_style: subtitle
+        type: heading
       - graph_span: 30d
         grid_options:
           columns: 12
           rows: auto
         header:
           show: true
-          title: Tutti apparecchi, kWh/gg
+        series:
+        - entity: sensor.elettricita_oggi_kwh
+          name: Da rete oggi
+          statistics:
+            period: day
+            type: max
+          type: column
+          yaxis_id: kwh
+        - entity: sensor.elettricita_oggi_euro
+          name: Da rete oggi
+          statistics:
+            period: day
+            type: max
+          type: column
+          yaxis_id: euro
+        type: custom:apexcharts-card
+        yaxis:
+        - apex_config:
+            title:
+              text: kWh
+          decimals: 1
+          id: kwh
+        - apex_config:
+            title:
+              text: Euro
+          decimals: 2
+          id: euro
+          opposite: true
+      - heading: Tutti apparecchi, kWh/gg
+        heading_style: subtitle
+        icon: ''
+        type: heading
+      - graph_span: 30d
+        grid_options:
+          columns: 12
+          rows: auto
+        header:
+          show: true
         series:
         - entity: sensor.panasonic_consumata_oggi
           name: Pompa
@@ -478,174 +380,108 @@ config:
               text: kWh
           decimals: 1
           id: kwh
+      - heading: 'Fancoil kWh/gg:'
+        heading_style: subtitle
+        icon: ''
+        type: heading
+      - graph_span: 30d
+        grid_options:
+          columns: 12
+          rows: auto
+        header:
+          show: true
+        series:
+        - entity: sensor.consumo_fancoil_totale_oggi
+          name: Totale
+          statistics:
+            period: day
+            type: state
+          type: column
+          yaxis_id: kwh
+        - entity: sensor.consumo_fancoil_sala_oggi_stimato_non_verificato
+          name: Sala
+          statistics:
+            period: day
+            type: state
+          type: column
+          yaxis_id: kwh
+        - entity: sensor.consumo_fancoil_georgi_oggi_stimato
+          name: Georgi
+          statistics:
+            period: day
+            type: change
+          type: column
+          yaxis_id: kwh
+        - entity: sensor.consumo_fancoil_tania_oggi_stimato
+          name: Tania
+          statistics:
+            period: day
+            type: state
+          type: column
+          yaxis_id: kwh
+        type: custom:apexcharts-card
+        yaxis:
         - apex_config:
             title:
-              text: kwh
-          decimals: 1
-          id: jwh
-          opposite: true
-        - apex_config:
-            title:
-              text: kwh
+              text: kWh
           decimals: 1
           id: kwh
           opposite: true
-      - heading: 'ULTIMO MESE:'
+      - heading: 'Deumidificatori kWh/gg:'
         heading_style: subtitle
+        icon: ''
         type: heading
-      - entity: sensor.produzione_mese
-        features_position: bottom
+      - chart_type: bar
+        days_to_show: 30
+        entities:
+        - entity: sensor.consumo_deumidificatori_oggi
+          name: Totale deumidificatori
         grid_options:
-          columns: 4
-          rows: 1
-        icon: mdi:solar-power
-        name: Produzione
-        type: tile
-        vertical: false
-      - entity: sensor.a_rete_mese
-        features_position: bottom
-        grid_options:
-          columns: 3
-          rows: 1
-        icon: mdi:transmission-tower-export
-        name: A rete
-        type: tile
-        vertical: false
-      - entity: sensor.elettricita_mese_kwh
-        features_position: bottom
-        grid_options:
-          columns: 3
-          rows: 1
-        icon: mdi:transmission-tower-import
-        name: Da rete kwh
-        type: tile
-        vertical: false
-      - entity: sensor.elettricita_mese_euro
-        features_position: bottom
-        grid_options:
-          columns: 3
-          rows: 1
-        name: Da rete euro
-        type: tile
-        vertical: false
-      - entity: sensor.panasonic_consumata_mese
-        features_position: bottom
-        grid_options:
-          columns: 3
-          rows: 1
-        name: Pompa
-        type: tile
-        vertical: false
-      - entity: sensor.fancoil_mese
-        features_position: bottom
-        grid_options:
-          columns: 3
-          rows: 1
-        icon: mdi:fan
-        name: Fancoil
-        type: tile
-        vertical: false
-      - entity: sensor.deumidificatori_mese
-        features_position: bottom
-        grid_options:
-          columns: 3
-          rows: 1
-        icon: mdi:air-humidifier
-        name: Deumidificatori
-        type: tile
-        vertical: false
-      - entity: sensor.lavatrice_mese
-        features_position: bottom
-        grid_options:
-          columns: 3
-          rows: 1
-        icon: mdi:washing-machine
-        name: Lavatrice
-        type: tile
-        vertical: false
-      - entity: sensor.auto_energia_mese
-        features_position: bottom
-        grid_options:
-          columns: 3
-          rows: 1
-        icon: mdi:flash-auto
-        name: Auto
-        type: tile
-        vertical: false
-      - entity: sensor.sauna_energia_mese
-        features_position: bottom
-        grid_options:
-          columns: 3
-          rows: 1
-        icon: mdi:spa-outline
-        name: Sauna
-        type: tile
-        vertical: false
-      - color: '#7E57C2'
-        entity: sensor.altri_apparecchi_mese
-        features_position: bottom
-        grid_options:
-          columns: 3
-          rows: 1
-        icon: mdi:home-lightning-bolt-outline
-        name: Altri apparecchi mese
-        type: tile
-        vertical: false
-      - heading: 'Risparmio fotovoltaico (storico):'
+          columns: full
+          rows: auto
+        period: day
+        stat_types:
+        - state
+        type: statistics-graph
+      - heading: 'Lavatrice kWh/gg:'
         heading_style: subtitle
+        icon: ''
         type: heading
-      - entity: input_number.pv_risparmio_euro
-        features_position: bottom
+      - chart_type: bar
+        days_to_show: 30
+        entities:
+        - entity: sensor.lavatricemielewci870_consumo_energia
+          name: Lavatrice
         grid_options:
-          columns: 4
-          rows: 1
-        icon: mdi:solar-power
-        name: Autoconsumo
-        type: tile
-        vertical: false
-      - entity: input_number.pv_gse_euro
-        features_position: bottom
+          columns: full
+          rows: auto
+        period: day
+        stat_types:
+        - state
+        type: statistics-graph
+      - heading: Sauna kWh/gg
+        heading_style: subtitle
+        icon: ''
+        type: heading
+      - chart_type: bar
+        days_to_show: 120
+        entities:
+        - entity: sensor.solo_sauna_contatore_potenza_di_fase_a
+          name: Sauna
         grid_options:
-          columns: 4
-          rows: 1
-        icon: mdi:cash-multiple
-        name: Da GSE
-        type: tile
-        vertical: false
-      - entity: input_number.pv_totale_euro
-        features_position: bottom
-        grid_options:
-          columns: 4
-          rows: 1
-        icon: mdi:piggy-bank
-        name: Totale
-        type: tile
-        vertical: false
-      - entity: input_number.pv_recupero_pct
-        features_position: bottom
-        grid_options:
-          columns: 4
-          rows: 1
-        icon: mdi:percent
-        name: '% recupero'
-        type: tile
-        vertical: false
-      - entity: input_number.elettricita_prezzo_kwh
-        grid_options:
-          columns: 12
-          rows: 2
-        name: Prezzo a consumo (1 kWh)
-        type: entity
-      - entity: input_number.elettricita_quota_fissa_mese
-        grid_options:
-          columns: 12
-          rows: 2
-        name: Quota fissa mensile
-        type: entity
+          columns: full
+          rows: auto
+        period: day
+        stat_types:
+        - max
+        type: statistics-graph
       type: grid
     - cards:
-      - heading: Ultimi 12 mesi
+      - heading: ULTIMI 12 MESI
         heading_style: title
+        type: heading
+      - heading: Da rete, kWh/mese
+        heading_style: subtitle
         type: heading
       - chart_type: bar
         days_to_show: 365
@@ -660,8 +496,10 @@ config:
         period: month
         stat_types:
         - max
-        title: Da rete, kWh/mese
         type: statistics-graph
+      - heading: "Da rete, \u20AC/mese"
+        heading_style: subtitle
+        type: heading
       - chart_type: bar
         days_to_show: 365
         entities:
@@ -675,15 +513,16 @@ config:
         period: month
         stat_types:
         - max
-        title: "Da rete, \u20AC/mese"
         type: statistics-graph
+      - heading: Tutti apparecchi, kWh/mese
+        heading_style: subtitle
+        type: heading
       - graph_span: 120d
         grid_options:
           columns: 12
           rows: auto
         header:
           show: true
-          title: Tutti apparecchi, kWh/mese
         series:
         - entity: sensor.panasonic_consumata_oggi
           name: Pompa
@@ -754,35 +593,9 @@ config:
           decimals: 1
           id: kwh
           opposite: true
-      - content: '{% set d = state_attr(''sensor.pv_tabella_mensile'', ''mesi'') %}
-          {% if d is none %} _Dati non disponibili_ {% else %} {% set mesi = d | reverse
-          | list %} <div style="overflow-x:auto;overflow-y:auto;max-height:400px;font-size:11px">
-          <table style="border-collapse:collapse;width:100%;white-space:nowrap"> <thead><tr
-          style="position:sticky;top:0;background:#1a1a2e;color:#e0e0e0"> <th style="padding:4px
-          6px;border:1px solid #444">Mese</th> <th style="padding:4px 6px;border:1px
-          solid #444">Pompa</th> <th style="padding:4px 6px;border:1px solid #444">Fancoil</th>
-          <th style="padding:4px 6px;border:1px solid #444">Deumid.</th> <th style="padding:4px
-          6px;border:1px solid #444">Lavatr.</th> <th style="padding:4px 6px;border:1px
-          solid #444">Auto</th> <th style="padding:4px 6px;border:1px solid #444">Sauna</th>
-          <th style="padding:4px 6px;border:1px solid #444">Altri</th> <th style="padding:4px
-          6px;border:1px solid #444">Totale consumi</th> </tr></thead> <tbody> {%
-          for r in mesi %} {% if loop.first or loop.last %} <tr style="font-weight:bold;background:#2a2a3e">
-          {% else %} <tr> {% endif %} <td style="padding:3px 6px;border:1px solid
-          #333">{{ r.mese }}</td> <td style="padding:3px 6px;border:1px solid #333;text-align:right">{{
-          r.get(''pompa'', 0) }}</td> <td style="padding:3px 6px;border:1px solid
-          #333;text-align:right">{{ r.get(''fancoil'', 0) }}</td> <td style="padding:3px
-          6px;border:1px solid #333;text-align:right">{{ r.get(''deumid'', 0) }}</td>
-          <td style="padding:3px 6px;border:1px solid #333;text-align:right">{{ r.get(''lavatrice'',
-          0) }}</td> <td style="padding:3px 6px;border:1px solid #333;text-align:right">{{
-          r.get(''auto'', 0) }}</td> <td style="padding:3px 6px;border:1px solid #333;text-align:right">{{
-          r.get(''sauna'', 0) }}</td> <td style="padding:3px 6px;border:1px solid
-          #333;text-align:right">{{ r.get(''altri'', 0) }}</td> <td style="padding:3px
-          6px;border:1px solid #333;text-align:right">{{ r.get(''consumo_tot'', 0)
-          }}</td> </tr> {% endfor %} </tbody></table></div> {% endif %} '
-        grid_options:
-          columns: full
-          rows: auto
-        type: markdown
+      - heading: "A rete stimato-GSE,\u20AC/mese"
+        heading_style: subtitle
+        type: heading
       - chart_type: bar
         days_to_show: 365
         entities:
@@ -796,8 +609,10 @@ config:
         period: month
         stat_types:
         - max
-        title: "A rete stimato-GSE,\u20AC"
         type: statistics-graph
+      - heading: "Prezzo GSE \u20AC/kWh mese"
+        heading_style: subtitle
+        type: heading
       - chart_type: bar
         days_to_show: 365
         entities:
@@ -809,12 +624,14 @@ config:
         period: month
         stat_types:
         - max
-        title: "Prezzo GSE \u20AC/kWh"
         type: statistics-graph
       type: grid
     - cards:
-      - heading: Anni
+      - heading: ANNI
         heading_style: title
+        type: heading
+      - heading: Da rete, kWh/anno
+        heading_style: subtitle
         type: heading
       - chart_type: bar
         days_to_show: 730
@@ -829,8 +646,10 @@ config:
         period: year
         stat_types:
         - max
-        title: Da rete, kWh/anno
         type: statistics-graph
+      - heading: Tutti apparecchi, kWh/anno
+        heading_style: subtitle
+        type: heading
       - chart_type: bar
         days_to_show: 730
         entities:
@@ -858,15 +677,11 @@ config:
       type: grid
     title: "Elettricit\xE0"
     type: sections
-  - header:
-      card:
-        content: "CONSUMI \u2013 Acqua"
-        text_only: true
-        type: markdown
+  - header: {}
     path: acqua
     sections:
     - cards:
-      - heading: 'Totale (solo mesi dove esistono tutti dati):'
+      - heading: 'DA SEMPRE (solo mesi dove esistono rilevati e bolette):'
         heading_style: title
         type: heading
       - entity: input_number.acqua_totale_rilevato_mc
@@ -1139,6 +954,164 @@ config:
         type: entity
       type: grid
     title: Acqua
+    type: sections
+  - header: {}
+    path: gas
+    sections:
+    - cards:
+      - heading: 'DA SEMPRE (solo mesi dove esistono rilevati e bolette):'
+        heading_style: subtitle
+        type: heading
+      - entity: input_number.gas_totale_rilevato_mc
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: auto
+        name: Totale rilevato
+        type: tile
+        vertical: false
+      - entity: input_number.gas_totale_bollette_mc
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: auto
+        name: Totale bollette
+        type: tile
+        vertical: false
+      - heading: 'Ultimo mese:'
+        heading_style: subtitle
+        type: heading
+      - entity: sensor.gas_mese_mc
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        name: Gas mese
+        type: tile
+        vertical: false
+      - entity: sensor.gas_mese_euro
+        features_position: bottom
+        grid_options:
+          columns: 3
+          rows: 1
+        name: "Gas mese \u20AC"
+        type: tile
+        vertical: false
+      - heading: 'Oggi:'
+        heading_style: subtitle
+        type: heading
+      - entity: sensor.gas_oggi_mc
+        features:
+        - type: trend-graph
+        features_position: bottom
+        grid_options:
+          columns: 3
+          rows: 1
+        name: Gas oggi
+        type: tile
+        vertical: false
+      - entity: sensor.gas_oggi_euro
+        features_position: bottom
+        grid_options:
+          columns: 3
+          rows: 1
+        name: "Gas oggi \u20AC"
+        type: tile
+        vertical: false
+      - graph_span: 30d
+        grid_options:
+          columns: 12
+          rows: auto
+        header:
+          show: true
+          title: "Gas, m\xB3 e Euro/gg"
+        series:
+        - entity: sensor.gas_oggi_mc
+          name: "m\xB3 oggi"
+          statistics:
+            period: day
+            type: max
+          type: column
+          yaxis_id: mc
+        - entity: sensor.gas_oggi_euro
+          name: Euro oggi
+          statistics:
+            period: day
+            type: max
+          type: column
+          yaxis_id: euro
+        type: custom:apexcharts-card
+        yaxis:
+        - apex_config:
+            title:
+              text: "m\xB3"
+          decimals: 2
+          id: mc
+        - apex_config:
+            title:
+              text: Euro
+          decimals: 2
+          id: euro
+          opposite: true
+      - chart_type: bar
+        days_to_show: 365
+        entities:
+        - entity: sensor.gas_mese_mc
+          name: "m\xB3 rilevato"
+        - entity: input_number.bolletta_gas_mc
+          name: "m\xB3 bolletta"
+        grid_options:
+          columns: 12
+          rows: auto
+        period: month
+        stat_types:
+        - max
+        title: "Gas, m\xB3/mese"
+        type: statistics-graph
+      - chart_type: bar
+        days_to_show: 365
+        entities:
+        - entity: sensor.gas_mese_euro
+          name: "\u20AC rilevato"
+        - entity: input_number.bolletta_gas_euro
+          name: "\u20AC bolletta"
+        grid_options:
+          columns: 12
+          rows: auto
+        period: month
+        stat_types:
+        - max
+        title: Gas, Euro/mese
+        type: statistics-graph
+      - chart_type: bar
+        days_to_show: 730
+        entities:
+        - entity: sensor.gas_mese_mc
+          name: "m\xB3 rilevato"
+        - entity: input_number.bolletta_gas_mc
+          name: "m\xB3 bolletta"
+        grid_options:
+          columns: 12
+          rows: auto
+        period: year
+        stat_types:
+        - max
+        title: "Gas, m\xB3/anno"
+        type: statistics-graph
+      - entity: input_number.gas_prezzo_mc
+        grid_options:
+          columns: 6
+          rows: 2
+        name: "Prezzo a consumo (1 m\xB3)"
+        type: entity
+      - entity: input_number.gas_quota_fissa_mese
+        grid_options:
+          columns: 6
+          rows: 2
+        name: Quota fissa mensile
+        type: entity
+      type: grid
+    title: Gas
     type: sections
   - header:
       card:

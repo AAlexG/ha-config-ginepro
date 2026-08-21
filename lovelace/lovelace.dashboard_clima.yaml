@@ -57,6 +57,14 @@ config:
         name: Media 7gg esterna
         type: tile
         vertical: false
+      - entity: input_boolean.clima_freecooling_attivo
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        name: FreeCooling
+        type: tile
+        vertical: false
       - entities:
         - entity: sensor.hp1000se_pro_pro_v1_6_4_indoor_temperature
           name: Sala

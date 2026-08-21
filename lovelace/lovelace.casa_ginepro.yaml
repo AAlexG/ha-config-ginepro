@@ -173,9 +173,9 @@ config:
       - grid_options:
           columns: 3
           rows: auto
-        icon: mdi:weather-partly-cloudy
-        icon_height: 20px
-        name: Fancoil Deum
+        icon: mdi:devices
+        icon_height: 15px
+        name: Tutti Devices
         show_icon: true
         show_name: true
         show_state: false
@@ -876,7 +876,7 @@ config:
         type: tile
         vertical: false
       - color: '#7E57C2'
-        entity: sensor.altri_apparecchi_mese_2
+        entity: sensor.altri_apparecchi_mese
         features_position: bottom
         grid_options:
           columns: 3
