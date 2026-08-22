@@ -303,17 +303,17 @@ config:
       - entity: binary_sensor.clima_condizione_free_cooling
         features_position: bottom
         grid_options:
-          columns: 6
+          columns: 12
           rows: 1
-        name: Condizione 1h
+        name: Aria fresca stabile da 1 ora
         type: tile
         vertical: false
       - entity: input_boolean.clima_freecooling_attivo
         features_position: bottom
         grid_options:
-          columns: 6
+          columns: 12
           rows: 1
-        name: Attivo
+        name: Free cooling in corso
         type: tile
         vertical: false
       - entity: input_number.clima_delta_naturale_base
