@@ -283,6 +283,52 @@ config:
               text: kWh
           decimals: 1
           id: kwh
+      - apex_config:
+          annotations:
+            yaxis:
+            - borderColor: '#009E73'
+              label:
+                borderColor: '#009E73'
+                style:
+                  background: '#009E73'
+                  color: '#FFFFFF'
+                text: 58,0 V limite datasheet
+              strokeDashArray: 4
+              'true': 58
+            - borderColor: '#D55E00'
+              label:
+                borderColor: '#D55E00'
+                style:
+                  background: '#D55E00'
+                  color: '#FFFFFF'
+                text: 58,7 V soglia allarme
+              strokeDashArray: 4
+              'true': 58.7
+        graph_span: 30d
+        grid_options:
+          columns: 12
+          rows: auto
+        header:
+          show: true
+          title: Tensione max condensatore, ultimi 30gg, V
+        series:
+        - color: '#0072B2'
+          entity: sensor.inverter_uflex_battery_voltage
+          name: massima giornaliera
+          statistics:
+            period: day
+            type: max
+          type: column
+          yaxis_id: volt
+        type: custom:apexcharts-card
+        yaxis:
+        - apex_config:
+            title:
+              text: V
+          decimals: 2
+          id: volt
+          max: 61
+          min: 55
       - graph_span: 365d
         grid_options:
           columns: 12

@@ -1,4 +1,4 @@
-# config_fotovoltaico_1.yaml
+# config_fotovoltaico_2.yaml
 # Package Casa Ginepro - Fotovoltaico: inverter UFLEX, pannelli Tigo, surplus, GSE
 # Estratto da configuration_186.yaml. Nome file = nome del package.
 
@@ -328,6 +328,58 @@ template:
         state: >-
           {{ states('sensor.inverter_uflex_external_ct1_power') | float(0)
              < -(states('input_number.pv_surplus_soglia') | float(0)) }}
+
+  #--------------------------------------------------------------------------
+  # SORVEGLIANZA SOVRATENSIONE CONDENSATORE UFSC48-7,6
+  #
+  # Il datasheet UFLEX indica 58 V di tensione di carica massima e 57 V di
+  # float consigliato. Il 19/08/2026 alle 13:37 l'inverter ha registrato
+  # F55 DC_VoltHigh_Fault e alle 14:12 F56 DC_VoltLow_Fault: il BMS del
+  # condensatore ha aperto e il pacco e' rimasto fuori servizio fino al
+  # riavvio manuale del 22/08. Nelle due settimane precedenti la tensione
+  # massima giornaliera era salita da 58,3 a 60,1 V.
+  #
+  # Gli episodi oltre soglia durano da 0 a 25 secondi: un "for" nei trigger
+  # li perderebbe tutti. Questo sensore trattiene il massimo giornaliero e
+  # conta i superamenti di 58,7 V, cosi' l'automazione di riepilogo serale
+  # puo' segnalare la deriva senza inviare una notifica per ogni picco.
+  #--------------------------------------------------------------------------
+  - trigger:
+      - platform: state
+        entity_id: sensor.inverter_uflex_battery_voltage
+        id: misura
+      - platform: time
+        at: "00:00:00"
+        id: azzera
+    sensor:
+      - name: "Condensatore Tensione Max Oggi"
+        unique_id: condensatore_tensione_max_oggi
+        unit_of_measurement: "V"
+        device_class: voltage
+        state_class: measurement
+        icon: mdi:flash-alert
+        state: >-
+          {% if trigger.id == 'azzera' %}
+            0
+          {% else %}
+            {% set v = states('sensor.inverter_uflex_battery_voltage') | float(0) %}
+            {{ [v, this.state | float(0)] | max | round(2) }}
+          {% endif %}
+        attributes:
+          # Numero di attraversamenti della soglia dal basso verso l'alto.
+          # Un episodio continuo sopra soglia conta una volta sola.
+          episodi: >-
+            {% if trigger.id == 'azzera' %}
+              0
+            {% else %}
+              {% set s = 58.7 %}
+              {% set v = states('sensor.inverter_uflex_battery_voltage') | float(0) %}
+              {% set p = trigger.from_state.state | float(0)
+                         if trigger.from_state else 0 %}
+              {% set n = this.attributes.get('episodi', 0) | int(0) %}
+              {{ n + 1 if (v > s and p <= s) else n }}
+            {% endif %}
+          soglia: 58.7
 
 command_line:
 

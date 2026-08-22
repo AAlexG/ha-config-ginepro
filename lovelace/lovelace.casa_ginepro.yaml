@@ -265,6 +265,14 @@ config:
             message: command_launch_app
           perform_action: notify.mobile_app_cph2653
         type: button
+      - entity: input_boolean.clima_freecooling_attivo
+        features_position: bottom
+        grid_options:
+          columns: 12
+          rows: 1
+        name: Free cooling in corso
+        type: tile
+        vertical: false
       - entity: sensor.opentherm_gateway_otgw_otgw_boiler_exhaust_temperature
         features_position: bottom
         grid_options:

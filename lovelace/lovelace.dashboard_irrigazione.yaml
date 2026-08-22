@@ -130,6 +130,19 @@ config:
           action: perform-action
           perform_action: script.irrigazione_stop
         type: button
+      - heading: Irrigazioni ultimi 15 gg , minuti
+        heading_style: subtitle
+        icon: ''
+        type: heading
+      - entities:
+        - entity: counter.irrigazione_minuti_oggi
+          name: 'Irrigazione oggi, min :'
+        grid_options:
+          columns: full
+          rows: auto
+        hours_to_show: 360
+        refresh_interval: 60
+        type: history-graph
       type: grid
     - cards:
       - heading: CONSUMO ACQUA OGGI x IRRIGAZIONE

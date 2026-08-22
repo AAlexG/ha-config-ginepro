@@ -1,4 +1,4 @@
-# config_irrigazione_1.yaml
+# config_irrigazione_3.yaml
 # Package Casa Ginepro - Irrigazione: Sonoff 4CHPRoR3, tre circuiti, orari e blocchi
 # Estratto da configuration_186.yaml. Nome file = nome del package.
 
@@ -25,8 +25,15 @@ template:
 
 counter:
   # Minuti-canale di irrigazione erogati oggi (reset a mezzanotte).
-  # +1 ogni minuto con un canale ON. Interblocco HW: max 1 canale acceso => 1 tick = 1 minuto-canale.
+  # +1 ogni minuto con un canale ON.
   # Copre cicli programmati e accensioni manuali (anche di singolo canale).
+  #
+  # ATTENZIONE (22/08/2026): l'interblocco HW del Sonoff 4CHPROR3 e' stato DISATTIVATO
+  # (lock=0) per poter abilitare l'inching, con cui era incompatibile. Il conteggio
+  # "1 tick = 1 minuto-canale" non e' piu' garantito dall'hardware ma dallo script
+  # irrigazione_esegui_sequenza, che spegne sempre il canale precedente prima di
+  # accendere il successivo. Se in futuro un'automazione accendesse due canali insieme,
+  # il conteggio risulterebbe sottostimato: 1 tick al minuto invece di 2.
   irrigazione_minuti_oggi:
     name: "Minuti irrigazione oggi"
     initial: 0
@@ -48,10 +55,28 @@ input_number:
   # ACQUA: input manuali (NUOVO – configuration_53)
   # ============================================================
   # Durate per singolo canale (T1/T2/T3). Usate dal ciclo programmato e da "Cicla ora".
+  #
+  # VINCOLO HARDWARE (22/08/2026) - NON DIMENTICARE:
+  # Sul Sonoff 4CHPROR3 e' attivo l'INCHING a 300 secondi (5 minuti) su C1, C2 e C3
+  # (params pulses: pulse='on', width=300000 ms sugli outlet 0/1/2).
+  # Il firmware spegne il canale allo scadere dei 300 s comunque sia stato acceso:
+  # da HA, da app, da telecomando RF o a mano. E' la protezione contro l'allagamento
+  # dopo l'incidente del 07/08/2026 (C1 rimasto aperto 6h30 per perdita WiFi del Sonoff).
+  #
+  # => NON impostare durate superiori a 4 minuti: oltre i 5 il canale verrebbe chiuso
+  #    dal firmware senza alcun errore visibile in HA, e l'irrigazione risulterebbe
+  #    piu' corta del previsto. Per irrigare piu' a lungo occorre PRIMA alzare la
+  #    durata dell'inching in eWeLink (max 3600 s), poi il valore qui sotto.
+  # Il max: 4 sottostante rende l'errore impossibile, non solo documentato: HA rifiuta
+  # valori superiori. Per alzarlo occorre PRIMA aumentare l'inching in eWeLink e poi
+  # modificare qui il max, tenendolo sempre almeno 1 minuto sotto la durata dell'inching.
+  #
+  # NB: la cache /config/.storage/sonoff/ riflette i parametri del dispositivo solo
+  # dopo un reload dell'integrazione SonoffLAN, non in tempo reale.
   irrigazione_durata_c1:
     name: "Irrigazione – Durata C1 (T1)"
     min: 0
-    max: 180
+    max: 4
     step: 1
     unit_of_measurement: "min"
     mode: box
@@ -59,7 +84,7 @@ input_number:
   irrigazione_durata_c2:
     name: "Irrigazione – Durata C2 (T2)"
     min: 0
-    max: 180
+    max: 4
     step: 1
     unit_of_measurement: "min"
     mode: box
@@ -67,7 +92,7 @@ input_number:
   irrigazione_durata_c3:
     name: "Irrigazione – Durata C3 (T3)"
     min: 0
-    max: 180
+    max: 4
     step: 1
     unit_of_measurement: "min"
     mode: box
