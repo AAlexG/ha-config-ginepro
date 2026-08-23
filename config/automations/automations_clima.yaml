@@ -1,4 +1,4 @@
-# automations_clima_57.yaml
+# automations_clima_58.yaml
 
 
 
@@ -342,6 +342,10 @@
     - condition: time
       after: "21:00:00"
       before: "07:00:00"
+    # Guardia dati (v58): outlet vale per entrambe le camere, senza di esso
+    # nessuna delle due decisioni ha senso. Il controllo si astiene.
+    - condition: template
+      value_template: "{{ has_value('sensor.panasonic_heat_pump_main_main_outlet_temp') }}"
   actions:
     - variables:
         mode: "{{ states('select.panasonic_heat_pump_main_operating_mode_state') }}"
@@ -351,6 +355,8 @@
         # Notte: 23:00-06:59 — solo il fancoil camera Georgi
         periodo_prelavoro: "{{ ora >= 21 and ora < 23 }}"
         # --- Camera Georgi ---
+        # Guardia dati (v58): stesso trattamento gia' in uso per camera Tania.
+        georgi_vivo: "{{ has_value('sensor.termometro_georgi_zigbee_temperature') }}"
         t_georgi: "{{ states('sensor.termometro_georgi_zigbee_temperature') | float(25) }}"
         target_estate_georgi: "{{ states('input_number.maxtemp_notte_estate_letto') | float(25) }}"
         target_inverno_georgi: "{{ states('input_number.mintemp_notte_inverno_letto') | float(22) }}"
@@ -376,7 +382,9 @@
         latch_notte: "{{ is_state('input_boolean.clima_pompa_latch_notte', 'on') }}"
         # Decisione per camera Georgi
         fancoil_georgi_on: >
-          {% if mode in ['Cool', 'Cool only'] %}
+          {% if not georgi_vivo %}
+            false
+          {% elif mode in ['Cool', 'Cool only'] %}
             {{ t_georgi > target_estate_georgi and acqua_ok_georgi_estate
                and not freecooling_on and not latch_notte }}
           {% elif mode in ['Heat', 'Heat only'] %}
@@ -470,6 +478,10 @@
     - condition: state
       entity_id: input_boolean.fancoil_sala_manuale
       state: "off"
+    # Guardia dati (v58): outlet ripiega su 20 con | float(20), valore che
+    # supererebbe da solo la verifica di efficacia dell'acqua in estate.
+    - condition: template
+      value_template: "{{ has_value('sensor.panasonic_heat_pump_main_main_outlet_temp') }}"
     - condition: template
       value_template: >
         {% set mode = states('select.panasonic_heat_pump_main_operating_mode_state') %}
@@ -560,6 +572,12 @@
     - condition: state
       entity_id: input_boolean.fancoil_sala_manuale
       state: "off"
+    # Guardia dati (v58): t_sala e outlet ripiegano su 25 e 20 con | float().
+    # Con un sensore guasto la decisione girerebbe su numeri inventati e il
+    # fancoil verrebbe acceso o spento a caso. Qui il controllo si astiene e
+    # lascia l'attuatore com'e': meglio uno stato fermo che uno stato sbagliato.
+    - condition: template
+      value_template: "{{ has_value('sensor.hp1000se_pro_pro_v1_6_4_indoor_temperature') and has_value('sensor.panasonic_heat_pump_main_main_outlet_temp') }}"
   actions:
     - variables:
         mode: "{{ states('select.panasonic_heat_pump_main_operating_mode_state') }}"
@@ -674,6 +692,18 @@
         - condition: state
           entity_id: input_select.clima_modalita
           state: "manuale"
+    # Guardia dati (v58): senza il termometro della zona comandante l'errore
+    # verrebbe calcolato sul default di | float(), cioe' su un numero inventato.
+    # Di notte basta che almeno una delle due camere risponda: i rami notturni
+    # escludono gia' da soli la camera muta con il ripiego a -99.
+    - condition: template
+      value_template: >
+        {% if is_state('input_select.clima_modalita', 'notte') %}
+          {{ has_value('sensor.termometro_georgi_zigbee_temperature')
+             or has_value('sensor.termometro_tania_zigbee_temperature') }}
+        {% else %}
+          {{ has_value('sensor.hp1000se_pro_pro_v1_6_4_indoor_temperature') }}
+        {% endif %}
   actions:
     - variables:
         mod: "{{ states('input_select.clima_modalita') }}"
@@ -873,6 +903,14 @@
         vacanza_on: "{{ is_state('input_boolean.vacanza', 'on') }}"
         # Free cooling ammesso solo in modalita giorno (v55)
         giorno_on: "{{ is_state('input_select.clima_modalita', 'giorno') }}"
+        # Guardia dati (v58): senza temperatura esterna il delta non e'
+        # calcolabile. t_ext qui sopra ripiega su 25 con | float(25), un valore
+        # inventato che sembra buono: se la stazione meteo muore mentre il flag
+        # e' acceso, la disattivazione girerebbe su quel 25 e potrebbe non
+        # scattare mai, lasciando pompa e fancoil fermi con la casa che si
+        # scalda. Qui il flag viene spento, non congelato: e' l'unico caso in
+        # cui davanti a un sensore morto bisogna agire invece di astenersi.
+        t_ext_ok: "{{ has_value('sensor.hp1000se_pro_pro_v1_6_4_outdoor_temperature') }}"
         # Condizione di attivazione: la soglia meteo deve essere soddisfatta da
         # almeno un'ora continuativa. Il ritardo e' nel delay_on del sensore.
         cond_on: "{{ is_state('binary_sensor.clima_condizione_free_cooling', 'on') }}"
@@ -884,7 +922,7 @@
         # --- ATTIVA: solo in Cool, condizione soddisfatta, flag spento ---
         - conditions:
             - condition: template
-              value_template: "{{ giorno_on and not vacanza_on and mode in ['Cool', 'Cool only'] and cond_on and not flag_on }}"
+              value_template: "{{ t_ext_ok and giorno_on and not vacanza_on and mode in ['Cool', 'Cool only'] and cond_on and not flag_on }}"
           sequence:
             - action: input_boolean.turn_on
               target:
@@ -933,7 +971,8 @@
             - condition: template
               value_template: >
                 {{ flag_on and
-                   (not giorno_on
+                   (not t_ext_ok
+                    or not giorno_on
                     or vacanza_on
                     or (mode in ['Cool', 'Cool only'] and cond_off)
                     or (mode not in ['Cool', 'Cool only', 'unavailable', 'unknown', 'none'])) }}
@@ -1238,6 +1277,18 @@
         - condition: state
           entity_id: input_select.clima_modalita
           state: "manuale"
+    # Guardia dati (v58): senza il termometro della zona comandante l'errore
+    # verrebbe calcolato sul default di | float(), cioe' su un numero inventato.
+    # Di notte basta che almeno una delle due camere risponda: i rami notturni
+    # escludono gia' da soli la camera muta con il ripiego a -99.
+    - condition: template
+      value_template: >
+        {% if is_state('input_select.clima_modalita', 'notte') %}
+          {{ has_value('sensor.termometro_georgi_zigbee_temperature')
+             or has_value('sensor.termometro_tania_zigbee_temperature') }}
+        {% else %}
+          {{ has_value('sensor.hp1000se_pro_pro_v1_6_4_indoor_temperature') }}
+        {% endif %}
   actions:
     - variables:
         mod: "{{ states('input_select.clima_modalita') }}"
@@ -1373,11 +1424,14 @@
         cond_on: "{{ delta < base }}"
         # Disattivazione: fuori soglia con margine 0.5 C di isteresi
         cond_off: "{{ delta >= (base + 0.5) }}"
+        # Guardia dati (v58): stessa logica del free cooling. Senza temperatura
+        # esterna t_ext ripiega su 15 e il delta e' inventato: il flag va spento.
+        t_ext_ok: "{{ has_value('sensor.hp1000se_pro_pro_v1_6_4_outdoor_temperature') }}"
     - choose:
         # --- ATTIVA: solo in Heat, condizione soddisfatta, flag spento ---
         - conditions:
             - condition: template
-              value_template: "{{ not vacanza_on and mode in ['Heat', 'Heat only'] and cond_on and not flag_on }}"
+              value_template: "{{ t_ext_ok and not vacanza_on and mode in ['Heat', 'Heat only'] and cond_on and not flag_on }}"
           sequence:
             - action: input_boolean.turn_on
               target:
@@ -1402,7 +1456,8 @@
             - condition: template
               value_template: >
                 {{ flag_on and
-                   (vacanza_on
+                   (not t_ext_ok
+                    or vacanza_on
                     or (mode in ['Heat', 'Heat only'] and cond_off)
                     or (mode not in ['Heat', 'Heat only', 'unavailable', 'unknown', 'none'])) }}
           sequence:
@@ -1540,6 +1595,18 @@
         {% endif %}
         {% set latch = is_state('input_boolean.clima_pompa_latch_notte', 'on') %}
         {{ errore > (2.0 if latch else 0.5) }}
+    # Guardia dati (v58): senza il termometro della zona comandante l'errore
+    # verrebbe calcolato sul default di | float(), cioe' su un numero inventato.
+    # Di notte basta che almeno una delle due camere risponda: i rami notturni
+    # escludono gia' da soli la camera muta con il ripiego a -99.
+    - condition: template
+      value_template: >
+        {% if is_state('input_select.clima_modalita', 'notte') %}
+          {{ has_value('sensor.termometro_georgi_zigbee_temperature')
+             or has_value('sensor.termometro_tania_zigbee_temperature') }}
+        {% else %}
+          {{ has_value('sensor.hp1000se_pro_pro_v1_6_4_indoor_temperature') }}
+        {% endif %}
   actions:
     # Se si arriva qui con il latch armato significa che e' scattata la soglia
     # di sicurezza target + 2 C: il latch va rilasciato insieme alla pompa,
