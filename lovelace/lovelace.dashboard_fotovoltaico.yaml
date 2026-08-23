@@ -6,6 +6,233 @@ config:
     path: fotovoltaico
     sections:
     - cards:
+      - heading: PARAMETRI DEL SISTEMA ORA
+        heading_style: title
+        type: heading
+      - cards:
+        - entity: sensor.inverter_uflex_temperature
+          features_position: bottom
+          name: Temp scafale
+          type: tile
+          vertical: false
+        - entity: sensor.inverter_uflex_device_state
+          features_position: bottom
+          name: Inverter State
+          type: tile
+          vertical: false
+        - entity: sensor.inverter_uflex_battery_temperature
+          features_position: bottom
+          name: Temp condensatore
+          type: tile
+          vertical: false
+        - entity: sensor.inverter_uflex_dc_temperature
+          features_position: bottom
+          name: Temp Inverter
+          type: tile
+          vertical: false
+        columns: 2
+        square: false
+        type: grid
+      - entity: sensor.inverter_uflex_battery_voltage
+        features_position: bottom
+        name: Condens.Voltage
+        type: tile
+        vertical: false
+      - entity: sensor.inverter_uflex_battery_current
+        features_position: bottom
+        name: Condens.Cor
+        type: tile
+        vertical: false
+      - apex_config:
+          annotations:
+            yaxis:
+            - borderColor: '#009E73'
+              label:
+                borderColor: '#009E73'
+                style:
+                  background: '#009E73'
+                  color: '#FFFFFF'
+                text: 58,0 V limite datasheet
+              strokeDashArray: 4
+              'true': 58
+            - borderColor: '#D55E00'
+              label:
+                borderColor: '#D55E00'
+                style:
+                  background: '#D55E00'
+                  color: '#FFFFFF'
+                text: 58,7 V soglia allarme
+              strokeDashArray: 4
+              'true': 58.7
+        graph_span: 24hour
+        grid_options:
+          columns: 12
+          rows: auto
+        header:
+          show: true
+          title: Tensione max condens. 24ore,V
+        series:
+        - color: '#0072B2'
+          entity: sensor.inverter_uflex_battery_voltage
+          name: massima oraria
+          statistics:
+            period: hour
+            type: max
+          type: line
+          yaxis_id: volt
+        type: custom:apexcharts-card
+        yaxis:
+        - apex_config:
+            title:
+              text: V
+          decimals: 2
+          id: volt
+          max: 61
+          min: 45
+      - apex_config:
+          annotations:
+            yaxis:
+            - borderColor: '#009E73'
+              label:
+                borderColor: '#009E73'
+                style:
+                  background: '#009E73'
+                  color: '#FFFFFF'
+                text: 58,0 V limite datasheet
+              strokeDashArray: 4
+              'true': 58
+            - borderColor: '#D55E00'
+              label:
+                borderColor: '#D55E00'
+                style:
+                  background: '#D55E00'
+                  color: '#FFFFFF'
+                text: 58,7 V soglia allarme
+              strokeDashArray: 4
+              'true': 58.7
+        graph_span: 30d
+        grid_options:
+          columns: 12
+          rows: auto
+        header:
+          show: true
+          title: Tensione max condens.30gg,V
+        series:
+        - color: '#0072B2'
+          entity: sensor.inverter_uflex_battery_voltage
+          name: massima giornaliera
+          statistics:
+            period: day
+            type: max
+          type: line
+          yaxis_id: volt
+        type: custom:apexcharts-card
+        yaxis:
+        - apex_config:
+            title:
+              text: V
+          decimals: 2
+          id: volt
+          max: 61
+          min: 50
+      - graph_span: 30d
+        grid_options:
+          columns: 12
+          rows: auto
+        header:
+          show: true
+          title: "Temp entrata/uscita inventer \xB0C/gg"
+        series:
+        - entity: sensor.inverter_uflex_dc_temperature
+          name: Entrata DC
+          statistics:
+            period: day
+            type: max
+          type: column
+          yaxis_id: C
+        - entity: sensor.inverter_uflex_temperature
+          name: Uscita AC
+          statistics:
+            period: day
+            type: max
+          type: column
+          yaxis_id: C
+        type: custom:apexcharts-card
+        yaxis:
+        - apex_config:
+            title:
+              text: "\xB0C"
+          decimals: 2
+          id: C
+      - cards:
+        - entity: sensor.panel_max_power_summary
+          features_position: bottom
+          name: Max Potenza
+          type: tile
+          vertical: false
+        - entity: sensor.panel_min_power_summary
+          features_position: bottom
+          name: Min Potenza
+          type: tile
+          vertical: false
+        - entity: sensor.panel_max_strength_summary
+          features_position: bottom
+          name: Max Signal
+          type: tile
+          vertical: false
+        - entity: sensor.panel_min_strength_summary
+          features_position: bottom
+          name: Min Signal
+          type: tile
+          vertical: false
+        - entity: sensor.panels_zero_production
+          features_position: bottom
+          name: Pannelli 0 produzione
+          type: tile
+          vertical: false
+        columns: 1
+        grid_options:
+          columns: 6
+          rows: auto
+        square: false
+        type: grid
+      - alt_text: Schema pannelli Tigo
+        grid_options:
+          columns: 6
+          rows: auto
+        image: /local/schemaTigo.jpg
+        type: picture
+      - graph_span: 30d
+        grid_options:
+          columns: 12
+          rows: auto
+        header:
+          show: true
+          title: Segnale Min/Max pannelli /gg
+        series:
+        - entity: sensor.panel_max_strength_value
+          name: Max Signal
+          statistics:
+            period: day
+            type: max
+          type: line
+          yaxis_id: signal
+        - entity: sensor.panel_min_strength_value
+          name: Min Signal
+          statistics:
+            period: day
+            type: min
+          type: line
+          yaxis_id: signal
+        type: custom:apexcharts-card
+        yaxis:
+        - apex_config:
+            title:
+              text: dBm
+          decimals: 0
+          id: signal
+      type: grid
+    - cards:
       - heading: PRODUZIONE ELETTRICA
         heading_style: title
         type: heading
@@ -283,52 +510,6 @@ config:
               text: kWh
           decimals: 1
           id: kwh
-      - apex_config:
-          annotations:
-            yaxis:
-            - borderColor: '#009E73'
-              label:
-                borderColor: '#009E73'
-                style:
-                  background: '#009E73'
-                  color: '#FFFFFF'
-                text: 58,0 V limite datasheet
-              strokeDashArray: 4
-              'true': 58
-            - borderColor: '#D55E00'
-              label:
-                borderColor: '#D55E00'
-                style:
-                  background: '#D55E00'
-                  color: '#FFFFFF'
-                text: 58,7 V soglia allarme
-              strokeDashArray: 4
-              'true': 58.7
-        graph_span: 30d
-        grid_options:
-          columns: 12
-          rows: auto
-        header:
-          show: true
-          title: Tensione max condensatore, ultimi 30gg, V
-        series:
-        - color: '#0072B2'
-          entity: sensor.inverter_uflex_battery_voltage
-          name: massima giornaliera
-          statistics:
-            period: day
-            type: max
-          type: column
-          yaxis_id: volt
-        type: custom:apexcharts-card
-        yaxis:
-        - apex_config:
-            title:
-              text: V
-          decimals: 2
-          id: volt
-          max: 61
-          min: 55
       - graph_span: 365d
         grid_options:
           columns: 12
@@ -351,131 +532,6 @@ config:
               text: kWh
           decimals: 1
           id: kwh
-      type: grid
-    - cards:
-      - heading: PARAMETRI DEL SISTEMA ORA
-        heading_style: title
-        type: heading
-      - cards:
-        - entity: sensor.inverter_uflex_temperature
-          features_position: bottom
-          name: Temp scafale
-          type: tile
-          vertical: false
-        - entity: sensor.inverter_uflex_device_state
-          features_position: bottom
-          name: Inverter State
-          type: tile
-          vertical: false
-        - entity: sensor.inverter_uflex_battery_temperature
-          features_position: bottom
-          name: Temp condensatore
-          type: tile
-          vertical: false
-        - entity: sensor.inverter_uflex_dc_temperature
-          features_position: bottom
-          name: Temp Inverter
-          type: tile
-          vertical: false
-        columns: 2
-        square: false
-        type: grid
-      - graph_span: 30d
-        grid_options:
-          columns: 12
-          rows: auto
-        header:
-          show: true
-          title: "Temp entrata/uscita inventer \xB0C/gg"
-        series:
-        - entity: sensor.inverter_uflex_dc_temperature
-          name: Entrata DC
-          statistics:
-            period: day
-            type: max
-          type: column
-          yaxis_id: C
-        - entity: sensor.inverter_uflex_temperature
-          name: Uscita AC
-          statistics:
-            period: day
-            type: max
-          type: column
-          yaxis_id: C
-        type: custom:apexcharts-card
-        yaxis:
-        - apex_config:
-            title:
-              text: "\xB0C"
-          decimals: 2
-          id: C
-      - cards:
-        - entity: sensor.panel_max_power_summary
-          features_position: bottom
-          name: Max Potenza
-          type: tile
-          vertical: false
-        - entity: sensor.panel_min_power_summary
-          features_position: bottom
-          name: Min Potenza
-          type: tile
-          vertical: false
-        - entity: sensor.panel_max_strength_summary
-          features_position: bottom
-          name: Max Signal
-          type: tile
-          vertical: false
-        - entity: sensor.panel_min_strength_summary
-          features_position: bottom
-          name: Min Signal
-          type: tile
-          vertical: false
-        - entity: sensor.panels_zero_production
-          features_position: bottom
-          name: Pannelli 0 produzione
-          type: tile
-          vertical: false
-        columns: 1
-        grid_options:
-          columns: 6
-          rows: auto
-        square: false
-        type: grid
-      - alt_text: Schema pannelli Tigo
-        grid_options:
-          columns: 6
-          rows: auto
-        image: /local/schemaTigo.jpg
-        type: picture
-      - graph_span: 30d
-        grid_options:
-          columns: 12
-          rows: auto
-        header:
-          show: true
-          title: Segnale Min/Max pannelli /gg
-        series:
-        - entity: sensor.panel_max_strength_value
-          name: Max Signal
-          statistics:
-            period: day
-            type: max
-          type: line
-          yaxis_id: signal
-        - entity: sensor.panel_min_strength_value
-          name: Min Signal
-          statistics:
-            period: day
-            type: min
-          type: line
-          yaxis_id: signal
-        type: custom:apexcharts-card
-        yaxis:
-        - apex_config:
-            title:
-              text: dBm
-          decimals: 0
-          id: signal
       type: grid
     - cards:
       - heading: "PANELLI: PRODUTTIVIT\xC0 E SEGNALE ORA"

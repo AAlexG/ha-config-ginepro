@@ -1,4 +1,4 @@
-# config_fotovoltaico_2.yaml
+# config_fotovoltaico_3.yaml
 # Package Casa Ginepro - Fotovoltaico: inverter UFLEX, pannelli Tigo, surplus, GSE
 # Estratto da configuration_186.yaml. Nome file = nome del package.
 
@@ -380,6 +380,49 @@ template:
               {{ n + 1 if (v > s and p <= s) else n }}
             {% endif %}
           soglia: 58.7
+
+  #--------------------------------------------------------------------------
+  # FOTOGRAFIA DEL SISTEMA AL MOMENTO DEL PICCO DI TENSIONE
+  #
+  # Analisi 22/08/2026: gli episodi oltre 58,7 V avvengono con potenza di
+  # batteria quasi nulla (pochi watt), quindi senza carica in corso. Solo il
+  # 19/08, giorno del fault F55, si sono registrati fino a -3394 W. Restano
+  # aperte due ipotesi opposte: errore di misura della tensione DC da parte
+  # dell'inverter, oppure sovratensione reale di origine ignota.
+  #
+  # Gli episodi durano da 0 a 25 secondi, non verificabili con un multimetro
+  # a mano. Questo sensore registra lo stato di tutto l'impianto nell'istante
+  # in cui la tensione attraversa la soglia, conservando gli ultimi 30 eventi.
+  # Se i picchi risultano correlati a un evento preciso (distacco di un carico,
+  # variazione brusca del fotovoltaico, cambio di stato dell'inverter) si ha
+  # una causa; se sono scorrelati, l'ipotesi dell'errore di misura si rafforza.
+  #
+  # Nota: la fotografia e' scattata all'attraversamento della soglia, che puo'
+  # precedere di qualche secondo il valore di picco effettivo.
+  #--------------------------------------------------------------------------
+  - trigger:
+      - platform: numeric_state
+        entity_id: sensor.inverter_uflex_battery_voltage
+        above: 58.7
+    sensor:
+      - name: "Condensatore Ultimi Picchi"
+        unique_id: condensatore_ultimi_picchi
+        icon: mdi:camera-burst
+        state: "{{ now().strftime('%d/%m %H:%M:%S') }}"
+        attributes:
+          picchi: >-
+            {% set nuovo = {
+                 'ora': now().strftime('%d/%m %H:%M:%S'),
+                 'v': states('sensor.inverter_uflex_battery_voltage') | float(0),
+                 'w_batt': states('sensor.inverter_uflex_battery_power') | float(0),
+                 'w_pv': states('sensor.inverter_uflex_pv_power') | float(0),
+                 'w_carico': states('sensor.inverter_uflex_load_power') | float(0),
+                 'w_rete': states('sensor.inverter_uflex_grid_power') | float(0),
+                 't_batt': states('sensor.inverter_uflex_battery_temperature') | float(0),
+                 't_inv': states('sensor.inverter_uflex_temperature') | float(0),
+                 'stato': states('sensor.inverter_uflex_device_state')
+               } %}
+            {{ ([nuovo] + (this.attributes.get('picchi', []) | list))[:30] }}
 
 command_line:
 
