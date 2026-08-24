@@ -134,7 +134,53 @@ config:
           decimals: 2
           id: volt
           max: 61
-          min: 50
+          min: 57
+      - apex_config:
+          annotations:
+            yaxis:
+            - borderColor: '#009E73'
+              label:
+                borderColor: '#009E73'
+                style:
+                  background: '#009E73'
+                  color: '#FFFFFF'
+                text: 58,0 V limite datasheet
+              strokeDashArray: 4
+              'true': 58
+            - borderColor: '#D55E00'
+              label:
+                borderColor: '#D55E00'
+                style:
+                  background: '#D55E00'
+                  color: '#FFFFFF'
+                text: 58,7 V soglia allarme
+              strokeDashArray: 4
+              'true': 58.7
+        graph_span: 30d
+        grid_options:
+          columns: 12
+          rows: auto
+        header:
+          show: true
+          title: Temperaturs max 30gg,C
+        series:
+        - color: '#0072B2'
+          entity: sensor.hp1000se_pro_pro_v1_6_4_outdoor_temperature
+          name: massima giornaliera
+          statistics:
+            period: day
+            type: max
+          type: line
+          yaxis_id: C
+        type: custom:apexcharts-card
+        yaxis:
+        - apex_config:
+            title:
+              text: C
+          decimals: 2
+          id: C
+          max: 40
+          min: 20
       - graph_span: 30d
         grid_options:
           columns: 12
