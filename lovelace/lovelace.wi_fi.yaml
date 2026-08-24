@@ -1,6 +1,7 @@
 config:
   views:
-  - cards:
+  - badges: []
+    cards:
     - cards:
       - entity: sensor.0xa4c1383e0fd87686_linkquality
         features:

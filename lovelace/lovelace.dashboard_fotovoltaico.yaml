@@ -70,7 +70,7 @@ config:
           rows: auto
         header:
           show: true
-          title: Tensione max condens. 24ore,V
+          title: Volt max condens. (ok se <57.8)
         series:
         - color: '#0072B2'
           entity: sensor.inverter_uflex_battery_voltage

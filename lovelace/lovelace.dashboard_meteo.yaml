@@ -135,7 +135,7 @@ config:
         grid_options:
           columns: full
           rows: auto
-        hours_to_show: 4380
+        hours_to_show: 8640
         refresh_interval: 60
         type: history-graph
       - entity: sensor.hp1000se_pro_pro_v1_6_4_daily_rain

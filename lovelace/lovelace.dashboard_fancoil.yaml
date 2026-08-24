@@ -5,145 +5,6 @@ config:
     path: fancoil
     sections:
     - cards:
-      - heading: "Temperature & Umidit\xE0"
-        heading_style: title
-        icon: mdi:home-thermometer-outline
-        type: heading
-      - entities:
-        - entity: sensor.hp1000se_pro_pro_v1_6_4_indoor_temperature
-          name: Temp.Sala
-        - entity: sensor.termometro_georgi_zigbee_temperature
-          name: Georgi
-        - entity: sensor.termometro_tania_zigbee_temperature
-          name: Tania
-        - entity: sensor.termometro_cantina_zigbee_temperature
-          name: Cantina
-        - entity: sensor.hp1000se_pro_pro_v1_6_4_outdoor_temperature
-          name: Esterna
-        - entity: sensor.hp1000se_pro_pro_v1_6_4_indoor_humidity
-          name: Humid.Sala
-        - entity: sensor.termometro_georgi_zigbee_humidity
-          name: Georgi
-        - entity: sensor.termometro_tania_zigbee_humidity
-          name: Tania
-        - entity: sensor.termometro_cantina_zigbee_humidity
-          name: Cantina
-        - entity: sensor.hp1000se_pro_pro_v1_6_4_humidity
-          name: Esterna
-        grid_options:
-          columns: full
-          rows: auto
-        hours_to_show: 24
-        refresh_interval: 60
-        type: history-graph
-      - battery:
-          energy: 5120
-          show_daily: true
-          shutdown_soc: 1
-        battery2:
-          animate: true
-          auto_scale: true
-          colour: '#ffc0cb'
-          dynamic_colour: true
-          energy: 0
-          hide_soc: false
-          invert_flow: false
-          invert_power: false
-          linear_gradient: true
-          navigate: ''
-          path_threshold: 100
-          remaining_energy_to_shutdown: false
-          show_absolute: false
-          show_remaining_energy: true
-          shutdown_soc: 20
-          soc_end_of_charge: 100
-        card_height: 100%
-        card_width: 100%
-        cardstyle: compact
-        center_no_grid: false
-        decimal_places: 2
-        decimal_places_energy: 1
-        dynamic_line_width: true
-        entities:
-          battery_current_191: sensor.inverter_uflex_battery_current
-          battery_power_190: sensor.inverter_uflex_battery_power
-          battery_soc_184: sensor.inverter_uflex_battery
-          battery_voltage_183: sensor.inverter_uflex_battery_voltage
-          day_battery_charge_70: sensor.inverter_uflex_today_battery_charge
-          day_battery_discharge_71: sensor.inverter_uflex_today_battery_discharge
-          day_grid_export_77: sensor.inverter_uflex_today_energy_export
-          day_grid_import_76: sensor.inverter_uflex_today_energy_import
-          day_load_energy_84: sensor.inverter_uflex_today_load_consumption
-          day_pv_energy_108: sensor.inverter_uflex_today_production
-          essential_power: sensor.inverter_uflex_load_power
-          grid_ct_power_172: sensor.inverter_uflex_external_ct1_power
-          grid_power_169: sensor.inverter_uflex_external_power
-          inverter_status_59: sensor.inverter_uflex_device_state
-          inverter_voltage_154: sensor.inverter_uflex_grid_l1_voltage
-          load_frequency_192: sensor.inverter_uflex_grid_frequency
-          pv1_current_110: sensor.inverter_uflex_pv1_current
-          pv1_power_186: sensor.inverter_uflex_pv1_power
-          pv1_voltage_109: sensor.inverter_uflex_pv1_voltage
-          pv2_current_112: sensor.inverter_uflex_pv2_current
-          pv2_power_187: sensor.inverter_uflex_pv2_power
-          pv2_voltage_111: sensor.inverter_uflex_pv2_voltage
-          pv_total_power: sensor.inverter_uflex_pv_power
-        grid:
-          show_daily_buy: true
-          show_daily_sell: true
-          show_nonessential: true
-        inverter:
-          autarky: power
-          auto_scale: true
-          colour: '#9e9e9e'
-          model: sunsynk
-          modern: true
-          three_phase: false
-        large_font: false
-        load:
-          show_daily: true
-        max_line_width: 4
-        min_line_width: 1
-        show_battery: true
-        show_grid: true
-        show_solar: true
-        solar:
-          mppts: 2
-          show_daily: true
-        type: custom:sunsynk-power-flow-card
-        wide: false
-      - entity: sensor.panasonic_heat_pump_main_main_target_temp
-        features_position: bottom
-        name: PompaTarget
-        type: tile
-        vertical: false
-      - entity: sensor.panasonic_heat_pump_main_main_outlet_temp
-        features_position: bottom
-        name: PompaOut
-        type: tile
-        vertical: false
-      - entity: sensor.opentherm_gateway_otgw_otgw_control_setpoint
-        features_position: bottom
-        name: RiscalTarget
-        type: tile
-        vertical: false
-      - entity: sensor.opentherm_gateway_otgw_otgw_boiler_flow_water_temperature
-        features_position: bottom
-        name: RiscalOUT
-        type: tile
-        vertical: false
-      - entity: sensor.opentherm_gateway_otgw_otgw_dhw_setpoint
-        features_position: bottom
-        name: Sanit.Target
-        type: tile
-        vertical: false
-      - entity: sensor.opentherm_gateway_otgw_otgw_dhw_temperature
-        features_position: bottom
-        name: Sanit.Ora
-        type: tile
-        vertical: false
-      type: grid
-    - cards:
       - heading: Gestione Manuale
         heading_style: title
         icon: mdi:hand-back-right
@@ -178,8 +39,22 @@ config:
         name: Pompa Online
         type: tile
         vertical: false
+      - entity: switch.solo_auto_contattore_interruttore
+        features:
+        - type: toggle
+        features_position: bottom
+        name: Auto contattore
+        type: tile
+        vertical: false
+      - entity: switch.solo_sauna_contatore_interruttore
+        features:
+        - type: toggle
+        features_position: bottom
+        name: Sauna
+        type: tile
+        vertical: false
       - heading: Blocca automatismi fino cambio giorno/notte (07:00 / 23:00)
-        heading_style: subtitle
+        heading_style: title
         icon: ''
         type: heading
       - heading: Fancoil
@@ -287,13 +162,245 @@ config:
         vertical: false
       type: grid
     - cards:
+      - heading: Irrigazione Sonoff switch 4CHPROR3
+        heading_style: subtitle
+        icon: mdi:sprinkler-variant
+        type: heading
+      - entity: switch.irrigazione_sonoff_switch_4chpror3_sonoff_10028b1d36_1
+        features:
+        - type: toggle
+        type: tile
+      - entity: switch.irrigazione_sonoff_switch_4chpror3_sonoff_10028b1d36_2
+        features:
+        - type: toggle
+        type: tile
+      - entity: switch.irrigazione_sonoff_switch_4chpror3_sonoff_10028b1d36_3
+        features:
+        - type: toggle
+        type: tile
+      - entity: switch.irrigazione_sonoff_switch_4chpror3_sonoff_10028b1d36_4
+        features:
+        - type: toggle
+        type: tile
+      - color: blue
+        entity: sensor.irrigazione_attiva
+        features_position: bottom
+        grid_options:
+          columns: full
+          rows: 1
+        name: ON/OFF Irrigazione
+        tap_action:
+          action: perform-action
+          perform_action: script.irrigazione_salta_toggle
+        type: tile
+        vertical: false
+      - heading: Altri devices
+        heading_style: subtitle
+        icon: mdi:devices
+        type: heading
+      - entity: media_player.googlehome8851
+        features:
+        - step: 5
+          type: media-player-volume-buttons
+        features_position: bottom
+        grid_options:
+          rows: auto
+        name: Yamaha Volume
+        type: tile
+        vertical: false
+      type: grid
+    - cards:
+      - heading: "Temperature & Umidit\xE0"
+        heading_style: title
+        icon: mdi:home-thermometer-outline
+        type: heading
+      - entities:
+        - entity: sensor.hp1000se_pro_pro_v1_6_4_indoor_temperature
+          name: Temp.Sala
+        - entity: sensor.termometro_georgi_zigbee_temperature
+          name: Georgi
+        - entity: sensor.termometro_tania_zigbee_temperature
+          name: Tania
+        - entity: sensor.termometro_cantina_zigbee_temperature
+          name: Cantina
+        - entity: sensor.hp1000se_pro_pro_v1_6_4_outdoor_temperature
+          name: Esterna
+        - entity: sensor.hp1000se_pro_pro_v1_6_4_indoor_humidity
+          name: Humid.Sala
+        - entity: sensor.termometro_georgi_zigbee_humidity
+          name: Georgi
+        - entity: sensor.termometro_tania_zigbee_humidity
+          name: Tania
+        - entity: sensor.termometro_cantina_zigbee_humidity
+          name: Cantina
+        - entity: sensor.hp1000se_pro_pro_v1_6_4_humidity
+          name: Esterna
+        grid_options:
+          columns: full
+          rows: auto
+        hours_to_show: 24
+        refresh_interval: 60
+        type: history-graph
+      - entity: sensor.panasonic_heat_pump_main_main_target_temp
+        features_position: bottom
+        name: PompaTarget
+        type: tile
+        vertical: false
+      - entity: sensor.panasonic_heat_pump_main_main_outlet_temp
+        features_position: bottom
+        name: PompaOut
+        type: tile
+        vertical: false
+      - entity: sensor.opentherm_gateway_otgw_otgw_control_setpoint
+        features_position: bottom
+        name: RiscalTarget
+        type: tile
+        vertical: false
+      - entity: sensor.opentherm_gateway_otgw_otgw_boiler_flow_water_temperature
+        features_position: bottom
+        name: RiscalOUT
+        type: tile
+        vertical: false
+      - entity: sensor.opentherm_gateway_otgw_otgw_dhw_setpoint
+        features_position: bottom
+        name: Sanit.Target
+        type: tile
+        vertical: false
+      - entity: sensor.opentherm_gateway_otgw_otgw_dhw_temperature
+        features_position: bottom
+        name: Sanit.Ora
+        type: tile
+        vertical: false
+      type: grid
+    - cards:
+      - heading: Consumo ora
+        heading_style: title
+        icon: mdi:home-thermometer-outline
+        type: heading
+      - battery:
+          energy: 5120
+          show_daily: true
+          shutdown_soc: 1
+        battery2:
+          animate: true
+          auto_scale: true
+          colour: '#ffc0cb'
+          dynamic_colour: true
+          energy: 0
+          hide_soc: false
+          invert_flow: false
+          invert_power: false
+          linear_gradient: true
+          navigate: ''
+          path_threshold: 100
+          remaining_energy_to_shutdown: false
+          show_absolute: false
+          show_remaining_energy: true
+          shutdown_soc: 20
+          soc_end_of_charge: 100
+        card_height: 100%
+        card_width: 100%
+        cardstyle: compact
+        center_no_grid: false
+        decimal_places: 2
+        decimal_places_energy: 1
+        dynamic_line_width: true
+        entities:
+          battery_current_191: sensor.inverter_uflex_battery_current
+          battery_power_190: sensor.inverter_uflex_battery_power
+          battery_soc_184: sensor.inverter_uflex_battery
+          battery_voltage_183: sensor.inverter_uflex_battery_voltage
+          day_battery_charge_70: sensor.inverter_uflex_today_battery_charge
+          day_battery_discharge_71: sensor.inverter_uflex_today_battery_discharge
+          day_grid_export_77: sensor.inverter_uflex_today_energy_export
+          day_grid_import_76: sensor.inverter_uflex_today_energy_import
+          day_load_energy_84: sensor.inverter_uflex_today_load_consumption
+          day_pv_energy_108: sensor.inverter_uflex_today_production
+          essential_power: sensor.inverter_uflex_load_power
+          grid_ct_power_172: sensor.inverter_uflex_external_ct1_power
+          grid_power_169: sensor.inverter_uflex_external_power
+          inverter_status_59: sensor.inverter_uflex_device_state
+          inverter_voltage_154: sensor.inverter_uflex_grid_l1_voltage
+          load_frequency_192: sensor.inverter_uflex_grid_frequency
+          pv1_current_110: sensor.inverter_uflex_pv1_current
+          pv1_power_186: sensor.inverter_uflex_pv1_power
+          pv1_voltage_109: sensor.inverter_uflex_pv1_voltage
+          pv2_current_112: sensor.inverter_uflex_pv2_current
+          pv2_power_187: sensor.inverter_uflex_pv2_power
+          pv2_voltage_111: sensor.inverter_uflex_pv2_voltage
+          pv_total_power: sensor.inverter_uflex_pv_power
+        grid:
+          show_daily_buy: true
+          show_daily_sell: true
+          show_nonessential: true
+        inverter:
+          autarky: power
+          auto_scale: true
+          colour: '#9e9e9e'
+          model: sunsynk
+          modern: true
+          three_phase: false
+        large_font: false
+        load:
+          show_daily: true
+        max_line_width: 4
+        min_line_width: 1
+        show_battery: true
+        show_grid: true
+        show_solar: true
+        solar:
+          mppts: 2
+          show_daily: true
+        type: custom:sunsynk-power-flow-card
+        wide: false
+      - color: '#7E57C2'
+        entity: sensor.altri_apparecchi_ora
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        icon: mdi:home-lightning-bolt-outline
+        icon_tap_action:
+          action: navigate
+          navigation_path: /dashboard-consumi/elettricita
+        name: Altri apparecchi
+        type: tile
+        vertical: false
+      - entity: sensor.solo_auto_contattore_potenza_di_fase_a
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        name: Auto
+        type: tile
+        vertical: false
+      - entity: sensor.panasonic_potenza_consumata_calcolata
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        icon_tap_action:
+          action: navigate
+          navigation_path: /dashboard-panasonic
+        name: Pompa
+        type: tile
+        vertical: false
+      - entity: sensor.lavatricemielewci870_consumo_energia
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        icon_tap_action:
+          action: navigate
+          navigation_path: /dashboard-fancoil/fancoil
+        name: Lavatrice
+        type: tile
+        vertical: false
+      type: grid
+    - cards:
       - heading: 'Accensioni Fancoil e Deumidificatori:'
         heading_style: title
         icon: mdi:chart-timeline
-        type: heading
-      - heading: '-  Fancoil'
-        heading_style: title
-        icon: mdi:fan
         type: heading
       - entities:
         - entity: switch.camerageorgi_shelly_fancoil_georgi
@@ -331,205 +438,36 @@ config:
         type: history-graph
       type: grid
     - cards:
-      - heading: Fancoil Tania shelly
-        heading_style: title
-        icon: mdi:wind-power
-        type: heading
-      - entity: switch.camerageorgi_shelly_fancoil_georgi
-        features:
-        - type: toggle
-        features_position: bottom
-        name: Stato
-        type: tile
-        vertical: false
-      - entity: sensor.shelly1g4_a085e3b3f81c_intensita_del_segnale
-        features:
-        - type: trend-graph
-        features_position: bottom
-        name: WiFi
-        type: tile
-        vertical: false
-      - entity: sensor.shelly1g4_a085e3b3f81c_temperatura
-        features_position: bottom
-        name: Temp. Shelly
-        type: tile
-        vertical: false
-      - entity: sensor.shelly1g4_a085e3b3f81c_tempo_di_attivita
-        features_position: bottom
-        name: "Tempo attivit\xE0 "
-        type: tile
-        vertical: false
-      type: grid
-    - cards:
-      - heading: Fancoil georgi shelly
-        heading_style: title
-        icon: mdi:wind-power
-        type: heading
-      - entity: switch.camerageorgi_shelly_fancoil_georgi_2
-        features:
-        - type: toggle
-        features_position: bottom
-        name: Stato
-        type: tile
-        vertical: false
-      - entity: sensor.shelly1g4_a085e3b4bee4_intensita_del_segnale
-        features:
-        - type: trend-graph
-        features_position: bottom
-        name: WiFi
-        type: tile
-        vertical: false
-      - entity: sensor.shelly1g4_a085e3b4bee4_temperatura
-        features_position: bottom
-        name: 'Temp. Shelly '
-        type: tile
-        vertical: false
-      - entity: sensor.shelly1g4_a085e3b4bee4_tempo_di_attivita
-        features_position: bottom
-        name: "Tempo attivit\xE0 "
-        type: tile
-        vertical: false
-      type: grid
-    - cards:
-      - heading: Fancoil sala shelly
-        heading_style: title
-        icon: mdi:wind-power
-        type: heading
-      - entity: switch.sala_fancoil_sala_shelly_1gen4
-        features:
-        - type: toggle
-        features_position: bottom
-        name: Stato
-        type: tile
-        vertical: false
-      - entity: sensor.shelly1g4_a085e3ba36e0_intensita_del_segnale
-        features:
-        - type: trend-graph
-        features_position: bottom
-        name: WiFi
-        type: tile
-        vertical: false
-      - entity: sensor.shelly1g4_a085e3ba36e0_temperatura
-        features_position: bottom
-        name: Temp. Shelly
-        type: tile
-        vertical: false
-      - entity: sensor.shelly1g4_a085e3ba36e0_tempo_di_attivita
-        features_position: bottom
-        name: "Tempo attivit\xE0 "
-        type: tile
-        vertical: false
-      type: grid
-    - cards:
-      - heading: Deumidificatore Armadio Zigbee
+      - heading: Deumid.Cantina(WiFi)&Armadio(Zigbee)
         heading_style: title
         icon: mdi:air-humidifier
         type: heading
-      - entity: switch.deumidificatore_armadio_zigbee
-        features:
-        - type: toggle
-        features_position: bottom
-        name: Stato
-        type: tile
-        vertical: false
-      - entity: sensor.0xa4c1383e0fd87686_linkquality
-        features:
-        - type: trend-graph
-        features_position: bottom
-        name: LinkQulity
-        type: tile
-        vertical: false
-      - entity: sensor.deumidificatore_armadio_zigbee_power
-        features:
-        - type: trend-graph
-        features_position: bottom
-        name: Potenza
-        type: tile
-        vertical: false
-      - entity: sensor.deumidificatore_armadio_oggi
-        features_position: bottom
-        grid_options:
-          rows: auto
-        name: Consumo oggi
-        type: tile
-        vertical: false
-      - entity: sensor.deumidificatore_armadio_zigbee_current
-        features_position: bottom
-        name: Corrente
-        type: tile
-        vertical: false
-      - entity: sensor.deumidificatore_armadio_zigbee_voltage
-        features_position: bottom
-        name: Tensione
-        type: tile
-        vertical: false
-      - chart_type: bar
-        days_to_show: 7
-        entities:
-        - entity: sensor.deumidificatore_armadio_oggi
-          name: Consumo al giorno
-        period: day
-        stat_types:
-        - state
-        type: statistics-graph
-      - chart_type: bar
-        days_to_show: 365
-        entities:
-        - entity: sensor.deumidificatore_armadio_oggi
-          name: Consumo mensile
-        period: month
-        stat_types:
-        - change
-        type: statistics-graph
-      type: grid
-    - cards:
-      - heading: Deumidificatore cantina Sonoff
-        heading_style: title
-        icon: mdi:air-humidifier
-        type: heading
-      - entity: switch.box_deumidificatore_cantina_sonoff
-        features:
-        - type: toggle
-        features_position: bottom
-        name: Stato
-        type: tile
-        vertical: false
       - entity: sensor.box_deumidificatore_cantina_sonoff_wifi
         features:
         - type: trend-graph
         features_position: bottom
-        name: 'Wi-Fi '
-        type: tile
-        vertical: false
-      - entity: sensor.box_deumidificatore_cantina_sonoff_power
-        features:
-        - type: trend-graph
-        features_position: bottom
-        name: Potenza
-        type: tile
-        vertical: false
-      - entity: sensor.box_deumidificatore_cantina_sonoff_energy_day
-        features_position: bottom
         grid_options:
-          rows: auto
-        name: Consumo oggi
+          columns: full
+        name: 'Cantina Wi-Fi '
         type: tile
         vertical: false
-      - entity: sensor.box_deumidificatore_cantina_sonoff_current
-        features_position: bottom
-        name: Corrente
-        type: tile
-        vertical: false
-      - entity: sensor.box_deumidificatore_cantina_sonoff_voltage
-        features_position: bottom
-        name: Tensione
-        type: tile
-        vertical: false
+      - chart_type: line-stack
+        days_to_show: 7
+        entities:
+        - entity: sensor.0xa4c1383e0fd87686_linkquality
+          name: Armadio
+        period: day
+        stat_types:
+        - max
+        - min
+        type: statistics-graph
       - chart_type: bar
         days_to_show: 7
         entities:
         - entity: sensor.box_deumidificatore_cantina_sonoff_energy_day
-          name: Consumo x giorno
+          name: Cantina
+        - entity: sensor.deumidificatore_armadio_oggi
+          name: Armadio
         period: day
         stat_types:
         - state
@@ -538,91 +476,128 @@ config:
         days_to_show: 365
         entities:
         - entity: sensor.box_deumidificatore_cantina_sonoff_energy_day
-          name: Consumo x mese
+          name: Cantina
+        - entity: sensor.deumidificatore_armadio_oggi
+          name: Armadio
         period: month
         stat_types:
         - change
         type: statistics-graph
       type: grid
     - cards:
-      - heading: Termometro cantina zigbee
+      - heading: Fancoil via Shelly
+        heading_style: title
+        icon: mdi:wind-power
+        type: heading
+      - entity: sensor.shelly1g4_a085e3b3f81c_intensita_del_segnale
+        features_position: bottom
+        name: WiFi Tania
+        type: tile
+        vertical: false
+      - entity: sensor.shelly1g4_a085e3b3f81c_temperatura
+        features_position: bottom
+        name: Temp.Tania
+        type: tile
+        vertical: false
+      - entity: sensor.shelly1g4_a085e3b4bee4_intensita_del_segnale
+        features_position: bottom
+        name: WiFiGeorgi
+        type: tile
+        vertical: false
+      - entity: sensor.shelly1g4_a085e3b4bee4_temperatura
+        features_position: bottom
+        name: Temp.Georgi
+        type: tile
+        vertical: false
+      - entity: sensor.shelly1g4_a085e3ba36e0_intensita_del_segnale
+        features_position: bottom
+        name: WiFi Sala
+        type: tile
+        vertical: false
+      - entity: sensor.shelly1g4_a085e3ba36e0_temperatura
+        features_position: bottom
+        name: Temp.Sala
+        type: tile
+        vertical: false
+      - chart_type: bar
+        days_to_show: 7
+        entities:
+        - entity: sensor.consumo_fancoil_tania_oggi_stimato
+          name: Tania
+        - entity: sensor.consumo_fancoil_georgi_oggi_stimato
+          name: Georgi
+        - entity: sensor.consumo_fancoil_sala_oggi_stimato_non_verificato
+          name: Sala
+        period: day
+        stat_types:
+        - state
+        type: statistics-graph
+      - chart_type: bar
+        days_to_show: 365
+        entities:
+        - entity: sensor.consumo_fancoil_tania_oggi_stimato
+          name: Tania
+        - entity: sensor.consumo_fancoil_georgi_oggi_stimato
+          name: Georgi
+        - entity: sensor.consumo_fancoil_sala_oggi_stimato_non_verificato
+          name: Sala
+        period: month
+        stat_types:
+        - change
+        type: statistics-graph
+      type: grid
+    - cards:
+      - heading: Termometri zigbee (medie giorno)
         heading_style: title
         icon: mdi:coolant-temperature
         type: heading
-      - entity: sensor.termometro_cantina_zigbee_temperature
-        features_position: bottom
-        name: Temperatura
-        type: tile
-        vertical: false
-      - entity: sensor.termometro_cantina_zigbee_humidity
-        features_position: bottom
-        name: "Umidit\xE0 "
-        type: tile
-        vertical: false
+      - chart_type: line
+        days_to_show: 7
+        entities:
+        - entity: sensor.termometro_cantina_zigbee_temperature
+          name: Cantina
+        - entity: sensor.termometro_tania_zigbee_temperature
+          name: Tania
+        - entity: sensor.termometro_georgi_zigbee_temperature
+          name: 'Georgi '
+        period: day
+        stat_types:
+        - mean
+        type: statistics-graph
+      - chart_type: line
+        days_to_show: 7
+        entities:
+        - entity: sensor.termometro_cantina_zigbee_humidity
+          name: Cantina
+        - entity: sensor.termometro_tania_zigbee_humidity
+          name: Tania
+        - entity: sensor.termometro_georgi_zigbee_humidity
+          name: Georgi
+        period: day
+        stat_types:
+        - mean
+        type: statistics-graph
+      - chart_type: line
+        days_to_show: 7
+        entities:
+        - entity: sensor.termometro_cantina_zigbee_linkquality
+          name: Cantina
+        - entity: sensor.0xa4c138e6a0d06219_linkquality
+          name: Tania
+        - entity: sensor.termometro_georgi_zigbee_linkquality
+          name: Georgi
+        period: day
+        stat_types:
+        - mean
+        type: statistics-graph
       - entity: sensor.termometro_cantina_zigbee_battery
         features_position: bottom
-        name: Batteria
-        type: tile
-        vertical: false
-      - entity: sensor.termometro_cantina_zigbee_linkquality
-        features:
-        - type: trend-graph
-        features_position: bottom
-        name: LinkQuality
+        name: Batt.Cantina
         type: tile
         vertical: false
       - entity: sensor.termometro_cantina_zigbee_voltage
         features_position: bottom
-        name: Tensione
-        type: tile
-        vertical: false
-      type: grid
-    - cards:
-      - heading: Termometro Georgi zigbee
-        heading_style: title
-        icon: mdi:coolant-temperature
-        type: heading
-      - entity: sensor.termometro_georgi_zigbee_temperature
-        features_position: bottom
-        name: Temperatura
-        type: tile
-        vertical: false
-      - entity: sensor.termometro_georgi_zigbee_humidity
-        features_position: bottom
-        name: "Umidit\xE0 "
-        type: tile
-        vertical: false
-      - entity: sensor.termometro_georgi_zigbee_battery
-        features_position: bottom
-        name: Batteria
-        type: tile
-        vertical: false
-      - entity: sensor.termometro_georgi_zigbee_linkquality
-        features:
-        - type: trend-graph
-        features_position: bottom
-        name: LinkQuality
-        type: tile
-        vertical: false
-      - entity: sensor.termometro_georgi_zigbee_voltage
-        features_position: bottom
-        name: Tensione
-        type: tile
-        vertical: false
-      type: grid
-    - cards:
-      - heading: Termometro Tania zigbee
-        heading_style: title
-        icon: mdi:coolant-temperature
-        type: heading
-      - entity: sensor.termometro_tania_zigbee_temperature
-        features_position: bottom
-        name: Temperatura
-        type: tile
-        vertical: false
-      - entity: sensor.termometro_tania_zigbee_humidity
-        features_position: bottom
-        name: "Umidit\xE0 "
+        name: Tens.Cantina
         type: tile
         vertical: false
       - entity: sensor.termometro_tania_zigbee_battery
@@ -630,48 +605,22 @@ config:
         grid_options:
           columns: 6
           rows: auto
-        name: Batteria
-        type: tile
-        vertical: false
-      - entity: sensor.0xa4c138e6a0d06219_linkquality
-        features:
-        - type: trend-graph
-        features_position: bottom
-        name: LinkQuality
+        name: Batt.Tania
         type: tile
         vertical: false
       - entity: sensor.termometro_tania_zigbee_voltage
         features_position: bottom
-        name: Tensione
+        name: Tens.Tania
         type: tile
         vertical: false
-      type: grid
-    - cards:
-      - heading: Irrigazione Sonoff switch 4CHPROR3
-        heading_style: title
-        icon: mdi:sprinkler-variant
-        type: heading
-      - entity: switch.irrigazione_sonoff_switch_4chpror3_sonoff_10028b1d36_1
-        features:
-        - type: toggle
+      - entity: sensor.termometro_georgi_zigbee_battery
+        features_position: bottom
+        name: Batt.Georgi
         type: tile
-      - entity: switch.irrigazione_sonoff_switch_4chpror3_sonoff_10028b1d36_2
-        features:
-        - type: toggle
-        type: tile
-      - entity: switch.irrigazione_sonoff_switch_4chpror3_sonoff_10028b1d36_3
-        features:
-        - type: toggle
-        type: tile
-      - entity: switch.irrigazione_sonoff_switch_4chpror3_sonoff_10028b1d36_4
-        features:
-        - type: toggle
-        type: tile
-      - entity: sensor.irrigazione_sonoff_switch_4chpror3_sonoff_10028b1d36_rssi
-        features:
-        - type: trend-graph
-        features_position: inline
-        name: WiFi
+        vertical: false
+      - entity: sensor.termometro_georgi_zigbee_voltage
+        features_position: bottom
+        name: Tens.Georgi
         type: tile
         vertical: false
       type: grid
@@ -882,13 +831,6 @@ config:
         heading_style: title
         icon: mdi:spa
         type: heading
-      - entity: switch.solo_sauna_contatore_interruttore
-        features:
-        - type: toggle
-        features_position: bottom
-        name: Stato
-        type: tile
-        vertical: false
       - entity: sensor.solo_sauna_contatore_corrente_di_fase_a
         features_position: bottom
         name: Corrente
@@ -901,7 +843,7 @@ config:
         vertical: false
       - entity: sensor.sauna_energia_oggi
         features_position: bottom
-        name: Consumo oggi
+        name: Consu.Oggi
         type: tile
         vertical: false
       - entity: sensor.solo_sauna_contatore_tensione_di_fase_a
@@ -930,126 +872,6 @@ config:
         - state
         type: statistics-graph
       type: grid
-    - cards:
-      - heading: Consumo Energetico
-        heading_style: title
-        icon: mdi:lightning-bolt
-        type: heading
-      - heading: 'Fancoil oggi:'
-        heading_style: subtitle
-        icon: ''
-        type: heading
-      - entity: sensor.consumo_fancoil_totale_oggi
-        features_position: bottom
-        grid_options:
-          columns: 6
-          rows: 1
-        hide_state: false
-        name: Totale oggi
-        show_entity_picture: false
-        type: tile
-        vertical: false
-      - entity: sensor.consumo_fancoil_sala_oggi_stimato_non_verificato
-        features_position: bottom
-        grid_options:
-          columns: 4
-          rows: auto
-        name: Sala oggi
-        type: tile
-        vertical: false
-      - entity: sensor.consumo_fancoil_tania_oggi_stimato
-        features_position: bottom
-        grid_options:
-          columns: 4
-          rows: auto
-        hide_state: false
-        name: Tania oggi
-        show_entity_picture: false
-        type: tile
-        vertical: false
-      - entity: sensor.consumo_fancoil_georgi_oggi_stimato
-        features_position: bottom
-        grid_options:
-          columns: 4
-          rows: auto
-        name: Georgi oggi
-        type: tile
-        vertical: false
-      - chart_type: bar
-        days_to_show: 30
-        entities:
-        - entity: sensor.consumo_fancoil_totale_oggi
-          name: Totale
-        - entity: sensor.consumo_fancoil_tania_oggi_stimato
-          name: Tania
-        - entity: sensor.consumo_fancoil_georgi_oggi_stimato
-          name: Georgi
-        - entity: sensor.consumo_fancoil_sala_oggi_stimato_non_verificato
-          name: Sala
-        grid_options:
-          columns: full
-          rows: auto
-        period: day
-        stat_types:
-        - change
-        type: statistics-graph
-      - heading: 'Deumidificatori oggi:'
-        heading_style: subtitle
-        icon: ''
-        type: heading
-      - entity: sensor.consumo_deumidificatori_oggi
-        features_position: bottom
-        grid_options:
-          columns: 6
-          rows: auto
-        name: Totale oggi
-        type: tile
-        vertical: false
-      - chart_type: bar
-        days_to_show: 30
-        entities:
-        - entity: sensor.consumo_deumidificatori_oggi
-          name: Totale deumidificatori
-        grid_options:
-          columns: full
-          rows: auto
-        period: day
-        stat_types:
-        - state
-        type: statistics-graph
-      - heading: 'Lavatrice Miele al giorno:'
-        heading_style: subtitle
-        icon: ''
-        type: heading
-      - chart_type: bar
-        days_to_show: 30
-        entities:
-        - entity: sensor.lavatricemielewci870_consumo_energia
-          name: Lavatrice
-        grid_options:
-          columns: full
-          rows: auto
-        period: day
-        stat_types:
-        - state
-        type: statistics-graph
-      - heading: Sauna al giorno
-        heading_style: subtitle
-        icon: ''
-        type: heading
-      - chart_type: bar
-        days_to_show: 120
-        entities:
-        - entity: sensor.solo_sauna_contatore_potenza_di_fase_a
-          name: Sauna
-        grid_options:
-          columns: full
-          rows: auto
-        period: day
-        stat_types:
-        - max
-        type: statistics-graph
-      type: grid
-    title: Fancoil & devices
+    title: Devices & Fancoil
     type: sections
   vpath: fancoil
