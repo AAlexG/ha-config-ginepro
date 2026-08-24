@@ -1,4 +1,4 @@
-# automations_deumidificatori_5.yaml
+# automations_deumidificatori_6.yaml
 #
 # ALLARME SERBATOIO PIENO – DEUMIDIFICATORI
 #
@@ -87,11 +87,13 @@
 # finche' e' alimentato lavora. L'igrostato lo fa quindi questa automazione, con
 # il sensore sensor.termometro_cantina_zigbee_humidity.
 #
-# ACCENDE se: FV >= 1000 W  E  umidità >= 55%
-# SPEGNE se:  FV < 1000 W   O  umidità <= 50%
-# Isteresi di 5 punti percentuali per evitare cicli continui on/off della presa.
-# 55/50% e' la finestra che tiene la cantina fuori dalla zona di rischio muffa
-# (>60%) senza asciugare oltre il necessario sprecando energia.
+# ACCENDE se: FV >= 1000 W  E  umidità >= 58%
+# SPEGNE se:  FV < 1000 W   O  umidità < 56%
+# Isteresi 58/56: la presa si accende solo a 58% o piu', e resta accesa finche'
+# l'umidità non scende sotto 56%. I 2 punti di banda morta evitano che la presa
+# pendoli on/off ogni 5 minuti quando il valore oscilla intorno alla soglia.
+# La finestra tiene la cantina fuori dalla zona di rischio muffa (>60%) senza
+# asciugare oltre il necessario sprecando energia.
 #
 # Se il sensore di umidità e' unavailable/unknown l'automazione torna al solo
 # criterio fotovoltaico (comportamento precedente): un sensore che sparisce non
@@ -103,7 +105,7 @@
   alias: "Deumidificatore Cantina – Controllo Periodico FV"
   description: >
     Ogni 5 minuti accende switch.box_deumidificatore_cantina_sonoff se produzione FV
-    supera 1000W e umidità cantina >= 55%, spegne se FV sotto soglia o umidità <= 50%.
+    supera 1000W e umidità cantina >= 58%, spegne se FV sotto soglia o umidità < 56%.
     Bloccato se in gestione manuale.
   mode: single
   triggers:
@@ -124,7 +126,7 @@
             - condition: template
               value_template: >-
                 {{ fv >= 1000 and not presa_on
-                   and (not umid_ok or umid >= 55) }}
+                   and (not umid_ok or umid >= 58) }}
           sequence:
             - action: switch.turn_on
               target:
@@ -133,7 +135,7 @@
             - condition: template
               value_template: >-
                 {{ presa_on
-                   and (fv < 1000 or (umid_ok and umid <= 50)) }}
+                   and (fv < 1000 or (umid_ok and umid < 56)) }}
           sequence:
             - action: switch.turn_off
               target:
