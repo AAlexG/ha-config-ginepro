@@ -316,117 +316,52 @@ config:
         heading_style: subtitle
         icon: ''
         type: heading
-      - graph_span: 30d
+      - chart_type: bar
+        days_to_show: 30
+        entities:
+        - entity: sensor.panasonic_consumata_oggi
+          name: Pompa
+        - entity: sensor.consumo_fancoil_totale_oggi
+          name: Fancoil
+        - entity: sensor.consumo_deumidificatori_oggi
+          name: Deumidif.
+        - entity: sensor.lavatrice_energia
+          name: Lavatrice
+        - entity: sensor.auto_energia_oggi
+          name: Auto
+        - entity: sensor.sauna_energia_oggi
+          name: Sauna
+        - entity: sensor.altri_apparecchi_oggi
+          name: 'Altri apparecchi '
         grid_options:
           columns: 12
           rows: auto
-        header:
-          show: true
-        series:
-        - entity: sensor.panasonic_consumata_oggi
-          name: Pompa
-          statistics:
-            period: day
-            type: state
-          type: column
-          yaxis_id: kwh
-        - entity: sensor.consumo_fancoil_totale_oggi
-          name: Fancoil
-          statistics:
-            period: day
-            type: state
-          type: column
-          yaxis_id: kwh
-        - entity: sensor.consumo_deumidificatori_oggi
-          name: Deumidif.
-          statistics:
-            period: day
-            type: state
-          type: column
-          yaxis_id: kwh
-        - entity: sensor.lavatrice_energia
-          name: Lavatrice
-          statistics:
-            period: day
-            type: change
-          type: column
-          yaxis_id: kwh
-        - entity: sensor.auto_energia_oggi
-          name: Auto
-          statistics:
-            period: day
-            type: state
-          type: column
-          yaxis_id: kwh
-        - entity: sensor.sauna_energia_oggi
-          name: Sauna
-          statistics:
-            period: day
-            type: state
-          type: column
-          yaxis_id: kwh
-        - color: '#7E57C2'
-          entity: sensor.altri_apparecchi_oggi
-          name: Altri apparecchi
-          statistics:
-            period: day
-            type: state
-          type: column
-          yaxis_id: kwh
-        type: custom:apexcharts-card
-        yaxis:
-        - apex_config:
-            title:
-              text: kWh
-          decimals: 1
-          id: kwh
+        period: day
+        stat_types:
+        - change
+        type: statistics-graph
       - heading: 'Fancoil kWh/gg:'
         heading_style: subtitle
         icon: ''
         type: heading
-      - graph_span: 30d
+      - chart_type: bar
+        days_to_show: 30
+        entities:
+        - entity: sensor.fancoil_totale
+          name: Tutti Fancoil
+        - entity: sensor.consumo_fancoil_tania_oggi_stimato
+          name: Tania
+        - entity: sensor.consumo_fancoil_georgi_oggi_stimato
+          name: Georgi
+        - entity: sensor.consumo_fancoil_sala_oggi_stimato_non_verificato
+          name: Sala
         grid_options:
           columns: 12
           rows: auto
-        header:
-          show: true
-        series:
-        - entity: sensor.consumo_fancoil_totale_oggi
-          name: Totale
-          statistics:
-            period: day
-            type: state
-          type: column
-          yaxis_id: kwh
-        - entity: sensor.consumo_fancoil_sala_oggi_stimato_non_verificato
-          name: Sala
-          statistics:
-            period: day
-            type: state
-          type: column
-          yaxis_id: kwh
-        - entity: sensor.consumo_fancoil_georgi_oggi_stimato
-          name: Georgi
-          statistics:
-            period: day
-            type: change
-          type: column
-          yaxis_id: kwh
-        - entity: sensor.consumo_fancoil_tania_oggi_stimato
-          name: Tania
-          statistics:
-            period: day
-            type: state
-          type: column
-          yaxis_id: kwh
-        type: custom:apexcharts-card
-        yaxis:
-        - apex_config:
-            title:
-              text: kWh
-          decimals: 1
-          id: kwh
-          opposite: true
+        period: day
+        stat_types:
+        - change
+        type: statistics-graph
       - heading: 'Deumidificatori kWh/gg:'
         heading_style: subtitle
         icon: ''
@@ -517,82 +452,30 @@ config:
       - heading: Tutti apparecchi, kWh/mese
         heading_style: subtitle
         type: heading
-      - graph_span: 120d
+      - chart_type: bar
+        days_to_show: 730
+        entities:
+        - entity: sensor.panasonic_consumata_oggi
+          name: Pompa
+        - entity: sensor.consumo_fancoil_totale_oggi
+          name: Fancoil
+        - entity: sensor.consumo_deumidificatori_oggi
+          name: Deumidif.
+        - entity: sensor.lavatrice_energia
+          name: Lavatrice
+        - entity: sensor.auto_energia_oggi
+          name: Auto
+        - entity: sensor.sauna_energia_oggi
+          name: Sauna
+        - entity: sensor.altri_apparecchi_oggi
+          name: 'Altri apparecchi '
         grid_options:
           columns: 12
           rows: auto
-        header:
-          show: true
-        series:
-        - entity: sensor.panasonic_consumata_oggi
-          name: Pompa
-          statistics:
-            period: month
-            type: change
-          type: column
-          yaxis_id: kwh
-        - entity: sensor.consumo_fancoil_totale_oggi
-          name: Fancoil
-          statistics:
-            period: month
-            type: change
-          type: column
-          yaxis_id: kwh
-        - entity: sensor.consumo_deumidificatori_oggi
-          name: Deumidif.
-          statistics:
-            period: month
-            type: change
-          type: column
-          yaxis_id: kwh
-        - entity: sensor.lavatrice_energia
-          name: Lavatrice
-          statistics:
-            period: month
-            type: change
-          type: column
-          yaxis_id: kwh
-        - entity: sensor.auto_energia_oggi
-          name: Auto
-          statistics:
-            period: month
-            type: change
-          type: column
-          yaxis_id: kwh
-        - entity: sensor.sauna_energia_oggi
-          name: Sauna
-          statistics:
-            period: month
-            type: change
-          type: column
-          yaxis_id: kwh
-        - color: '#7E57C2'
-          entity: sensor.altri_apparecchi_oggi
-          name: Altri apparecchi
-          statistics:
-            period: month
-            type: change
-          type: column
-          yaxis_id: kwh
-        type: custom:apexcharts-card
-        yaxis:
-        - apex_config:
-            title:
-              text: kWh
-          decimals: 1
-          id: kwh
-        - apex_config:
-            title:
-              text: kwh
-          decimals: 1
-          id: jwh
-          opposite: true
-        - apex_config:
-            title:
-              text: kwh
-          decimals: 1
-          id: kwh
-          opposite: true
+        period: month
+        stat_types:
+        - change
+        type: statistics-graph
       - heading: "A rete stimato-GSE,\u20AC/mese"
         heading_style: subtitle
         type: heading

@@ -1,7 +1,8 @@
 config:
   title: Caldaia & OTGW
   views:
-  - cards:
+  - badges: []
+    cards:
     - entity: switch.shelly_box
       features_position: bottom
       name: Acceso->pompa/Spento->caldaia
@@ -71,7 +72,7 @@ config:
         icon: mdi:thermometer-high
         name: Uscita target riscald
       show_header_toggle: false
-      title: Caldaia - Stato
+      title: Caldaia-Stato
       type: entities
     - content: "{% set code = states('sensor.opentherm_gateway_otgw_otgw_oemfaultcode')\
         \ | int(-1) %} {% set fault = states('binary_sensor.opentherm_gateway_otgw_otgw_fault')\
@@ -134,7 +135,7 @@ config:
       - entity: sensor.opentherm_gateway_otgw_otgw_water_pressure_in_ch_circuit
         name: Uscita
       hours_to_show: 24
-      title: Caldaia - Pressione acqua
+      title: Caldaia-Press.Acqua
       type: history-graph
     - entities:
       - entity: sensor.opentherm_gateway_otgw_otgw_boiler_flow_water_temperature
@@ -146,7 +147,7 @@ config:
       - entity: sensor.opentherm_gateway_otgw_otgw_control_setpoint
         name: Uscita target riscaldam
       hours_to_show: 24
-      title: Caldaia - Temperature
+      title: Caldaia-Temperature
       type: history-graph
     - entities:
       - entity: binary_sensor.opentherm_gateway_otgw_otgw_boiler_connected
@@ -165,7 +166,7 @@ config:
         icon: mdi:alert-circle-outline
         name: Causa ultimo riavvio
       show_header_toggle: false
-      title: OTGW - Stato
+      title: OTGW-Stato
       type: entities
     - entities:
       - entity: sensor.opentherm_gateway_otgw_stats_fragmentation
@@ -187,7 +188,7 @@ config:
         icon: mdi:websocket
         name: Drop WebSocket
       show_header_toggle: false
-      title: OTGW - Stato ESP8266
+      title: OTGW-ESP8266
       type: entities
     - entities:
       - entity: sensor.opentherm_gateway_otgw_stats_free_heap
@@ -197,7 +198,19 @@ config:
       - entity: sensor.opentherm_gateway_otgw_stats_fragmentation
         name: Fragmentation
       hours_to_show: 24
-      title: OTGW - stato heap
+      title: OTGW-heap/fragm.Oggi
+      type: history-graph
+    - entities:
+      - entity: sensor.opentherm_gateway_otgw_stats_free_heap
+        name: Heap libero
+      - entity: sensor.opentherm_gateway_otgw_stats_max_block
+        name: Blocco max
+      - entity: sensor.opentherm_gateway_otgw_stats_fragmentation
+        name: Fragmentation
+      - entity: sensor.opentherm_gateway_otgw_reboot_count
+        name: Reboot
+      hours_to_show: 480
+      title: Heap/frag/reboot 20gg
       type: history-graph
     icon: mdi:water-boiler
     path: otgw

@@ -711,6 +711,15 @@ config:
         name: Tensione
         type: tile
         vertical: false
+      - chart_type: bar
+        days_to_show: 7
+        entities:
+        - entity: sensor.presa_box_zigbee_energy
+          name: Bici
+        period: day
+        stat_types:
+        - state
+        type: statistics-graph
       type: grid
     - cards:
       - heading: Lavatrice Miele
