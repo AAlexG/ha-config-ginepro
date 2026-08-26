@@ -43,6 +43,46 @@ config:
         name: Condens.Cor
         type: tile
         vertical: false
+      - entity: number.inverter_uflex_battery_absorption
+        features_position: bottom
+        grid_options:
+          columns: 12
+          rows: 1
+        name: Battery absorbtion
+        type: tile
+        vertical: false
+      - entity: number.inverter_uflex_battery_float
+        features_position: bottom
+        grid_options:
+          columns: 12
+          rows: 1
+        name: Battery float
+        type: tile
+        vertical: false
+      - entity: number.inverter_uflex_battery_equalization
+        features_position: bottom
+        grid_options:
+          columns: 12
+          rows: 1
+        name: Battery Equalization
+        type: tile
+        vertical: false
+      - entity: sensor.condensatore_tensione_max_oggi
+        features_position: bottom
+        grid_options:
+          columns: 12
+          rows: 1
+        name: Tensione cond.max oggi (max 58)
+        type: tile
+        vertical: false
+      - entity: sensor.inverter_uflex_battery_voltage
+        features_position: bottom
+        grid_options:
+          columns: 12
+          rows: 1
+        name: Battery voltage ora
+        type: tile
+        vertical: false
       - apex_config:
           annotations:
             yaxis:
@@ -88,7 +128,7 @@ config:
           decimals: 2
           id: volt
           max: 61
-          min: 45
+          min: 40
       - apex_config:
           annotations:
             yaxis:
