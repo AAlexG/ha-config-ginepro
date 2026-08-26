@@ -452,7 +452,7 @@ config:
         type: tile
         vertical: false
       - chart_type: line-stack
-        days_to_show: 7
+        days_to_show: 30
         entities:
         - entity: sensor.0xa4c1383e0fd87686_linkquality
           name: Armadio
@@ -462,7 +462,7 @@ config:
         - min
         type: statistics-graph
       - chart_type: bar
-        days_to_show: 7
+        days_to_show: 30
         entities:
         - entity: sensor.box_deumidificatore_cantina_sonoff_energy_day
           name: Cantina
@@ -470,7 +470,7 @@ config:
           name: Armadio
         period: day
         stat_types:
-        - state
+        - change
         type: statistics-graph
       - chart_type: bar
         days_to_show: 365
@@ -520,7 +520,7 @@ config:
         type: tile
         vertical: false
       - chart_type: bar
-        days_to_show: 7
+        days_to_show: 30
         entities:
         - entity: sensor.consumo_fancoil_tania_oggi_stimato
           name: Tania
@@ -552,7 +552,7 @@ config:
         icon: mdi:coolant-temperature
         type: heading
       - chart_type: line
-        days_to_show: 7
+        days_to_show: 30
         entities:
         - entity: sensor.termometro_cantina_zigbee_temperature
           name: Cantina
@@ -565,7 +565,7 @@ config:
         - mean
         type: statistics-graph
       - chart_type: line
-        days_to_show: 7
+        days_to_show: 30
         entities:
         - entity: sensor.termometro_cantina_zigbee_humidity
           name: Cantina
@@ -577,8 +577,43 @@ config:
         stat_types:
         - mean
         type: statistics-graph
+      - graph_span: 30d
+        grid_options:
+          columns: 12
+          rows: auto
+        header:
+          show: true
+          title: "Cantina - umidit\xE0&potenza deum."
+        series:
+        - entity: sensor.box_deumidificatore_cantina_sonoff_power
+          name: Potenza deum.
+          statistics:
+            period: day
+            type: mean
+          type: line
+          yaxis_id: W
+        - entity: sensor.termometro_cantina_zigbee_humidity
+          name: "umidit\xE0"
+          statistics:
+            period: day
+            type: mean
+          type: line
+          yaxis_id: percent
+        type: custom:apexcharts-card
+        yaxis:
+        - apex_config:
+            title:
+              text: Potenza W
+          decimals: 1
+          id: W
+        - apex_config:
+            title:
+              text: "umidit\xE0 %"
+          decimals: 1
+          id: percent
+          opposite: true
       - chart_type: line
-        days_to_show: 7
+        days_to_show: 30
         entities:
         - entity: sensor.termometro_cantina_zigbee_linkquality
           name: Cantina
@@ -654,7 +689,7 @@ config:
         type: tile
         vertical: false
       - chart_type: bar
-        days_to_show: 7
+        days_to_show: 30
         entities:
         - entity: sensor.cameratania_resmed_tania_presa_tuya_energia_totale
           name: Consumo al giorno
@@ -693,7 +728,7 @@ config:
         vertical: false
       - entity: sensor.presa_box_zigbee_energy
         features_position: bottom
-        name: Consumo
+        name: Consumo Tot
         type: tile
         vertical: false
       - entity: sensor.presa_box_zigbee_power
@@ -712,13 +747,13 @@ config:
         type: tile
         vertical: false
       - chart_type: bar
-        days_to_show: 7
+        days_to_show: 30
         entities:
         - entity: sensor.presa_box_zigbee_energy
           name: Bici
         period: day
         stat_types:
-        - state
+        - change
         type: statistics-graph
       type: grid
     - cards:

@@ -1,4 +1,4 @@
-# config_fotovoltaico_3.yaml
+# config_fotovoltaico_5.yaml
 # Package Casa Ginepro - Fotovoltaico: inverter UFLEX, pannelli Tigo, surplus, GSE
 # Estratto da configuration_186.yaml. Nome file = nome del package.
 
@@ -365,21 +365,6 @@ template:
             {% set v = states('sensor.inverter_uflex_battery_voltage') | float(0) %}
             {{ [v, this.state | float(0)] | max | round(2) }}
           {% endif %}
-        attributes:
-          # Numero di attraversamenti della soglia dal basso verso l'alto.
-          # Un episodio continuo sopra soglia conta una volta sola.
-          episodi: >-
-            {% if trigger.id == 'azzera' %}
-              0
-            {% else %}
-              {% set s = 58.7 %}
-              {% set v = states('sensor.inverter_uflex_battery_voltage') | float(0) %}
-              {% set p = trigger.from_state.state | float(0)
-                         if trigger.from_state else 0 %}
-              {% set n = this.attributes.get('episodi', 0) | int(0) %}
-              {{ n + 1 if (v > s and p <= s) else n }}
-            {% endif %}
-          soglia: 58.7
 
   #--------------------------------------------------------------------------
   # FOTOGRAFIA DEL SISTEMA AL MOMENTO DEL PICCO DI TENSIONE
@@ -423,6 +408,50 @@ template:
                  'stato': states('sensor.inverter_uflex_device_state')
                } %}
             {{ ([nuovo] + (this.attributes.get('picchi', []) | list))[:30] }}
+
+  #--------------------------------------------------------------------------
+  # CONTEGGIO GIORNALIERO DEI SUPERAMENTI DI SOGLIA
+  #
+  # Il numero di superamenti al giorno e' l'indicatore piu' chiaro dello stato
+  # di salute del sistema: nei giorni normali resta su 3-4, sale a 14 il 18/08,
+  # a 65 il 19/08 giorno del primo blocco, a 46 il 25/08 giorno del secondo.
+  #
+  # A differenza dell'attributo "episodi" del sensore Condensatore Tensione Max
+  # Oggi, che vive come attributo e non viene storicizzato, questo e' un sensore
+  # vero e proprio con state_class measurement: il recorder ne conserva le
+  # statistiche a lungo termine e il valore massimo giornaliero corrisponde al
+  # conteggio di fine giornata, utilizzabile per un grafico su 30 giorni.
+  #
+  # La soglia non e' scritta qui: viene letta dall'entita'
+  # number.inverter_uflex_battery_float, cioe' dal parametro Float
+  # effettivamente impostato sull'inverter. Questo contatore e' l'unico del
+  # sistema: alimenta sia il grafico dei 30 giorni sia la notifica serale.
+  #--------------------------------------------------------------------------
+  - trigger:
+      - platform: numeric_state
+        entity_id: sensor.inverter_uflex_battery_voltage
+        above: number.inverter_uflex_battery_float
+        id: superamento
+      - platform: time
+        at: "00:00:00"
+        id: azzera
+    sensor:
+      - name: "Condensatore Superamenti Oggi"
+        unique_id: condensatore_superamenti_oggi
+        state_class: measurement
+        icon: mdi:counter
+        state: >-
+          {% if trigger.id == 'azzera' %}
+            0
+          {% else %}
+            {{ this.state | int(0) + 1 }}
+          {% endif %}
+        attributes:
+          # Soglia effettiva, letta in tempo reale dall'inverter: se il
+          # parametro Float viene corretto, conteggio e grafico si adeguano
+          # da soli senza alcuna modifica alla configurazione.
+          soglia: >-
+            {{ states('number.inverter_uflex_battery_float') }}
 
 command_line:
 

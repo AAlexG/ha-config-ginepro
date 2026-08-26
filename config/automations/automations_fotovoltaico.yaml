@@ -1,4 +1,4 @@
-# automations_fotovoltaico_1.yaml
+# automations_fotovoltaico_2.yaml
 #==================================================================================
 # SORVEGLIANZA SOVRATENSIONE CONDENSATORE - Casa Ginepro
 #
@@ -16,7 +16,15 @@
 #   contati oltre 30 superamenti di 58,7 V: una notifica per episodio sarebbe
 #   inutilizzabile. Da qui la separazione in due automazioni:
 #     F1 avvisa subito solo sui picchi gravi (59,5 V), con antispam di 6 ore;
-#     F2 manda un riepilogo serale se ci sono stati superamenti di 58,7 V.
+#     F2 manda un riepilogo serale se ci sono stati superamenti della soglia.
+#
+# Il conteggio proviene da sensor.condensatore_superamenti_oggi, unico contatore
+# del sistema, la cui soglia e' letta in tempo reale dal parametro Float
+# dell'inverter (number.inverter_uflex_battery_float): correggendo il parametro,
+# conteggio, notifica e grafico si adeguano da soli. La soglia fissa di 59,5 V
+# dell'automazione F1 resta invece volutamente indipendente: e' un allarme di
+# picco grave, non un conteggio, e deve scattare solo quando la tensione si
+# avvicina ai 60 V che il 19/08 hanno prodotto il fault F55.
 #
 # I parametri dell'inverter non vengono toccati da queste automazioni: sono di
 # sola sorveglianza.
@@ -50,8 +58,9 @@
           {{ now().strftime('%H:%M:%S') }}. Il limite di carica da datasheet e'
           58 V. Il 19/08 un episodio simile ha causato l'apertura del BMS.
           Massimo di oggi: {{ states('sensor.condensatore_tensione_max_oggi') }} V
-          su {{ state_attr('sensor.condensatore_tensione_max_oggi', 'episodi') }}
-          superamenti di 58,7 V.
+          su {{ states('sensor.condensatore_superamenti_oggi') }} superamenti
+          della soglia Float
+          ({{ state_attr('sensor.condensatore_superamenti_oggi', 'soglia') }} V).
         data:
           priority: high
           ttl: 0
@@ -81,17 +90,17 @@
   condition:
     - condition: template
       value_template: >
-        {{ state_attr('sensor.condensatore_tensione_max_oggi', 'episodi')
-           | int(0) > 0 }}
+        {{ states('sensor.condensatore_superamenti_oggi') | int(0) > 0 }}
   action:
     - action: notify.mobile_app_cph2653
       continue_on_error: true
       data:
         title: "📈 Condensatore - Riepilogo tensione"
         message: >
-          Oggi la tensione del condensatore ha superato 58,7 V per
-          {{ state_attr('sensor.condensatore_tensione_max_oggi', 'episodi') }}
-          volte, con un massimo di
+          Oggi la tensione del condensatore ha superato la soglia Float
+          ({{ state_attr('sensor.condensatore_superamenti_oggi', 'soglia') }} V)
+          per {{ states('sensor.condensatore_superamenti_oggi') }} volte,
+          con un massimo di
           {{ states('sensor.condensatore_tensione_max_oggi') }} V.
           Limite di carica da datasheet: 58 V.
         data:

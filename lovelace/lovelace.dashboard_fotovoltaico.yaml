@@ -12,22 +12,22 @@ config:
       - cards:
         - entity: sensor.inverter_uflex_temperature
           features_position: bottom
-          name: Temp scafale
-          type: tile
-          vertical: false
-        - entity: sensor.inverter_uflex_device_state
-          features_position: bottom
-          name: Inverter State
-          type: tile
-          vertical: false
-        - entity: sensor.inverter_uflex_battery_temperature
-          features_position: bottom
-          name: Temp condensatore
+          name: Temp inverter
           type: tile
           vertical: false
         - entity: sensor.inverter_uflex_dc_temperature
           features_position: bottom
-          name: Temp Inverter
+          name: Temp DC Inverter
+          type: tile
+          vertical: false
+        - entity: sensor.inverter_uflex_device_state
+          features_position: bottom
+          name: Inv.State
+          type: tile
+          vertical: false
+        - entity: sensor.inverter_uflex_battery_temperature
+          features_position: bottom
+          name: Temp.condensatore
           type: tile
           vertical: false
         columns: 2
@@ -83,34 +83,18 @@ config:
         name: Battery voltage ora
         type: tile
         vertical: false
-      - apex_config:
-          annotations:
-            yaxis:
-            - borderColor: '#009E73'
-              label:
-                borderColor: '#009E73'
-                style:
-                  background: '#009E73'
-                  color: '#FFFFFF'
-                text: 58,0 V limite datasheet
-              strokeDashArray: 4
-              'true': 58
-            - borderColor: '#D55E00'
-              label:
-                borderColor: '#D55E00'
-                style:
-                  background: '#D55E00'
-                  color: '#FFFFFF'
-                text: 58,7 V soglia allarme
-              strokeDashArray: 4
-              'true': 58.7
-        graph_span: 24hour
+      type: grid
+    - cards:
+      - heading: CONDENSATORE E INVERTER
+        heading_style: title
+        type: heading
+      - graph_span: 24hour
         grid_options:
           columns: 12
           rows: auto
         header:
           show: true
-          title: Volt max condens. (ok se <57.8)
+          title: Tens. Max cond. oggi(ok se <57.8)
         series:
         - color: '#0072B2'
           entity: sensor.inverter_uflex_battery_voltage
@@ -124,33 +108,10 @@ config:
         yaxis:
         - apex_config:
             title:
-              text: V
+              text: max tens.V
           decimals: 2
           id: volt
-          max: 61
-          min: 40
-      - apex_config:
-          annotations:
-            yaxis:
-            - borderColor: '#009E73'
-              label:
-                borderColor: '#009E73'
-                style:
-                  background: '#009E73'
-                  color: '#FFFFFF'
-                text: 58,0 V limite datasheet
-              strokeDashArray: 4
-              'true': 58
-            - borderColor: '#D55E00'
-              label:
-                borderColor: '#D55E00'
-                style:
-                  background: '#D55E00'
-                  color: '#FFFFFF'
-                text: 58,7 V soglia allarme
-              strokeDashArray: 4
-              'true': 58.7
-        graph_span: 30d
+      - graph_span: 30d
         grid_options:
           columns: 12
           rows: auto
@@ -170,43 +131,50 @@ config:
         yaxis:
         - apex_config:
             title:
-              text: V
+              text: max tens.V
           decimals: 2
           id: volt
-          max: 61
-          min: 57
-      - apex_config:
-          annotations:
-            yaxis:
-            - borderColor: '#009E73'
-              label:
-                borderColor: '#009E73'
-                style:
-                  background: '#009E73'
-                  color: '#FFFFFF'
-                text: 58,0 V limite datasheet
-              strokeDashArray: 4
-              'true': 58
-            - borderColor: '#D55E00'
-              label:
-                borderColor: '#D55E00'
-                style:
-                  background: '#D55E00'
-                  color: '#FFFFFF'
-                text: 58,7 V soglia allarme
-              strokeDashArray: 4
-              'true': 58.7
-        graph_span: 30d
+      - graph_span: 30d
         grid_options:
           columns: 12
           rows: auto
         header:
           show: true
-          title: Temperaturs max 30gg,C
+          title: Superamenti soglia Float al giorno
         series:
-        - color: '#0072B2'
-          entity: sensor.hp1000se_pro_pro_v1_6_4_outdoor_temperature
-          name: massima giornaliera
+        - color: '#D55E00'
+          entity: sensor.condensatore_superamenti_oggi
+          name: episodi
+          statistics:
+            period: day
+            type: max
+          type: column
+          yaxis_id: conteggio
+        type: custom:apexcharts-card
+        yaxis:
+        - apex_config:
+            title:
+              text: episodi/giorno
+          decimals: 0
+          id: conteggio
+          min: 0
+      - graph_span: 30d
+        grid_options:
+          columns: 12
+          rows: auto
+        header:
+          show: true
+          title: "max Temp inventer \xB0C/gg"
+        series:
+        - entity: sensor.inverter_uflex_dc_temperature
+          name: inverter DC
+          statistics:
+            period: day
+            type: max
+          type: line
+          yaxis_id: C
+        - entity: sensor.inverter_uflex_temperature
+          name: inverter AC
           statistics:
             period: day
             type: max
@@ -216,40 +184,15 @@ config:
         yaxis:
         - apex_config:
             title:
-              text: C
-          decimals: 2
-          id: C
-          max: 40
-          min: 20
-      - graph_span: 30d
-        grid_options:
-          columns: 12
-          rows: auto
-        header:
-          show: true
-          title: "Temp entrata/uscita inventer \xB0C/gg"
-        series:
-        - entity: sensor.inverter_uflex_dc_temperature
-          name: Entrata DC
-          statistics:
-            period: day
-            type: max
-          type: column
-          yaxis_id: C
-        - entity: sensor.inverter_uflex_temperature
-          name: Uscita AC
-          statistics:
-            period: day
-            type: max
-          type: column
-          yaxis_id: C
-        type: custom:apexcharts-card
-        yaxis:
-        - apex_config:
-            title:
               text: "\xB0C"
           decimals: 2
           id: C
+          min: 70
+      type: grid
+    - cards:
+      - heading: PANELLI FOTOVOLTAICI
+        heading_style: title
+        type: heading
       - cards:
         - entity: sensor.panel_max_power_summary
           features_position: bottom

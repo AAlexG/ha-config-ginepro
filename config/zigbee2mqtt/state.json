@@ -4,17 +4,17 @@
         "voltage": 3000,
         "contact": false,
         "battery_low": false,
-        "linkquality": 88
+        "linkquality": 144
     },
     "0xa4c1380697d6ffff": {
         "battery": 100,
         "voltage": 3100,
         "contact": true,
         "battery_low": false,
-        "linkquality": 108
+        "linkquality": 112
     },
     "0xa4c138f820e17e6e": {
-        "voltage": 2800,
+        "voltage": 3000,
         "battery": 100,
         "contact": false,
         "tamper": false,
@@ -24,9 +24,9 @@
     "0xa4c138e6a0d06219": {
         "voltage": 2500,
         "battery": 51,
-        "temperature": 26.98,
-        "humidity": 63.65,
-        "linkquality": 92
+        "temperature": 26.85,
+        "humidity": 60.89,
+        "linkquality": 108
     },
     "0xa4c1385040d042fb": {
         "energy": 0.41,
@@ -35,20 +35,20 @@
         "power_outage_memory": "restore",
         "indicator_mode": "off/on",
         "child_lock": "UNLOCK",
-        "voltage": 225.2,
+        "voltage": 222.9,
         "power": 0,
         "current": 0,
-        "linkquality": 88
+        "linkquality": 108
     },
     "0xa4c1383e0fd87686": {
         "state": "OFF",
-        "energy": 23.77,
+        "energy": 24.2,
         "countdown": 0,
         "power_outage_memory": "restore",
         "indicator_mode": "off/on",
         "child_lock": "UNLOCK",
-        "voltage": 226.8,
-        "linkquality": 32,
+        "voltage": 222.3,
+        "linkquality": 148,
         "power": 0,
         "current": 0
     },
@@ -59,7 +59,7 @@
         "power_outage_memory": "restore",
         "indicator_mode": "off/on",
         "child_lock": "UNLOCK",
-        "voltage": 227.7,
+        "voltage": 222.6,
         "power": 0,
         "current": 0,
         "update": {
@@ -69,7 +69,7 @@
             "latest_source": null,
             "latest_release_notes": null
         },
-        "linkquality": 160
+        "linkquality": 148
     },
     "0x0c4314fffe52b0c2": {
         "state": "ON",
@@ -78,16 +78,16 @@
         "indicator_mode": "off/on",
         "power": 0,
         "current": 0,
-        "voltage": 227,
+        "voltage": 226,
         "energy": 0,
-        "linkquality": 204,
+        "linkquality": 100,
         "child_lock": "UNLOCK"
     },
     "0xa4c1380eff54ffff": {
         "battery": 100,
-        "temperature": 27.2,
+        "temperature": 26.6,
         "voltage": 3200,
-        "humidity": 73.9,
+        "humidity": 64.2,
         "temperature_sensor_select": "internal",
         "comfort_temperature_min": 19,
         "comfort_temperature_max": 35.2,
@@ -96,7 +96,7 @@
         "temperature_units": "celsius",
         "temperature_calibration": 0,
         "humidity_calibration": 0,
-        "linkquality": 236,
+        "linkquality": 240,
         "update": {
             "state": "idle",
             "installed_version": 4100,
@@ -108,8 +108,8 @@
     "0xa4c1380f0678ffff": {
         "battery": 100,
         "voltage": 3200,
-        "temperature": 26.1,
-        "humidity": 62.5,
+        "temperature": 26.3,
+        "humidity": 61.8,
         "temperature_sensor_select": "internal",
         "comfort_temperature_min": 19,
         "comfort_temperature_max": 27,
@@ -125,6 +125,6 @@
             "latest_source": "https://raw.githubusercontent.com/Koenkk/zigbee-OTA/master/images/Sonoff/snzb-02dr2_v1.0.4.ota",
             "latest_release_notes": null
         },
-        "linkquality": 104
+        "linkquality": 108
     }
 }
