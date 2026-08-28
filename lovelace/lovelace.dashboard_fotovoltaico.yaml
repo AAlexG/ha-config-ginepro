@@ -48,7 +48,7 @@ config:
         grid_options:
           columns: 12
           rows: 1
-        name: Battery absorbtion
+        name: Battery absorbtion (durante carica)
         type: tile
         vertical: false
       - entity: number.inverter_uflex_battery_float
@@ -56,7 +56,7 @@ config:
         grid_options:
           columns: 12
           rows: 1
-        name: Battery float
+        name: Battery float (per compensare l'autoscarica)
         type: tile
         vertical: false
       - entity: number.inverter_uflex_battery_equalization
@@ -64,7 +64,8 @@ config:
         grid_options:
           columns: 12
           rows: 1
-        name: Battery Equalization
+        name: Battery Equalization (serve a rimescolare l'elettrolita - non  ha senso
+          x cond)
         type: tile
         vertical: false
       - entity: sensor.condensatore_tensione_max_oggi
