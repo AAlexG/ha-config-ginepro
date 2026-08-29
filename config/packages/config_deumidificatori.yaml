@@ -1,4 +1,4 @@
-# config_deumidificatori_2.yaml
+# config_deumidificatori_3.yaml
 # Package Casa Ginepro - Deumidificatori cantina e armadio
 # Estratto da configuration_186.yaml. Nome file = nome del package.
 
@@ -13,10 +13,13 @@ template:
       - trigger: homeassistant
         event: start
     sensor:
-      # Cantina: il sensore SonoffLAN _energy_day oscilla (valori cloud vecchi
-      # alternati ai valori LAN live). Ogni discesa viene letta da HA come reset
-      # di un total_increasing e gonfia la statistica 'change'. Questo sensore
-      # applica un blocco monotono: durante il giorno non puo' mai scendere.
+      # Il contatore Sonoff _energy_day resta congelato sul valore finale del
+      # giorno precedente dalla mezzanotte fino alle 07:00-09:00, poi riprende
+      # ad aggiornarsi gia' azzerato. HA legge quel residuo come nuova crescita
+      # e gonfia la statistica 'change' (27/08: 4,81 kWh invece di 0,83).
+      # Soluzione: azzerare fino alle 10:00. Poiche' il contatore e' cumulativo
+      # sulla giornata, il valore letto dopo le 10:00 comprende gia' le ore
+      # notturne: azzerare in mattinata non perde nulla sul totale del giorno.
       - name: "Consumo Deumidificatore Cantina Oggi"
         unique_id: "consumo_deumidificatore_cantina_oggi"
         unit_of_measurement: "kWh"
@@ -26,14 +29,18 @@ template:
         availability: >-
           {{ has_value('sensor.box_deumidificatore_cantina_sonoff_energy_day') }}
         state: >-
-          {% set nuovo = states('sensor.box_deumidificatore_cantina_sonoff_energy_day')
-                         | float(0) | round(3) %}
-          {% if now().hour == 0 and now().minute < 10 %}
-            {{ nuovo }}
+          {% if now().hour < 10 %}
+            0
           {% else %}
-            {{ [nuovo, this.state | float(0)] | max | round(3) }}
+            {{ states('sensor.box_deumidificatore_cantina_sonoff_energy_day')
+               | float(0) | round(3) }}
           {% endif %}
 
+      # Nessun blocco monotono sulla somma: quello precedente congelava il
+      # totale finche' non veniva superato, inghiottendo anche gli incrementi
+      # dell'armadio (322 campioni non monotoni su 927). La regola della
+      # cantina e' ripetuta qui inline per non dipendere dall'ordine di
+      # valutazione dei sensori dentro lo stesso blocco template.
       - name: "Consumo Deumidificatori Oggi"
         unique_id: "consumo_deumidificatori_oggi"
         unit_of_measurement: "kWh"
@@ -44,14 +51,9 @@ template:
           {{ has_value('sensor.deumidificatore_armadio_oggi')
              and has_value('sensor.box_deumidificatore_cantina_sonoff_energy_day') }}
         state: >-
-          {% set nuovo = (states('sensor.deumidificatore_armadio_oggi') | float(0) +
-                          states('sensor.box_deumidificatore_cantina_sonoff_energy_day') | float(0))
-                         | round(3) %}
-          {% if now().hour == 0 and now().minute < 10 %}
-            {{ nuovo }}
-          {% else %}
-            {{ [nuovo, this.state | float(0)] | max | round(3) }}
-          {% endif %}
+          {% set cantina = 0 if now().hour < 10 else
+                 states('sensor.box_deumidificatore_cantina_sonoff_energy_day') | float(0) %}
+          {{ (states('sensor.deumidificatore_armadio_oggi') | float(0) + cantina) | round(3) }}
 
 utility_meter:
 
