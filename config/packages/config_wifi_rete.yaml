@@ -1,4 +1,4 @@
-# config_wifi_rete_4.yaml
+# config_wifi_rete_5.yaml
 # Package Casa Ginepro - Rete WiFi: whitelist MAC e tabella dispositivi
 # Estratto da configuration_186.yaml. Nome file = nome del package.
 
@@ -28,7 +28,7 @@ template:
               '38:94:ed:0c:78:df': '016 RBS50 sopra (DHCP)',
               'a0:40:a0:5e:40:d2': '017 RBS50 box (DHCP)',
               '9a:da:c4:71:89:d4': '018 repeater TP-Link RE650',
-              '7c:f0:e5:ef:0f:73': '025 OnePlus 13 Sasha',
+              '7c:f0:e5:ef:0f:73': '026 OnePlus 13 Sasha',
               'a0:85:e3:b4:be:e4': '031 Shelly fancoil Georgi',
               'a0:85:e3:b3:f8:1c': '032 Shelly fancoil Tania',
               '1c:69:20:26:3f:b8': '033 Shelly valvola pompa-caldaia',
@@ -75,9 +75,9 @@ template:
               '9a:da:c4:b3:47:56': 'irrigazi.Sonof4CHPRoR3v RE650',
               'd8:eb:46:84:3d:bd': 'Chromecast sotto',
               '74:ee:2a:e7:76:6d': 'Citofono Philips forse?',
-              '6C:3C:7C:C5:88:51': 'Stampante Canon sopra',
+              '6c:6e:7c:c5:88:51': 'Stampante Canon sopra',
               '66:00:c0:a6:9c:6e': 'S22 Ultra di Tania',
-              'F8:6D:CC:3D:26:D4': 'Fiat 500e'
+              'f8:6d:cc:3d:26:d4': 'Fiat 500e'
             } }}
 
   #--- WIFI: TABELLA DINAMICA PER PLANCIA (righe da tracker Netgear) ---
@@ -95,9 +95,12 @@ template:
         icon: mdi:table-network
         state: >-
           {% set nomi = state_attr('sensor.wifi_dispositivi', 'mac_nomi') or {} %}
+          {# Le chiavi della whitelist possono essere in maiuscolo: normalizzarle,   #}
+          {# altrimenti il confronto con il MAC del tracker (minuscolo) fallisce.    #}
+          {% set maclist = nomi.keys() | map('lower') | list %}
           {% set ns = namespace(n=0) %}
           {% for e in integration_entities('netgear') if e.startswith('device_tracker.')
-             and states(e) == 'home' and (state_attr(e, 'mac') or '') | lower in nomi %}
+             and states(e) == 'home' and (state_attr(e, 'mac') or '') | lower in maclist %}
           {% set ns.n = ns.n + 1 %}
           {% endfor %}
           {{ ns.n }}

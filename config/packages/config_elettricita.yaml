@@ -1,4 +1,4 @@
-# config_elettricita_10.yaml
+# config_elettricita_11.yaml
 # Package Casa Ginepro - Elettricita: consumi, costi, prezzo kWh, bolletta
 # Estratto da configuration_186.yaml. Nome file = nome del package.
 
@@ -162,6 +162,11 @@ template:
       # Il contattore sauna e' alimentato solo a sauna accesa: da spenta
       # risulta unavailable e vale 0, per questo l'availability qui e'
       # permissiva.
+      # UNITA': i due contattori (auto e sauna) espongono la potenza in
+      # kW, tutte le altre sorgenti in W. states() restituisce il numero
+      # grezzo senza conversione, quindi vanno moltiplicati per 1000:
+      # senza *1000 l'auto in carica a 3,53 kW veniva sottratta come
+      # 3,53 W e il suo consumo ricadeva quasi tutto in Altri Apparecchi.
       # ============================================================
       - name: "Altri Apparecchi Ora"
         unique_id: "altri_apparecchi_ora"
@@ -176,10 +181,10 @@ template:
                     + (50 if is_state('switch.sala_fancoil_sala_shelly_1gen4', 'on') else 0) %}
           {{ [ states('sensor.inverter_uflex_load_power') | float(0)
                - states('sensor.panasonic_potenza_consumata_calcolata') | float(0)
-               - states('sensor.solo_auto_contattore_potenza_di_fase_a') | float(0)
+               - states('sensor.solo_auto_contattore_potenza_di_fase_a') | float(0) * 1000
                - states('sensor.box_deumidificatore_cantina_sonoff_power') | float(0)
                - states('sensor.deumidificatore_armadio_zigbee_power') | float(0)
-               - states('sensor.solo_sauna_contatore_potenza_di_fase_a') | float(0)
+               - states('sensor.solo_sauna_contatore_potenza_di_fase_a') | float(0) * 1000
                - fc, 0 ] | max | round(0) }}
         attributes:
           carico_casa: "{{ states('sensor.inverter_uflex_load_power') }}"
