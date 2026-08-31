@@ -265,22 +265,14 @@ config:
             message: command_launch_app
           perform_action: notify.mobile_app_cph2653
         type: button
-      - entity: input_boolean.clima_freecooling_attivo
+      - entity: sensor.opentherm_gateway_otgw_otgw_boiler_flow_water_temperature
         features_position: bottom
         grid_options:
-          columns: 12
-          rows: 1
-        name: Free cooling in corso
-        type: tile
-        vertical: false
-      - entity: sensor.opentherm_gateway_otgw_otgw_boiler_exhaust_temperature
-        features_position: bottom
-        grid_options:
-          columns: 3
+          columns: 4
           rows: 1
         icon_tap_action:
           action: navigate
-          navigation_path: /otgw-caldaia/otgw
+          navigation_path: /dashboard-panasonic/panasonic
         name: OUT caldaia
         type: tile
         vertical: false
@@ -293,6 +285,14 @@ config:
           action: navigate
           navigation_path: /dashboard-panasonic/panasonic
         name: OUT pompa
+        type: tile
+        vertical: false
+      - entity: input_boolean.clima_freecooling_attivo
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        name: Free cooling in corso
         type: tile
         vertical: false
       - entity: switch.panasonic_heat_pump_main_heatpump_state
@@ -322,18 +322,6 @@ config:
           action: navigate
           navigation_path: /otgw-caldaia/otgw
         name: Caldaia Fiamma
-        type: tile
-        vertical: false
-      - color: blue
-        entity: sensor.irrigazione_attiva
-        features_position: bottom
-        grid_options:
-          columns: 4
-          rows: 1
-        name: ON/OFF Irrigazione
-        tap_action:
-          action: perform-action
-          perform_action: script.irrigazione_salta_toggle
         type: tile
         vertical: false
       - entity: switch.solo_auto_contattore_interruttore
@@ -423,6 +411,18 @@ config:
           columns: 3
           rows: auto
         type: conditional
+      - color: blue
+        entity: sensor.irrigazione_attiva
+        features_position: bottom
+        grid_options:
+          columns: 12
+          rows: 1
+        name: ON/OFF Irrigazione
+        tap_action:
+          action: perform-action
+          perform_action: script.irrigazione_salta_toggle
+        type: tile
+        vertical: false
       type: grid
     - cards:
       - heading: MUSICA
@@ -503,10 +503,6 @@ config:
           name: Tania
         - entity: sensor.panasonic_heat_pump_main_outside_temp
           name: Esterna
-        - entity: sensor.panasonic_heat_pump_main_main_outlet_temp
-          name: Pompa Out
-        - entity: sensor.opentherm_gateway_otgw_otgw_boiler_flow_water_temperature
-          name: Caldaia OUT
         grid_options:
           columns: full
           rows: auto
