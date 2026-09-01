@@ -1,4 +1,4 @@
-# config_elettricita_11.yaml
+# config_elettricita_12.yaml
 # Package Casa Ginepro - Elettricita: consumi, costi, prezzo kWh, bolletta
 # Estratto da configuration_186.yaml. Nome file = nome del package.
 
@@ -212,6 +212,20 @@ template:
   # Surplus = immissione oltre la soglia. delay_on/off contro il
   # flapping da passaggi nuvolosi.
   # ============================================================
+
+input_boolean:
+
+  # --- GESTIONE MANUALE CONTATTORE AUTO ---
+  # Lucchetto del contattore di ricarica auto (config_elettricita_12).
+  # Oggi nessuna automazione comanda switch.solo_auto_contattore_interruttore,
+  # quindi il flag non blocca nulla: serve a rendere esplicito che il contattore
+  # e' nello stato scelto a mano ed e' il presidio per automatismi futuri.
+  # Viene alzato in automatico dal distacco carichi (automations_carichi) quando
+  # l'auto viene staccata per prelievo di rete oltre soglia.
+  auto_manuale:
+    name: "Auto Contattore - Gestione Manuale"
+    initial: false
+    icon: mdi:hand-back-right
 
 input_number:
 

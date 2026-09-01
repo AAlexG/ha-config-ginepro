@@ -1,4 +1,4 @@
-# scripts_51.yaml
+# scripts_52.yaml
 
 #==================================================================================
 # SCRIPT: APRI CANCELLO CASA
@@ -280,6 +280,92 @@ speaker_allarme:
       data:
         volume_level: "{{ vol_googlehome8851 }}"
 
+
+#==================================================================================
+# SCRIPT: AVVISO VOCALE SOVRACCARICO (scripts_52)
+# Richiamato da automations_carichi quando il prelievo da rete resta sopra
+# soglia e non c'e' piu' nessun carico gestibile da staccare: auto, pompa e
+# deumidificatori sono gia' fermi, quindi i kW arrivano da elettrodomestici
+# che HA non comanda.
+# Stesso schema di speaker_allarme: salva i volumi, alza, parla, ripristina.
+# Volume 0.8 invece di 1.0: e' un avviso, non l'allarme intrusione.
+# Il messaggio viene ripetuto 2 volte a 12 secondi di distanza.
+#==================================================================================
+avviso_vocale_sovraccarico:
+  alias: "Avviso vocale - Sovraccarico rete"
+  mode: single
+  sequence:
+    - variables:
+        vol_salotto: "{{ state_attr('media_player.salotto', 'volume_level') | float(0.5) }}"
+        vol_cromecast_sotto: "{{ state_attr('media_player.cromecast_sotto', 'volume_level') | float(0.5) }}"
+        vol_google_home_georgi: "{{ state_attr('media_player.google_home_georgi', 'volume_level') | float(0.5) }}"
+        vol_google_home_sopra: "{{ state_attr('media_player.google_home_sopra', 'volume_level') | float(0.5) }}"
+        vol_googlehome8851: "{{ state_attr('media_player.googlehome8851', 'volume_level') | float(0.5) }}"
+    - action: media_player.turn_on
+      continue_on_error: true
+      target:
+        entity_id: media_player.tutti_gli_speaker
+    - delay: "00:00:01"
+    - action: media_player.volume_set
+      continue_on_error: true
+      target:
+        entity_id:
+          - media_player.salotto
+          - media_player.cromecast_sotto
+          - media_player.google_home_georgi
+          - media_player.google_home_sopra
+          - media_player.googlehome8851
+      data:
+        volume_level: 0.8
+    - repeat:
+        count: 2
+        sequence:
+          - action: tts.speak
+            continue_on_error: true
+            target:
+              entity_id: tts.google_translate_en_com
+            data:
+              media_player_entity_id: media_player.tutti_gli_speaker
+              message: >-
+                Attenzione. Consumo elettrico oltre il limite del contatore.
+                Spegnere subito gli apparecchi in cucina, la lavatrice e il
+                ferro da stiro.
+              language: it
+              cache: true
+              options:
+                preferred_format: mp3
+                preferred_sample_rate: "44100"
+          - delay: "00:00:12"
+    - action: media_player.volume_set
+      continue_on_error: true
+      target:
+        entity_id: media_player.salotto
+      data:
+        volume_level: "{{ vol_salotto }}"
+    - action: media_player.volume_set
+      continue_on_error: true
+      target:
+        entity_id: media_player.cromecast_sotto
+      data:
+        volume_level: "{{ vol_cromecast_sotto }}"
+    - action: media_player.volume_set
+      continue_on_error: true
+      target:
+        entity_id: media_player.google_home_georgi
+      data:
+        volume_level: "{{ vol_google_home_georgi }}"
+    - action: media_player.volume_set
+      continue_on_error: true
+      target:
+        entity_id: media_player.google_home_sopra
+      data:
+        volume_level: "{{ vol_google_home_sopra }}"
+    - action: media_player.volume_set
+      continue_on_error: true
+      target:
+        entity_id: media_player.googlehome8851
+      data:
+        volume_level: "{{ vol_googlehome8851 }}"
 
 #==================================================================================
 # SCRIPT: SALVA BOLLETTA
@@ -603,161 +689,6 @@ caldaia_dhw_off:
     - action: input_boolean.turn_off
       target:
         entity_id: input_boolean.caldaia_dhw_override
-
-#==================================================================================
-# SCRIPT: FANCOIL TANIA – TOGGLE MANUALE
-# Toggle basato sul flag input_boolean.fancoil_georgi_manuale:
-#  - flag OFF -> accende lo switch e attiva il flag (gestione manuale attiva)
-#  - flag ON  -> spegne lo switch e disattiva il flag (le automazioni riprendono
-#    subito il controllo, senza attendere il reset delle 07:00/23:00)
-# Chiamato dal toggle del tile in plancia. Stesso schema per tutti i 5 script.
-#==================================================================================
-fancoil_georgi_toggle_manuale:
-  alias: "Fancoil Tania – Toggle Manuale"
-  mode: single
-  sequence:
-    - condition: template
-      value_template: >
-        {{ states('switch.camerageorgi_shelly_fancoil_georgi') in ['on', 'off'] }}
-    - choose:
-        - conditions:
-            - condition: state
-              entity_id: input_boolean.fancoil_georgi_manuale
-              state: "off"
-          sequence:
-            - action: switch.turn_on
-              target:
-                entity_id: switch.camerageorgi_shelly_fancoil_georgi
-            - action: input_boolean.turn_on
-              target:
-                entity_id: input_boolean.fancoil_georgi_manuale
-      default:
-        - action: switch.turn_off
-          target:
-            entity_id: switch.camerageorgi_shelly_fancoil_georgi
-        - action: input_boolean.turn_off
-          target:
-            entity_id: input_boolean.fancoil_georgi_manuale
-
-#==================================================================================
-# SCRIPT: FANCOIL GEORGI – TOGGLE MANUALE
-#==================================================================================
-fancoil_georgi2_toggle_manuale:
-  alias: "Fancoil Georgi – Toggle Manuale"
-  mode: single
-  sequence:
-    - condition: template
-      value_template: >
-        {{ states('switch.camerageorgi_shelly_fancoil_georgi_2') in ['on', 'off'] }}
-    - choose:
-        - conditions:
-            - condition: state
-              entity_id: input_boolean.fancoil_georgi2_manuale
-              state: "off"
-          sequence:
-            - action: switch.turn_on
-              target:
-                entity_id: switch.camerageorgi_shelly_fancoil_georgi_2
-            - action: input_boolean.turn_on
-              target:
-                entity_id: input_boolean.fancoil_georgi2_manuale
-      default:
-        - action: switch.turn_off
-          target:
-            entity_id: switch.camerageorgi_shelly_fancoil_georgi_2
-        - action: input_boolean.turn_off
-          target:
-            entity_id: input_boolean.fancoil_georgi2_manuale
-
-#==================================================================================
-# SCRIPT: FANCOIL SALA – TOGGLE MANUALE
-#==================================================================================
-fancoil_sala_toggle_manuale:
-  alias: "Fancoil Sala – Toggle Manuale"
-  mode: single
-  sequence:
-    - condition: template
-      value_template: >
-        {{ states('switch.sala_fancoil_sala_shelly_1gen4') in ['on', 'off'] }}
-    - choose:
-        - conditions:
-            - condition: state
-              entity_id: input_boolean.fancoil_sala_manuale
-              state: "off"
-          sequence:
-            - action: switch.turn_on
-              target:
-                entity_id: switch.sala_fancoil_sala_shelly_1gen4
-            - action: input_boolean.turn_on
-              target:
-                entity_id: input_boolean.fancoil_sala_manuale
-      default:
-        - action: switch.turn_off
-          target:
-            entity_id: switch.sala_fancoil_sala_shelly_1gen4
-        - action: input_boolean.turn_off
-          target:
-            entity_id: input_boolean.fancoil_sala_manuale
-
-#==================================================================================
-# SCRIPT: DEUMIDIFICATORE CANTINA – TOGGLE MANUALE
-#==================================================================================
-deumidificatore_cantina_toggle_manuale:
-  alias: "Deumidificatore Cantina – Toggle Manuale"
-  mode: single
-  sequence:
-    - condition: template
-      value_template: >
-        {{ states('switch.box_deumidificatore_cantina_sonoff') in ['on', 'off'] }}
-    - choose:
-        - conditions:
-            - condition: state
-              entity_id: input_boolean.deumidificatore_cantina_manuale
-              state: "off"
-          sequence:
-            - action: switch.turn_on
-              target:
-                entity_id: switch.box_deumidificatore_cantina_sonoff
-            - action: input_boolean.turn_on
-              target:
-                entity_id: input_boolean.deumidificatore_cantina_manuale
-      default:
-        - action: switch.turn_off
-          target:
-            entity_id: switch.box_deumidificatore_cantina_sonoff
-        - action: input_boolean.turn_off
-          target:
-            entity_id: input_boolean.deumidificatore_cantina_manuale
-
-#==================================================================================
-# SCRIPT: DEUMIDIFICATORE ARMADIO – TOGGLE MANUALE
-#==================================================================================
-deumidificatore_armadio_toggle_manuale:
-  alias: "Deumidificatore Armadio – Toggle Manuale"
-  mode: single
-  sequence:
-    - condition: template
-      value_template: >
-        {{ states('switch.deumidificatore_armadio_zigbee') in ['on', 'off'] }}
-    - choose:
-        - conditions:
-            - condition: state
-              entity_id: input_boolean.deumidificatore_armadio_manuale
-              state: "off"
-          sequence:
-            - action: switch.turn_on
-              target:
-                entity_id: switch.deumidificatore_armadio_zigbee
-            - action: input_boolean.turn_on
-              target:
-                entity_id: input_boolean.deumidificatore_armadio_manuale
-      default:
-        - action: switch.turn_off
-          target:
-            entity_id: switch.deumidificatore_armadio_zigbee
-        - action: input_boolean.turn_off
-          target:
-            entity_id: input_boolean.deumidificatore_armadio_manuale
 
 #==================================================================================
 # SCRIPT: PERGOLA – TOGGLE MANUALE ("Chiudere fino notte")

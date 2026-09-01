@@ -1,4 +1,4 @@
-# config_clima_8.yaml
+# config_clima_9.yaml
 # Package Casa Ginepro - Clima: fancoil, free cooling/heating, target temperatura, consumi
 # Estratto da configuration_186.yaml. Nome file = nome del package.
 
@@ -473,6 +473,19 @@ input_boolean:
 
   fancoil_sala_manuale:
     name: "Fancoil Sala - Gestione Manuale"
+    initial: false
+    icon: mdi:hand-back-right
+
+  # --- GESTIONE MANUALE POMPA DI CALORE ---
+  # Lucchetto della Panasonic (config_clima_9). Quando e' ON nessuna automazione
+  # clima o fonte tocca switch.panasonic_heat_pump_main_heatpump_state: la pompa
+  # resta nello stato scelto a mano, acceso o spento che sia.
+  # Unica eccezione voluta: "Panasonic - Antigelo Vacanze Inverno" resta libera,
+  # perche' e' una protezione e non deve mai essere inibita.
+  # Viene alzato in automatico dal distacco carichi (automations_carichi) quando
+  # la pompa viene staccata per prelievo di rete oltre soglia.
+  pdc_manuale:
+    name: "Pompa di Calore - Gestione Manuale"
     initial: false
     icon: mdi:hand-back-right
 

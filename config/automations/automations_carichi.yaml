@@ -1,0 +1,208 @@
+# automations_carichi_1.yaml
+#==================================================================================
+# DISTACCO CARICHI SU PRELIEVO DI RETE ALTO
+#
+# Misura: sensor.inverter_uflex_external_ct1_power (W). Positivo = prelievo
+# dalla rete, negativo = immissione (verificato sul campo, vedi commento in
+# config_elettricita). Soglia 5900 W, tenuta per 30 secondi.
+#
+# LOGICA A GRADINI. Ogni scatto stacca UN SOLO carico, il primo acceso in
+# ordine di potenza decrescente:
+#   1. contattore auto ....... circa 3600 W
+#   2. pompa di calore ....... circa 2000 W
+#   3. deumidificatore cantina  circa 200 W
+#   4. deumidificatore armadio  circa 200 W
+# Non serve nessun ciclo interno ne' polling: staccando un carico il prelievo
+# scende, il trigger numeric_state si riarma, e se il consumo risale sopra
+# soglia per altri 30 secondi l'automazione riparte e trova il gradino
+# successivo (il precedente e' gia' spento e viene saltato dal choose).
+#
+# Ogni distacco spegne il dispositivo E alza il suo flag manuale, cosi' il
+# carico resta fermo: senza il flag le automazioni FV e clima lo
+# riaccenderebbero entro pochi minuti. I flag si abbassano a mano dalla
+# plancia fancoil, quando decidi tu.
+#
+# La seconda automazione copre il caso in cui non ci sia piu' nulla da
+# staccare: i 5900 W arrivano da forno, piano a induzione, lavatrice o ferro,
+# che HA non comanda. Li' l'unica cosa utile e' avvisare, anche a voce.
+#==================================================================================
+
+#==================================================================================
+# C1. DISTACCO PROGRESSIVO
+#==================================================================================
+- id: carichi_distacco_prelievo_alto
+  alias: "Carichi - Distacco progressivo su prelievo alto"
+  description: >
+    Quando il prelievo da rete supera 5900 W per 30 secondi stacca un carico
+    alla volta, dal piu' grande al piu' piccolo, alzando il relativo flag
+    manuale. Notifica push a ogni gradino.
+  mode: single
+  max_exceeded: silent
+  triggers:
+    - trigger: numeric_state
+      entity_id: sensor.inverter_uflex_external_ct1_power
+      above: 5900
+      for: "00:00:30"
+  conditions: []
+  actions:
+    - variables:
+        prelievo: >
+          {{ states('sensor.inverter_uflex_external_ct1_power') | float(0) | round(0) }}
+    - choose:
+        # --- GRADINO 1: CONTATTORE AUTO (circa 3600 W) ---
+        - conditions:
+            - condition: state
+              entity_id: switch.solo_auto_contattore_interruttore
+              state: "on"
+          sequence:
+            - action: switch.turn_off
+              continue_on_error: true
+              target:
+                entity_id: switch.solo_auto_contattore_interruttore
+            - action: input_boolean.turn_on
+              target:
+                entity_id: input_boolean.auto_manuale
+            - action: notify.mobile_app_cph2653
+              continue_on_error: true
+              data:
+                title: "Distacco carichi - Auto"
+                message: >
+                  Prelievo da rete {{ prelievo }} W oltre 5900 W per 30 s.
+                  Staccato il contattore auto (circa 3600 W) e alzato il flag
+                  manuale: resta fermo finche' non lo abbassi dalla plancia.
+                data:
+                  tag: distacco_carichi
+                  priority: high
+                  ttl: 0
+
+        # --- GRADINO 2: POMPA DI CALORE (circa 2000 W) ---
+        - conditions:
+            - condition: state
+              entity_id: switch.panasonic_heat_pump_main_heatpump_state
+              state: "on"
+          sequence:
+            - action: switch.turn_off
+              continue_on_error: true
+              target:
+                entity_id: switch.panasonic_heat_pump_main_heatpump_state
+            - action: input_boolean.turn_on
+              target:
+                entity_id: input_boolean.pdc_manuale
+            - action: notify.mobile_app_cph2653
+              continue_on_error: true
+              data:
+                title: "Distacco carichi - Pompa"
+                message: >
+                  Prelievo da rete {{ prelievo }} W oltre 5900 W per 30 s.
+                  Contattore auto gia' fermo, staccata la pompa di calore
+                  (circa 2000 W) e alzato il flag manuale. Nessuna automazione
+                  clima o fonte la riaccendera' finche' il flag resta alzato.
+                data:
+                  tag: distacco_carichi
+                  priority: high
+                  ttl: 0
+
+        # --- GRADINO 3: DEUMIDIFICATORE CANTINA (circa 200 W) ---
+        - conditions:
+            - condition: state
+              entity_id: switch.box_deumidificatore_cantina_sonoff
+              state: "on"
+          sequence:
+            - action: switch.turn_off
+              continue_on_error: true
+              target:
+                entity_id: switch.box_deumidificatore_cantina_sonoff
+            - action: input_boolean.turn_on
+              target:
+                entity_id: input_boolean.deumidificatore_cantina_manuale
+            - action: notify.mobile_app_cph2653
+              continue_on_error: true
+              data:
+                title: "Distacco carichi - Deumidificatore cantina"
+                message: >
+                  Prelievo da rete {{ prelievo }} W oltre 5900 W per 30 s.
+                  Auto e pompa gia' ferme, staccato il deumidificatore cantina
+                  (circa 200 W) e alzato il flag manuale.
+                data:
+                  tag: distacco_carichi
+                  priority: high
+                  ttl: 0
+
+        # --- GRADINO 4: DEUMIDIFICATORE ARMADIO (circa 200 W) ---
+        - conditions:
+            - condition: state
+              entity_id: switch.deumidificatore_armadio_zigbee
+              state: "on"
+          sequence:
+            - action: switch.turn_off
+              continue_on_error: true
+              target:
+                entity_id: switch.deumidificatore_armadio_zigbee
+            - action: input_boolean.turn_on
+              target:
+                entity_id: input_boolean.deumidificatore_armadio_manuale
+            - action: notify.mobile_app_cph2653
+              continue_on_error: true
+              data:
+                title: "Distacco carichi - Deumidificatore armadio"
+                message: >
+                  Prelievo da rete {{ prelievo }} W oltre 5900 W per 30 s.
+                  Staccato l'ultimo carico gestibile, il deumidificatore
+                  armadio (circa 200 W), e alzato il flag manuale.
+                data:
+                  tag: distacco_carichi
+                  priority: high
+                  ttl: 0
+
+#==================================================================================
+# C2. NESSUN CARICO GESTIBILE: AVVISO PUSH + VOCALE
+#==================================================================================
+# Scatta sullo stesso trigger di C1 ma con tutti e quattro i carichi gia'
+# spenti, quindi C1 non ha nulla da fare. Antispam di 15 minuti sul
+# last_triggered dell'automazione stessa: senza, un consumo che oscilla
+# intorno ai 5900 W farebbe parlare gli speaker in continuazione.
+#==================================================================================
+- id: carichi_nessun_carico_gestibile
+  alias: "Carichi - Prelievo alto senza carichi gestibili"
+  description: >
+    Prelievo oltre 5900 W con auto, pompa e deumidificatori gia' fermi:
+    il consumo arriva da elettrodomestici non comandati da HA. Notifica push
+    e annuncio vocale su tutti i Google Home.
+  mode: single
+  max_exceeded: silent
+  triggers:
+    - trigger: numeric_state
+      entity_id: sensor.inverter_uflex_external_ct1_power
+      above: 5900
+      for: "00:00:30"
+  conditions:
+    - condition: template
+      value_template: >
+        {{ not (is_state('switch.solo_auto_contattore_interruttore', 'on')
+                or is_state('switch.panasonic_heat_pump_main_heatpump_state', 'on')
+                or is_state('switch.box_deumidificatore_cantina_sonoff', 'on')
+                or is_state('switch.deumidificatore_armadio_zigbee', 'on')) }}
+    - condition: template
+      value_template: >
+        {{ this.attributes.last_triggered is none
+           or (now() - this.attributes.last_triggered).total_seconds() > 900 }}
+  actions:
+    - variables:
+        prelievo: >
+          {{ states('sensor.inverter_uflex_external_ct1_power') | float(0) | round(0) }}
+    - action: notify.mobile_app_cph2653
+      continue_on_error: true
+      data:
+        title: "Prelievo alto - nessun carico da staccare"
+        message: >
+          Prelievo da rete {{ prelievo }} W oltre 5900 W per 30 s. Auto, pompa
+          di calore e deumidificatori sono gia' fermi: il consumo arriva da
+          apparecchi non comandati da Home Assistant. Spegnere a mano cucina,
+          lavatrice o ferro da stiro prima che stacchi il contatore.
+        data:
+          tag: distacco_carichi_esaurito
+          priority: high
+          ttl: 0
+          channel: alarm_stream
+    - action: script.avviso_vocale_sovraccarico
+      continue_on_error: true

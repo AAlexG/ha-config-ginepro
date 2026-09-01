@@ -1,4 +1,4 @@
-# automations_fonte_2.yaml
+# automations_fonte_3.yaml
 # Gestione automatica della fonte di riscaldamento (caldaia Baxi via
 # SAT/OTGW vs PdC Panasonic via HeishaMon) in base al costo €/kWh
 # termico (sensor.pdc_costo_kwh_termico / caldaia_costo_kwh_termico).
@@ -29,6 +29,12 @@
     - condition: state
       entity_id: input_boolean.fonte_auto_attiva
       state: "on"
+    # Lucchetto manuale pompa (automations_fonte_3): con il flag alzato la
+    # commutazione caldaia/PdC non tocca la pompa, che resta nello stato
+    # scelto a mano. Alzato anche dal distacco carichi su prelievo alto.
+    - condition: state
+      entity_id: input_boolean.pdc_manuale
+      state: "off"
     - condition: state
       entity_id: input_select.clima_stagione
       state: "inverno"
