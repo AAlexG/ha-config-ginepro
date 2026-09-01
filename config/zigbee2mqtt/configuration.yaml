@@ -67,7 +67,7 @@ devices:
     power_precision: 3
     current_precision: 3
   '0x0c4314fffe52b0c2':
-    friendly_name: Presa zigbee nuova
+    friendly_name: Presa porta box zigbee
     description: Presa zigbee nuova
   '0xa4c1380eff54ffff':
     friendly_name: Termometro Georgi zigbee
