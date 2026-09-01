@@ -287,12 +287,12 @@ config:
         name: OUT pompa
         type: tile
         vertical: false
-      - entity: input_boolean.clima_freecooling_attivo
+      - entity: binary_sensor.panasonic_heat_pump_lwt
         features_position: bottom
         grid_options:
           columns: 6
           rows: 1
-        name: Free cooling in corso
+        name: Pompa Online
         type: tile
         vertical: false
       - entity: switch.panasonic_heat_pump_main_heatpump_state
@@ -305,12 +305,12 @@ config:
           action: none
         type: tile
         vertical: false
-      - entity: binary_sensor.panasonic_heat_pump_lwt
+      - entity: input_boolean.clima_freecooling_attivo
         features_position: bottom
         grid_options:
           columns: 6
           rows: 1
-        name: Pompa Online
+        name: Free cooling in corso
         type: tile
         vertical: false
       - entity: binary_sensor.opentherm_gateway_otgw_otgw_flame
@@ -324,9 +324,19 @@ config:
         name: Caldaia Fiamma
         type: tile
         vertical: false
+      - color: blue
+        entity: sensor.irrigazione_attiva
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        name: ON/OFF Irrigazione
+        tap_action:
+          action: perform-action
+          perform_action: script.irrigazione_salta_toggle
+        type: tile
+        vertical: false
       - entity: switch.solo_auto_contattore_interruttore
-        features:
-        - type: toggle
         features_position: bottom
         name: Auto contattore
         type: tile
@@ -411,18 +421,6 @@ config:
           columns: 3
           rows: auto
         type: conditional
-      - color: blue
-        entity: sensor.irrigazione_attiva
-        features_position: bottom
-        grid_options:
-          columns: 12
-          rows: 1
-        name: ON/OFF Irrigazione
-        tap_action:
-          action: perform-action
-          perform_action: script.irrigazione_salta_toggle
-        type: tile
-        vertical: false
       type: grid
     - cards:
       - heading: MUSICA

@@ -423,14 +423,23 @@ template:
   # conteggio di fine giornata, utilizzabile per un grafico su 30 giorni.
   #
   # La soglia non e' scritta qui: viene letta dall'entita'
-  # number.inverter_uflex_battery_float, cioe' dal parametro Float
+  # number.inverter_uflex_battery_absorption, cioe' dal parametro Absorption
   # effettivamente impostato sull'inverter. Questo contatore e' l'unico del
   # sistema: alimenta sia il grafico dei 30 giorni sia la notifica serale.
+  #
+  # Perche' Absorption e non Float: il Float e' il livello a cui l'inverter
+  # deve stazionare a fine carica, quindi la tensione vi oscilla attorno per
+  # ore e ogni oscillazione verrebbe contata come un episodio. Il 29/08, con
+  # Float a 57,0 V e un plateau pomeridiano fra 57,0 e 57,7 V, il contatore
+  # ha registrato 59 attraversamenti in una giornata del tutto regolare.
+  # L'Absorption e' invece il limite superiore di carica, coincidente con i
+  # 58 V di tensione massima del datasheet: al di sopra c'e' effettivamente
+  # un'anomalia da segnalare.
   #--------------------------------------------------------------------------
   - trigger:
       - platform: numeric_state
         entity_id: sensor.inverter_uflex_battery_voltage
-        above: number.inverter_uflex_battery_float
+        above: number.inverter_uflex_battery_absorption
         id: superamento
       - platform: time
         at: "00:00:00"
@@ -451,7 +460,7 @@ template:
           # parametro Float viene corretto, conteggio e grafico si adeguano
           # da soli senza alcuna modifica alla configurazione.
           soglia: >-
-            {{ states('number.inverter_uflex_battery_float') }}
+            {{ states('number.inverter_uflex_battery_absorption') }}
 
 command_line:
 
@@ -463,26 +472,6 @@ command_line:
       value_template: "{{ value_json.mesi | length }}"
       json_attributes:
         - mesi
-
-  # Sorveglianza della coerenza delle statistiche dell'inverter.
-  # Lo script cerca due anomalie negli ultimi 7 giorni: il campo sum
-  # che torna indietro (azzeramento dei contatori, come il 09/05 e il
-  # 01/06/2026) e il delta giornaliero nullo su tutti e quattro i
-  # sensori di scambio con produzione superiore a 1 kWh (congelamento,
-  # come dal 10/05 al 31/05/2026). Stato -1 = errore di esecuzione.
-  # A differenza della tabella mensile qui non passo da uno
-  # shell_command: lo script gira di rado e scrive poco, quindi lo
-  # esegue direttamente il sensore, senza file JSON intermedio.
-  - sensor:
-      name: PV Controllo Salti
-      unique_id: pv_controllo_salti
-      command: "python3 /config/pv_controllo_salti.py"
-      command_timeout: 60
-      scan_interval: 21600
-      value_template: "{{ value_json.anomalie }}"
-      json_attributes:
-        - dettagli
-        - aggiornato
 
 input_number:
 

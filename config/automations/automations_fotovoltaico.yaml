@@ -19,18 +19,18 @@
 #     F2 manda un riepilogo serale se ci sono stati superamenti della soglia.
 #
 # Il conteggio proviene da sensor.condensatore_superamenti_oggi, unico contatore
-# del sistema, la cui soglia e' letta in tempo reale dal parametro Float
-# dell'inverter (number.inverter_uflex_battery_float): correggendo il parametro,
-# conteggio, notifica e grafico si adeguano da soli. La soglia fissa di 59,5 V
+# del sistema, la cui soglia e' letta in tempo reale dal parametro Absorption
+# dell'inverter (number.inverter_uflex_battery_absorption): correggendo il
+# parametro, conteggio, notifica e grafico si adeguano da soli. La soglia era
+# in origine agganciata al Float, ma il Float e' il livello di stazionamento a
+# fine carica e la tensione vi oscilla attorno per ore, producendo decine di
+# conteggi in giornate del tutto regolari. La soglia fissa di 59,5 V
 # dell'automazione F1 resta invece volutamente indipendente: e' un allarme di
 # picco grave, non un conteggio, e deve scattare solo quando la tensione si
 # avvicina ai 60 V che il 19/08 hanno prodotto il fault F55.
 #
 # I parametri dell'inverter non vengono toccati da queste automazioni: sono di
 # sola sorveglianza.
-#
-# F3 (v3) sorveglia invece la coerenza delle statistiche, non la tensione:
-# vedi il commento dell'automazione per il dettaglio dell'incidente.
 #==================================================================================
 
 #==================================================================================
@@ -62,7 +62,7 @@
           58 V. Il 19/08 un episodio simile ha causato l'apertura del BMS.
           Massimo di oggi: {{ states('sensor.condensatore_tensione_max_oggi') }} V
           su {{ states('sensor.condensatore_superamenti_oggi') }} superamenti
-          della soglia Float
+          della soglia Absorption
           ({{ state_attr('sensor.condensatore_superamenti_oggi', 'soglia') }} V).
         data:
           priority: high
@@ -100,7 +100,7 @@
       data:
         title: "📈 Condensatore - Riepilogo tensione"
         message: >
-          Oggi la tensione del condensatore ha superato la soglia Float
+          Oggi la tensione del condensatore ha superato la soglia Absorption
           ({{ state_attr('sensor.condensatore_superamenti_oggi', 'soglia') }} V)
           per {{ states('sensor.condensatore_superamenti_oggi') }} volte,
           con un massimo di
@@ -110,71 +110,3 @@
           priority: normal
           ttl: 0
           channel: general
-
-#==================================================================================
-# F3. STATISTICHE INVERTER INCOERENTI
-#
-# Motivazione (incidente maggio-giugno 2026):
-#   Il 09/05 e il 01/06 i contatori interni dell'inverter si sono azzerati e il
-#   campo sum delle statistiche di export, import, carica e scarica e' tornato
-#   indietro. Tra i due episodi, dal 10/05 al 31/05, gli stessi quattro sensori
-#   sono rimasti congelati per 22 giorni mentre la produzione continuava a
-#   registrare. La tabella mensile ha mostrato giugno a zero e maggio
-#   sottostimato per tre mesi prima che la cosa venisse notata.
-#
-# Questa automazione non impedisce l'azzeramento: lo rende visibile entro sei
-#   ore invece che entro tre mesi, quando i dati dell'app Solarman sono ancora
-#   consultabili come riferimento per la ricostruzione.
-#
-# Il trigger e' numeric_state above 0: scatta sulla transizione da zero, non si
-#   ripete finche' l'anomalia resta presente. L'antispam di 24 ore copre il caso
-#   di anomalie che entrano ed escono dalla finestra dei 7 giorni facendo
-#   oscillare il conteggio.
-#==================================================================================
-- id: fotovoltaico_statistiche_incoerenti
-  alias: "Fotovoltaico - Statistiche inverter incoerenti"
-  mode: single
-  max_exceeded: silent
-  triggers:
-    - platform: numeric_state
-      entity_id: sensor.pv_controllo_salti
-      above: 0
-  condition:
-    - condition: template
-      value_template: >
-        {{ this.attributes.last_triggered is none
-           or (now() - this.attributes.last_triggered).total_seconds() > 86400 }}
-  action:
-    - action: notify.mobile_app_cph2653
-      continue_on_error: true
-      data:
-        title: "📉 Inverter - Statistiche incoerenti"
-        message: >
-          {{ states('sensor.pv_controllo_salti') }} anomalie negli ultimi 7
-          giorni.
-          {%- for d in (state_attr('sensor.pv_controllo_salti', 'dettagli') or [])[:4] %}
-          {{ d.tipo }} su {{ d.sensore }}, {{ d.quando }} ({{ d.valore }} kWh).
-          {%- endfor %}
-          Verificare la tabella mensile prima che i dati dell'app Solarman non
-          siano piu' consultabili.
-        data:
-          priority: high
-          ttl: 0
-          persistent: "true"
-          channel: general
-    - action: persistent_notification.create
-      continue_on_error: true
-      data:
-        title: "📉 Inverter - Statistiche incoerenti"
-        notification_id: inverter_statistiche_incoerenti
-        message: >
-          Rilevate {{ states('sensor.pv_controllo_salti') }} anomalie nelle
-          statistiche dell'inverter negli ultimi 7 giorni (controllo aggiornato
-          al {{ state_attr('sensor.pv_controllo_salti', 'aggiornato') }}).
-          {%- for d in (state_attr('sensor.pv_controllo_salti', 'dettagli') or []) %}
-          - {{ d.tipo }} su {{ d.sensore }}, {{ d.quando }}, {{ d.valore }} kWh
-          {%- endfor %}
-          Un calo indica l'azzeramento del contatore interno dell'inverter, un
-          congelamento indica che i quattro sensori di scambio sono fermi con
-          l'impianto in produzione. In entrambi i casi la tabella mensile
-          risultera' sbagliata finche' le statistiche non vengono ricucite.

@@ -48,7 +48,7 @@ config:
         grid_options:
           columns: 12
           rows: 1
-        name: Battery absorbtion (durante carica)
+        name: Battery absorbtion
         type: tile
         vertical: false
       - entity: number.inverter_uflex_battery_float
@@ -56,7 +56,7 @@ config:
         grid_options:
           columns: 12
           rows: 1
-        name: Battery float (per compensare l'autoscarica)
+        name: Battery float
         type: tile
         vertical: false
       - entity: number.inverter_uflex_battery_equalization
@@ -64,8 +64,7 @@ config:
         grid_options:
           columns: 12
           rows: 1
-        name: Battery Equalization (serve a rimescolare l'elettrolita - non  ha senso
-          x cond)
+        name: Battery Equalization
         type: tile
         vertical: false
       - entity: sensor.condensatore_tensione_max_oggi
@@ -94,17 +93,27 @@ config:
           columns: 12
           rows: auto
         header:
+          colorize_states: true
           show: true
-          title: Tens. Max cond. oggi(ok se <57.8)
+          show_states: true
+          title: Tens. max cond. oggi (ok se < 58,0 V)
         series:
         - color: '#0072B2'
           entity: sensor.inverter_uflex_battery_voltage
           name: massima oraria
+          show:
+            in_header: false
           statistics:
             period: hour
             type: max
           type: line
           yaxis_id: volt
+        - color: '#D55E00'
+          entity: sensor.condensatore_tensione_max_oggi
+          name: massima oggi
+          show:
+            in_chart: false
+            in_header: true
         type: custom:apexcharts-card
         yaxis:
         - apex_config:
@@ -141,7 +150,7 @@ config:
           rows: auto
         header:
           show: true
-          title: Superamenti soglia Float al giorno
+          title: Superamenti soglia Absorption al giorno
         series:
         - color: '#D55E00'
           entity: sensor.condensatore_superamenti_oggi
@@ -232,52 +241,6 @@ config:
           rows: auto
         image: /local/schemaTigo.jpg
         type: picture
-      type: grid
-    - cards:
-      - heading: "PANELLI: PRODUTTIVIT\xC0 E SEGNALE ORA"
-        heading_style: title
-        type: heading
-      - cards:
-        - content: "**\u2600\uFE0F Tetto vs Ovest**\n<small> A1={{ states('sensor.panel_a1_power_safe')\
-            \ }}W,{{ states('sensor.panel_a1_signal_strength') | int(0) }} &nbsp;\
-            \ A2={{ states('sensor.panel_a2_power_safe') }}W,{{ states('sensor.panel_a2_signal_strength')\
-            \ | int(0) }} &nbsp; A3={{ states('sensor.panel_a3_power_safe') }}W,{{\
-            \ states('sensor.panel_a3_signal_strength') | int(0) }}\nA4={{ states('sensor.panel_a4_power_safe')\
-            \ }}W,{{ states('sensor.panel_a4_signal_strength') | int(0) }} &nbsp;\
-            \ A5={{ states('sensor.panel_a5_power_safe') }}W,{{ states('sensor.panel_a5_signal_strength')\
-            \ | int(0) }} </small>\n"
-          type: markdown
-        - content: "**\u2600\uFE0F Tetto vs Mare**\n<small> A6={{ states('sensor.panel_a6_power_safe')\
-            \ }}W,{{ states('sensor.panel_a6_signal_strength') | int(0) }} &nbsp;\
-            \ A7={{ states('sensor.panel_a7_power_safe') }}W,{{ states('sensor.panel_a7_signal_strength')\
-            \ | int(0) }} &nbsp; A8={{ states('sensor.panel_a8_power_safe') }}W,{{\
-            \ states('sensor.panel_a8_signal_strength') | int(0) }}\nA9={{ states('sensor.panel_a9_power_safe')\
-            \ }}W,{{ states('sensor.panel_a9_signal_strength') | int(0) }} &nbsp;\
-            \ A10={{ states('sensor.panel_a10_power_safe') }}W,{{ states('sensor.panel_a10_signal_strength')\
-            \ | int(0) }} </small>\n"
-          type: markdown
-        - content: "**\U0001F3E0 Sopra Pergola**\n<small> B1={{ states('sensor.panel_b1_power_safe')\
-            \ }}W,{{ states('sensor.panel_b1_signal_strength') | int(0) }} &nbsp;\
-            \ B2={{ states('sensor.panel_b2_power_safe') }}W,{{ states('sensor.panel_b2_signal_strength')\
-            \ | int(0) }} &nbsp; B3={{ states('sensor.panel_b3_power_safe') }}W,{{\
-            \ states('sensor.panel_b3_signal_strength') | int(0) }}\nB4={{ states('sensor.panel_b4_power_safe')\
-            \ }}W,{{ states('sensor.panel_b4_signal_strength') | int(0) }} &nbsp;\
-            \ B5={{ states('sensor.panel_b5_power_safe') }}W,{{ states('sensor.panel_b5_signal_strength')\
-            \ | int(0) }} &nbsp; B10={{ states('sensor.panel_b10_power_safe') }}W,{{\
-            \ states('sensor.panel_b10_signal_strength') | int(0) }} </small>\n"
-          type: markdown
-        - content: "**\U0001F33F Tenda giardino**\n<small> B11={{ states('sensor.panel_b11_power_safe')\
-            \ }}W,{{ states('sensor.panel_b11_signal_strength') | int(0) }} &nbsp;\
-            \ B6={{ states('sensor.panel_b6_power_safe') }}W,{{ states('sensor.panel_b6_signal_strength')\
-            \ | int(0) }} &nbsp; B7={{ states('sensor.panel_b7_power_safe') }}W,{{\
-            \ states('sensor.panel_b7_signal_strength') | int(0) }}\nB8={{ states('sensor.panel_b8_power_safe')\
-            \ }}W,{{ states('sensor.panel_b8_signal_strength') | int(0) }} &nbsp;\
-            \ B9={{ states('sensor.panel_b9_power_safe') }}W,{{ states('sensor.panel_b9_signal_strength')\
-            \ | int(0) }} </small>\n"
-          type: markdown
-        columns: 2
-        square: false
-        type: grid
       - graph_span: 30d
         grid_options:
           columns: 12
@@ -608,6 +571,52 @@ config:
               text: kWh
           decimals: 1
           id: kwh
+      type: grid
+    - cards:
+      - heading: "PANELLI: PRODUTTIVIT\xC0 E SEGNALE ORA"
+        heading_style: title
+        type: heading
+      - cards:
+        - content: "**\u2600\uFE0F Tetto vs Ovest**\n<small> A1={{ states('sensor.panel_a1_power_safe')\
+            \ }}W,{{ states('sensor.panel_a1_signal_strength') | int(0) }} &nbsp;\
+            \ A2={{ states('sensor.panel_a2_power_safe') }}W,{{ states('sensor.panel_a2_signal_strength')\
+            \ | int(0) }} &nbsp; A3={{ states('sensor.panel_a3_power_safe') }}W,{{\
+            \ states('sensor.panel_a3_signal_strength') | int(0) }}\nA4={{ states('sensor.panel_a4_power_safe')\
+            \ }}W,{{ states('sensor.panel_a4_signal_strength') | int(0) }} &nbsp;\
+            \ A5={{ states('sensor.panel_a5_power_safe') }}W,{{ states('sensor.panel_a5_signal_strength')\
+            \ | int(0) }} </small>\n"
+          type: markdown
+        - content: "**\u2600\uFE0F Tetto vs Mare**\n<small> A6={{ states('sensor.panel_a6_power_safe')\
+            \ }}W,{{ states('sensor.panel_a6_signal_strength') | int(0) }} &nbsp;\
+            \ A7={{ states('sensor.panel_a7_power_safe') }}W,{{ states('sensor.panel_a7_signal_strength')\
+            \ | int(0) }} &nbsp; A8={{ states('sensor.panel_a8_power_safe') }}W,{{\
+            \ states('sensor.panel_a8_signal_strength') | int(0) }}\nA9={{ states('sensor.panel_a9_power_safe')\
+            \ }}W,{{ states('sensor.panel_a9_signal_strength') | int(0) }} &nbsp;\
+            \ A10={{ states('sensor.panel_a10_power_safe') }}W,{{ states('sensor.panel_a10_signal_strength')\
+            \ | int(0) }} </small>\n"
+          type: markdown
+        - content: "**\U0001F3E0 Sopra Pergola**\n<small> B1={{ states('sensor.panel_b1_power_safe')\
+            \ }}W,{{ states('sensor.panel_b1_signal_strength') | int(0) }} &nbsp;\
+            \ B2={{ states('sensor.panel_b2_power_safe') }}W,{{ states('sensor.panel_b2_signal_strength')\
+            \ | int(0) }} &nbsp; B3={{ states('sensor.panel_b3_power_safe') }}W,{{\
+            \ states('sensor.panel_b3_signal_strength') | int(0) }}\nB4={{ states('sensor.panel_b4_power_safe')\
+            \ }}W,{{ states('sensor.panel_b4_signal_strength') | int(0) }} &nbsp;\
+            \ B5={{ states('sensor.panel_b5_power_safe') }}W,{{ states('sensor.panel_b5_signal_strength')\
+            \ | int(0) }} &nbsp; B10={{ states('sensor.panel_b10_power_safe') }}W,{{\
+            \ states('sensor.panel_b10_signal_strength') | int(0) }} </small>\n"
+          type: markdown
+        - content: "**\U0001F33F Tenda giardino**\n<small> B11={{ states('sensor.panel_b11_power_safe')\
+            \ }}W,{{ states('sensor.panel_b11_signal_strength') | int(0) }} &nbsp;\
+            \ B6={{ states('sensor.panel_b6_power_safe') }}W,{{ states('sensor.panel_b6_signal_strength')\
+            \ | int(0) }} &nbsp; B7={{ states('sensor.panel_b7_power_safe') }}W,{{\
+            \ states('sensor.panel_b7_signal_strength') | int(0) }}\nB8={{ states('sensor.panel_b8_power_safe')\
+            \ }}W,{{ states('sensor.panel_b8_signal_strength') | int(0) }} &nbsp;\
+            \ B9={{ states('sensor.panel_b9_power_safe') }}W,{{ states('sensor.panel_b9_signal_strength')\
+            \ | int(0) }} </small>\n"
+          type: markdown
+        columns: 2
+        square: false
+        type: grid
       type: grid
     title: Fotovoltaico
     type: sections

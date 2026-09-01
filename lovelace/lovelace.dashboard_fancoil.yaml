@@ -57,6 +57,46 @@ config:
         heading_style: title
         icon: ''
         type: heading
+      - heading: Pompa e Auto
+        heading_style: subtitle
+        icon: ''
+        type: heading
+      - entity: switch.panasonic_heat_pump_main_heatpump_state
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        name: Pompa ora
+        type: tile
+        vertical: false
+      - entity: input_boolean.pdc_manuale
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        name: Pompa manuale
+        tap_action:
+          action: toggle
+        type: tile
+        vertical: false
+      - entity: switch.solo_auto_contattore_interruttore
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        name: Auto ora
+        type: tile
+        vertical: false
+      - entity: input_boolean.auto_manuale
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        name: Auto manuale
+        tap_action:
+          action: toggle
+        type: tile
+        vertical: false
       - heading: Fancoil
         heading_style: subtitle
         icon: ''
@@ -76,8 +116,7 @@ config:
           rows: 1
         name: ' Tania manuale'
         tap_action:
-          action: perform-action
-          perform_action: script.fancoil_georgi_toggle_manuale
+          action: toggle
         type: tile
         vertical: false
       - entity: switch.camerageorgi_shelly_fancoil_georgi_2
@@ -95,8 +134,7 @@ config:
           rows: 1
         name: Georgi manuale
         tap_action:
-          action: perform-action
-          perform_action: script.fancoil_georgi2_toggle_manuale
+          action: toggle
         type: tile
         vertical: false
       - entity: switch.sala_fancoil_sala_shelly_1gen4
@@ -114,8 +152,7 @@ config:
           rows: 1
         name: Sala manuale
         tap_action:
-          action: perform-action
-          perform_action: script.fancoil_sala_toggle_manuale
+          action: toggle
         type: tile
         vertical: false
       - heading: Deumidificatori
@@ -137,8 +174,7 @@ config:
           rows: 1
         name: Cantina Manuale
         tap_action:
-          action: perform-action
-          perform_action: script.deumidificatore_cantina_toggle_manuale
+          action: toggle
         type: tile
         vertical: false
       - entity: switch.deumidificatore_armadio_zigbee
@@ -156,8 +192,7 @@ config:
           rows: 1
         name: Tania Manuale
         tap_action:
-          action: perform-action
-          perform_action: script.deumidificatore_armadio_toggle_manuale
+          action: toggle
         type: tile
         vertical: false
       type: grid
@@ -918,4 +953,3 @@ config:
       type: grid
     title: Devices & Fancoil
     type: sections
-  vpath: fancoil
