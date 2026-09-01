@@ -9,7 +9,7 @@
     "0xa4c1380697d6ffff": {
         "battery": 100,
         "voltage": 3100,
-        "contact": true,
+        "contact": false,
         "battery_low": false,
         "linkquality": 112
     },
@@ -24,30 +24,30 @@
     "0xa4c138e6a0d06219": {
         "voltage": 2500,
         "battery": 50,
-        "temperature": 26.19,
-        "humidity": 56.65,
+        "temperature": 26.88,
+        "humidity": 63.2,
         "linkquality": 108
     },
     "0xa4c1385040d042fb": {
-        "energy": 0.81,
+        "energy": 0.83,
         "state": "ON",
         "countdown": 0,
         "power_outage_memory": "restore",
         "indicator_mode": "off/on",
         "child_lock": "UNLOCK",
-        "voltage": 222.9,
+        "voltage": 225.3,
         "power": 0,
         "current": 0,
         "linkquality": 108
     },
     "0xa4c1383e0fd87686": {
         "state": "OFF",
-        "energy": 28.45,
+        "energy": 29.76,
         "countdown": 0,
         "power_outage_memory": "restore",
         "indicator_mode": "off/on",
         "child_lock": "UNLOCK",
-        "voltage": 221.8,
+        "voltage": 224.6,
         "linkquality": 148,
         "power": 0,
         "current": 0
@@ -59,7 +59,7 @@
         "power_outage_memory": "restore",
         "indicator_mode": "off/on",
         "child_lock": "UNLOCK",
-        "voltage": 221.7,
+        "voltage": 225.2,
         "power": 0,
         "current": 0,
         "update": {
@@ -85,9 +85,9 @@
     },
     "0xa4c1380eff54ffff": {
         "battery": 100,
-        "temperature": 25.7,
+        "temperature": 27,
         "voltage": 3200,
-        "humidity": 64.4,
+        "humidity": 70.8,
         "temperature_sensor_select": "internal",
         "comfort_temperature_min": 19,
         "comfort_temperature_max": 35.2,
@@ -108,8 +108,8 @@
     "0xa4c1380f0678ffff": {
         "battery": 100,
         "voltage": 3200,
-        "temperature": 26.3,
-        "humidity": 61.5,
+        "temperature": 26.4,
+        "humidity": 62.9,
         "temperature_sensor_select": "internal",
         "comfort_temperature_min": 19,
         "comfort_temperature_max": 27,
