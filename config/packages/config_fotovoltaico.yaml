@@ -1,4 +1,4 @@
-# config_fotovoltaico_5.yaml
+# config_fotovoltaico_6.yaml
 # Package Casa Ginepro - Fotovoltaico: inverter UFLEX, pannelli Tigo, surplus, GSE
 # Estratto da configuration_186.yaml. Nome file = nome del package.
 
@@ -463,6 +463,26 @@ command_line:
       value_template: "{{ value_json.mesi | length }}"
       json_attributes:
         - mesi
+
+  # Sorveglianza della coerenza delle statistiche dell'inverter.
+  # Lo script cerca due anomalie negli ultimi 7 giorni: il campo sum
+  # che torna indietro (azzeramento dei contatori, come il 09/05 e il
+  # 01/06/2026) e il delta giornaliero nullo su tutti e quattro i
+  # sensori di scambio con produzione superiore a 1 kWh (congelamento,
+  # come dal 10/05 al 31/05/2026). Stato -1 = errore di esecuzione.
+  # A differenza della tabella mensile qui non passo da uno
+  # shell_command: lo script gira di rado e scrive poco, quindi lo
+  # esegue direttamente il sensore, senza file JSON intermedio.
+  - sensor:
+      name: PV Controllo Salti
+      unique_id: pv_controllo_salti
+      command: "python3 /config/pv_controllo_salti.py"
+      command_timeout: 60
+      scan_interval: 21600
+      value_template: "{{ value_json.anomalie }}"
+      json_attributes:
+        - dettagli
+        - aggiornato
 
 input_number:
 

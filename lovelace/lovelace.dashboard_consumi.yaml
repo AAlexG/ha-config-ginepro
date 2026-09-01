@@ -52,15 +52,15 @@ config:
 
           style="padding:4px 6px;border:1px solid #444">Prod</th> <th
 
-          style="padding:4px 6px;border:1px solid #444">Consumo</th> <th
+          style="padding:4px 6px;border:1px solid #444">Consumo da FV</th> <th
 
           style="padding:4px 6px;border:1px solid #444">% Consumo</th>
 
-          <th style="padding:4px 6px;border:1px solid #444">Import</th> <th
+          <th style="padding:4px 6px;border:1px solid #444">Da rete</th> <th
 
-          style="padding:4px 6px;border:1px solid #444">Tot Consum</th> <th
+          style="padding:4px 6px;border:1px solid #444">Totale Consumi</th> <th
 
-          style="padding:4px 6px;border:1px solid #444">Export</th> <th
+          style="padding:4px 6px;border:1px solid #444">A rete</th> <th
 
           style="padding:4px 6px;border:1px solid #444">Bat Carica</th> <th
 
