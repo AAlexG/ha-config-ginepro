@@ -209,7 +209,7 @@ config:
         name: Fragmentation
       - entity: sensor.opentherm_gateway_otgw_reboot_count
         name: Reboot
-      hours_to_show: 480
+      hours_to_show: 240
       title: Heap/frag/reboot 20gg
       type: history-graph
     icon: mdi:water-boiler

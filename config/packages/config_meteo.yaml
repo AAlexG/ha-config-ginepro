@@ -1,20 +1,10 @@
-# config_meteo_2.yaml
+# config_meteo_3.yaml
 # Package Casa Ginepro - Meteo: sensori statistici vento (HP1000SE Pro)
 #                        + alba e tramonto di oggi
 # Estratto da configuration_186.yaml. Nome file = nome del package.
 
 #--- SENSORI STATISTICI ---
 sensor:
-  - platform: statistics
-    name: "Wind Gust Max Annuale"
-    unique_id: "wind_gust_max_annuale"
-    entity_id: sensor.hp1000se_pro_pro_v1_6_4_max_daily_gust
-    state_characteristic: value_max
-    max_age:
-      days: 365
-    sampling_size: 10000
-    precision: 1
-
   - platform: statistics
     name: "Wind Speed Media 1h"
     unique_id: "wind_speed_media_1h"
@@ -24,6 +14,35 @@ sensor:
       hours: 1
     sampling_size: 120
     precision: 1
+
+#==================================================================================
+# RAFFICA MASSIMA ULTIMI 365 GIORNI
+# Il sensore statistics non puo' fare questo lavoro: costruisce il proprio buffer
+# dalla tabella states, che il recorder pulisce dopo purge_keep_days (7 giorni).
+# Il max_age: 365 days risultava quindi inefficace e il valore mostrato era il
+# massimo dell'ultima settimana.
+# Questo sensore SQL legge invece la colonna max delle statistiche a lungo termine
+# (tabella statistics), che non vengono mai eliminate dal purge.
+# metadata_id risolto dinamicamente via JOIN su statistics_meta: mai valori fissi.
+# Polling: 30 secondi (default integrazione SQL, non configurabile da YAML).
+#==================================================================================
+sql:
+  - name: "Raffica Max 365 Giorni"
+    unique_id: raffica_max_365_giorni
+    query: >
+      SELECT
+        ROUND(MAX(s.max), 1) AS raffica_max
+      FROM
+        statistics s
+        JOIN statistics_meta sm ON sm.id = s.metadata_id
+      WHERE
+        sm.statistic_id = 'sensor.hp1000se_pro_pro_v1_6_4_max_daily_gust'
+        AND s.start_ts >= strftime('%s', 'now', '-365 days')
+    column: raffica_max
+    unit_of_measurement: "km/h"
+    device_class: wind_speed
+    state_class: measurement
+    icon: mdi:weather-windy
 
 #==================================================================================
 # ALBA E TRAMONTO DI OGGI

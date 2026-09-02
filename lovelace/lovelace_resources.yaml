@@ -4,7 +4,7 @@ items:
   url: /hacsfiles/sunsynk-power-flow-card/sunsynk-power-flow-card.js?hacstag=613588535733
 - id: 0d73d327191849528449180974826699
   type: module
-  url: /hacsfiles/advanced-camera-card/advanced-camera-card.js?hacstag=394082552801
+  url: /hacsfiles/advanced-camera-card/advanced-camera-card.js?hacstag=394082552802
 - id: 93288a54164d4c2a842b2876fc9fb8c8
   type: module
   url: /hacsfiles/lovelace-auto-entities/auto-entities.js?hacstag=1677445841161
