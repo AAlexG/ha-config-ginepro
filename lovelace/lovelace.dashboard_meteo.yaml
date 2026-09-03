@@ -21,12 +21,12 @@ config:
         vertical: false
       - entity: sensor.hp1000se_pro_pro_v1_6_4_max_daily_gust
         features_position: bottom
-        name: Raffiche giorno
+        name: Raffiche oggi
         type: tile
         vertical: false
       - entity: sensor.hp1000se_pro_pro_v1_6_4_daily_rain
         features_position: bottom
-        name: Pioggia giorno
+        name: Pioggia oggi
         type: tile
         vertical: false
       - entity: sensor.hp1000se_pro_pro_v1_6_4_solar_radiation
@@ -78,28 +78,6 @@ config:
         heading_style: subtitle
         icon: mdi:wind-power
         type: heading
-      - entities:
-        - entity: sensor.hp1000se_pro_pro_v1_6_4_wind_speed
-          name: Velocita ora
-        - entity: sensor.hp1000se_pro_pro_v1_6_4_wind_gust
-          name: Raffiche ora
-        grid_options:
-          columns: full
-          rows: auto
-        hours_to_show: 24
-        refresh_interval: 60
-        type: history-graph
-      - entities:
-        - entity: sensor.hp1000se_pro_pro_v1_6_4_wind_speed
-          name: Velocita ora
-        - entity: sensor.hp1000se_pro_pro_v1_6_4_wind_gust
-          name: Raffiche ora
-        grid_options:
-          columns: full
-          rows: auto
-        hours_to_show: 4380
-        refresh_interval: 60
-        type: history-graph
       - entity: sensor.hp1000se_pro_pro_v1_6_4_max_daily_gust
         features_position: bottom
         grid_options:
@@ -116,13 +94,11 @@ config:
         name: Max Raffiche Anno
         type: tile
         vertical: false
-      - heading: Pioggia in dettaglio
-        heading_style: subtitle
-        icon: mdi:weather-rainy
-        type: heading
       - entities:
-        - entity: sensor.hp1000se_pro_pro_v1_6_4_hourly_rain
-          name: Pioggia 24H
+        - entity: sensor.hp1000se_pro_pro_v1_6_4_wind_speed
+          name: Vento ora
+        - entity: sensor.hp1000se_pro_pro_v1_6_4_wind_gust
+          name: Raffiche ora
         grid_options:
           columns: full
           rows: auto
@@ -130,15 +106,20 @@ config:
         refresh_interval: 60
         type: history-graph
       - entities:
-        - entity: sensor.hp1000se_pro_pro_v1_6_4_monthly_rain
-          name: Pioggia
-        expand_legend: false
+        - entity: sensor.hp1000se_pro_pro_v1_6_4_wind_speed
+          name: Vento ora
+        - entity: sensor.hp1000se_pro_pro_v1_6_4_wind_gust
+          name: Raffiche ora
         grid_options:
           columns: full
           rows: auto
-        hours_to_show: 8640
+        hours_to_show: 4380
         refresh_interval: 60
         type: history-graph
+      - heading: Pioggia in dettaglio
+        heading_style: subtitle
+        icon: mdi:weather-rainy
+        type: heading
       - entity: sensor.hp1000se_pro_pro_v1_6_4_daily_rain
         features_position: bottom
         name: Giorno
@@ -159,6 +140,25 @@ config:
         name: Anno
         type: tile
         vertical: false
+      - entities:
+        - entity: sensor.hp1000se_pro_pro_v1_6_4_hourly_rain
+          name: Pioggia ora
+        grid_options:
+          columns: full
+          rows: auto
+        hours_to_show: 24
+        refresh_interval: 60
+        type: history-graph
+      - entities:
+        - entity: sensor.hp1000se_pro_pro_v1_6_4_monthly_rain
+          name: Pioggia ora
+        expand_legend: false
+        grid_options:
+          columns: full
+          rows: auto
+        hours_to_show: 8640
+        refresh_interval: 60
+        type: history-graph
       - heading: Previsioni in dettaglio
         heading_style: subtitle
         icon: mdi:weather-cloudy-clock
