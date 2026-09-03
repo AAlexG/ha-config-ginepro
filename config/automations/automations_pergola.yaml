@@ -1,4 +1,4 @@
-# automations_pergola_14.yaml
+# automations_pergola_15.yaml
 
 #==================================================================================
 # PERGOLA – INSEGUIMENTO SOLARE + APERTURA AERAZIONE (1 giugno – 1 novembre)
@@ -88,8 +88,27 @@
 #==================================================================================
 # PERGOLA – CHIUSURA SICUREZZA METEO
 # Chiude a 0% se: vento medio > 10 km/h per 3 minuti, raffica > 20 km/h,
-# pioggia in corso, radiazione solare < 150 W/m² per 30 minuti, oppure
-# previsione pioggia > 0 mm nelle prossime 3 ore (weather.casa).
+# intensita' di pioggia > 0 mm/h, accumulo orario > 0 mm, oppure previsione
+# pioggia > 0 mm nelle prossime 3 ore (weather.casa).
+#
+# v15 - RIMOSSO il controllo sulla radiazione solare (era < 30 W/m2 per 30
+# minuti; il commento diceva 150, il codice 30). Motivo: la posizione
+# pomeridiana all'80% serve ad AERARE lo spazio sottostante, non solo a fare
+# ombra, quindi con luce scarsa e tempo asciutto non c'e' motivo di chiudere.
+# Il controllo era inoltre ridondante (la previsione a 3 ore anticipa meglio
+# il temporale) e si accendeva ogni sera al calare della luce, lasciando il
+# flag alzato tutta la notte e visibile in plancia col tempo sereno.
+#
+# v15 - AGGIUNTO sensor...rain_rate (intensita' istantanea). hourly_rain e'
+# un accumulo dell'ora corrente e si azzera allo scoccare dell'ora: se piove
+# alle 10:55, alle 11:00 torna a 0 mentre sta ancora piovendo. rain_rate
+# copre quel buco e intercetta la pioggia locale immediatamente; hourly_rain
+# resta per dare persistenza all'allarme dopo che ha smesso.
+# NOTA: event_rain volutamente NON usato, resta > 0 per ore dopo la pioggia
+# e terrebbe la pergola chiusa per l'intera giornata.
+#
+# v15 - Scrive input_datetime.pergola_meteo_ultimo_allarme (usato dal
+# rilascio) e input_text.pergola_meteo_causa (mostrato in plancia Tende).
 # Rispetta solo il blocco manuale: la sicurezza meteo ha sempre priorità
 # sull'inseguimento solare.
 #==================================================================================
@@ -104,12 +123,11 @@
       entity_id: sensor.hp1000se_pro_pro_v1_6_4_wind_gust
       above: 20
     - trigger: numeric_state
-      entity_id: sensor.hp1000se_pro_pro_v1_6_4_hourly_rain
+      entity_id: sensor.hp1000se_pro_pro_v1_6_4_rain_rate
       above: 0
     - trigger: numeric_state
-      entity_id: sensor.hp1000se_pro_pro_v1_6_4_solar_radiation
-      below: 30
-      for: "00:30:00"
+      entity_id: sensor.hp1000se_pro_pro_v1_6_4_hourly_rain
+      above: 0
     - trigger: time_pattern
       minutes: "/10"
   conditions:
@@ -127,16 +145,33 @@
         type: hourly
       response_variable: previsione
     - variables:
-        pioggia_prevista: >-
+        v_vento: "{{ states('sensor.hp1000se_pro_pro_v1_6_4_wind_speed') | float(0) }}"
+        v_raffica: "{{ states('sensor.hp1000se_pro_pro_v1_6_4_wind_gust') | float(0) }}"
+        v_rate: "{{ states('sensor.hp1000se_pro_pro_v1_6_4_rain_rate') | float(0) }}"
+        v_oraria: "{{ states('sensor.hp1000se_pro_pro_v1_6_4_hourly_rain') | float(0) }}"
+        mm_previsti: >-
           {{ (previsione['weather.casa'].forecast[0:3]
              | map(attribute='precipitation')
-             | map('float', 0) | list) | max | default(0) > 0 }}
+             | map('float', 0) | list) | max | default(0) }}
+    # Secondo blocco separato: usa le variabili del primo.
+    # ora_inizio = ora di alzamento del flag (last_changed se gia' alzato,
+    # adesso se sta per essere alzato ora), non ora dell'ultimo controllo.
+    - variables:
         emergenza: >-
-          {{ (states('sensor.hp1000se_pro_pro_v1_6_4_wind_speed') | float(0) > 10)
-             or (states('sensor.hp1000se_pro_pro_v1_6_4_wind_gust') | float(0) > 20)
-             or (states('sensor.hp1000se_pro_pro_v1_6_4_hourly_rain') | float(0) > 0)
-             or (states('sensor.hp1000se_pro_pro_v1_6_4_solar_radiation') | float(9999) < 30)
-             or pioggia_prevista }}
+          {{ v_vento > 10 or v_raffica > 20 or v_rate > 0
+             or v_oraria > 0 or mm_previsti > 0 }}
+        ora_inizio: >-
+          {% if is_state('input_boolean.pergola_meteo_chiusura','on') %}
+          {{ states.input_boolean.pergola_meteo_chiusura.last_changed
+             | as_local | as_timestamp | timestamp_custom('%H:%M') }}
+          {% else %}{{ now().strftime('%H:%M') }}{% endif %}
+        causa: >-
+          {{ ([ ('vento ' ~ (v_vento | round(1)) ~ ' km/h') if v_vento > 10 else none,
+                ('raffica ' ~ (v_raffica | round(1)) ~ ' km/h') if v_raffica > 20 else none,
+                ('pioggia ' ~ (v_rate | round(1)) ~ ' mm/h') if v_rate > 0 else none,
+                ('accumulo ' ~ (v_oraria | round(1)) ~ ' mm') if v_oraria > 0 else none,
+                ('previsione ' ~ (mm_previsti | round(1)) ~ ' mm/3h') if mm_previsti > 0 else none ]
+              | reject('none') | list | join(' + ')) ~ ' – dalle ' ~ ora_inizio }}
     - condition: template
       value_template: "{{ emergenza }}"
     - action: cover.set_cover_tilt_position
@@ -144,35 +179,77 @@
         entity_id: cover.terrazzo_pergola_terrazza
       data:
         tilt_position: 0
+    - action: input_text.set_value
+      target:
+        entity_id: input_text.pergola_meteo_causa
+      data:
+        value: "{{ causa }}"
     - action: input_boolean.turn_on
       target:
         entity_id: input_boolean.pergola_meteo_chiusura
+    - action: input_datetime.set_datetime
+      target:
+        entity_id: input_datetime.pergola_meteo_ultimo_allarme
+      data:
+        timestamp: "{{ now().timestamp() }}"
 
 #==================================================================================
 # PERGOLA – RILASCIO SICUREZZA METEO
-# Rilascia il blocco meteo solo dopo 20 minuti consecutivi con tutte le
-# condizioni di sicurezza rientrate (vento, raffica, pioggia in corso,
-# radiazione solare). La previsione pioggia non è ricontrollata qui: verrà
-# rivalutata dal prossimo ciclio dell'automazione di chiusura sopra.
+# Rilascia il blocco meteo dopo 20 minuti senza alcuna condizione di allarme.
+#
+# v15 - Il trigger "template + for: 00:20:00" e' stato sostituito da un
+# controllo periodico. Un trigger template scatta SOLO sulla transizione
+# falso -> vero: finche' esisteva il controllo radiazione quella transizione
+# avveniva una volta al giorno all'alba, ma tolto quello, in una giornata
+# serena e calma il template sarebbe vero da ore e non scatterebbe mai piu'.
+# Il flag alzato dalla sola previsione pioggia sarebbe rimasto acceso a
+# tempo indeterminato.
+#
+# I 20 minuti di anti-rimbalzo sono ora misurati su
+# input_datetime.pergola_meteo_ultimo_allarme, scritto dall'automazione di
+# chiusura ogni volta che vede un'emergenza. Cosi' l'attesa copre anche la
+# previsione pioggia senza doverla ricontrollare qui (evita che chiusura e
+# rilascio si rincorrano ogni 10 minuti).
+#
+# Sfasato di 30 secondi rispetto al ciclo della chiusura per non correre
+# con essa sullo stesso minuto.
+#
+# Il controllo istantaneo di vento/raffica/pioggia resta come seconda rete:
+# copre il caso in cui la chiusura non giri (flag vacanza o blocco manuale)
+# e quindi non aggiorni piu' il timestamp.
 #==================================================================================
 - id: pergola_meteo_rilascio
   alias: "Pergola – Rilascio Sicurezza Meteo"
+  mode: single
+  max_exceeded: silent
   triggers:
-    - trigger: template
-      value_template: >-
-        {{ (states('sensor.hp1000se_pro_pro_v1_6_4_wind_speed') | float(0) <= 10)
-           and (states('sensor.hp1000se_pro_pro_v1_6_4_wind_gust') | float(0) <= 20)
-           and (states('sensor.hp1000se_pro_pro_v1_6_4_hourly_rain') | float(0) <= 0)
-           and (states('sensor.hp1000se_pro_pro_v1_6_4_solar_radiation') | float(0) >= 30) }}
-      for: "00:20:00"
+    - trigger: time_pattern
+      minutes: "/10"
+      seconds: 30
   conditions:
     - condition: state
       entity_id: input_boolean.pergola_meteo_chiusura
       state: "on"
+    - condition: template
+      value_template: >-
+        {{ now().timestamp()
+           - (state_attr('input_datetime.pergola_meteo_ultimo_allarme','timestamp')
+              | float(0)) >= 1200 }}
+    - condition: template
+      value_template: >-
+        {{ (states('sensor.hp1000se_pro_pro_v1_6_4_wind_speed') | float(0) <= 10)
+           and (states('sensor.hp1000se_pro_pro_v1_6_4_wind_gust') | float(0) <= 20)
+           and (states('sensor.hp1000se_pro_pro_v1_6_4_rain_rate') | float(0) <= 0)
+           and (states('sensor.hp1000se_pro_pro_v1_6_4_hourly_rain') | float(0) <= 0) }}
   actions:
     - action: input_boolean.turn_off
       target:
         entity_id: input_boolean.pergola_meteo_chiusura
+    - action: input_text.set_value
+      target:
+        entity_id: input_text.pergola_meteo_causa
+      data:
+        value: "Nessun allarme – rientrato alle {{ now().strftime('%H:%M') }}"
 
 #==================================================================================
 # TENDA GIARDINO – Chiusura automatica per vento pericoloso

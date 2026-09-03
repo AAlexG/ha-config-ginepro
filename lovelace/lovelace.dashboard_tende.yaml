@@ -65,10 +65,11 @@ config:
         type: tile
         vertical: false
       - entity: input_boolean.tenda_notifica_vento_oggi
+        features_position: bottom
         grid_options:
           columns: 12
           rows: 1
-        name: E' stata chiusa x raffiche oggi
+        name: E' stata chiusa x vento o pioggia
         type: tile
         vertical: false
       type: grid
@@ -107,9 +108,15 @@ config:
         grid_options:
           columns: full
           rows: 1
-        name: E' stata chiusa X meteo oggi
+        name: E' stata chiusa X vento o pioggia
         type: tile
         vertical: false
+      - content: "**Causa:** {{ states('input_text.pergola_meteo_causa') | default('\u2014\
+          ', true) }}"
+        grid_options:
+          columns: full
+          rows: auto
+        type: markdown
       type: grid
     title: Tende
     type: sections

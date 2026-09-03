@@ -1,4 +1,4 @@
-# config_aperture_1.yaml
+# config_aperture_2.yaml
 # Package Casa Ginepro - Aperture e sicurezza: portone box, cancelli, pergola, tenda, sirena
 # Estratto da configuration_186.yaml. Nome file = nome del package.
 
@@ -77,3 +77,37 @@ input_boolean:
   tenda_giardino_aperta:
     name: "Tenda Giardino – Aperta"
     icon: mdi:roman-shade
+
+#==================================================================================
+# PERGOLA - SICUREZZA METEO: HELPER DI SUPPORTO (nuovi in config_aperture_2)
+#
+# input_datetime.pergola_meteo_ultimo_allarme
+#   Ora dell'ultima condizione di emergenza rilevata da automations_pergola.
+#   Il rilascio del flag avviene solo dopo 20 minuti da questo istante.
+#   Sostituisce il precedente "for: 00:20:00" sul trigger template del rilascio:
+#   quel trigger scattava solo sulla transizione falso -> vero e, tolto il
+#   controllo radiazione, non avrebbe mai piu' avuto una transizione in una
+#   giornata serena e calma, lasciando il flag alzato a tempo indeterminato.
+#   NIENTE "initial": se mai impostato vale 1970-01-01 e il rilascio risulta
+#   permesso, che e' il default corretto (nessun allarme mai registrato).
+#
+# input_text.pergola_meteo_causa
+#   Descrizione leggibile di TUTTE le condizioni che tengono alzato il flag,
+#   con l'ora di alzamento. Mostrata in plancia Tende. Scritta dall'automazione
+#   di chiusura ad ogni ciclo di emergenza, azzerata dal rilascio.
+#   NIENTE "initial": deve sopravvivere ai riavvii.
+#==================================================================================
+input_datetime:
+
+  pergola_meteo_ultimo_allarme:
+    name: "Pergola - Ultimo Allarme Meteo"
+    has_date: true
+    has_time: true
+    icon: mdi:clock-alert-outline
+
+input_text:
+
+  pergola_meteo_causa:
+    name: "Pergola - Causa Chiusura Meteo"
+    max: 255
+    icon: mdi:text-box-outline

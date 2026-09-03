@@ -192,23 +192,23 @@ config:
       type: entities
     - entities:
       - entity: sensor.opentherm_gateway_otgw_stats_free_heap
-        name: Heap libero
+        name: 'Heap libero ora:'
       - entity: sensor.opentherm_gateway_otgw_stats_max_block
-        name: Blocco max
+        name: 'Blocco max ora:'
       - entity: sensor.opentherm_gateway_otgw_stats_fragmentation
-        name: Fragmentation
+        name: 'Fragmentation ora:'
       hours_to_show: 24
       title: OTGW-heap/fragm.Oggi
       type: history-graph
     - entities:
       - entity: sensor.opentherm_gateway_otgw_stats_free_heap
-        name: Heap libero
+        name: 'Heap libero ora:'
       - entity: sensor.opentherm_gateway_otgw_stats_max_block
-        name: Blocco max
+        name: 'Blocco max ora:'
       - entity: sensor.opentherm_gateway_otgw_stats_fragmentation
-        name: Fragmentation
+        name: 'Fragmentation ora:'
       - entity: sensor.opentherm_gateway_otgw_reboot_count
-        name: Reboot
+        name: 'Reboot fino ad ora:'
       hours_to_show: 240
       title: Heap/frag/reboot 20gg
       type: history-graph
