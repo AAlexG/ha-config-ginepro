@@ -910,42 +910,43 @@ config:
         heading_style: title
         icon: mdi:countertop-outline
         type: heading
-      - entity: sensor.solo_sauna_contatore_corrente_di_fase_a
+      - entity: sensor.shellyem_ec64c9c9b75c_channel_1_energia
         features_position: bottom
-        name: Corrente
+        name: Consumo
         type: tile
         vertical: false
-      - entity: sensor.solo_sauna_contatore_potenza_di_fase_a
+      - entity: sensor.shellyem_ec64c9c9b75c_channel_1_potenza
         features_position: bottom
         name: Potenza
         type: tile
         vertical: false
-      - entity: sensor.sauna_energia_oggi
+      - entity: sensor.shellyem_ec64c9c9b75c_intensita_del_segnale
         features_position: bottom
-        name: Consu.Oggi
+        name: Segnale
         type: tile
         vertical: false
-      - entity: sensor.solo_sauna_contatore_tensione_di_fase_a
+      - entity: binary_sensor.shellyem_ec64c9c9b75c_sovra_potenza
         features_position: bottom
-        name: Tensione
+        name: Sovrapotenza
         type: tile
         vertical: false
       - chart_type: bar
-        days_to_show: 120
+        days_to_show: 30
         entities:
-        - entity: sensor.solo_sauna_contatore_potenza_di_fase_a
-          name: Sauna giorno
+        - entity: sensor.shellyem_ec64c9c9b75c_channel_1_energia
+          name: Consumo
         grid_options:
           columns: full
           rows: auto
         period: day
         stat_types:
-        - max
+        - state
         type: statistics-graph
       - chart_type: bar
         days_to_show: 365
         entities:
-        - sensor.sauna_energia_mese
+        - entity: sensor.shellyem_ec64c9c9b75c_channel_1_energia
+          name: Consumo
         period: month
         stat_types:
         - state

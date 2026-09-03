@@ -37,6 +37,7 @@ template:
               '9a:da:c4:85:b8:7c': '037 HeishaMon via RE650(DHCP)',
               '38:44:be:46:1f:08': '039 RPI fan controller ESP32',
               '00:25:ca:74:c0:47': '041 Tigo CCA logger in armadio',
+              'ec:64:c9:c9:b7:5c': '042 Contaore cucina shellyEM',
               '00:1d:63:36:65:92': '046 lavatrice Miele',
               '84:0d:8e:66:14:ff': '047 Sonoff RF Bridge 433(DHCP)',
               '70:a8:d3:db:50:f6': '048 SASHA-MSI-PC',
