@@ -906,6 +906,52 @@ config:
         type: statistics-graph
       type: grid
     - cards:
+      - heading: Cucina (tutti apparecchi)
+        heading_style: title
+        icon: mdi:countertop-outline
+        type: heading
+      - entity: sensor.solo_sauna_contatore_corrente_di_fase_a
+        features_position: bottom
+        name: Corrente
+        type: tile
+        vertical: false
+      - entity: sensor.solo_sauna_contatore_potenza_di_fase_a
+        features_position: bottom
+        name: Potenza
+        type: tile
+        vertical: false
+      - entity: sensor.sauna_energia_oggi
+        features_position: bottom
+        name: Consu.Oggi
+        type: tile
+        vertical: false
+      - entity: sensor.solo_sauna_contatore_tensione_di_fase_a
+        features_position: bottom
+        name: Tensione
+        type: tile
+        vertical: false
+      - chart_type: bar
+        days_to_show: 120
+        entities:
+        - entity: sensor.solo_sauna_contatore_potenza_di_fase_a
+          name: Sauna giorno
+        grid_options:
+          columns: full
+          rows: auto
+        period: day
+        stat_types:
+        - max
+        type: statistics-graph
+      - chart_type: bar
+        days_to_show: 365
+        entities:
+        - sensor.sauna_energia_mese
+        period: month
+        stat_types:
+        - state
+        type: statistics-graph
+      type: grid
+    - cards:
       - heading: Sauna
         heading_style: title
         icon: mdi:spa
