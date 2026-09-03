@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# pv_tabella_mensile_15.py
+# pv_tabella_mensile_16.py
 # Calcola per ogni mese con produzione FV:
 #   - produzione (kWh)
 #   - autoconsumo = produzione - export (kWh)
@@ -17,7 +17,10 @@
 # Colonne apparecchi arrotondate a 1 decimale (v14): con gli interi le
 # utenze piccole (fancoil, lavatrice, sauna) sparivano a 0.
 # Aggiunge inoltre i consumi mensili per apparecchio (v11):
-#   pompa, fancoil, deumidificatori, lavatrice, auto, sauna, altri
+#   pompa, fancoil, deumidificatori, lavatrice, auto, sauna, cucina, altri
+# La colonna cucina (v16) legge il contattore Shelly EM canale 1. Il
+# sensore parte da settembre 2026, quindi sui mesi precedenti resta
+# vuota, come gia' accade per "altri".
 # "altri" e' il valore accumulato da sensor.altri_apparecchi_oggi, letto
 # dalle statistiche come tutte le altre colonne (v15). NON piu' ricavato
 # per differenza da consumo_tot: era un calcolo, non una misura.
@@ -98,6 +101,7 @@ def main():
         mid_lavatrice = get_mid(cur, "sensor.lavatrice_energia")
         mid_auto      = get_mid(cur, "sensor.auto_energia_oggi")
         mid_sauna     = get_mid(cur, "sensor.sauna_energia_oggi")
+        mid_cucina    = get_mid(cur, "sensor.shellyem_ec64c9c9b75c_channel_1_energia")
         mid_altri     = get_mid(cur, "sensor.altri_apparecchi_oggi")
 
         prod    = monthly_delta(cur, mid_prod)
@@ -113,6 +117,7 @@ def main():
         lavatrice = monthly_delta(cur, mid_lavatrice)
         auto      = monthly_delta(cur, mid_auto)
         sauna     = monthly_delta(cur, mid_sauna)
+        cucina    = monthly_delta(cur, mid_cucina)
         altri     = monthly_delta(cur, mid_altri)
 
         conn.close()
@@ -121,7 +126,7 @@ def main():
         rows = []
         t_prod = t_auto = t_imp = t_cons = t_exp = t_bc = t_bd = 0.0
         t_pompa = t_fancoil = t_deumid = t_lavatrice = 0.0
-        t_eauto = t_sauna = t_altri = 0.0
+        t_eauto = t_sauna = t_cucina = t_altri = 0.0
 
         for ym in mesi:
             p  = prod.get(ym, 0.0)
@@ -149,6 +154,7 @@ def main():
             ap_lavatrice = lavatrice.get(ym, 0.0)
             ap_auto      = auto.get(ym, 0.0)
             ap_sauna     = sauna.get(ym, 0.0)
+            ap_cucina    = cucina.get(ym, 0.0)
             ap_altri     = altri.get(ym, 0.0)
 
             t_pompa     += ap_pompa
@@ -157,6 +163,7 @@ def main():
             t_lavatrice += ap_lavatrice
             t_eauto     += ap_auto
             t_sauna     += ap_sauna
+            t_cucina    += ap_cucina
             t_altri     += ap_altri
 
             rows.append({
@@ -177,6 +184,7 @@ def main():
                 "lavatrice":     round(ap_lavatrice, 1),
                 "auto":          round(ap_auto, 1),
                 "sauna":         round(ap_sauna, 1),
+                "cucina":        round(ap_cucina, 1),
                 "altri":         round(ap_altri, 1),
             })
 
@@ -202,6 +210,7 @@ def main():
             "lavatrice":     round(t_lavatrice, 1),
             "auto":          round(t_eauto, 1),
             "sauna":         round(t_sauna, 1),
+            "cucina":        round(t_cucina, 1),
             "altri":         round(t_altri, 1),
         }
 

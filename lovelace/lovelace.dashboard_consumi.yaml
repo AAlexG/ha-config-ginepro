@@ -141,9 +141,10 @@ config:
           <th style="padding:4px 6px;border:1px solid #444">Deumid.</th> <th style="padding:4px
           6px;border:1px solid #444">Lavatr.</th> <th style="padding:4px 6px;border:1px
           solid #444">Auto</th> <th style="padding:4px 6px;border:1px solid #444">Sauna</th>
-          <th style="padding:4px 6px;border:1px solid #444">Altri</th> <th style="padding:4px
-          6px;border:1px solid #444">Totale consumi</th> </tr></thead> <tbody> {%
-          for r in mesi %} {% if loop.first or loop.last %} <tr style="font-weight:bold;background:#2a2a3e">
+          <th style="padding:4px 6px;border:1px solid #444">Cucina</th> <th style="padding:4px
+          6px;border:1px solid #444">Altri</th> <th style="padding:4px 6px;border:1px
+          solid #444">Totale consumi</th> </tr></thead> <tbody> {% for r in mesi %}
+          {% if loop.first or loop.last %} <tr style="font-weight:bold;background:#2a2a3e">
           {% else %} <tr> {% endif %} <td style="padding:3px 6px;border:1px solid
           #333">{{ r.mese }}</td> <td style="padding:3px 6px;border:1px solid #333;text-align:right">{{
           (r.get(''pompa'', 0) | string) | replace(''.'', '','') }}</td> <td style="padding:3px
@@ -156,9 +157,11 @@ config:
           | replace(''.'', '','') }}</td> <td style="padding:3px 6px;border:1px solid
           #333;text-align:right">{{ (r.get(''sauna'', 0) | string) | replace(''.'',
           '','') }}</td> <td style="padding:3px 6px;border:1px solid #333;text-align:right">{{
-          (r.get(''altri'', 0) | string) | replace(''.'', '','') }}</td> <td style="padding:3px
-          6px;border:1px solid #333;text-align:right">{{ r.get(''consumo_tot'', 0)
-          }}</td> </tr> {% endfor %} </tbody></table></div> {% endif %} '
+          (r.get(''cucina'', 0) | string) | replace(''.'', '','') }}</td> <td style="padding:3px
+          6px;border:1px solid #333;text-align:right">{{ (r.get(''altri'', 0) | string)
+          | replace(''.'', '','') }}</td> <td style="padding:3px 6px;border:1px solid
+          #333;text-align:right">{{ r.get(''consumo_tot'', 0) }}</td> </tr> {% endfor
+          %} </tbody></table></div> {% endif %} '
         grid_options:
           columns: full
           rows: auto
@@ -387,6 +390,22 @@ config:
         entities:
         - entity: sensor.lavatricemielewci870_consumo_energia
           name: Lavatrice
+        grid_options:
+          columns: full
+          rows: auto
+        period: day
+        stat_types:
+        - state
+        type: statistics-graph
+      - heading: Cucina kWh/gg
+        heading_style: subtitle
+        icon: ''
+        type: heading
+      - chart_type: bar
+        days_to_show: 30
+        entities:
+        - entity: sensor.shellyem_ec64c9c9b75c_channel_1_energia
+          name: Cucina
         grid_options:
           columns: full
           rows: auto
