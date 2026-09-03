@@ -576,6 +576,21 @@ config:
         stat_types:
         - change
         type: statistics-graph
+      - heading: "Prezzo medio annuale GSE \u20AC/kWh "
+        heading_style: subtitle
+        type: heading
+      - chart_type: bar
+        days_to_show: 15330
+        entities:
+        - entity: sensor.gse_prezzo_kwh
+          name: "\u20AC/kWh GSE"
+        grid_options:
+          columns: 12
+          rows: auto
+        period: year
+        stat_types:
+        - mean
+        type: statistics-graph
       type: grid
     title: "Elettricit\xE0"
     type: sections
