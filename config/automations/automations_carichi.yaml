@@ -1,4 +1,4 @@
-# automations_carichi_1.yaml
+# automations_carichi_6.yaml
 #==================================================================================
 # DISTACCO CARICHI SU PRELIEVO DI RETE ALTO
 #
@@ -206,3 +206,81 @@
           channel: alarm_stream
     - action: script.avviso_vocale_sovraccarico
       continue_on_error: true
+
+#==================================================================================
+# C3. CUCINA ACCESA ALL'USCITA DI TANIA
+#==================================================================================
+# La cucina la usa solo Tania: il controllo e' legato alla sua uscita, non
+# alla casa vuota. La presenza di Alex non entra in gioco, ne' come trigger
+# ne' come condizione. La notifica va comunque a entrambi i telefoni.
+#
+# Trigger unico: person.tania lascia lo stato home. Il ritardo di due
+# minuti evita i falsi positivi del GPS, gia' noti su questa entita' e
+# gestiti allo stesso modo nell'automazione "Presenza - Tania esce di
+# casa".
+#
+# Misura: sensor.shellyem_ec64c9c9b75c_channel_1_potenza (W), contattore
+# Shelly EM canale 1 sul circuito "cuci" del quadro. Espone gia' in W,
+# nessuna conversione.
+#
+# Soglia 400 W sul consumo totale del circuito, frigo compreso. Dalle
+# statistiche notturne il frigo da solo sta sui 45-57 W di media oraria
+# con picchi di spunto a 70 W: 400 W lascia margine anche a un ciclo di
+# sbrinamento non ancora campionato. Sopra soglia c'e' un apparecchio
+# acceso.
+#
+# La condizione e' "non in stato home" e non "uguale a not_home", cosi'
+# resta valida anche quando Tania si trova in una zona con nome (Lavoro,
+# Palestra). L'entita' deve avere un valore: con person in unknown o
+# unavailable non si notifica, per non avvisare a vuoto dopo un riavvio.
+#
+# Nessun antispam: il trigger e' un evento discreto, non una soglia che
+# oscilla.
+#==================================================================================
+- id: carichi_cucina_accesa_uscita_tania
+  alias: "Carichi - Cucina accesa all'uscita di Tania"
+  description: >
+    Quando Tania esce di casa, se il circuito cucina assorbe oltre 400 W
+    manda una notifica push a entrambi i telefoni.
+  mode: single
+  max_exceeded: silent
+  triggers:
+    - trigger: state
+      entity_id: person.tania
+      from: "home"
+      for: "00:02:00"
+  conditions:
+    - condition: template
+      value_template: >
+        {{ has_value('person.tania') and not is_state('person.tania', 'home') }}
+    - condition: numeric_state
+      entity_id: sensor.shellyem_ec64c9c9b75c_channel_1_potenza
+      above: 400
+  actions:
+    - variables:
+        potenza: >
+          {{ states('sensor.shellyem_ec64c9c9b75c_channel_1_potenza') | float(0) | round(0) }}
+        testo: >
+          Tania e' uscita di casa e il circuito cucina assorbe {{ potenza }} W.
+          Il frigo da solo sta sotto i 100 W: c'e' un apparecchio rimasto
+          acceso.
+    - action: notify.mobile_app_cph2653
+      continue_on_error: true
+      data:
+        title: "Cucina accesa"
+        message: "{{ testo }}"
+        data:
+          tag: cucina_accesa_uscita_tania
+          priority: high
+          ttl: 0
+          channel: alarm_stream
+    - action: notify.mobile_app_samsungtania
+      continue_on_error: true
+      data:
+        title: "Cucina accesa"
+        message: "{{ testo }}"
+        data:
+          tag: cucina_accesa_uscita_tania
+          priority: high
+          ttl: 0
+          channel: alarm_stream
