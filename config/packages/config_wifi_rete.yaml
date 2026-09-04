@@ -28,6 +28,7 @@ template:
               '38:94:ed:0c:78:df': '016 RBS50 sopra (DHCP)',
               'a0:40:a0:5e:40:d2': '017 RBS50 box (DHCP)',
               '9a:da:c4:71:89:d4': '018 repeater TP-Link RE650',
+              'd4:27:87:51:9f:4c': '019 inverter fotovoltaico UFLEX',
               '7c:f0:e5:ef:0f:73': '026 OnePlus 13 Sasha',
               'a0:85:e3:b4:be:e4': '031 Shelly fancoil Georgi',
               'a0:85:e3:b3:f8:1c': '032 Shelly fancoil Tania',
@@ -57,7 +58,6 @@ template:
               '5c:c3:36:4d:19:67': '193 camera cucina Reolink',
               'a0:92:08:86:9c:b7': 'Aspirapolvere Lina',
               '38:8b:59:82:fb:03': 'Google Nest sopra',
-              'd4:27:87:51:9f:4c': 'inverter fotovoltaico UFLEX',
               'cc:32:e5:7e:07:5a': 'Tapo lenzuola sotto',
               '00:33:7a:cc:0b:ff': 'stazione meteo sottotetto',
               '8c:3b:4a:9f:e3:69': 'Chromecast (soundbar Sony sopra)',
@@ -78,7 +78,8 @@ template:
               '74:ee:2a:e7:76:6d': 'Citofono Philips forse?',
               '6c:6e:7c:c5:88:51': 'Stampante Canon sopra',
               '66:00:c0:a6:9c:6e': 'S22 Ultra di Tania',
-              'f8:6d:cc:3d:26:d4': 'Fiat 500e'
+              'f8:6d:cc:3d:26:d4': 'Fiat 500e',
+              '48:9d:ff:04:a3:ed': 'Oneplus 8 vecchio x Russia'
             } }}
 
   #--- WIFI: TABELLA DINAMICA PER PLANCIA (righe da tracker Netgear) ---
