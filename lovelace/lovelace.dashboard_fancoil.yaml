@@ -388,27 +388,6 @@ config:
           show_daily: true
         type: custom:sunsynk-power-flow-card
         wide: false
-      - color: '#7E57C2'
-        entity: sensor.altri_apparecchi_ora
-        features_position: bottom
-        grid_options:
-          columns: 4
-          rows: 1
-        icon: mdi:home-lightning-bolt-outline
-        icon_tap_action:
-          action: navigate
-          navigation_path: /dashboard-consumi/elettricita
-        name: Altri apparecchi
-        type: tile
-        vertical: false
-      - entity: sensor.solo_auto_contattore_potenza_di_fase_a
-        features_position: bottom
-        grid_options:
-          columns: 4
-          rows: 1
-        name: Auto
-        type: tile
-        vertical: false
       - entity: sensor.panasonic_potenza_consumata_calcolata
         features_position: bottom
         grid_options:
@@ -420,6 +399,25 @@ config:
         name: Pompa
         type: tile
         vertical: false
+      - entity: sensor.solo_auto_contattore_potenza_di_fase_a
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        name: Auto
+        type: tile
+        vertical: false
+      - entity: sensor.shellyem_ec64c9c9b75c_channel_1_potenza
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        icon_tap_action:
+          action: navigate
+          navigation_path: /dashboard-panasonic
+        name: Cucina
+        type: tile
+        vertical: false
       - entity: sensor.lavatricemielewci870_consumo_energia
         features_position: bottom
         grid_options:
@@ -429,6 +427,30 @@ config:
           action: navigate
           navigation_path: /dashboard-fancoil/fancoil
         name: Lavatrice
+        type: tile
+        vertical: false
+      - entity: sensor.solo_sauna_contatore_potenza_di_fase_a
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        icon_tap_action:
+          action: navigate
+          navigation_path: /dashboard-panasonic
+        name: Sauna
+        type: tile
+        vertical: false
+      - color: '#7E57C2'
+        entity: sensor.altri_apparecchi_ora
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        icon: mdi:home-lightning-bolt-outline
+        icon_tap_action:
+          action: navigate
+          navigation_path: /dashboard-consumi/elettricita
+        name: Altri apparecchi
         type: tile
         vertical: false
       type: grid
@@ -763,12 +785,12 @@ config:
         vertical: false
       - entity: sensor.presa_box_zigbee_energy
         features_position: bottom
-        name: Consumo Tot
+        name: Cons.oggi
         type: tile
         vertical: false
       - entity: sensor.presa_box_zigbee_power
         features_position: bottom
-        name: Potenza
+        name: Potenz.ora
         type: tile
         vertical: false
       - entity: sensor.presa_box_zigbee_current
@@ -912,12 +934,12 @@ config:
         type: heading
       - entity: sensor.shellyem_ec64c9c9b75c_channel_1_energia
         features_position: bottom
-        name: Consumo
+        name: Cons.oggi
         type: tile
         vertical: false
       - entity: sensor.shellyem_ec64c9c9b75c_channel_1_potenza
         features_position: bottom
-        name: Potenza
+        name: Potenz.ora
         type: tile
         vertical: false
       - entity: sensor.shellyem_ec64c9c9b75c_intensita_del_segnale

@@ -28,6 +28,49 @@ config:
         name: Bollette
         type: tile
         vertical: false
+      - heading: RISPARMIO
+        heading_style: subtitle
+        icon: ''
+        type: heading
+      - entity: input_number.pv_totale_euro
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        icon: mdi:piggy-bank
+        name: Risparmiato
+        type: tile
+        vertical: false
+      - entity: input_number.pv_risparmio_euro
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        icon: mdi:solar-power
+        name: Autoconsumo
+        type: tile
+        vertical: false
+      - entity: input_number.pv_gse_euro
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        icon: mdi:cash-multiple
+        icon_tap_action:
+          action: navigate
+          navigation_path: /dashboard-consumi/elettricita
+        name: Da GSE
+        type: tile
+        vertical: false
+      - entity: input_number.pv_recupero_pct
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        icon: mdi:percent
+        name: '% recupero'
+        type: tile
+        vertical: false
       - heading: TOTALI MENSILI
         heading_style: subtitle
         type: heading
@@ -166,70 +209,210 @@ config:
           columns: full
           rows: auto
         type: markdown
-      - grid_options:
-          columns: full
-          rows: auto
-        icon: mdi:devices
-        icon_height: 15px
-        name: Detagli Devices
-        show_icon: true
-        show_name: true
-        show_state: false
-        tap_action:
-          action: navigate
-          navigation_path: /dashboard-fancoil/fancoil
-        type: button
-      - heading: 'Risparmio fotovoltaico (storico):'
-        heading_style: subtitle
-        type: heading
-      - entity: input_number.pv_totale_euro
-        features_position: bottom
-        grid_options:
-          columns: 4
-          rows: 1
-        icon: mdi:piggy-bank
-        name: Totale
-        type: tile
-        vertical: false
-      - entity: input_number.pv_risparmio_euro
-        features_position: bottom
-        grid_options:
-          columns: 4
-          rows: 1
-        icon: mdi:solar-power
-        name: Autoconsumo
-        type: tile
-        vertical: false
-      - entity: input_number.pv_gse_euro
-        features_position: bottom
-        grid_options:
-          columns: 4
-          rows: 1
-        icon: mdi:cash-multiple
-        name: Da GSE
-        type: tile
-        vertical: false
-      - entity: input_number.pv_recupero_pct
-        features_position: bottom
-        grid_options:
-          columns: 4
-          rows: 1
-        icon: mdi:percent
-        name: '% recupero'
-        type: tile
-        vertical: false
       - entity: input_number.elettricita_prezzo_kwh
         grid_options:
           columns: 12
           rows: 2
-        name: Prezzo a consumo (1 kWh)
+        name: "Prezzo da rete (\u20AC x 1 kWh)"
         type: entity
       - entity: input_number.elettricita_quota_fissa_mese
         grid_options:
           columns: 12
           rows: 2
-        name: Quota fissa mensile
+        name: Quota fissa mensile in bolletta
         type: entity
+    - cards:
+      - heading: CONSUMI ORA
+        heading_style: title
+        icon: ''
+        type: heading
+      - entity: sensor.panasonic_potenza_consumata_calcolata
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        icon_tap_action:
+          action: navigate
+          navigation_path: /dashboard-panasonic
+        name: Pompa
+        type: tile
+        vertical: false
+      - entity: sensor.solo_auto_contattore_potenza_di_fase_a
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        name: Auto
+        type: tile
+        vertical: false
+      - entity: sensor.box_deumidificatore_cantina_sonoff_power
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        icon_tap_action:
+          action: navigate
+          navigation_path: /dashboard-fancoil/fancoil
+        name: Deum.Cantina
+        type: tile
+        vertical: false
+      - entity: sensor.deumidificatore_armadio_zigbee_power
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        icon_tap_action:
+          action: navigate
+          navigation_path: /dashboard-fancoil/fancoil
+        name: Deum.armadio
+        type: tile
+        vertical: false
+      - entity: sensor.shellyem_ec64c9c9b75c_channel_1_potenza
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        icon_tap_action:
+          action: navigate
+          navigation_path: /dashboard-fancoil/fancoil
+        name: Cucina
+        type: tile
+        vertical: false
+      - entity: sensor.lavatricemielewci870_consumo_energia
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        icon_tap_action:
+          action: navigate
+          navigation_path: /dashboard-fancoil/fancoil
+        name: Lavatrice
+        type: tile
+        vertical: false
+      - entity: sensor.solo_sauna_contatore_potenza_di_fase_a
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        icon_tap_action:
+          action: navigate
+          navigation_path: /dashboard-fancoil/fancoil
+        name: Sauna
+        type: tile
+        vertical: false
+      - color: '#7E57C2'
+        entity: sensor.altri_apparecchi_ora
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        icon: mdi:home-lightning-bolt-outline
+        icon_tap_action:
+          action: navigate
+          navigation_path: /dashboard-consumi/elettricita
+        name: Altri apparecchi
+        type: tile
+        vertical: false
+      - heading: CONSUMI OGGI
+        heading_style: title
+        icon: ''
+        type: heading
+      - entity: sensor.panasonic_consumata_oggi
+        features_position: bottom
+        grid_options:
+          columns: 3
+          rows: 1
+        icon_tap_action:
+          action: navigate
+          navigation_path: /dashboard-panasonic/panasonic
+        name: Pompa
+        type: tile
+        vertical: false
+      - entity: sensor.auto_energia_oggi
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        icon: mdi:flash-auto
+        name: Auto
+        type: tile
+        vertical: false
+      - entity: sensor.consumo_fancoil_totale_oggi
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        hide_state: false
+        icon_tap_action:
+          action: navigate
+          navigation_path: /dashboard-fancoil/fancoil
+        name: Fancoil
+        show_entity_picture: false
+        type: tile
+        vertical: false
+      - entity: sensor.consumo_deumidificatori_oggi
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: auto
+        icon_tap_action:
+          action: navigate
+          navigation_path: /dashboard-fancoil/fancoil
+        name: Deumidif.
+        type: tile
+        vertical: false
+      - entity: sensor.lavatrice_energia
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        hide_state: false
+        icon_tap_action:
+          action: navigate
+          navigation_path: /dashboard-fancoil
+        name: Lavatrice
+        show_entity_picture: false
+        type: tile
+        vertical: false
+      - entity: sensor.shellyem_ec64c9c9b75c_channel_1_energia
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        icon_tap_action:
+          action: navigate
+          navigation_path: /dashboard-fancoil/fancoil
+        name: Cucina
+        type: tile
+        vertical: false
+      - entity: sensor.sauna_energia_oggi
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        icon: mdi:spa-outline
+        icon_tap_action:
+          action: navigate
+          navigation_path: /dashboard-fancoil
+        name: Sauna
+        type: tile
+        vertical: false
+      - color: '#7E57C2'
+        entity: sensor.altri_apparecchi_oggi
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        hide_state: false
+        icon: mdi:home-lightning-bolt-outline
+        icon_tap_action:
+          action: navigate
+          navigation_path: /dashboard-consumi/elettricita
+        name: Altri apparecchi
+        show_entity_picture: false
+        type: tile
+        vertical: false
+      type: grid
     - cards:
       - heading: ULTIMI 30 GG
         heading_style: title
@@ -350,8 +533,6 @@ config:
       - chart_type: bar
         days_to_show: 30
         entities:
-        - entity: sensor.fancoil_totale
-          name: Tutti Fancoil
         - entity: sensor.consumo_fancoil_tania_oggi_stimato
           name: Tania
         - entity: sensor.consumo_fancoil_georgi_oggi_stimato
@@ -372,8 +553,10 @@ config:
       - chart_type: bar
         days_to_show: 30
         entities:
-        - entity: sensor.consumo_deumidificatori_oggi
-          name: Totale deumidificatori
+        - entity: sensor.deumidificatore_armadio_oggi
+          name: 'Armadio '
+        - entity: sensor.consumo_deumidificatore_cantina_oggi
+          name: Cantina
         grid_options:
           columns: full
           rows: auto
@@ -484,10 +667,12 @@ config:
           name: Lavatrice
         - entity: sensor.auto_energia_oggi
           name: Auto
+        - entity: sensor.cucina_energia_oggi
+          name: 'Cucina '
         - entity: sensor.sauna_energia_oggi
           name: Sauna
         - entity: sensor.altri_apparecchi_oggi
-          name: 'Altri apparecchi '
+          name: Altri
         grid_options:
           columns: 12
           rows: auto
@@ -565,10 +750,12 @@ config:
           name: Lavatrice
         - entity: sensor.auto_energia_oggi
           name: Auto
+        - entity: sensor.cucina_energia_oggi
+          name: Cucina
         - entity: sensor.sauna_energia_oggi
           name: Sauna
         - entity: sensor.altri_apparecchi_oggi
-          name: 'Altri apparecchi '
+          name: Altri
         grid_options:
           columns: 12
           rows: auto
@@ -843,13 +1030,13 @@ config:
         grid_options:
           columns: 12
           rows: auto
-        name: "Prezzo a consumo (1 m\xB3)"
+        name: "Prezzo acquisto 1 m\xB3 di acqua"
         type: entity
       - entity: input_number.acqua_quota_fissa_mese
         grid_options:
           columns: 12
           rows: auto
-        name: Quota fissa mensile
+        name: 'Quota fissa mensile in bolletta '
         type: entity
       - entity: input_number.acqua_sanitaria_manuale
         grid_options:
@@ -895,7 +1082,7 @@ config:
         name: Totale bollette
         type: tile
         vertical: false
-      - heading: 'Ultimo mese:'
+      - heading: 'Mese:'
         heading_style: subtitle
         type: heading
       - entity: sensor.gas_mese_mc
@@ -962,7 +1149,7 @@ config:
         - apex_config:
             title:
               text: "m\xB3"
-          decimals: 2
+          decimals: 3
           id: mc
         - apex_config:
             title:
@@ -1017,15 +1204,15 @@ config:
         type: statistics-graph
       - entity: input_number.gas_prezzo_mc
         grid_options:
-          columns: 6
+          columns: 12
           rows: 2
-        name: "Prezzo a consumo (1 m\xB3)"
+        name: "Prezzo acquisto gas di 1 m\xB3 in \u20AC"
         type: entity
       - entity: input_number.gas_quota_fissa_mese
         grid_options:
-          columns: 6
+          columns: 12
           rows: 2
-        name: Quota fissa mensile
+        name: Quota fissa mensile in bolletta
         type: entity
       type: grid
     title: Gas

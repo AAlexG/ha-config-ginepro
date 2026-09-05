@@ -71,8 +71,14 @@ config:
       - entity: sensor.opentherm_gateway_otgw_otgw_max_ch_water_setpoint
         icon: mdi:thermometer-high
         name: Uscita target riscald
+      - entity: sensor.opentherm_gateway_otgw_otgw_dhw_setpoint
+        name: Uscita target sanitaria
+      - entity: sensor.opentherm_gateway_otgw_otgw_return_water_temperature
+        name: Temp acqua in entrata
+      - entity: sensor.opentherm_gateway_otgw_otgw_boiler_flow_water_temperature
+        name: Temp acqua in uscita
       show_header_toggle: false
-      title: Caldaia-Stato
+      title: Caldaia-Stato ora
       type: entities
     - content: "{% set code = states('sensor.opentherm_gateway_otgw_otgw_oemfaultcode')\
         \ | int(-1) %} {% set fault = states('binary_sensor.opentherm_gateway_otgw_otgw_fault')\
@@ -138,18 +144,6 @@ config:
       title: Caldaia-Press.Acqua
       type: history-graph
     - entities:
-      - entity: sensor.opentherm_gateway_otgw_otgw_boiler_flow_water_temperature
-        name: Uscita
-      - entity: sensor.opentherm_gateway_otgw_otgw_return_water_temperature
-        name: Ingresso
-      - entity: sensor.opentherm_gateway_otgw_otgw_dhw_setpoint
-        name: Uscita Target Sanitaria
-      - entity: sensor.opentherm_gateway_otgw_otgw_control_setpoint
-        name: Uscita target riscaldam
-      hours_to_show: 24
-      title: Caldaia-Temperature
-      type: history-graph
-    - entities:
       - entity: binary_sensor.opentherm_gateway_otgw_otgw_boiler_connected
         icon: mdi:boiler
         name: Caldaia connessa
@@ -166,8 +160,20 @@ config:
         icon: mdi:alert-circle-outline
         name: Causa ultimo riavvio
       show_header_toggle: false
-      title: OTGW-Stato
+      title: OTGW-Stato ora
       type: entities
+    - entities:
+      - entity: sensor.opentherm_gateway_otgw_otgw_boiler_flow_water_temperature
+        name: Uscita
+      - entity: sensor.opentherm_gateway_otgw_otgw_return_water_temperature
+        name: Ingresso
+      - entity: sensor.opentherm_gateway_otgw_otgw_dhw_setpoint
+        name: Uscita Target Sanitaria
+      - entity: sensor.opentherm_gateway_otgw_otgw_max_ch_water_setpoint
+        name: Uscita target riscaldam
+      hours_to_show: 24
+      title: Caldaia-Temperature
+      type: history-graph
     - entities:
       - entity: sensor.opentherm_gateway_otgw_stats_fragmentation
         icon: mdi:chart-pie
@@ -187,31 +193,61 @@ config:
       - entity: sensor.opentherm_gateway_otgw_stats_ws_drops
         icon: mdi:websocket
         name: Drop WebSocket
+      - entity: sensor.opentherm_gateway_otgw_stats_free_heap
+        name: Free Heap
+      - entity: sensor.opentherm_gateway_otgw_stats_max_block
+        name: Max block
       show_header_toggle: false
-      title: OTGW-ESP8266
+      title: OTGW-ESP8266 ora
       type: entities
-    - entities:
+    - chart_type: line
+      days_to_show: 2
+      entities:
       - entity: sensor.opentherm_gateway_otgw_stats_free_heap
-        name: 'Heap libero ora:'
+        name: Heap libero
       - entity: sensor.opentherm_gateway_otgw_stats_max_block
-        name: 'Blocco max ora:'
-      - entity: sensor.opentherm_gateway_otgw_stats_fragmentation
-        name: 'Fragmentation ora:'
-      hours_to_show: 24
-      title: OTGW-heap/fragm.Oggi
-      type: history-graph
-    - entities:
+        name: Blocco max
+      period: 5minute
+      stat_types:
+      - mean
+      title: OTGW-heap 48h
+      type: statistics-graph
+    - heading: OTGW -ESP8266 30 GIORNI
+      heading_style: title
+      icon: mdi:fridge
+      type: heading
+    - chart_type: line
+      days_to_show: 30
+      entities:
       - entity: sensor.opentherm_gateway_otgw_stats_free_heap
-        name: 'Heap libero ora:'
+        name: Heap libero
       - entity: sensor.opentherm_gateway_otgw_stats_max_block
-        name: 'Blocco max ora:'
+        name: Blocco max
+      period: hour
+      stat_types:
+      - mean
+      title: HEAP & MAX BLOCK
+      type: statistics-graph
+    - chart_type: line
+      days_to_show: 30
+      entities:
       - entity: sensor.opentherm_gateway_otgw_stats_fragmentation
-        name: 'Fragmentation ora:'
+        name: 'Frammentazione:'
+      period: hour
+      stat_types:
+      - mean
+      title: 'FRAMMENTAZIONE '
+      type: statistics-graph
+    - chart_type: line
+      days_to_show: 30
+      entities:
       - entity: sensor.opentherm_gateway_otgw_reboot_count
-        name: 'Reboot fino ad ora:'
-      hours_to_show: 240
-      title: Heap/frag/reboot 20gg
-      type: history-graph
+        name: 'Riavvii:'
+      period: hour
+      stat_types:
+      - state
+      title: RIAVVII
+      type: statistics-graph
     icon: mdi:water-boiler
     path: otgw
     title: CALDAIA BAXI LUNA DUO-TEC+ & OTGW
