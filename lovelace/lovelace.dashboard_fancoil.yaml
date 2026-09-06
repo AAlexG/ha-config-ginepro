@@ -808,7 +808,7 @@ config:
         entities:
         - entity: sensor.presa_box_zigbee_energy
           name: Bici
-        period: day
+        period: month
         stat_types:
         - change
         type: statistics-graph
@@ -962,7 +962,7 @@ config:
           rows: auto
         period: day
         stat_types:
-        - state
+        - change
         type: statistics-graph
       - chart_type: bar
         days_to_show: 365
@@ -971,7 +971,7 @@ config:
           name: Consumo
         period: month
         stat_types:
-        - state
+        - change
         type: statistics-graph
       type: grid
     - cards:
