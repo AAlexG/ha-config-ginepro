@@ -1,4 +1,4 @@
-# automations_devices_1.yaml
+# automations_devices_2.yaml
 
 # ACCENSIONE/SPEGNIMENTO PROGRAMMATO – PRESA RESMED TANIA
 
@@ -8,28 +8,84 @@
 # Ogni giorno la presa viene accesa alle 22:00 di sera e spenta alle 10:00 di mattina.
 # Le due automazioni sono separate per mantenere il file chiaro e semplice da modificare.
 
+# 06/09/2026: alle 22:00:00 l'accensione è fallita con
+# tuya_sharing.exceptions.ApiRequestException: network error:(-9999999)
+# Remote api run unknown failed
+# L'automazione si era interrotta al primo errore, lasciando la presa spenta senza avvisare.
+# Entrambe le automazioni ora ritentano fino a 5 volte a distanza di 30 s, con
+# continue_on_error sulla singola chiamata perché l'eccezione del cloud Tuya non
+# abortisca la sequenza. Se al termine dei tentativi l'accensione non è riuscita,
+# arriva una notifica ad Alex e a Tania.
+
 - id: cameratania_resmed_tania_presa_accensione_programmata
   alias: "Camera Tania – presa ResMed accensione programmata"
   description: >-
     Accende ogni giorno alle 22:00 la presa della ResMed in Camera Tania.
+    Ritenta fino a 5 volte se il cloud Tuya rifiuta il comando e notifica in caso di esito negativo.
   mode: single
   triggers:
     - trigger: time
       at: "22:00:00"
   actions:
-    - action: switch.turn_on
-      target:
-        entity_id: switch.cameratania_resmed_tania_presa_tuya_socket_1
+    - repeat:
+        sequence:
+          - action: switch.turn_on
+            continue_on_error: true
+            target:
+              entity_id: switch.cameratania_resmed_tania_presa_tuya_socket_1
+          - delay:
+              seconds: 30
+        until:
+          - condition: or
+            conditions:
+              - condition: state
+                entity_id: switch.cameratania_resmed_tania_presa_tuya_socket_1
+                state: "on"
+              - condition: template
+                value_template: "{{ repeat.index >= 5 }}"
+    - if:
+        - condition: not
+          conditions:
+            - condition: state
+              entity_id: switch.cameratania_resmed_tania_presa_tuya_socket_1
+              state: "on"
+      then:
+        - action: notify.mobile_app_cph2653
+          data:
+            title: "ResMed Tania NON accesa"
+            message: >-
+              La presa della ResMed in camera di Tania non si è accesa dopo 5 tentativi.
+              Il cloud Tuya non risponde: accendere la presa a mano.
+        - action: notify.mobile_app_samsungtania
+          data:
+            title: "ResMed NON accesa"
+            message: >-
+              La presa della ResMed non si è accesa automaticamente.
+              Accendila a mano prima di dormire.
 
 - id: cameratania_resmed_tania_presa_spegnimento_programmato
   alias: "Camera Tania – presa ResMed spegnimento programmato"
   description: >-
     Spegne ogni giorno alle 10:00 la presa della ResMed in Camera Tania.
+    Ritenta fino a 5 volte se il cloud Tuya rifiuta il comando.
   mode: single
   triggers:
     - trigger: time
       at: "10:00:00"
   actions:
-    - action: switch.turn_off
-      target:
-        entity_id: switch.cameratania_resmed_tania_presa_tuya_socket_1
+    - repeat:
+        sequence:
+          - action: switch.turn_off
+            continue_on_error: true
+            target:
+              entity_id: switch.cameratania_resmed_tania_presa_tuya_socket_1
+          - delay:
+              seconds: 30
+        until:
+          - condition: or
+            conditions:
+              - condition: state
+                entity_id: switch.cameratania_resmed_tania_presa_tuya_socket_1
+                state: "off"
+              - condition: template
+                value_template: "{{ repeat.index >= 5 }}"

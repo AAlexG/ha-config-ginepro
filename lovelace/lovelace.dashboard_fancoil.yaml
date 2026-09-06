@@ -926,20 +926,57 @@ config:
         stat_types:
         - state
         type: statistics-graph
+      - heading: 'Lavaggi per programma (ultimi 12 mesi, totale da sempre):'
+        heading_style: subtitle
+        icon: mdi:format-list-numbered
+        type: heading
+      - content: '{% set r = state_attr(''sensor.lavatrice_tabella_programmi'', ''righe'')
+          %}
+
+          {% set m = state_attr(''sensor.lavatrice_tabella_programmi'', ''mesi'')
+          %}
+
+          {% set t = state_attr(''sensor.lavatrice_tabella_programmi'', ''totali'')
+          %}
+
+          {% if r is none or r | count == 0 %} _Nessun lavaggio registrato_ {% else
+          %}
+
+          <div style="overflow-x:auto;font-size:11px"> <table style="border-collapse:collapse;width:100%;white-space:nowrap">
+          <thead><tr style="position:sticky;top:0;background:#1A1A2E;color:#E0E0E0">
+          <th style="padding:4px 6px;border:1px solid #444444;text-align:left">Programma</th>
+          <th style="padding:4px 6px;border:1px solid #444444">Totale</th> {% for
+          x in m %}<th style="padding:4px 6px;border:1px solid #444444">{{ x }}</th>{%
+          endfor %} </tr></thead> <tbody> {% for row in r %} <tr> <td style="padding:3px
+          6px;border:1px solid #333333">{{ row.programma }}</td> <td style="padding:3px
+          6px;border:1px solid #333333;text-align:right;font-weight:bold">{{ row.totale
+          }}</td> {% for v in row.valori %}<td style="padding:3px 6px;border:1px solid
+          #333333;text-align:right">{{ v if v else '''' }}</td>{% endfor %} </tr>
+          {% endfor %} <tr style="font-weight:bold;background:#2A2A3E"> <td style="padding:3px
+          6px;border:1px solid #333333">TOTALE</td> <td style="padding:3px 6px;border:1px
+          solid #333333;text-align:right">{{ t.totale }}</td> {% for v in t.valori
+          %}<td style="padding:3px 6px;border:1px solid #333333;text-align:right">{{
+          v if v else '''' }}</td>{% endfor %} </tr> </tbody></table></div>
+
+          {% endif %}'
+        grid_options:
+          columns: full
+          rows: auto
+        type: markdown
       type: grid
     - cards:
       - heading: Cucina (tutti apparecchi)
         heading_style: title
         icon: mdi:countertop-outline
         type: heading
-      - entity: sensor.shellyem_ec64c9c9b75c_channel_1_energia
-        features_position: bottom
-        name: Cons.oggi
-        type: tile
-        vertical: false
       - entity: sensor.shellyem_ec64c9c9b75c_channel_1_potenza
         features_position: bottom
         name: Potenz.ora
+        type: tile
+        vertical: false
+      - entity: sensor.shellyem_ec64c9c9b75c_channel_1_tensione
+        features_position: bottom
+        name: Tensione
         type: tile
         vertical: false
       - entity: sensor.shellyem_ec64c9c9b75c_intensita_del_segnale

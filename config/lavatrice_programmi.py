@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# lavatrice_programmi_1.py
+# lavatrice_programmi_3.py
 # Conta i cicli di lavaggio della Miele WCI870 per programma e per mese.
 #
 # PERCHE' ESISTE
@@ -46,59 +46,57 @@ FINESTRA_PROG = 24 * 3600   # quanto indietro cercare l'etichetta programma
 
 IGNORA = {"no_program", "unknown", "unavailable", "none", ""}
 
-# Nomi italiani Miele. Le chiavi non mappate vengono mostrate cosi' come
-# sono: un programma nuovo appare comunque nella tabella, non sparisce.
+# Nomi dei programmi presi dal libretto d'uso ufficiale italiano della
+# WCI870 WCS (Miele M.-Nr. 11 362 430, cap. "Elenco programmi", pag. 43-49).
+# Sono mappate SOLO le chiavi il cui nome italiano e' confermato dal
+# libretto: tutte le altre restano in inglese, come arrivano dall'API Miele.
+# Meglio una riga con scritto "powerfresh" che un nome inventato.
+#
+# Tre chiavi risolte con l'aiuto di Alex, che ha riconosciuto i due cicli
+# di settembre (v3):
+#   down_filled_items -> Piumoni. Il libretto descrive Piumoni come
+#     "Giacche, sacchi a pelo, cuscini e altri capi con imbottitura in
+#     piuma": e' la traduzione esatta di "down filled items".
+#   down_duvets -> Trapunte & Piumini, per esclusione, coerente con la
+#     descrizione del libretto ("Trapunte e cuscini in piuma o piumino").
+#   outerwear -> Capi per esterno. ATTENZIONE: questo nome NON e' nel
+#     libretto, e' la descrizione data da Alex del ciclo eseguito. Il
+#     libretto ha un solo programma per l'esterno, "Capi outdoor", che pero'
+#     corrisponde alla chiave outdoor_garments. Non verificato.
+#
+# Cambiare un nome qui NON altera i conteggi: nell'archivio
+# /config/lavatrice_programmi.json resta sempre la chiave Miele.
 NOMI = {
-    "automatic_plus":        "Automatic Plus",
-    "bed_linen":             "Biancheria da letto",
-    "clean_machine":         "Pulizia macchina",
-    "cool_air":              "Aria fredda",
-    "cottonrepair":          "CottonRepair",
     "cottons":               "Cotone",
-    "cottons_eco":           "Cotone Eco",
-    "cottons_hygiene":       "Cotone Igiene",
-    "curtains":              "Tende",
-    "dark_garments":         "Capi scuri",
-    "dark_jeans":            "Scuri / Jeans",
+    "cottons_eco":           "Cotone eco",
+    "easy_care":             "Lava/Indossa",
+    "minimum_iron":          "Lava/Indossa",
     "delicates":             "Delicati",
-    "denim":                 "Jeans",
-    "down_duvets":           "Piumoni",
-    "down_filled_items":     "Capi in piuma",
-    "drain_spin":            "Scarico / Centrifuga",
-    "easy_care":             "Sintetici",
-    "eco_40_60":             "Eco 40-60",
-    "express_20":            "Express 20'",
-    "first_wash":            "Primo lavaggio",
-    "freshen_up":            "Rinfrescare",
-    "game_pieces":           "Giocattoli",
-    "minimum_iron":          "Stiratura facile",
-    "normal":                "Normale",
-    "outdoor_garments":      "Capi outdoor",
-    "outerwear":             "Capispalla",
-    "pillows":               "Cuscini",
-    "powerfresh":            "PowerFresh",
-    "pre_ironing":           "Pre-stiratura",
-    "proofing":              "Impregnazione",
-    "quick_intense":         "Rapido intensivo",
-    "quick_power_wash":      "QuickPowerWash",
-    "rinse":                 "Risciacquo",
-    "rinse_out_lint":        "Risciacquo lanugine",
-    "separate_rinse_starch": "Risciacquo / Amido",
-    "shirts":                "Camicie",
-    "silks":                 "Seta",
-    "smartmatic":            "SmartMatic",
-    "sportswear":            "Capi sport",
-    "starch":                "Amido",
-    "steam_care":            "Steam Care",
-    "stuffed_toys":          "Peluche",
-    "table_linen":           "Biancheria da tavola",
-    "towels":                "Asciugamani",
-    "trainers":              "Scarpe sportive",
-    "trainers_refresh":      "Rinfresca scarpe",
-    "warm_air":              "Aria calda",
     "woollens":              "Lana",
+    "silks":                 "Seta",
+    "shirts":                "Camicie",
+    "quick_power_wash":      "QuickPowerWash",
+    "denim":                 "Jeans/Scuri",
+    "dark_jeans":            "Jeans/Scuri",
+    "dark_garments":         "Jeans/Scuri",
+    "eco_40_60":             "ECO 40-60",
+    "proofing":              "Impermeabilizzare",
+    "outdoor_garments":      "Capi outdoor",
+    "express_20":            "Express 20'",
+    "sportswear":            "Capi sport",
+    "automatic_plus":        "Automatic plus",
+    "pillows":               "Cuscini",
+    "curtains":              "Tende",
+    "down_filled_items":     "Piumoni",
+    "down_duvets":           "Trapunte & Piumini",
+    "outerwear":             "Capi per esterno",
+    "first_wash":            "Biancheria nuova",
+    "separate_rinse_starch": "Solo risciacquo/Inamidare",
+    "drain_spin":            "Scarico/Centrifuga",
+    "clean_machine":         "Pulizia macchina",
     "sconosciuto":           "Sconosciuto",
 }
+
 
 
 def carica_store():
