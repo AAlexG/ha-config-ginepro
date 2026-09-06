@@ -1,6 +1,8 @@
-# config_lavatrice_1.yaml
-# Package Casa Ginepro - Lavatrice Miele: energia e acqua
+# config_lavatrice_2.yaml
+# Package Casa Ginepro - Lavatrice Miele: energia, acqua e conteggio programmi
 # Estratto da configuration_186.yaml. Nome file = nome del package.
+# v2: aggiunti lo shell_command e il sensore command_line che alimentano la
+#     tabella "lavaggi per programma" della plancia fancoil.
 
 template:
   - triggers:
@@ -58,3 +60,26 @@ utility_meter:
     name: "Lavatrice Acqua Oggi"
     source: sensor.lavatrice_acqua
     cycle: daily
+
+shell_command:
+
+  # Rilegge lo storico dal DB, aggiorna l'archivio cumulativo
+  # /config/lavatrice_programmi.json e rigenera la tabella per la plancia.
+  # Lo script e' incrementale: rilanciarlo non produce doppi conteggi.
+  calcola_lavatrice_programmi: "python3 /config/lavatrice_programmi.py > /config/lavatrice_tabella.json 2>/config/lavatrice_programmi.log"
+
+command_line:
+
+  # Stato = numero totale di lavaggi contati da sempre.
+  # scan_interval alto di proposito: il file cambia una volta al giorno e
+  # l'automazione forza comunque l'aggiornamento subito dopo il calcolo.
+  - sensor:
+      name: Lavatrice Tabella Programmi
+      unique_id: lavatrice_tabella_programmi
+      command: "cat /config/lavatrice_tabella.json 2>/dev/null"
+      scan_interval: 3600
+      value_template: "{{ value_json.totali.totale }}"
+      json_attributes:
+        - mesi
+        - righe
+        - totali

@@ -1,0 +1,31 @@
+# automations_lavatrice_1.yaml
+# Automazioni Casa Ginepro - Lavatrice Miele
+
+#==================================================================================
+# 1. LAVATRICE - Conteggio programmi di lavaggio
+#
+# Rilegge lo storico dal DB e aggiorna l'archivio cumulativo dei programmi.
+#
+# Ogni giorno alle 04:30, non a cadenza piu' lunga: la tabella states viene
+# ripulita dopo 7 giorni (recorder purge_keep_days: 7), quindi una esecuzione
+# giornaliera lascia sei giorni di margine se HA resta fermo o lo script
+# fallisce. Con una cadenza bilanciata sulla ritenzione il margine sparirebbe
+# e i lavaggi persi sarebbero irrecuperabili.
+#
+# Il ritardo di 60 secondi serve al trigger di avvio, per dare tempo al
+# recorder di essere pronto; sull'esecuzione notturna e' ininfluente.
+#==================================================================================
+- id: calcola_lavatrice_programmi
+  alias: "Lavatrice - Conta programmi"
+  mode: single
+  triggers:
+    - platform: homeassistant
+      event: start
+    - platform: time
+      at: "04:30:00"
+  action:
+    - delay: "00:01:00"
+    - action: shell_command.calcola_lavatrice_programmi
+    - action: homeassistant.update_entity
+      target:
+        entity_id: sensor.lavatrice_tabella_programmi
