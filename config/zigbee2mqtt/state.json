@@ -24,8 +24,8 @@
     "0xa4c138e6a0d06219": {
         "voltage": 2500,
         "battery": 50,
-        "temperature": 26.79,
-        "humidity": 61.95,
+        "temperature": 27.64,
+        "humidity": 64.88,
         "linkquality": 116
     },
     "0xa4c1385040d042fb": {
@@ -35,22 +35,22 @@
         "power_outage_memory": "restore",
         "indicator_mode": "off/on",
         "child_lock": "UNLOCK",
-        "voltage": 226.3,
+        "voltage": 224.3,
         "power": 0,
         "current": 0,
         "linkquality": 124
     },
     "0xa4c1383e0fd87686": {
-        "state": "OFF",
-        "energy": 31.58,
+        "state": "ON",
+        "energy": 32.62,
         "countdown": 0,
         "power_outage_memory": "restore",
         "indicator_mode": "off/on",
         "child_lock": "UNLOCK",
-        "voltage": 225.5,
+        "voltage": 224.7,
         "linkquality": 64,
-        "power": 0,
-        "current": 0
+        "power": 216,
+        "current": 1
     },
     "0xa4c1384b868fa6bd": {
         "state": "OFF",
@@ -59,7 +59,7 @@
         "power_outage_memory": "restore",
         "indicator_mode": "off/on",
         "child_lock": "UNLOCK",
-        "voltage": 225.3,
+        "voltage": 225.5,
         "power": 0,
         "current": 0,
         "update": {
@@ -79,15 +79,15 @@
         "power": 3,
         "current": 0.03,
         "voltage": 228,
-        "energy": 0.35,
+        "energy": 0.38,
         "linkquality": 88,
         "child_lock": "UNLOCK"
     },
     "0xa4c1380eff54ffff": {
         "battery": 100,
-        "temperature": 27.3,
+        "temperature": 27.9,
         "voltage": 3200,
-        "humidity": 62.2,
+        "humidity": 71.8,
         "temperature_sensor_select": "internal",
         "comfort_temperature_min": 19,
         "comfort_temperature_max": 35.2,
@@ -108,8 +108,8 @@
     "0xa4c1380f0678ffff": {
         "battery": 100,
         "voltage": 3200,
-        "temperature": 26.1,
-        "humidity": 64.5,
+        "temperature": 27.7,
+        "humidity": 57.3,
         "temperature_sensor_select": "internal",
         "comfort_temperature_min": 19,
         "comfort_temperature_max": 27,
@@ -119,7 +119,7 @@
         "temperature_calibration": 0,
         "humidity_calibration": 0,
         "update": {
-            "state": "available",
+            "state": "idle",
             "installed_version": 4098,
             "latest_version": 4100,
             "latest_source": "https://raw.githubusercontent.com/Koenkk/zigbee-OTA/master/images/Sonoff/snzb-02dr2_v1.0.4.ota",
