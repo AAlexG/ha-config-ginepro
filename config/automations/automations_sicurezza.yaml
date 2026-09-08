@@ -1,4 +1,4 @@
-# automations_sicurezza_14.yaml
+# automations_sicurezza_15.yaml
 
 #==================================================================================
 # 1. ACCENSIONE LUCE (Faretto Intruso) - solo notte
@@ -365,3 +365,74 @@
     - action: button.press
       target:
         entity_id: button.portone_telecomando
+
+#==================================================================================
+# 12. CHIUSURA AUTOMATICA CANCELLO GRANDE SE RIMANE APERTO > 10 MIN
+#     Nota: sensore binary_sensor.cancello_grande_zigbee_contact ha logica
+#     NORMALE -> stato "on" = cancello APERTO, stato "off" = cancello CHIUSO
+#     (verificato in Strumenti per sviluppatori -> Modello il 2026-09-08)
+#==================================================================================
+- id: chiusura_automatica_cancello_grande
+  alias: "Chiusura Automatica Cancello Grande - Timeout 10 min"
+  mode: restart
+  triggers:
+    - platform: state
+      entity_id: binary_sensor.cancello_grande_zigbee_contact
+      to: "on"
+      for: "00:10:00"
+  condition:
+    - condition: state
+      entity_id: binary_sensor.cancello_grande_zigbee_contact
+      state: "on"
+  action:
+    - action: notify.mobile_app_cph2653
+      data:
+        title: "Cancello Grande"
+        message: "Cancello grande rimasto aperto da più di 10 minuti. Chiusura automatica in corso."
+        data:
+          tag: "notifica_cancello_grande_timeout"
+          priority: high
+          ttl: 0
+    - action: button.press
+      target:
+        entity_id: button.10007c3b31_1
+    - if:
+        - condition: state
+          entity_id: input_boolean.grande_cancello_status_helper
+          state: "off"
+      then:
+        - action: input_boolean.turn_on
+          target:
+            entity_id: input_boolean.grande_cancello_status_helper
+      else:
+        - action: input_boolean.turn_off
+          target:
+            entity_id: input_boolean.grande_cancello_status_helper
+
+#==================================================================================
+# 13. NOTIFICA CANCELLO ENTRATA APERTO > 10 MIN (solo avviso, nessuna chiusura)
+#     Nota: sensore binary_sensor.cancello_entrata_zigbee_contact ha logica
+#     NORMALE -> stato "on" = cancello APERTO, stato "off" = cancello CHIUSO
+#     (verificato in Strumenti per sviluppatori -> Modello il 2026-09-08)
+#==================================================================================
+- id: notifica_cancello_entrata_aperto
+  alias: "Notifica Cancello Entrata Aperto - Timeout 10 min"
+  mode: restart
+  triggers:
+    - platform: state
+      entity_id: binary_sensor.cancello_entrata_zigbee_contact
+      to: "on"
+      for: "00:10:00"
+  condition:
+    - condition: state
+      entity_id: binary_sensor.cancello_entrata_zigbee_contact
+      state: "on"
+  action:
+    - action: notify.mobile_app_cph2653
+      data:
+        title: "Cancello Entrata"
+        message: "Cancello di entrata aperto da più di 10 minuti."
+        data:
+          tag: "notifica_cancello_entrata_timeout"
+          priority: high
+          ttl: 0
