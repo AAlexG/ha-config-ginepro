@@ -5,8 +5,7 @@ mqtt:
   user: zigbee2mqtt
   password: zigbee
 serial:
-  port: >-
-    /dev/serial/by-id/usb-Itead_Sonoff_Zigbee_3.0_USB_Dongle_Plus_V2_84af0121abf3ef118e1dc21b6d9880ab-if00-port0
+  port: /dev/serial/by-id/usb-Itead_Sonoff_Zigbee_3.0_USB_Dongle_Plus_V2_84af0121abf3ef118e1dc21b6d9880ab-if00-port0
   adapter: ember
   baudrate: 115200
   rtscts: false
@@ -75,3 +74,5 @@ devices:
     humidity_calibration: 0
   '0xa4c1380f0678ffff':
     friendly_name: Termometro cantina zigbee
+  '0xa4c1389b51ea7546':
+    friendly_name: Sensore cancello grande zigbee
