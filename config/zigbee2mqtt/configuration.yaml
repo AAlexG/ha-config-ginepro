@@ -75,4 +75,6 @@ devices:
   '0xa4c1380f0678ffff':
     friendly_name: Termometro cantina zigbee
   '0xa4c1389b51ea7546':
-    friendly_name: Sensore cancello grande zigbee
+    friendly_name: Cancello grande zigbee
+  '0xa4c138013ef60318':
+    friendly_name: Cancello entrata zigbee
