@@ -245,6 +245,70 @@ config:
         vertical: false
       type: grid
     - cards:
+      - heading: Sensori delle porte/persiane
+        heading_style: title
+        icon: mdi:home-thermometer-outline
+        type: heading
+      - heading: Normalmente chiusi
+        heading_style: subtitle
+        icon: mdi:home-thermometer-outline
+        type: heading
+      - entity: binary_sensor.cancello_grande_zigbee_contact
+        features_position: bottom
+        name: CancGrande
+        type: tile
+        vertical: false
+      - entity: sensor.cancello_grande_zigbee_battery
+        features_position: bottom
+        name: CancGrande
+        type: tile
+        vertical: false
+      - entity: binary_sensor.cancello_entrata_zigbee_contact
+        features_position: bottom
+        name: CancEntrata
+        type: tile
+        vertical: false
+      - entity: sensor.cancello_entrata_zigbee_battery
+        features_position: bottom
+        name: CancEntrata
+        type: tile
+        vertical: false
+      - entity: binary_sensor.persiana_box_sensore_zigbee_contact
+        features_position: bottom
+        name: PersianaBox
+        type: tile
+        vertical: false
+      - entity: sensor.persiana_box_sensore_zigbee_battery
+        features_position: bottom
+        name: PersianaBox
+        type: tile
+        vertical: false
+      - heading: Normalmente aperte
+        heading_style: subtitle
+        icon: mdi:home-thermometer-outline
+        type: heading
+      - entity: binary_sensor.portone_box_sensore_zigbee_contact
+        features_position: bottom
+        name: PortoneBox
+        type: tile
+        vertical: false
+      - entity: sensor.portone_box_sensore_zigbee_battery
+        features_position: bottom
+        name: PortoneBox
+        type: tile
+        vertical: false
+      - entity: binary_sensor.persiana_tania_sensore_zigbee_contact
+        features_position: bottom
+        name: PersTania
+        type: tile
+        vertical: false
+      - entity: sensor.persiana_tania_sensore_zigbee_battery
+        features_position: bottom
+        name: 'PersTania '
+        type: tile
+        vertical: false
+      type: grid
+    - cards:
       - heading: "Temperature & Umidit\xE0"
         heading_style: title
         icon: mdi:home-thermometer-outline
