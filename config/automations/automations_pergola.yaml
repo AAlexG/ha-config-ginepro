@@ -1,4 +1,4 @@
-# automations_pergola_15.yaml
+# automations_pergola_16.yaml
 
 #==================================================================================
 # PERGOLA – INSEGUIMENTO SOLARE + APERTURA AERAZIONE (1 giugno – 1 novembre)
@@ -252,19 +252,24 @@
         value: "Nessun allarme – rientrato alle {{ now().strftime('%H:%M') }}"
 
 #==================================================================================
-# TENDA GIARDINO – Chiusura automatica per vento pericoloso
-# (spostata da automations.yaml v114 - era la n.33, id invariato)
+# TENDA GIARDINO - Chiusura automatica per vento pericoloso
 #
 # Soglia: 40 km/h (raffiche) - margine di sicurezza rispetto alla Classe 3
-# UNI EN 13561 (49 km/h). Coerente con soglia vento blocco irrigazione.
+# UNI EN 13561 (49 km/h). Coerente con la soglia vento del blocco irrigazione.
 # Sensore: sensor.hp1000se_pro_pro_v1_6_4_wind_gust
-# Attuatore: PRIMA switch.sonoff_100132fd56_4 (Sonoff smontato da Alex),
-# ORA cover.all_house_tenda_terrazzo (integrazione nativa in HA).
 #
-# NOTA: la chiusura fisica avviene ad ogni raffica >40 km/h se la tenda
-# risulta non completamente chiusa. La NOTIFICA e' limitata a 1 al giorno
-# tramite input_boolean.tenda_notifica_vento_oggi (reset a mezzanotte,
-# vedi automazione successiva).
+# v16 - Nuovo motore Somfy io al posto del vecchio RTS. L'entita' e' ora
+# cover.all_house_tenda_giardino_new, che riporta la posizione reale (0 = chiusa,
+# 100 = tutta estesa). Conseguenze:
+#   - eliminato input_boolean.tenda_giardino_aperta: lo stato logico non
+#     serve piu', lo stato arriva dal motore;
+#   - aggiunta la condizione current_position > 0: se la tenda e' gia'
+#     chiusa non parte nessun comando e nessuna notifica. Prima la chiusura
+#     veniva rimandata ad ogni raffica sopra soglia.
+#
+# La NOTIFICA resta limitata a 1 al giorno tramite
+# input_boolean.tenda_notifica_vento_oggi (reset a mezzanotte, vedi
+# automazione successiva).
 #==================================================================================
 - id: tenda_chiusura_vento
   alias: "Tenda Giardino - Chiusura automatica per raffiche di vento"
@@ -278,14 +283,14 @@
     - condition: numeric_state
       entity_id: sensor.hp1000se_pro_pro_v1_6_4_wind_gust
       above: 40
+    - condition: numeric_state
+      entity_id: cover.all_house_tenda_giardino_new
+      attribute: current_position
+      above: 0
   actions:
     - action: cover.close_cover
       target:
-        entity_id: cover.all_house_tenda_terrazzo
-    # Allinea lo stato logico della tenda (v14)
-    - action: input_boolean.turn_off
-      target:
-        entity_id: input_boolean.tenda_giardino_aperta
+        entity_id: cover.all_house_tenda_giardino_new
     - if:
         - condition: state
           entity_id: input_boolean.tenda_notifica_vento_oggi

@@ -1,4 +1,4 @@
-# config_aperture_2.yaml
+# config_aperture_3.yaml
 # Package Casa Ginepro - Aperture e sicurezza: portone box, cancelli, pergola, tenda, sirena
 # Estratto da configuration_186.yaml. Nome file = nome del package.
 
@@ -10,20 +10,6 @@ template:
           {{ is_state('binary_sensor.portone_box_sensore_zigbee_contact', 'off') }}
         device_class: garage_door
         icon: mdi:garage
-
-  # ============================================================
-  # TENDA GIARDINO: stato per plancia (configuration_174)
-  # Rispecchia input_boolean.tenda_giardino_aperta con
-  # device_class opening: on=Aperto, off=Chiuso nell'interfaccia.
-  # Il tap sulla tile in plancia commuta l'input_boolean sottostante.
-  # ============================================================
-  - binary_sensor:
-      - name: "Tenda Giardino Stato"
-        unique_id: "tenda_giardino_stato"
-        state: >-
-          {{ is_state('input_boolean.tenda_giardino_aperta', 'on') }}
-        device_class: opening
-        icon: mdi:roman-shade
 
   # ============================================================
   # ACQUA: sensori calcolati (NUOVO – configuration_53)
@@ -69,14 +55,6 @@ input_boolean:
     name: "Tenda – Notifica Vento Oggi"
     initial: false
     icon: mdi:bell-check
-
-  # Stato logico tenda giardino (la cover non ha feedback di stato).
-  # Gestito dagli script tenda_giardino_apri/chiudi e dalle chiusure
-  # automatiche (vento, vacanza). Correggibile a mano da plancia Tende.
-  # NIENTE "initial": lo stato deve sopravvivere ai riavvii.
-  tenda_giardino_aperta:
-    name: "Tenda Giardino – Aperta"
-    icon: mdi:roman-shade
 
 #==================================================================================
 # PERGOLA - SICUREZZA METEO: HELPER DI SUPPORTO (nuovi in config_aperture_2)

@@ -1,4 +1,4 @@
-# automations_clima_60.yaml
+# automations_clima_59.yaml
 
 
 
@@ -2068,12 +2068,14 @@
         entity_id:
           - input_boolean.pergola_blocco_manuale
           - input_boolean.pergola_meteo_chiusura
+          # Stato logico tenda giardino: chiusa (v40)
+          - input_boolean.tenda_giardino_aperta
     # Chiusura pergola e tenda giardino
     - action: cover.close_cover
       target:
         entity_id:
           - cover.terrazzo_pergola_terrazza
-          - cover.all_house_tenda_giardino_new
+          - cover.all_house_tenda_terrazzo
     # Stop canto uccelli (la Yamaha andra' in auto-standby dopo 8h: voluto)
     - action: media_player.media_stop
       target:
