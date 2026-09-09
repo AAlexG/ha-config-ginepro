@@ -1,0 +1,55 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "data": {
+          "host": "Hôte",
+          "port": "Port",
+          "username": "Nom d'utilisateur",
+          "password": "Mot de passe",
+          "backup_path": "Chemin de stockage des sauvegardes"
+        },
+        "data_description": {
+          "host": "Le nom d'hôte (ou l'adresse IP) du serveur FTP",
+          "backup_path": "Définir le chemin du dossier où seront stockées les sauvegardes (créé automatiquement s'il n'existe pas)."
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Impossible de se connecter au serveur FTP."
+    },
+    "abort": {
+      "already_configured": "Une connexion à ce serveur FTP est déjà configuré."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "description": "Merci de reconfigurer la connexion au serveur FTP.",
+        "data": {
+          "host": "Hôte",
+          "port": "Port",
+          "username": "Nom d'utilisateur",
+          "password": "Mot de passe",
+          "backup_path": "Chemin de stockage des sauvegardes"
+        },
+        "data_description": {
+          "host": "Le nom d'hôte (ou l'adresse IP) du serveur FTP.",
+          "password": "Laisser vide pour conserver le mot de passe actuellement configuré.",
+          "backup_path": "Le chemin du dossier où seront stockées les sauvegardes (créé automatiquement s'il n'existe pas)."
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Impossible de se connecter au serveur FTP."
+    }
+  },
+  "exceptions": {
+    "cannot_connect": {
+      "message": "Impossible de se connecter au serveur FTP."
+    },
+    "cannot_access_or_create_backup_path": {
+      "message": "Impossible d'accéder ou de créer le dossier de stockage des sauvegardes. Merci de vérifier le chemin saisi et les permissions d'accès à celui-ci."
+    }
+  }
+}

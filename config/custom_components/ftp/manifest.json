@@ -1,0 +1,17 @@
+{
+  "domain": "ftp",
+  "name": "FTP",
+  "codeowners": ["@brenard"],
+  "config_flow": true,
+  "dependencies": [],
+  "documentation": "https://github.com/brenard/hass-ftp",
+  "homekit": {},
+  "integration_type": "service",
+  "iot_class": "cloud_polling",
+  "issue_tracker": "https://github.com/brenard/hass-ftp/issues",
+  "loggers": ["aioftp"],
+  "requirements": ["aioftp==0.25.1"],
+  "ssdp": [],
+  "version": "2025.5.2",
+  "zeroconf": []
+}
