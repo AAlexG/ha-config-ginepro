@@ -1646,6 +1646,16 @@ config:
         name: Term. Cantina
         type: tile
         vertical: false
+      - entity: sensor.cancello_grande_zigbee_battery
+        features_position: bottom
+        name: Canc.Grande
+        type: tile
+        vertical: false
+      - entity: sensor.cancello_entrata_zigbee_battery
+        features_position: bottom
+        name: Canc.Entrata
+        type: tile
+        vertical: false
       - heading: UPS
         heading_style: subtitle
         type: heading
