@@ -1,4 +1,4 @@
-# config_clima_9.yaml
+# config_clima_10.yaml
 # Package Casa Ginepro - Clima: fancoil, free cooling/heating, target temperatura, consumi
 # Estratto da configuration_186.yaml. Nome file = nome del package.
 
@@ -460,20 +460,22 @@ input_boolean:
 
   # --- GESTIONE MANUALE FANCOIL E DEUMIDIFICATORE ---
   # Si attivano quando l'utente tocca lo switch a mano (toggle plancia o app Shelly).
-  # Bloccano le automazioni di controllo fino al prossimo cambio giorno/notte (07:00/23:00).
+  # Bloccano le automazioni di controllo finche' e' l'utente stesso ad abbassarli:
+  # nessuna automazione li spegne piu', ne' il cambio giorno/notte ne' la partenza
+  # per vacanza. Il promemoria delle 10:00 / 22:00 segnala quelli dimenticati.
+  # Nessuna chiave di valore iniziale: senza di essa Home Assistant ripristina allo
+  # start lo stato precedente allo stop invece di forzare lo spento.
+  # Fonte: https://www.home-assistant.io/integrations/input_boolean/ (Restore state)
   fancoil_georgi_manuale:
     name: "Fancoil Georgi - Gestione Manuale"
-    initial: false
     icon: mdi:hand-back-right
 
   fancoil_georgi2_manuale:
     name: "Fancoil Georgi 2 - Gestione Manuale"
-    initial: false
     icon: mdi:hand-back-right
 
   fancoil_sala_manuale:
     name: "Fancoil Sala - Gestione Manuale"
-    initial: false
     icon: mdi:hand-back-right
 
   # --- GESTIONE MANUALE POMPA DI CALORE ---
@@ -486,7 +488,6 @@ input_boolean:
   # la pompa viene staccata per prelievo di rete oltre soglia.
   pdc_manuale:
     name: "Pompa di Calore - Gestione Manuale"
-    initial: false
     icon: mdi:hand-back-right
 
   # --- LATCH NOTTURNO POMPA DI CALORE ---

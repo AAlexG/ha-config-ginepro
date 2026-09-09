@@ -1,4 +1,4 @@
-# automations_clima_60.yaml
+# automations_clima_62.yaml
 
 
 
@@ -183,20 +183,30 @@
     # Mappatura reale degli switch (i nomi entita' sono storici):
     #   switch.camerageorgi_shelly_fancoil_georgi    -> fancoil CAMERA TANIA
     #   switch.camerageorgi_shelly_fancoil_georgi_2  -> fancoil CAMERA GEORGI
-    # Alle 07:00 spegni il fancoil camera Georgi (quello notturno), sempre,
-    # senza flag. Il fancoil camera Tania era gia' spento alle 23:00.
-    - action: switch.turn_off
-      target:
-        entity_id: switch.camerageorgi_shelly_fancoil_georgi_2
-    # Reset di tutti i blocchi manuali: ad ogni cambio giorno/notte si riparte sempre puliti
+    # Alle 07:00 spegni il fancoil camera Georgi (quello notturno), ma solo se
+    # non e' in gestione manuale: quel flag lo abbassa soltanto l'utente.
+    # Il fancoil camera Tania era gia' spento alle 23:00.
+    - if:
+        - condition: state
+          entity_id: input_boolean.fancoil_georgi2_manuale
+          state: "off"
+      then:
+        - action: switch.turn_off
+          target:
+            entity_id: switch.camerageorgi_shelly_fancoil_georgi_2
+    # Nessun flag di gestione manuale viene piu' abbassato qui: fancoil e
+    # deumidificatori restano bloccati finche' e' l'utente ad abbassare il flag
+    # dalla plancia. Il promemoria delle 10:00 / 22:00 serve a non dimenticarli.
+    # Le due voci rimaste non sono gestioni manuali dell'utente:
+    #   pergola_blocco_manuale  -> lo azzera comunque pergola_blocco_manuale_rilascio
+    #                              in automations_pergola, agli stessi orari.
+    #   clima_pompa_latch_notte -> stato interno del PID notturno: se non viene
+    #                              azzerato al cambio fascia, la soglia di
+    #                              riaccensione della pompa resta a target + 2 C
+    #                              anche di giorno.
     - action: input_boolean.turn_off
       target:
         entity_id:
-          - input_boolean.fancoil_georgi_manuale
-          - input_boolean.fancoil_georgi2_manuale
-          - input_boolean.fancoil_sala_manuale
-          - input_boolean.deumidificatore_cantina_manuale
-          - input_boolean.deumidificatore_armadio_manuale
           - input_boolean.pergola_blocco_manuale
           - input_boolean.clima_pompa_latch_notte
 
@@ -245,15 +255,19 @@
         entity_id: input_select.clima_modalita
       data:
         option: "notte"
-    # Reset di tutti i blocchi manuali: ad ogni cambio giorno/notte si riparte sempre puliti
+    # Nessun flag di gestione manuale viene piu' abbassato qui: fancoil e
+    # deumidificatori restano bloccati finche' e' l'utente ad abbassare il flag
+    # dalla plancia. Il promemoria delle 10:00 / 22:00 serve a non dimenticarli.
+    # Le due voci rimaste non sono gestioni manuali dell'utente:
+    #   pergola_blocco_manuale  -> lo azzera comunque pergola_blocco_manuale_rilascio
+    #                              in automations_pergola, agli stessi orari.
+    #   clima_pompa_latch_notte -> stato interno del PID notturno: se non viene
+    #                              azzerato al cambio fascia, la soglia di
+    #                              riaccensione della pompa resta a target + 2 C
+    #                              anche di giorno.
     - action: input_boolean.turn_off
       target:
         entity_id:
-          - input_boolean.fancoil_georgi_manuale
-          - input_boolean.fancoil_georgi2_manuale
-          - input_boolean.fancoil_sala_manuale
-          - input_boolean.deumidificatore_cantina_manuale
-          - input_boolean.deumidificatore_armadio_manuale
           - input_boolean.pergola_blocco_manuale
           - input_boolean.clima_pompa_latch_notte
 
@@ -267,6 +281,58 @@
 # "comando_automatico": il blocco è sempre il risultato esplicito di un'azione
 # dell'utente sul tile, mai dedotto.
 #==================================================================================
+
+#==================================================================================
+# PROMEMORIA FLAG DI GESTIONE MANUALE (10:00 e 22:00)
+# Nessuna automazione abbassa piu' i flag manuali di fancoil e deumidificatori:
+# li abbassa solo l'utente dalla plancia. Il rischio e' quindi dimenticarne uno
+# alzato e tenere fermo il controllo automatico per giorni senza accorgersene.
+# Due volte al giorno questa automazione elenca i flag alzati da piu' di un'ora
+# e ancora attivi. Sotto l'ora non notifica: un blocco appena messo e' voluto.
+# Nota: last_changed riparte da zero a ogni avvio di Home Assistant, quindi
+# nella prima ora dopo un riavvio la notifica non scatta.
+#==================================================================================
+- id: flag_manuali_promemoria
+  alias: "Flag manuali – Promemoria (10:00 / 22:00)"
+  description: >
+    Segnala quali gestioni manuali di fancoil e deumidificatori sono alzate da
+    oltre un'ora e ancora attive, per poterle abbassare se non servono piu'.
+  mode: single
+  triggers:
+    - trigger: time
+      at: "10:00:00"
+    - trigger: time
+      at: "22:00:00"
+  variables:
+    flag_elenco:
+      - input_boolean.fancoil_georgi_manuale
+      - input_boolean.fancoil_georgi2_manuale
+      - input_boolean.fancoil_sala_manuale
+      - input_boolean.deumidificatore_cantina_manuale
+      - input_boolean.deumidificatore_armadio_manuale
+    flag_attivi: >
+      {% set ns = namespace(elenco=[]) %}
+      {% for f in flag_elenco %}
+        {% if is_state(f, 'on')
+              and (now() - states[f].last_changed).total_seconds() > 3600 %}
+          {% set ns.elenco = ns.elenco + [state_attr(f, 'friendly_name') | default(f, true)] %}
+        {% endif %}
+      {% endfor %}
+      {{ ns.elenco }}
+  conditions:
+    - condition: template
+      value_template: "{{ flag_attivi | count > 0 }}"
+  actions:
+    - action: notify.mobile_app_cph2653
+      data:
+        title: "Gestione manuale ancora attiva"
+        message: >
+          {{ flag_attivi | join(', ') }}.
+          Alzata da oltre un'ora: se non ti serve piu', abbassala dalla plancia.
+        data:
+          tag: flag_manuali_promemoria
+          channel: Clima
+          importance: high
 
 - id: fancoil_georgi_prelavoro_sera
   alias: "Fancoil Georgi – Prelavoro Serale (21:00)"
@@ -635,6 +701,11 @@
       to: "notte"
     - trigger: time
       at: "23:00:00"
+  conditions:
+    # Gestione manuale: il fancoil resta come l'ha lasciato l'utente.
+    - condition: state
+      entity_id: input_boolean.fancoil_sala_manuale
+      state: "off"
   actions:
     - action: switch.turn_off
       target:
@@ -652,6 +723,11 @@
   triggers:
     - trigger: time
       at: "23:00:00"
+  conditions:
+    # Gestione manuale: il fancoil resta come l'ha lasciato l'utente.
+    - condition: state
+      entity_id: input_boolean.fancoil_georgi_manuale
+      state: "off"
   actions:
     - action: switch.turn_off
       target:
@@ -2055,13 +2131,33 @@
         - action: switch.turn_off
           target:
             entity_id: switch.panasonic_heat_pump_main_heatpump_state
-    # Spegni tutti i fancoil (camera + sala), sempre, anche se in gestione manuale
-    - action: switch.turn_off
-      target:
-        entity_id:
-          - switch.camerageorgi_shelly_fancoil_georgi
-          - switch.camerageorgi_shelly_fancoil_georgi_2
-          - switch.sala_fancoil_sala_shelly_1gen4
+    # Fancoil: si spengono solo quelli non in gestione manuale. Durante una
+    # vacanza puo' essere voluto lasciarne uno acceso (gatti in casa), e in quel
+    # caso il flag alzato deve valere anche qui.
+    - if:
+        - condition: state
+          entity_id: input_boolean.fancoil_georgi_manuale
+          state: "off"
+      then:
+        - action: switch.turn_off
+          target:
+            entity_id: switch.camerageorgi_shelly_fancoil_georgi
+    - if:
+        - condition: state
+          entity_id: input_boolean.fancoil_georgi2_manuale
+          state: "off"
+      then:
+        - action: switch.turn_off
+          target:
+            entity_id: switch.camerageorgi_shelly_fancoil_georgi_2
+    - if:
+        - condition: state
+          entity_id: input_boolean.fancoil_sala_manuale
+          state: "off"
+      then:
+        - action: switch.turn_off
+          target:
+            entity_id: switch.sala_fancoil_sala_shelly_1gen4
     # Pulizia flag pergola (il blocco manuale non deve sopravvivere alla partenza)
     - action: input_boolean.turn_off
       target:
@@ -2083,8 +2179,8 @@
         title: "✈️ Vacanza iniziata"
         message: >
           Riscaldamento away, acqua sanitaria spenta, pompa di calore spenta,
-          fancoil spenti, pergola e tenda giardino chiuse, canto uccelli fermato.
-          Buona vacanza!
+          fancoil spenti (esclusi quelli in gestione manuale), pergola e tenda
+          giardino chiuse, canto uccelli fermato. Buona vacanza!
 #==================================================================================
 # 27. CALDAIA - OTGW – PRESSIONE CIRCUITO CH FUORI RANGE
 #

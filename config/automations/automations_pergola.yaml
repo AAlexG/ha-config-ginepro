@@ -1,4 +1,4 @@
-# automations_pergola_16.yaml
+# automations_pergola_18.yaml
 
 #==================================================================================
 # PERGOLA – INSEGUIMENTO SOLARE + APERTURA AERAZIONE (1 giugno – 1 novembre)
@@ -310,11 +310,12 @@
             entity_id: input_boolean.tenda_notifica_vento_oggi
 
 #==================================================================================
-# TENDA GIARDINO – Reset notifica giornaliera vento a mezzanotte
+# TENDA GIARDINO - Reset notifiche giornaliere a mezzanotte
+# v18: azzera sia il flag del vento sia quello della pioggia.
 # (spostata da automations.yaml v114 - era la n.33b, id invariato)
 #==================================================================================
 - id: tenda_reset_notifica_vento_mezzanotte
-  alias: "Tenda Giardino - Reset notifica vento a mezzanotte"
+  alias: "Tenda Giardino - Reset notifiche vento e pioggia a mezzanotte"
   mode: single
   triggers:
     - trigger: time
@@ -323,8 +324,196 @@
   actions:
     - action: input_boolean.turn_off
       target:
-        entity_id: input_boolean.tenda_notifica_vento_oggi
+        entity_id:
+          - input_boolean.tenda_notifica_vento_oggi
+          - input_boolean.tenda_notifica_pioggia_oggi
         
+
+#==================================================================================
+# TENDA GIARDINO - Apertura all'85% per pioggia (nuova in v17)
+#
+# La tenda si APRE all'85% quando piove o quando la pioggia e' prevista nelle
+# prossime 3 ore, per riparare la zona sottostante.
+#
+# Sorgenti pioggia (stesse della sicurezza meteo pergola):
+#   - rain_rate    : intensita' istantanea, intercetta subito la pioggia locale
+#   - hourly_rain  : accumulo dell'ora corrente, da' persistenza dopo che ha
+#                    smesso; si azzera allo scoccare dell'ora, per questo
+#                    serve anche rain_rate
+#   - previsione   : massimo delle precipitazioni nelle prime 3 ore di
+#                    weather.casa (hourly)
+#   event_rain volutamente NON usato: resta > 0 per ore dopo la pioggia.
+#
+# PRIORITA' AL VENTO: se la raffica supera i 40 km/h l'apertura non parte.
+# E' la stessa soglia con cui tenda_chiusura_vento chiude la tenda, quindi le
+# due automazioni non possono rincorrersi. Quando la raffica rientra sotto
+# 40 e sta ancora piovendo, il ciclo dei 10 minuti riapre da solo.
+#
+# Se la tenda e' gia' oltre l'85% viene lasciata dov'e': la condizione
+# current_position < 85 blocca l'esecuzione, quindi nessun comando parte e
+# la tenda non viene mai richiusa da questa automazione.
+#
+# Il ciclo periodico e' sfasato di 15 secondi rispetto a quello della
+# sicurezza meteo pergola (minuti /10, secondi 0 e 30) per non mandare
+# comandi simultanei allo stesso gateway.
+#==================================================================================
+- id: tenda_apertura_pioggia
+  alias: "Tenda Giardino - Apertura 85% per pioggia"
+  mode: single
+  max_exceeded: silent
+  triggers:
+    - trigger: numeric_state
+      entity_id: sensor.hp1000se_pro_pro_v1_6_4_rain_rate
+      above: 0
+    - trigger: numeric_state
+      entity_id: sensor.hp1000se_pro_pro_v1_6_4_hourly_rain
+      above: 0
+    - trigger: time_pattern
+      minutes: "/10"
+      seconds: 15
+  conditions:
+    - condition: state
+      entity_id: input_boolean.vacanza
+      state: "off"
+    - condition: numeric_state
+      entity_id: sensor.hp1000se_pro_pro_v1_6_4_wind_gust
+      below: 40
+    - condition: numeric_state
+      entity_id: cover.all_house_tenda_giardino_new
+      attribute: current_position
+      below: 85
+  actions:
+    - action: weather.get_forecasts
+      target:
+        entity_id: weather.casa
+      data:
+        type: hourly
+      response_variable: previsione
+    - variables:
+        v_rate: "{{ states('sensor.hp1000se_pro_pro_v1_6_4_rain_rate') | float(0) }}"
+        v_oraria: "{{ states('sensor.hp1000se_pro_pro_v1_6_4_hourly_rain') | float(0) }}"
+        mm_previsti: >-
+          {{ (previsione['weather.casa'].forecast[0:3]
+             | map(attribute='precipitation')
+             | map('float', 0) | list) | max | default(0) }}
+    - condition: template
+      value_template: "{{ v_rate > 0 or v_oraria > 0 or mm_previsti > 0 }}"
+    - action: cover.set_cover_position
+      target:
+        entity_id: cover.all_house_tenda_giardino_new
+      data:
+        position: 85
+    - if:
+        - condition: state
+          entity_id: input_boolean.tenda_notifica_pioggia_oggi
+          state: "off"
+      then:
+        - action: notify.mobile_app_cph2653
+          data:
+            title: "🌧️ Tenda giardino aperta - pioggia"
+            message: >-
+              Aperta all'85%: {{ ([ ('pioggia ' ~ (v_rate | round(1)) ~ ' mm/h') if v_rate > 0 else none,
+                 ('accumulo ' ~ (v_oraria | round(1)) ~ ' mm') if v_oraria > 0 else none,
+                 ('previsione ' ~ (mm_previsti | round(1)) ~ ' mm/3h') if mm_previsti > 0 else none ]
+                | reject('none') | list | join(' + ')) }}.
+            data:
+              priority: high
+              ttl: 0
+        - action: input_boolean.turn_on
+          target:
+            entity_id: input_boolean.tenda_notifica_pioggia_oggi
+
+#==================================================================================
+# TENDA GIARDINO - Gestione sole (nuova in v18)
+#
+# Sensore: sensor.hp1000se_pro_pro_v1_6_4_solar_radiation (stazione HP1000SE, W/m2).
+# E' lo stesso sensore che la pergola usava fino alla v15.
+#
+# Due soglie con isteresi 3:1, per non far ballare la tenda a ogni nuvola:
+#   sopra 300 W/m2 per 15 minuti  -> apre all'85% (sole pieno, serve ombra)
+#   sotto 100 W/m2 per 30 minuti  -> porta al 40% se asciutto (giorno)
+#                                    oppure a 0% se il sole e' sotto l'orizzonte
+# Riferimento: cielo sereno estivo a mezzogiorno sta sugli 800-1000 W/m2,
+# quindi 300 e' "sole vero" e 100 e' "grigio".
+#
+# Il ramo di chiusura agisce SOLO verso il basso: se la tenda e' gia' sotto
+# la posizione bersaglio (per esempio a 0 dopo una chiusura per vento) non
+# viene riaperta. Chiudere non deve mai diventare aprire.
+#
+# Precedenze:
+#   - raffica > 40 km/h  : condizione di ingresso, l'automazione non parte.
+#     La chiusura per vento resta l'unica a comandare.
+#   - pioggia in corso o prevista a 3 ore: il ramo di chiusura non parte,
+#     cosi' non contrasta tenda_apertura_pioggia. Il ramo di apertura non e'
+#     in conflitto (porta anche lui all'85%).
+#   - flag vacanza: blocca tutto.
+#
+# Nessuna notifica, come richiesto.
+#==================================================================================
+- id: tenda_gestione_sole
+  alias: "Tenda Giardino - Gestione sole"
+  mode: single
+  max_exceeded: silent
+  triggers:
+    - trigger: numeric_state
+      entity_id: sensor.hp1000se_pro_pro_v1_6_4_solar_radiation
+      above: 300
+      for: "00:15:00"
+    - trigger: numeric_state
+      entity_id: sensor.hp1000se_pro_pro_v1_6_4_solar_radiation
+      below: 100
+      for: "00:30:00"
+    - trigger: state
+      entity_id: sun.sun
+      to: "below_horizon"
+  conditions:
+    - condition: state
+      entity_id: input_boolean.vacanza
+      state: "off"
+    - condition: numeric_state
+      entity_id: sensor.hp1000se_pro_pro_v1_6_4_wind_gust
+      below: 40
+  actions:
+    - action: weather.get_forecasts
+      target:
+        entity_id: weather.casa
+      data:
+        type: hourly
+      response_variable: previsione
+    - variables:
+        rad: "{{ states('sensor.hp1000se_pro_pro_v1_6_4_solar_radiation') | float(0) }}"
+        pos: "{{ state_attr('cover.all_house_tenda_giardino_new','current_position') | int(-1) }}"
+        notte: "{{ is_state('sun.sun','below_horizon') }}"
+        pioggia: >-
+          {{ (states('sensor.hp1000se_pro_pro_v1_6_4_rain_rate') | float(0) > 0)
+             or (states('sensor.hp1000se_pro_pro_v1_6_4_hourly_rain') | float(0) > 0)
+             or ((previsione['weather.casa'].forecast[0:3]
+                 | map(attribute='precipitation')
+                 | map('float', 0) | list) | max | default(0) > 0) }}
+        bersaglio: "{{ 0 if notte else 40 }}"
+    - choose:
+        # Sole pieno: apre all'85% se non c'e' gia'
+        - conditions:
+            - condition: template
+              value_template: "{{ rad > 300 and pos >= 0 and pos < 85 }}"
+          sequence:
+            - action: cover.set_cover_position
+              target:
+                entity_id: cover.all_house_tenda_giardino_new
+              data:
+                position: 85
+        # Luce bassa e tempo asciutto: scende al bersaglio, mai risale
+        - conditions:
+            - condition: template
+              value_template: >-
+                {{ rad < 100 and not pioggia
+                   and pos > (bersaglio | int) }}
+          sequence:
+            - action: cover.set_cover_position
+              target:
+                entity_id: cover.all_house_tenda_giardino_new
+              data:
+                position: "{{ bersaglio | int }}"
 
 #==================================================================================
 # PERGOLA – RILASCIO BLOCCO MANUALE (07:00 / 23:00)

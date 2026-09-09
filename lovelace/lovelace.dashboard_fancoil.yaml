@@ -847,24 +847,9 @@ config:
         name: LinkQulity
         type: tile
         vertical: false
-      - entity: sensor.presa_box_zigbee_energy
-        features_position: bottom
-        name: Cons.oggi
-        type: tile
-        vertical: false
       - entity: sensor.presa_box_zigbee_power
         features_position: bottom
         name: Potenz.ora
-        type: tile
-        vertical: false
-      - entity: sensor.presa_box_zigbee_current
-        features_position: bottom
-        name: Corrente
-        type: tile
-        vertical: false
-      - entity: sensor.presa_box_zigbee_voltage
-        features_position: bottom
-        name: Tensione
         type: tile
         vertical: false
       - chart_type: bar
@@ -1038,19 +1023,9 @@ config:
         name: Potenz.ora
         type: tile
         vertical: false
-      - entity: sensor.shellyem_ec64c9c9b75c_channel_1_tensione
-        features_position: bottom
-        name: Tensione
-        type: tile
-        vertical: false
       - entity: sensor.shellyem_ec64c9c9b75c_intensita_del_segnale
         features_position: bottom
         name: Segnale
-        type: tile
-        vertical: false
-      - entity: binary_sensor.shellyem_ec64c9c9b75c_sovra_potenza
-        features_position: bottom
-        name: Sovrapotenza
         type: tile
         vertical: false
       - chart_type: bar

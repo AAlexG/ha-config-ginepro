@@ -1,4 +1,4 @@
-# config_deumidificatori_3.yaml
+# config_deumidificatori_4.yaml
 # Package Casa Ginepro - Deumidificatori cantina e armadio
 # Estratto da configuration_186.yaml. Nome file = nome del package.
 
@@ -74,14 +74,18 @@ utility_meter:
     unique_id: deumidificatori_totale
     source: sensor.consumo_deumidificatori_oggi
 
+# I due flag non hanno la chiave di valore iniziale: senza di essa Home Assistant
+# ripristina allo start lo stato che avevano prima dello stop, invece di forzarli
+# a spento. Fonte: https://www.home-assistant.io/integrations/input_boolean/
+# (sezione Restore state). Con il valore iniziale forzato a false, ogni riavvio
+# azzerava la gestione manuale e il controllo periodico rispegneva la presa
+# entro 5 minuti.
 input_boolean:
 
   deumidificatore_cantina_manuale:
     name: "Deumidificatore Cantina - Gestione Manuale"
-    initial: false
     icon: mdi:hand-back-right
 
   deumidificatore_armadio_manuale:
     name: "Deumidificatore Armadio - Gestione Manuale"
-    initial: false
     icon: mdi:hand-back-right
