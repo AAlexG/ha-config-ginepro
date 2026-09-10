@@ -53,6 +53,38 @@ config:
         name: Sauna
         type: tile
         vertical: false
+      - entity: switch.presa_luci_cucina_socket_1
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        name: LuciCucina
+        type: tile
+        vertical: false
+      - entity: light.luce_divano
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        name: LuceDivano
+        type: tile
+        vertical: false
+      - entity: light.luce_terrazza
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        name: LuceTerrazza
+        type: tile
+        vertical: false
+      - entity: light.luce_sopra
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        name: LuceSopra
+        type: tile
+        vertical: false
       - heading: Blocca automatismi fino cambio giorno/notte (07:00 / 23:00)
         heading_style: title
         icon: ''
@@ -1028,6 +1060,25 @@ config:
         name: Segnale
         type: tile
         vertical: false
+      - heading: Di cui solo luci cucina
+        heading_style: subtitle
+        icon: mdi:countertop-outline
+        type: heading
+      - entity: switch.presa_luci_cucina_socket_1
+        features_position: bottom
+        name: LuciCucina
+        type: tile
+        vertical: false
+      - entity: sensor.presa_luci_cucina_potenza
+        features_position: bottom
+        name: Potenz.ora
+        type: tile
+        vertical: false
+      - entity: sensor.presa_luci_cucina_energia_totale
+        features_position: bottom
+        name: Consum.tot
+        type: tile
+        vertical: false
       - chart_type: bar
         days_to_show: 30
         entities:
@@ -1096,5 +1147,5 @@ config:
         - state
         type: statistics-graph
       type: grid
-    title: Devices & Fancoil
+    title: Devices
     type: sections
