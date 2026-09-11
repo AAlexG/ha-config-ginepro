@@ -499,6 +499,8 @@ config:
           name: Georgi
         - entity: sensor.termometro_tania_zigbee_temperature
           name: Tania
+        - entity: sensor.termometro_cantina_zigbee_temperature
+          name: Cantina
         - entity: sensor.panasonic_heat_pump_main_outside_temp
           name: Esterna
         grid_options:
@@ -754,17 +756,6 @@ config:
         show_entity_picture: false
         type: tile
         vertical: false
-      - entity: sensor.shellyem_ec64c9c9b75c_channel_1_energia
-        features_position: bottom
-        grid_options:
-          columns: 4
-          rows: 1
-        icon_tap_action:
-          action: navigate
-          navigation_path: /dashboard-fancoil/fancoil
-        name: Cucina
-        type: tile
-        vertical: false
       - entity: sensor.sauna_energia_oggi
         features_position: bottom
         grid_options:
@@ -796,15 +787,6 @@ config:
         heading_style: subtitle
         icon: ''
         type: heading
-      - entity: input_number.pv_totale_euro
-        features_position: bottom
-        grid_options:
-          columns: 4
-          rows: 1
-        icon: mdi:piggy-bank
-        name: Risparmiato
-        type: tile
-        vertical: false
       - entity: input_number.pv_recupero_pct
         features_position: bottom
         grid_options:
@@ -812,6 +794,15 @@ config:
           rows: 1
         icon: mdi:percent
         name: '% recupero'
+        type: tile
+        vertical: false
+      - entity: input_number.pv_totale_euro
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        icon: mdi:piggy-bank
+        name: Risparmiato
         type: tile
         vertical: false
       - entity: input_number.pv_gse_euro

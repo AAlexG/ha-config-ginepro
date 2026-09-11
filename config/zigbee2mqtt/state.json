@@ -24,8 +24,8 @@
     "0xa4c138e6a0d06219": {
         "voltage": 2500,
         "battery": 50,
-        "temperature": 25.03,
-        "humidity": 51.52,
+        "temperature": 24.57,
+        "humidity": 56.54,
         "linkquality": 116
     },
     "0xa4c1385040d042fb": {
@@ -35,19 +35,19 @@
         "power_outage_memory": "restore",
         "indicator_mode": "off/on",
         "child_lock": "UNLOCK",
-        "voltage": 224.7,
+        "voltage": 225.4,
         "power": 0,
         "current": 0,
         "linkquality": 128
     },
     "0xa4c1383e0fd87686": {
         "state": "OFF",
-        "energy": 35.54,
+        "energy": 35.71,
         "countdown": 0,
         "power_outage_memory": "restore",
         "indicator_mode": "off/on",
         "child_lock": "UNLOCK",
-        "voltage": 224.6,
+        "voltage": 225.1,
         "linkquality": 136,
         "power": 0,
         "current": 0
@@ -59,7 +59,7 @@
         "power_outage_memory": "restore",
         "indicator_mode": "off/on",
         "child_lock": "UNLOCK",
-        "voltage": 224.3,
+        "voltage": 225,
         "power": 0,
         "current": 0,
         "update": {
@@ -79,15 +79,15 @@
         "power": 3,
         "current": 0.03,
         "voltage": 227,
-        "energy": 0.62,
+        "energy": 0.67,
         "linkquality": 76,
         "child_lock": "UNLOCK"
     },
     "0xa4c1380eff54ffff": {
         "battery": 100,
-        "temperature": 24.1,
+        "temperature": 24.7,
         "voltage": 2900,
-        "humidity": 53.8,
+        "humidity": 61.2,
         "temperature_sensor_select": "internal",
         "comfort_temperature_min": 19,
         "comfort_temperature_max": 35.2,
@@ -108,8 +108,8 @@
     "0xa4c1380f0678ffff": {
         "battery": 100,
         "voltage": 3200,
-        "temperature": 26.1,
-        "humidity": 61,
+        "temperature": 25.7,
+        "humidity": 71.4,
         "temperature_sensor_select": "internal",
         "comfort_temperature_min": 19,
         "comfort_temperature_max": 27,
@@ -136,9 +136,9 @@
         "linkquality": 44
     },
     "0xa4c138013ef60318": {
-        "voltage": 2600,
-        "battery": 93,
-        "contact": true,
+        "voltage": 3100,
+        "battery": 100,
+        "contact": false,
         "tamper": false,
         "battery_low": false,
         "linkquality": 76

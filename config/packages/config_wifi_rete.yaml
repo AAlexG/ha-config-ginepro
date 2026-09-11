@@ -1,4 +1,4 @@
-# config_wifi_rete_5.yaml
+# config_wifi_rete_7.yaml
 # Package Casa Ginepro - Rete WiFi: whitelist MAC e tabella dispositivi
 # Estratto da configuration_186.yaml. Nome file = nome del package.
 
@@ -19,7 +19,7 @@ template:
         attributes:
           mac_nomi: >-
             {{ {
-              'e0:b6:68:91:cc:58': '001 modem Nexxt fastweb',
+              'c4:0f:a6:76:26:e0': '254 modem Nexxt fastweb',
               '14:59:c0:51:55:3f': '002 OMain Orbi RBR50',
               '38:18:4c:1a:d0:c3': '005 TV sala Sony',
               'd8:f1:5b:15:26:40': '011 stazione meteo sala',
@@ -65,7 +65,7 @@ template:
               '50:8a:06:5c:04:72': '069 luce sopra Tuya',
               'd8:eb:46:84:3d:bd': '070 Chromecast sotto',
               '66:00:c0:a6:9c:6e': '071 S22 Ultra di Tania',
-              '6c:6e:7c:c5:88:51': '072 Stampante Canon sopra',
+              '6c:3c:7c:c5:88:51': '072 Stampante Canon sopra',
               'd8:1f:12:93:61:65': '073 contattore sauna',
               'f8:6d:cc:3d:26:d4': '074 Fiat 500e',
               '48:9d:ff:04:a3:ed': '075 Oneplus 8 vecchio x Russia',
@@ -110,11 +110,17 @@ template:
           {{ ns.n }}
         attributes:
           aggiornato: "{{ now().strftime('%d/%m/%Y %H:%M:%S') }}"
+
+          #--- RIGHE WHITELIST -------------------------------------------------
+          # Ogni MAC della whitelist produce sempre una riga. Lo stato di
+          # presenza e' SEMPRE quello reale del tracker Netgear: mai dedotto.
+          #   in_casa -> tracker presente e 'home'
+          #   fuori   -> tracker presente e non 'home'
+          #   ignoto  -> nessun tracker Netgear per quel MAC: HA non sa nulla
+          # L'IP invece puo' essere ricavato dalla convenzione di nomenclatura
+          # (3 cifre iniziali = ultimo ottetto), perche' e' un dato di
+          # configurazione statica, non una misura.
           righe: >-
-            {# Itera la WHITELIST: ogni MAC produce sempre una riga, anche se il  #}
-            {# tracker Netgear e' assente/disabilitato o non fornisce un IP.       #}
-            {# In tal caso: nome con 3 cifre iniziali -> IP 192.168.1.xxx, in casa; #}
-            {# altrimenti -> n/d, fuori casa.                                        #}
             {% set nomi = state_attr('sensor.wifi_dispositivi', 'mac_nomi') or {} %}
             {% set ng = integration_entities('netgear') %}
             {% set pairs = namespace(l=[]) %}
@@ -126,18 +132,18 @@ template:
             {% set righe = namespace(list=[]) %}
             {% for mac, nome in nomi.items() %}
             {% set e = tmap.get(mac | lower) %}
-            {% set ng_ip = (state_attr(e, 'ip') if e is not none else none) %}
-            {% if ng_ip in [none, '', 'unknown', 'unavailable'] %}
             {% set pref = nome[:3] %}
-            {% if pref.isdigit() %}
-            {% set righe.list = righe.list + [{'nome': nome, 'mac': mac | lower, 'ip': '192.168.1.' ~ (pref | int), 'ssid': 'n/d', 'segnale': none, 'casa': true}] %}
+            {% set ip_conv = '192.168.1.' ~ (pref | int) if pref.isdigit() else 'n/d' %}
+            {% if e is none %}
+            {% set righe.list = righe.list + [{'nome': nome, 'mac': mac | lower, 'ip': ip_conv, 'ssid': 'n/d', 'segnale': none, 'stato': 'ignoto'}] %}
             {% else %}
-            {% set righe.list = righe.list + [{'nome': nome, 'mac': mac | lower, 'ip': 'n/d', 'ssid': 'n/d', 'segnale': none, 'casa': false}] %}
-            {% endif %}
-            {% else %}
+            {% set ng_ip = state_attr(e, 'ip') %}
+            {% set ip = ng_ip if ng_ip not in [none, '', 'unknown', 'unavailable'] else ip_conv %}
             {% set ssid = namespace(v='n/d') %}
             {% set sig = namespace(v=none) %}
-            {% for s in device_entities(device_id(e)) if s in ng and s.startswith('sensor.') %}
+            {% set did = device_id(e) %}
+            {% if did %}
+            {% for s in device_entities(did) if s in ng and s.startswith('sensor.') %}
             {% if s.endswith('_ssid') and states(s) not in ['unknown', 'unavailable'] %}
             {% set ssid.v = states(s) %}
             {% endif %}
@@ -145,10 +151,44 @@ template:
             {% set sig.v = states(s) | float(none) %}
             {% endif %}
             {% endfor %}
-            {% set righe.list = righe.list + [{'nome': nome, 'mac': mac | lower, 'ip': ng_ip, 'ssid': ssid.v, 'segnale': sig.v, 'casa': states(e) == 'home'}] %}
+            {% endif %}
+            {% set righe.list = righe.list + [{'nome': nome, 'mac': mac | lower, 'ip': ip, 'ssid': ssid.v, 'segnale': sig.v, 'stato': 'in_casa' if states(e) == 'home' else 'fuori'}] %}
             {% endif %}
             {% endfor %}
-            {{ (righe.list | selectattr('casa') | sort(attribute='nome') | list) + (righe.list | rejectattr('casa') | sort(attribute='nome') | list) }}
+            {% set a = righe.list | selectattr('stato', 'eq', 'in_casa') | sort(attribute='nome') | list %}
+            {% set b = righe.list | selectattr('stato', 'eq', 'ignoto') | sort(attribute='nome') | list %}
+            {% set c = righe.list | selectattr('stato', 'eq', 'fuori') | sort(attribute='nome') | list %}
+            {{ a + b + c }}
+
+          #--- DISPOSITIVI NON IN WHITELIST ------------------------------------
+          # Solo quelli attualmente 'home': i not_home sono in gran parte MAC
+          # randomizzati di passaggio e genererebbero solo rumore.
+          # Il bit 1 del primo ottetto (locally administered) distingue un MAC
+          # casuale generato dal telefono da un MAC fisico di fabbrica.
+          sconosciuti: >-
+            {% set nomi = state_attr('sensor.wifi_dispositivi', 'mac_nomi') or {} %}
+            {% set maclist = nomi.keys() | map('lower') | list %}
+            {% set ng = integration_entities('netgear') %}
+            {% set out = namespace(l=[]) %}
+            {% for e in ng if e.startswith('device_tracker.') %}
+            {% set m = (state_attr(e, 'mac') or '') | lower %}
+            {% if m and m not in maclist and states(e) == 'home' %}
+            {% set o = m[0:2] | int(0, 16) %}
+            {% set ip = state_attr(e, 'ip') %}
+            {% set out.l = out.l + [{'mac': m, 'ip': ip if ip not in [none, '', 'unknown', 'unavailable'] else 'n/d', 'tipo': 'casuale' if (o // 2) % 2 == 1 else 'fisso', 'entita': e}] %}
+            {% endif %}
+            {% endfor %}
+            {{ out.l | sort(attribute='mac') | list }}
+
+          #--- CONTATORI PER LA TESTATA DELLA PLANCIA --------------------------
+          in_casa: >-
+            {{ (this.attributes.get('righe', []) or []) | selectattr('stato', 'eq', 'in_casa') | list | count }}
+          fuori_casa: >-
+            {{ (this.attributes.get('righe', []) or []) | selectattr('stato', 'eq', 'fuori') | list | count }}
+          ignoti: >-
+            {{ (this.attributes.get('righe', []) or []) | selectattr('stato', 'eq', 'ignoto') | list | count }}
+          non_in_elenco: >-
+            {{ (this.attributes.get('sconosciuti', []) or []) | count }}
 
   #--- TIGO / PANNELLI (TEMPLATE SENSOR) ---
 
