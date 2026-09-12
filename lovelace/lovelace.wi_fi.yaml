@@ -91,20 +91,6 @@ config:
       square: false
       title: Zigbee
       type: grid
-    - content: '### Rete Wi-Fi Casa Ginepro
-
-        In casa **{{ state_attr(''sensor.wifi_tabella'', ''in_casa'') | default(''?'',
-        true) }}** / Fuori **{{ state_attr(''sensor.wifi_tabella'', ''fuori_casa'')
-        | default(''?'', true) }}** / Ignoti **{{ state_attr(''sensor.wifi_tabella'',
-        ''ignoti'') | default(''?'', true) }}** su {{ states(''sensor.wifi_dispositivi'')
-        }} in elenco
-
-        Non in elenco e collegati: **{{ state_attr(''sensor.wifi_tabella'', ''non_in_elenco'')
-        | default(''?'', true) }}**
-
-        Ultimo aggiornamento: **{{ state_attr(''sensor.wifi_tabella'', ''aggiornato'')
-        | default(''mai'', true) }}**'
-      type: markdown
     - entity: input_button.aggiorna_wifi_tabella
       icon: mdi:refresh
       icon_height: 20px
@@ -118,6 +104,51 @@ config:
         target:
           entity_id: input_button.aggiorna_wifi_tabella
       type: button
+    - content: '{% set c = state_attr(''sensor.wifi_tabella'', ''in_casa'') %}{% set
+        f = state_attr(''sensor.wifi_tabella'', ''fuori_casa'') %}{% set g = state_attr(''sensor.wifi_tabella'',
+        ''ignoti'') %}{% set n = state_attr(''sensor.wifi_tabella'', ''non_in_elenco'')
+        %}{% set a = state_attr(''sensor.wifi_tabella'', ''aggiornato'') %}
+
+        ### Rete Wi-Fi Casa Ginepro
+
+
+        In casa **{{ c if c is not none else ''?'' }}** / Fuori **{{ f if f is not
+        none else ''?'' }}** / Ignoti **{{ g if g is not none else ''?'' }}** su {{
+        states(''sensor.wifi_dispositivi'') }} in elenco
+
+
+        Non in elenco e collegati: **{{ n if n is not none else ''?'' }}**
+
+
+        Ultimo aggiornamento: **{{ a if a is not none else ''mai'' }}**'
+      type: markdown
+    - columns:
+      - data: sconosciuti
+        modify: x.mac
+        name: MAC
+      - data: sconosciuti
+        modify: x.ip
+        name: IP
+      - data: sconosciuti
+        modify: "x.tipo === 'casuale' ? '\u25CB casuale' : '\u25CF fisso'"
+        name: Tipo MAC
+      - data: sconosciuti
+        modify: x.entita
+        name: Entita
+      css:
+        table+: 'width: 150%; font-size: 12px;'
+        tbody tr td:nth-child(1)+: 'min-width: 150px; width: 150px;'
+        tbody tr td:nth-child(2)+: 'min-width: 110px; width: 110px;'
+        tbody tr td:nth-child(3)+: 'min-width: 100px; width: 100px;'
+        tbody tr td:nth-child(4)+: 'min-width: 260px; width: 260px; white-space: normal;'
+        th:nth-child(1)+: 'min-width: 150px; width: 150px;'
+        th:nth-child(2)+: 'min-width: 110px; width: 110px;'
+        th:nth-child(3)+: 'min-width: 100px; width: 100px;'
+        th:nth-child(4)+: 'min-width: 260px; width: 260px;'
+      entities:
+        include: sensor.wifi_tabella
+      title: Collegati ma non in elenco
+      type: custom:flex-table-card
     - columns:
       - data: righe
         modify: x.nome
@@ -155,33 +186,6 @@ config:
       entities:
         include: sensor.wifi_tabella
       title: Wi-Fi
-      type: custom:flex-table-card
-    - columns:
-      - data: sconosciuti
-        modify: x.mac
-        name: MAC
-      - data: sconosciuti
-        modify: x.ip
-        name: IP
-      - data: sconosciuti
-        modify: "x.tipo === 'casuale' ? '\u25CB casuale' : '\u25CF fisso'"
-        name: Tipo MAC
-      - data: sconosciuti
-        modify: x.entita
-        name: Entita
-      css:
-        table+: 'width: 150%; font-size: 12px;'
-        tbody tr td:nth-child(1)+: 'min-width: 150px; width: 150px;'
-        tbody tr td:nth-child(2)+: 'min-width: 110px; width: 110px;'
-        tbody tr td:nth-child(3)+: 'min-width: 100px; width: 100px;'
-        tbody tr td:nth-child(4)+: 'min-width: 260px; width: 260px; white-space: normal;'
-        th:nth-child(1)+: 'min-width: 150px; width: 150px;'
-        th:nth-child(2)+: 'min-width: 110px; width: 110px;'
-        th:nth-child(3)+: 'min-width: 100px; width: 100px;'
-        th:nth-child(4)+: 'min-width: 260px; width: 260px;'
-      entities:
-        include: sensor.wifi_tabella
-      title: Collegati ma non in elenco
       type: custom:flex-table-card
     icon: mdi:wifi
     path: wifi

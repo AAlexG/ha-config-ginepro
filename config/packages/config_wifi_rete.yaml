@@ -1,4 +1,4 @@
-# config_wifi_rete_7.yaml
+# config_wifi_rete_10.yaml
 # Package Casa Ginepro - Rete WiFi: whitelist MAC e tabella dispositivi
 # Estratto da configuration_186.yaml. Nome file = nome del package.
 
@@ -83,6 +83,31 @@ template:
               'd0:12:55:ee:e9:95': '192 camera barbecue',
               '5c:c3:36:4d:19:67': '193 camera cucina Reolink'
             } }}
+          #--- MAC SENZA TRACKER NETGEAR -> BINARY_SENSOR DELL'INTEGRAZIONE PING
+          # Solo per i dispositivi che l'Orbi non vede (cablati, attaccati al
+          # NeXXt, o l'Orbi stesso). Aggiungendo una voce qui, aggiungerla anche
+          # ai trigger di sensor.wifi_tabella piu' sotto.
+          mac_ping: >-
+            {{ {
+              '14:59:c0:51:55:3f': 'binary_sensor.192_168_1_2',
+              '22:7a:a4:df:b7:d7': 'binary_sensor.192_168_1_14',
+              '44:a5:6e:48:69:d8': 'binary_sensor.192_168_1_15',
+              '38:94:ed:0c:78:df': 'binary_sensor.192_168_1_16',
+              'a0:40:a0:5e:40:d2': 'binary_sensor.192_168_1_17',
+              '9a:da:c4:ad:e1:ad': 'binary_sensor.192_168_1_36',
+              '70:89:76:fd:4c:18': 'binary_sensor.192_168_1_54',
+              '40:ca:63:39:6c:12': 'binary_sensor.192_168_1_60',
+              'd0:27:04:c3:db:32': 'binary_sensor.192_168_1_62',
+              '00:33:7a:cc:0b:ff': 'binary_sensor.192_168_1_64',
+              '50:8a:06:5c:04:72': 'binary_sensor.192_168_1_69',
+              '6c:3c:7c:c5:88:51': 'binary_sensor.192_168_1_72',
+              'd8:1f:12:93:61:65': 'binary_sensor.192_168_1_73',
+              'f8:6d:cc:3d:26:d4': 'binary_sensor.192_168_1_74',
+              '48:9d:ff:04:a3:ed': 'binary_sensor.192_168_1_75',
+              '94:b3:f7:dc:30:13': 'binary_sensor.192_168_1_182',
+              'bc:fd:0c:dc:56:04': 'binary_sensor.192_168_1_183',
+              '5c:c3:36:4d:19:67': 'binary_sensor.192_168_1_193'
+            } }}
 
   #--- WIFI: TABELLA DINAMICA PER PLANCIA (righe da tracker Netgear) ---
   # Sensore TRIGGER-BASED: il template usa integration_entities()/device_id()/
@@ -93,6 +118,29 @@ template:
   - trigger:
       - platform: state
         entity_id: input_button.aggiorna_wifi_tabella
+      - platform: state
+        entity_id:
+          - binary_sensor.192_168_1_2
+          - binary_sensor.192_168_1_14
+          - binary_sensor.192_168_1_15
+          - binary_sensor.192_168_1_16
+          - binary_sensor.192_168_1_17
+          - binary_sensor.192_168_1_36
+          - binary_sensor.192_168_1_54
+          - binary_sensor.192_168_1_60
+          - binary_sensor.192_168_1_62
+          - binary_sensor.192_168_1_64
+          - binary_sensor.192_168_1_69
+          - binary_sensor.192_168_1_72
+          - binary_sensor.192_168_1_73
+          - binary_sensor.192_168_1_74
+          - binary_sensor.192_168_1_75
+          - binary_sensor.192_168_1_182
+          - binary_sensor.192_168_1_183
+          - binary_sensor.192_168_1_193
+        to:
+          - "on"
+          - "off"
     sensor:
       - name: "WiFi Tabella"
         unique_id: wifi_tabella
@@ -112,16 +160,29 @@ template:
           aggiornato: "{{ now().strftime('%d/%m/%Y %H:%M:%S') }}"
 
           #--- RIGHE WHITELIST -------------------------------------------------
-          # Ogni MAC della whitelist produce sempre una riga. Lo stato di
-          # presenza e' SEMPRE quello reale del tracker Netgear: mai dedotto.
-          #   in_casa -> tracker presente e 'home'
-          #   fuori   -> tracker presente e non 'home'
-          #   ignoto  -> nessun tracker Netgear per quel MAC: HA non sa nulla
+          # Ogni MAC della whitelist produce sempre una riga. Lo stato non e'
+          # mai dedotto: viene dalla fonte piu' affidabile disponibile, in
+          # quest'ordine.
+          #   1. Ping    -> misura diretta: l'IP risponde o no. Ha la priorita'.
+          #   2. Netgear -> il tracker dice 'home': il dispositivo e' associato.
+          #   3. Netgear -> non 'home' MA con attributo 'ip' valorizzato:
+          #                 l'Orbi ha una voce attiva per quel MAC e lo dichiara
+          #                 scollegato. Questo e' un 'fuori' attendibile.
+          #   4. Nessuna fonte -> 'ignoto'. Rientra qui il caso in cui il
+          #      tracker Netgear esiste, dice 'not_home' e NON ha l'attributo
+          #      'ip': l'Orbi conosce il MAC ma non ha alcuna voce attiva.
+          #      Verificato sull'OTGW 11/09/2026: tracker not_home e privo di
+          #      'ip', ma la sua web UI su 192.168.1.36 risponde. Sono i
+          #      dispositivi che non sono client dell'Orbi (dietro RE650, sul
+          #      Wi-Fi del NeXXt, o cablati): l'Orbi non sa, non nega.
+          # L'IP resta ricavabile dalla convenzione di nomenclatura: e' un dato
+          # di configurazione statica, non una misura.
           # L'IP invece puo' essere ricavato dalla convenzione di nomenclatura
           # (3 cifre iniziali = ultimo ottetto), perche' e' un dato di
           # configurazione statica, non una misura.
           righe: >-
             {% set nomi = state_attr('sensor.wifi_dispositivi', 'mac_nomi') or {} %}
+            {% set pingmap = state_attr('sensor.wifi_dispositivi', 'mac_ping') or {} %}
             {% set ng = integration_entities('netgear') %}
             {% set pairs = namespace(l=[]) %}
             {% for e in ng if e.startswith('device_tracker.') %}
@@ -134,26 +195,34 @@ template:
             {% set e = tmap.get(mac | lower) %}
             {% set pref = nome[:3] %}
             {% set ip_conv = '192.168.1.' ~ (pref | int) if pref.isdigit() else 'n/d' %}
-            {% if e is none %}
-            {% set righe.list = righe.list + [{'nome': nome, 'mac': mac | lower, 'ip': ip_conv, 'ssid': 'n/d', 'segnale': none, 'stato': 'ignoto'}] %}
+            {% set ng_ip = state_attr(e, 'ip') if e is not none else none %}
+            {% set ip_ok = ng_ip not in [none, '', 'unknown', 'unavailable'] %}
+            {% set p = pingmap.get(mac | lower) %}
+            {% if p and states(p) in ['on', 'off'] %}
+            {% set stato = 'in_casa' if states(p) == 'on' else 'fuori' %}
+            {% elif e is none %}
+            {% set stato = 'ignoto' %}
+            {% elif states(e) == 'home' %}
+            {% set stato = 'in_casa' %}
+            {% elif ip_ok %}
+            {% set stato = 'fuori' %}
             {% else %}
-            {% set ng_ip = state_attr(e, 'ip') %}
-            {% set ip = ng_ip if ng_ip not in [none, '', 'unknown', 'unavailable'] else ip_conv %}
+            {% set stato = 'ignoto' %}
+            {% endif %}
             {% set ssid = namespace(v='n/d') %}
             {% set sig = namespace(v=none) %}
-            {% set did = device_id(e) %}
+            {% set did = device_id(e) if e is not none else none %}
             {% if did %}
-            {% for s in device_entities(did) if s in ng and s.startswith('sensor.') %}
-            {% if s.endswith('_ssid') and states(s) not in ['unknown', 'unavailable'] %}
-            {% set ssid.v = states(s) %}
+            {% for x in device_entities(did) if x in ng and x.startswith('sensor.') %}
+            {% if x.endswith('_ssid') and states(x) not in ['unknown', 'unavailable'] %}
+            {% set ssid.v = states(x) %}
             {% endif %}
-            {% if ('segnale' in s or 'signal_strength' in s) and states(s) not in ['unknown', 'unavailable'] %}
-            {% set sig.v = states(s) | float(none) %}
+            {% if ('segnale' in x or 'signal_strength' in x) and states(x) not in ['unknown', 'unavailable'] %}
+            {% set sig.v = states(x) | float(none) %}
             {% endif %}
             {% endfor %}
             {% endif %}
-            {% set righe.list = righe.list + [{'nome': nome, 'mac': mac | lower, 'ip': ip, 'ssid': ssid.v, 'segnale': sig.v, 'stato': 'in_casa' if states(e) == 'home' else 'fuori'}] %}
-            {% endif %}
+            {% set righe.list = righe.list + [{'nome': nome, 'mac': mac | lower, 'ip': ng_ip if ip_ok else ip_conv, 'ssid': ssid.v, 'segnale': sig.v, 'stato': stato}] %}
             {% endfor %}
             {% set a = righe.list | selectattr('stato', 'eq', 'in_casa') | sort(attribute='nome') | list %}
             {% set b = righe.list | selectattr('stato', 'eq', 'ignoto') | sort(attribute='nome') | list %}

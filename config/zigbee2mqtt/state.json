@@ -4,14 +4,14 @@
         "voltage": 3000,
         "contact": false,
         "battery_low": false,
-        "linkquality": 124
+        "linkquality": 112
     },
     "0xa4c1380697d6ffff": {
         "battery": 100,
         "voltage": 3100,
         "contact": true,
         "battery_low": false,
-        "linkquality": 76
+        "linkquality": 100
     },
     "0xa4c138f820e17e6e": {
         "voltage": 2800,
@@ -19,14 +19,14 @@
         "contact": false,
         "tamper": false,
         "battery_low": false,
-        "linkquality": 124
+        "linkquality": 164
     },
     "0xa4c138e6a0d06219": {
         "voltage": 2500,
         "battery": 50,
-        "temperature": 24.57,
-        "humidity": 56.54,
-        "linkquality": 116
+        "temperature": 24.24,
+        "humidity": 52.58,
+        "linkquality": 144
     },
     "0xa4c1385040d042fb": {
         "energy": 1.15,
@@ -35,10 +35,10 @@
         "power_outage_memory": "restore",
         "indicator_mode": "off/on",
         "child_lock": "UNLOCK",
-        "voltage": 225.4,
+        "voltage": 224.3,
         "power": 0,
         "current": 0,
-        "linkquality": 128
+        "linkquality": 100
     },
     "0xa4c1383e0fd87686": {
         "state": "OFF",
@@ -47,8 +47,8 @@
         "power_outage_memory": "restore",
         "indicator_mode": "off/on",
         "child_lock": "UNLOCK",
-        "voltage": 225.1,
-        "linkquality": 136,
+        "voltage": 225.5,
+        "linkquality": 76,
         "power": 0,
         "current": 0
     },
@@ -59,7 +59,7 @@
         "power_outage_memory": "restore",
         "indicator_mode": "off/on",
         "child_lock": "UNLOCK",
-        "voltage": 225,
+        "voltage": 225.5,
         "power": 0,
         "current": 0,
         "update": {
@@ -69,7 +69,7 @@
             "latest_source": null,
             "latest_release_notes": null
         },
-        "linkquality": 132
+        "linkquality": 192
     },
     "0x0c4314fffe52b0c2": {
         "state": "ON",
@@ -78,16 +78,16 @@
         "indicator_mode": "off/on",
         "power": 3,
         "current": 0.03,
-        "voltage": 227,
-        "energy": 0.67,
-        "linkquality": 76,
+        "voltage": 226,
+        "energy": 0.69,
+        "linkquality": 112,
         "child_lock": "UNLOCK"
     },
     "0xa4c1380eff54ffff": {
         "battery": 100,
-        "temperature": 24.7,
+        "temperature": 25.2,
         "voltage": 2900,
-        "humidity": 61.2,
+        "humidity": 57.9,
         "temperature_sensor_select": "internal",
         "comfort_temperature_min": 19,
         "comfort_temperature_max": 35.2,
@@ -96,7 +96,7 @@
         "temperature_units": "celsius",
         "temperature_calibration": 0,
         "humidity_calibration": 0,
-        "linkquality": 248,
+        "linkquality": 232,
         "update": {
             "state": "idle",
             "installed_version": 4100,
@@ -108,8 +108,8 @@
     "0xa4c1380f0678ffff": {
         "battery": 100,
         "voltage": 3200,
-        "temperature": 25.7,
-        "humidity": 71.4,
+        "temperature": 25.5,
+        "humidity": 65.1,
         "temperature_sensor_select": "internal",
         "comfort_temperature_min": 19,
         "comfort_temperature_max": 27,
@@ -121,19 +121,19 @@
         "update": {
             "state": "available",
             "installed_version": 4098,
-            "latest_version": 4100,
-            "latest_source": "https://raw.githubusercontent.com/Koenkk/zigbee-OTA/master/images/Sonoff/snzb-02dr2_v1.0.4.ota",
-            "latest_release_notes": null
+            "latest_version": 4101,
+            "latest_source": "https://raw.githubusercontent.com/Koenkk/zigbee-OTA/master/images/Sonoff/SN-TLSR8656-02DR2-01-v1.0.5.ota",
+            "latest_release_notes": "Home Assistant and eWeLink ecosystem gateways now support two remote temperature and humidity data sources.\n\nFixed several known issues to improve system stability."
         },
-        "linkquality": 116
+        "linkquality": 108
     },
     "0xa4c1389b51ea7546": {
-        "contact": true,
+        "contact": false,
         "tamper": false,
         "battery_low": false,
         "voltage": 3200,
         "battery": 100,
-        "linkquality": 44
+        "linkquality": 104
     },
     "0xa4c138013ef60318": {
         "voltage": 3100,
@@ -141,6 +141,6 @@
         "contact": false,
         "tamper": false,
         "battery_low": false,
-        "linkquality": 76
+        "linkquality": 44
     }
 }
