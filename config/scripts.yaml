@@ -1,4 +1,4 @@
-# scripts_53.yaml
+# scripts_54.yaml
 
 #==================================================================================
 # SCRIPT: APRI CANCELLO CASA
@@ -25,18 +25,6 @@ apri_grande_cancello:
     - action: button.press
       target:
         entity_id: button.10007c3b31_1
-    - if:
-        - condition: state
-          entity_id: input_boolean.grande_cancello_status_helper
-          state: "off"
-      then:
-        - action: input_boolean.turn_on
-          target:
-            entity_id: input_boolean.grande_cancello_status_helper
-      else:
-        - action: input_boolean.turn_off
-          target:
-            entity_id: input_boolean.grande_cancello_status_helper
     - if:
         - condition: template
           value_template: "{{ states('binary_sensor.persiana_box_sensore_zigbee_contact') != 'off' }}"
@@ -65,18 +53,6 @@ apri_box_combo:
     - action: button.press
       target:
         entity_id: button.10007c3b31_1
-    - if:
-        - condition: state
-          entity_id: input_boolean.grande_cancello_status_helper
-          state: "off"
-      then:
-        - action: input_boolean.turn_on
-          target:
-            entity_id: input_boolean.grande_cancello_status_helper
-      else:
-        - action: input_boolean.turn_off
-          target:
-            entity_id: input_boolean.grande_cancello_status_helper
     - if:
         - condition: template
           value_template: "{{ states('binary_sensor.persiana_box_sensore_zigbee_contact') != 'off' }}"

@@ -1,6 +1,18 @@
 config:
   views:
-  - badges: []
+  - badges:
+    - entity: sensor.nexxt_one_velocita_di_scaricamento
+      name: "Velocit\xE0 download Nexxt"
+      show_icon: true
+      show_name: true
+      show_state: true
+      type: entity
+    - entity: sensor.nexxt_one_velocita_di_caricamento
+      name: "Velocit\xE0 upload Nexxt"
+      show_icon: true
+      show_name: true
+      show_state: true
+      type: entity
     cards:
     - cards:
       - entity: sensor.0xa4c1383e0fd87686_linkquality

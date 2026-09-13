@@ -58,6 +58,8 @@ config:
           name: Georgi
         - entity: sensor.termometro_tania_zigbee_temperature
           name: Tania
+        - entity: sensor.termometro_cantina_zigbee_temperature
+          name: Cantina
         - entity: sensor.hp1000se_pro_pro_v1_6_4_outdoor_temperature
           name: Esterna
         - entity: sensor.hp1000se_pro_pro_v1_6_4_indoor_humidity
@@ -66,6 +68,8 @@ config:
           name: Georgi
         - entity: sensor.termometro_tania_zigbee_humidity
           name: Tania
+        - entity: sensor.termometro_cantina_zigbee_humidity
+          name: Cantina
         - entity: sensor.hp1000se_pro_pro_v1_6_4_humidity
           name: Esterna
         grid_options:
