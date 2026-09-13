@@ -1,4 +1,4 @@
-# config_deumidificatori_4.yaml
+# config_deumidificatori_5.yaml
 # Package Casa Ginepro - Deumidificatori cantina e armadio
 # Estratto da configuration_186.yaml. Nome file = nome del package.
 
@@ -13,13 +13,32 @@ template:
       - trigger: homeassistant
         event: start
     sensor:
-      # Il contatore Sonoff _energy_day resta congelato sul valore finale del
-      # giorno precedente dalla mezzanotte fino alle 07:00-09:00, poi riprende
-      # ad aggiornarsi gia' azzerato. HA legge quel residuo come nuova crescita
-      # e gonfia la statistica 'change' (27/08: 4,81 kWh invece di 0,83).
-      # Soluzione: azzerare fino alle 10:00. Poiche' il contatore e' cumulativo
-      # sulla giornata, il valore letto dopo le 10:00 comprende gia' le ore
-      # notturne: azzerare in mattinata non perde nulla sul totale del giorno.
+      # CAUSA MISURATA DEL GONFIAGGIO DELLE STATISTICHE
+      # Il contatore Sonoff _energy_day non e' monotono: scende piu' volte al
+      # giorno e risale al valore pieno. Ogni discesa viene letta da HA come
+      # reset di un total_increasing e il valore successivo viene riaddizionato
+      # per intero al 'sum'. Misura sul DB, 01-12/09/2026:
+      #   consumo_deumidificatore_cantina_oggi     change 75,74 kWh
+      #   somma dei massimi giornalieri (reale)            15,74 kWh
+      #   box_deumidificatore_cantina_sonoff_energy_day
+      #                                            change 84,73 kWh
+      #   somma dei massimi giornalieri (reale)            18,32 kWh
+      # Firma tipica: 02/09 ore 17:00 delta sum 8,19 kWh con state max 2,03;
+      # alle 18:00 delta 2,07 esattamente pari al massimo del giorno.
+      # L'azzeramento fino alle 10:00 della versione precedente correggeva
+      # solo il residuo notturno del 27/08: non bastava, il gonfiaggio grosso
+      # avviene nel pomeriggio.
+      #
+      # Soluzione: massimo progressivo. Il contatore e' cumulativo sulla
+      # giornata, quindi il massimo visto durante la giornata E' il consumo
+      # del giorno, e il massimo e' immune alle discese spurie.
+      # 'this' e' la variabile di autoriferimento documentata in
+      # https://www.home-assistant.io/integrations/template/#self-referencing
+      # Lo stato dei sensori template con trigger viene ripristinato al
+      # riavvio, quindi il massimo progressivo sopravvive ai restart.
+      # L'azzeramento fino alle 10:00 resta necessario: dalla mezzanotte fino
+      # alle 07:00-09:00 il contatore Sonoff e' congelato sul valore finale
+      # del giorno prima, e il massimo progressivo lo ricatturerebbe subito.
       - name: "Consumo Deumidificatore Cantina Oggi"
         unique_id: "consumo_deumidificatore_cantina_oggi"
         unit_of_measurement: "kWh"
@@ -32,15 +51,18 @@ template:
           {% if now().hour < 10 %}
             0
           {% else %}
-            {{ states('sensor.box_deumidificatore_cantina_sonoff_energy_day')
-               | float(0) | round(3) }}
+            {% set src = states('sensor.box_deumidificatore_cantina_sonoff_energy_day')
+                         | float(0) %}
+            {% set prec = this.state | float(0) %}
+            {{ [src, prec] | max | round(3) }}
           {% endif %}
 
-      # Nessun blocco monotono sulla somma: quello precedente congelava il
-      # totale finche' non veniva superato, inghiottendo anche gli incrementi
-      # dell'armadio (322 campioni non monotoni su 927). La regola della
-      # cantina e' ripetuta qui inline per non dipendere dall'ordine di
-      # valutazione dei sensori dentro lo stesso blocco template.
+      # Stessa protezione sull'aggregato. Prima delle 10:00 il valore e' il
+      # solo armadio e NON passa dal massimo progressivo: l'utility_meter
+      # dell'armadio si azzera a mezzanotte e quello e' un reset legittimo,
+      # uno solo al giorno. Dalle 10:00 in poi armadio + cantina con massimo
+      # progressivo. La regola della cantina e' ripetuta inline per non
+      # dipendere dall'ordine di valutazione dentro lo stesso blocco.
       - name: "Consumo Deumidificatori Oggi"
         unique_id: "consumo_deumidificatori_oggi"
         unit_of_measurement: "kWh"
@@ -51,9 +73,15 @@ template:
           {{ has_value('sensor.deumidificatore_armadio_oggi')
              and has_value('sensor.box_deumidificatore_cantina_sonoff_energy_day') }}
         state: >-
-          {% set cantina = 0 if now().hour < 10 else
-                 states('sensor.box_deumidificatore_cantina_sonoff_energy_day') | float(0) %}
-          {{ (states('sensor.deumidificatore_armadio_oggi') | float(0) + cantina) | round(3) }}
+          {% set armadio = states('sensor.deumidificatore_armadio_oggi') | float(0) %}
+          {% if now().hour < 10 %}
+            {{ armadio | round(3) }}
+          {% else %}
+            {% set cantina = states('sensor.box_deumidificatore_cantina_sonoff_energy_day')
+                             | float(0) %}
+            {% set prec = this.state | float(0) %}
+            {{ [armadio + cantina, prec] | max | round(3) }}
+          {% endif %}
 
 utility_meter:
 

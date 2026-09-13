@@ -1,17 +1,24 @@
 {
- "conteggi": {
-  "2026-08": {
-   "cottons": 2,
-   "sportswear": 2
+ "cicli": [
+  {
+   "ts": 1788592594.4444451,
+   "data": "2026-09-05 09:16:34",
+   "programma": "express_20"
   },
-  "2026-09": {
-   "cottons": 2,
-   "down_filled_items": 1,
-   "eco_40_60": 1,
-   "express_20": 1,
-   "outerwear": 1,
-   "sportswear": 3
+  {
+   "ts": 1788597956.8759713,
+   "data": "2026-09-05 10:45:56",
+   "programma": "sportswear"
+  },
+  {
+   "ts": 1789049757.1339712,
+   "data": "2026-09-10 16:15:57",
+   "programma": "eco_40_60"
+  },
+  {
+   "ts": 1789198665.202521,
+   "data": "2026-09-12 09:37:45",
+   "programma": "outerwear"
   }
- },
- "ultimo_ts": 1789049757.1339712
+ ]
 }

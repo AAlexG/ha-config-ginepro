@@ -594,7 +594,7 @@ config:
           rows: auto
         period: day
         stat_types:
-        - state
+        - change
         type: statistics-graph
       - heading: Sauna kWh/gg
         heading_style: subtitle

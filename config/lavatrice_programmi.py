@@ -1,50 +1,64 @@
 #!/usr/bin/env python3
-# lavatrice_programmi_3.py
+# lavatrice_programmi_4.py
 # Conta i cicli di lavaggio della Miele WCI870 per programma e per mese.
 #
 # PERCHE' ESISTE
 # sensor.lavatricemielewci870_programma e' testuale: non genera statistiche a
 # lungo termine e la tabella states viene ripulita dopo 7 giorni
 # (recorder purge_keep_days: 7). Senza un accumulo esterno lo storico dei
-# programmi sparisce. Questo script legge il DB, conta i cicli conclusi e li
-# somma in un file JSON cumulativo che non dipende piu' dal recorder.
+# programmi sparisce. Questo script legge il DB, registra i cicli conclusi e
+# ne ricava la tabella mensile.
+#
+# COSA E' CAMBIATO IN v4 (dopo un totale sceso da 15 a 14)
+# Le v1-v3 tenevano in archivio solo i totali e li incrementavano. Due difetti:
+#   - nessun lock: due esecuzioni sovrapposte leggevano lo stesso archivio,
+#     incrementavano entrambe e l'ultima a scrivere cancellava l'incremento
+#     dell'altra. Un lavaggio perso, senza nessuna traccia.
+#   - archivio illeggibile trattato come archivio vuoto: lo script ripartiva
+#     da zero in silenzio, sovrascrivendo la storia con i soli cicli ancora
+#     presenti nel recorder.
+# Ora l'archivio e' un REGISTRO DEI SINGOLI CICLI (data, ora, programma) e i
+# totali vengono RICALCOLATI dal registro a ogni esecuzione. Un totale
+# derivato non puo' scendere per una scrittura andata male, ogni numero e'
+# verificabile riga per riga, e un ciclo identificato dal suo timestamp non
+# puo' essere registrato due volte nemmeno a esecuzioni sovrapposte.
 #
 # COME CONTA I CICLI
 # Un ciclo = una transizione a "program_ended" di sensor.lavatricemielewci870.
-# Verificato sui dati reali (01-05/09/2026): 6 cicli, 6 program_ended, nessun
-# falso positivo. I rimbalzi off/on di pochi secondi che il sensore programma
-# produce a inizio ciclo NON generano program_ended, quindi non serve nessuna
-# soglia anti-rimbalzo.
+# Verificato sui dati reali: ogni program_ended nel DB ha "in_use" prima e
+# "off" dopo. Le disconnessioni della lavatrice (not_connected) avvengono a
+# macchina spenta e non generano falsi cicli.
 #
 # ETICHETTA DEL PROGRAMMA
-# Al momento del program_ended il sensore programma vale ancora il programma
-# usato: passa a no_program solo all'apertura dello sportello, minuti dopo.
-# Se comunque risultasse no_program/unknown/unavailable, si risale all'ultimo
-# valore valido entro le 24 ore precedenti. Se non c'e' nulla: "sconosciuto".
-#
-# INCREMENTALITA'
-# Nel JSON cumulativo viene salvato il timestamp dell'ultimo ciclo conteggiato.
-# Le esecuzioni successive elaborano solo i cicli piu' recenti: rilanciare lo
-# script dieci volte di fila non produce doppi conteggi.
+# Si cerca l'ultimo valore valido del sensore programma DENTRO il ciclo, cioe'
+# tra l'inizio del ciclo e il program_ended. Se non si trova nulla si allarga
+# la ricerca fino al ciclo concluso precedente, mai oltre: cosi' non e'
+# possibile attribuire a un lavaggio il programma di quello prima. Se non c'e'
+# nessun valore utile: "sconosciuto", che e' un'informazione, non un errore.
 #
 # OUTPUT
-#   /config/lavatrice_programmi.json  -> archivio cumulativo (scritto qui)
-#   stdout                            -> tabella pronta per il sensore
-#                                        command_line (redirezione nello
-#                                        shell_command)
+#   /config/lavatrice_programmi.json  -> registro dei cicli (scritto qui)
+#   stdout                            -> tabella per il sensore command_line
 
-import sqlite3, json, os, sys, datetime
+import sqlite3, json, os, sys, fcntl, datetime
 
 DB    = "/config/home-assistant_v2.db"
 STORE = "/config/lavatrice_programmi.json"
+LOCK  = "/config/lavatrice_programmi.lock"
 
 STATO = "sensor.lavatricemielewci870"
 PROG  = "sensor.lavatricemielewci870_programma"
 
-MESI_TABELLA  = 12          # colonne mostrate nella plancia
-FINESTRA_PROG = 24 * 3600   # quanto indietro cercare l'etichetta programma
+MESI_TABELLA = 12   # colonne mostrate nella plancia
 
-IGNORA = {"no_program", "unknown", "unavailable", "none", ""}
+# Stati che fanno parte di un ciclo in corso: risalendo da program_ended,
+# l'inizio del ciclo e' il primo stato che NON e' in questo insieme.
+IN_CICLO = {"in_use", "programmed", "on", "pause", "waiting_to_start",
+            "rinse_hold", "not_connected", "unavailable", "unknown"}
+
+# not_connected incluso: nelle v1-v3 mancava e poteva essere preso per un
+# nome di programma.
+IGNORA = {"no_program", "not_connected", "unknown", "unavailable", "none", ""}
 
 # Nomi dei programmi presi dal libretto d'uso ufficiale italiano della
 # WCI870 WCS (Miele M.-Nr. 11 362 430, cap. "Elenco programmi", pag. 43-49).
@@ -52,8 +66,7 @@ IGNORA = {"no_program", "unknown", "unavailable", "none", ""}
 # libretto: tutte le altre restano in inglese, come arrivano dall'API Miele.
 # Meglio una riga con scritto "powerfresh" che un nome inventato.
 #
-# Tre chiavi risolte con l'aiuto di Alex, che ha riconosciuto i due cicli
-# di settembre (v3):
+# Tre chiavi risolte con l'aiuto di Alex, che ha riconosciuto i cicli:
 #   down_filled_items -> Piumoni. Il libretto descrive Piumoni come
 #     "Giacche, sacchi a pelo, cuscini e altri capi con imbottitura in
 #     piuma": e' la traduzione esatta di "down filled items".
@@ -64,8 +77,7 @@ IGNORA = {"no_program", "unknown", "unavailable", "none", ""}
 #     libretto ha un solo programma per l'esterno, "Capi outdoor", che pero'
 #     corrisponde alla chiave outdoor_garments. Non verificato.
 #
-# Cambiare un nome qui NON altera i conteggi: nell'archivio
-# /config/lavatrice_programmi.json resta sempre la chiave Miele.
+# Cambiare un nome qui NON altera il registro: nel JSON resta la chiave Miele.
 NOMI = {
     "cottons":               "Cotone",
     "cottons_eco":           "Cotone eco",
@@ -98,24 +110,44 @@ NOMI = {
 }
 
 
-
-def carica_store():
+def prendi_lock():
+    # Se un'altra istanza sta girando questa esce senza scrivere niente.
+    # Il file resta aperto per tutta la durata del processo.
+    f = open(LOCK, "w")
     try:
-        with open(STORE, encoding="utf-8") as f:
-            d = json.load(f)
-        return float(d.get("ultimo_ts", 0)), d.get("conteggi", {})
-    except (FileNotFoundError, ValueError, TypeError):
-        return 0.0, {}
+        fcntl.flock(f, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except OSError:
+        print("Un'altra esecuzione e' in corso: esco senza scrivere.",
+              file=sys.stderr)
+        sys.exit(0)
+    return f
 
 
-def salva_store(ultimo_ts, conteggi):
-    # Scrittura atomica: un'interruzione a meta' non puo' corrompere
-    # l'archivio, che a quel punto sarebbe irrecuperabile.
+def carica_registro():
+    # File assente = primo avvio, si parte da registro vuoto.
+    # File presente ma illeggibile o di formato sbagliato = ERRORE: si esce
+    # senza scrivere. Mai ripartire da zero in silenzio.
+    if not os.path.exists(STORE):
+        return []
+    with open(STORE, encoding="utf-8") as f:
+        d = json.load(f)          # un JSON rotto solleva e interrompe tutto
+    if not isinstance(d, dict) or "cicli" not in d:
+        raise ValueError(
+            f"{STORE} non e' un registro cicli (formato vecchio v1-v3). "
+            "Rinominarlo o eliminarlo per ricominciare.")
+    if not isinstance(d["cicli"], list):
+        raise ValueError(f"{STORE}: la chiave 'cicli' non e' una lista.")
+    return d["cicli"]
+
+
+def salva_registro(cicli):
+    cicli = sorted(cicli, key=lambda c: c["ts"])
     tmp = STORE + ".tmp"
     with open(tmp, "w", encoding="utf-8") as f:
-        json.dump({"ultimo_ts": ultimo_ts, "conteggi": conteggi},
-                  f, ensure_ascii=False, indent=1, sort_keys=True)
-    os.replace(tmp, STORE)
+        json.dump({"cicli": cicli}, f, ensure_ascii=False, indent=1)
+        f.flush()
+        os.fsync(f.fileno())
+    os.replace(tmp, STORE)        # sostituzione atomica
 
 
 def storia(cur, entity_id):
@@ -137,16 +169,24 @@ def storia(cur, entity_id):
     return out
 
 
-def etichetta(prog_hist, ts):
+def inizio_ciclo(st_hist, i):
+    # Risale dal program_ended in posizione i fino al primo stato che non fa
+    # parte del ciclo (tipicamente "off"), e ritorna il ts del primo stato
+    # appartenente al ciclo.
+    j = i
+    while j > 0 and st_hist[j - 1][1] in IN_CICLO:
+        j -= 1
+    return st_hist[j][0]
+
+
+def etichetta(pr_hist, da_ts, a_ts):
     scelto = None
-    for pts, pst in prog_hist:
-        if pts > ts:
+    for pts, pst in pr_hist:
+        if pts > a_ts:
             break
-        if pst in IGNORA:
-            continue
-        if ts - pts <= FINESTRA_PROG:
+        if pts >= da_ts and pst not in IGNORA:
             scelto = pst
-    return scelto or "sconosciuto"
+    return scelto
 
 
 def elenco_mesi(n):
@@ -162,7 +202,9 @@ def elenco_mesi(n):
 
 
 def main():
-    ultimo, conteggi = carica_store()
+    lock = prendi_lock()
+    cicli = carica_registro()
+    noti = {int(c["ts"]) for c in cicli}   # il secondo intero identifica il ciclo
 
     con = sqlite3.connect(f"file:{DB}?mode=ro", uri=True)
     cur = con.cursor()
@@ -170,20 +212,39 @@ def main():
     pr_hist = storia(cur, PROG)
     con.close()
 
-    nuovo_ultimo = ultimo
-    for ts, st in st_hist:
-        if st != "program_ended" or ts <= ultimo:
+    fine_precedente = 0.0
+    nuovi = 0
+    for i, (ts, st) in enumerate(st_hist):
+        if st != "program_ended":
             continue
-        prog = etichetta(pr_hist, ts)
-        mese = datetime.datetime.fromtimestamp(ts).strftime("%Y-%m")
+        if int(ts) not in noti:
+            avvio = inizio_ciclo(st_hist, i)
+            prog = etichetta(pr_hist, avvio, ts)
+            if prog is None:
+                # Niente dentro il ciclo: si allarga fino al ciclo concluso
+                # precedente, mai oltre.
+                prog = etichetta(pr_hist, fine_precedente, ts) or "sconosciuto"
+            cicli.append({
+                "ts": ts,
+                "data": datetime.datetime.fromtimestamp(ts)
+                                         .strftime("%Y-%m-%d %H:%M:%S"),
+                "programma": prog,
+            })
+            noti.add(int(ts))
+            nuovi += 1
+        fine_precedente = ts
+
+    if nuovi:
+        salva_registro(cicli)
+        print(f"Registrati {nuovi} nuovi cicli.", file=sys.stderr)
+
+    # --- tabella ricalcolata dal registro, non incrementata ---
+    conteggi = {}
+    for c in cicli:
+        mese = c["data"][:7]
         conteggi.setdefault(mese, {})
-        conteggi[mese][prog] = conteggi[mese].get(prog, 0) + 1
-        if ts > nuovo_ultimo:
-            nuovo_ultimo = ts
+        conteggi[mese][c["programma"]] = conteggi[mese].get(c["programma"], 0) + 1
 
-    salva_store(nuovo_ultimo, conteggi)
-
-    # --- tabella per la plancia ---
     mesi = elenco_mesi(MESI_TABELLA)
 
     programmi = set()
@@ -215,6 +276,7 @@ def main():
 
     print(json.dumps({"mesi": etichette, "righe": righe, "totali": totali},
                      ensure_ascii=False))
+    lock.close()
 
 
 if __name__ == "__main__":
