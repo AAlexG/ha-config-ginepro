@@ -10,13 +10,15 @@ from datetime import timedelta
 
 from homeassistant.core_config import Config
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from homeassistant.const import EVENT_HOMEASSISTANT_STOP
 
-from .client import Stat, NetgearClient
+from .client import NetgearClient, Stat, WirelessClient
+from .client_names import normalize_mac, useful_name
 from .client_wax import NetgearWaxClient, DeviceState, Ssid
 
 from .const import (
@@ -25,6 +27,9 @@ from .const import (
     CONF_USERNAME,
     CONF_ADDRESS,
     DOMAIN,
+    DATA_LOGBOOK_READY,
+    EVENT_CLIENT_ACTIVITY,
+    EVENT_LOGBOOK_READY,
     PLATFORMS,
     STARTUP_MESSAGE, CONF_MAC,
 )
@@ -55,7 +60,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
     port = int(entry.data.get(CONF_PORT))
     mac = entry.data.get(CONF_MAC)
 
-    coordinator = NetgearDataUpdateCoordinator(hass, address, port, username, password, mac)
+    coordinator = NetgearDataUpdateCoordinator(
+        hass, address, port, username, password, mac, entry.entry_id
+    )
     await coordinator.async_config_entry_first_refresh()
 
     if not coordinator.last_update_success:
@@ -81,7 +88,16 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
 class NetgearDataUpdateCoordinator(DataUpdateCoordinator):
     """Class to manage fetching data from the Netgear API."""
 
-    def __init__(self, hass: HomeAssistant, address: str, port: int, username: str, password: str, mac: str) -> None:
+    def __init__(
+        self,
+        hass: HomeAssistant,
+        address: str,
+        port: int,
+        username: str,
+        password: str,
+        mac: str,
+        entry_id: str,
+    ) -> None:
         """Initialize"""
         # TODO: Support multiple clients here
         self.client: NetgearClient = NetgearWaxClient(username, password, address, port,
@@ -89,8 +105,15 @@ class NetgearDataUpdateCoordinator(DataUpdateCoordinator):
         self.platforms = []
         self._initialized = False
         self._mac = mac
+        self._entry_id = entry_id
         self._state: DeviceState
         self._ssids: List[Ssid]
+        self._wireless_clients: List[WirelessClient] = []
+        self._device_id: str | None = None
+        self._initial_client_activity_logged = False
+        self._unsub_logbook_ready = hass.bus.async_listen(
+            EVENT_LOGBOOK_READY, self._async_handle_logbook_ready
+        )
         self._firmware_last_checked: int = 0
         self._address = address
 
@@ -98,6 +121,7 @@ class NetgearDataUpdateCoordinator(DataUpdateCoordinator):
 
     async def async_stop(self, event: Any):
         """ Stop anything we need to stop """
+        self._unsub_logbook_ready()
         # Log out is important, the device limits concurrent logins
         await self.client.async_logout()
 
@@ -119,12 +143,130 @@ class NetgearDataUpdateCoordinator(DataUpdateCoordinator):
         try:
             self._state = await self.client.async_get_state(check_firmware)
             self._ssids = await self.client.async_get_ssids()
+            radios = ["wlan0", "wlan1"]
+            if "wlan2" in self._state.stats:
+                radios.append("wlan2")
+            wireless_clients = await self.client.async_get_wireless_clients(radios)
+            if self._initialized:
+                self._async_log_client_activity(
+                    self._wireless_clients, wireless_clients
+                )
+            self._wireless_clients = wireless_clients
             self._initialized = True
         except Exception as exception:
             _LOGGER.debug("Failed to read current state", exc_info=exception)
             raise UpdateFailed() from exception
 
         return self._state
+
+    def _async_log_client_activity(
+        self,
+        previous_clients: List[WirelessClient],
+        current_clients: List[WirelessClient],
+    ) -> None:
+        """Add client connect and disconnect events to this AP's activity feed."""
+        previous_by_mac = {
+            client.mac_address.lower(): client
+            for client in previous_clients
+            if client.mac_address
+        }
+        current_by_mac = {
+            client.mac_address.lower(): client
+            for client in current_clients
+            if client.mac_address
+        }
+
+        if self._device_id is None:
+            return
+
+        for mac_address in current_by_mac.keys() - previous_by_mac.keys():
+            self._async_log_client_event(current_by_mac[mac_address], "connected")
+        for mac_address in previous_by_mac.keys() - current_by_mac.keys():
+            self._async_log_client_event(previous_by_mac[mac_address], "disconnected")
+
+    def register_device_activity(self) -> None:
+        """Associate client activity with this access point's device."""
+        device_registry = dr.async_get(self.hass)
+        if hasattr(device_registry, "async_get_device_by_identifier"):
+            device = device_registry.async_get_device_by_identifier(
+                (DOMAIN, self.get_mac()), self._entry_id
+            )
+        else:
+            # Support Home Assistant versions before device identifiers became
+            # scoped to a config entry.
+            device = device_registry.async_get_device(
+                identifiers={(DOMAIN, self.get_mac())}
+            )
+        if device is None:
+            _LOGGER.warning("Unable to find device for connected-client activity")
+            return
+        self._device_id = device.id
+
+        if self.hass.data[DOMAIN].get(DATA_LOGBOOK_READY):
+            self._async_log_initial_client_activity()
+
+    @callback
+    def _async_handle_logbook_ready(self, event: Any) -> None:
+        """Log current clients once the custom logbook event is registered."""
+        self._async_log_initial_client_activity()
+
+    def _async_log_initial_client_activity(self) -> None:
+        """Record the clients found during the first coordinator refresh."""
+        if self._initial_client_activity_logged or self._device_id is None:
+            return
+        self._initial_client_activity_logged = True
+
+        # The first coordinator refresh runs before entities are created. Record
+        # the clients it found now that the logbook event is ready to render.
+        for client in self._wireless_clients:
+            if client.mac_address:
+                self._async_log_client_event(client, "was detected as connected")
+
+    def _async_log_client_event(self, client: WirelessClient, activity: str) -> None:
+        """Write a client event associated with this access point."""
+        if self._device_id is None:
+            return
+
+        label = self._client_activity_name(client)
+        if label != client.mac_address:
+            label = f"{label} ({client.mac_address})"
+
+        network = ""
+        if client.ssid:
+            network = f" on {client.ssid}"
+        if client.radio:
+            network += f" ({client.radio})"
+
+        self.hass.bus.async_fire(
+            EVENT_CLIENT_ACTIVITY,
+            {
+                "device_id": self._device_id,
+                "name": self.get_device_name(),
+                "message": f"{label} {activity}{network}",
+            },
+        )
+
+    def _client_activity_name(self, client: WirelessClient) -> str:
+        """Prefer the AP hostname, then a locally registered device name."""
+        if hostname := useful_name(client.hostname, client.mac_address):
+            return hostname
+
+        registry = dr.async_get(self.hass)
+        connections = {(dr.CONNECTION_NETWORK_MAC, normalize_mac(client.mac_address))}
+        if hasattr(registry, "async_get_devices"):
+            devices = registry.async_get_devices(connections=connections)
+        else:
+            # Compatibility with Home Assistant before the multi-device API.
+            device = registry.async_get_device(connections=connections)
+            devices = [device] if device else []
+
+        # User-assigned names take precedence across matching integrations.
+        for attribute in ("name_by_user", "name"):
+            for device in sorted(devices, key=lambda item: item.id):
+                if name := useful_name(getattr(device, attribute), client.mac_address):
+                    return name
+
+        return useful_name(client.username, client.mac_address) or client.mac_address
 
     def on_receive(self, data_bytes: bytes):
         data = data_bytes.decode("utf-8", errors="ignore")
@@ -157,6 +299,10 @@ class NetgearDataUpdateCoordinator(DataUpdateCoordinator):
             if ssid_id == ssid.ssid_id:
                 ssids.append(ssid)
         return ssids
+
+    def get_wireless_clients(self) -> List[WirelessClient]:
+        """Return the wireless clients associated with this access point."""
+        return self._wireless_clients
 
     def is_firmware_update_available(self) -> bool:
         return self._state.firmware_update_available

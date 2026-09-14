@@ -2,12 +2,12 @@
 import logging
 from typing import List
 
-from homeassistant.components.sensor import SensorEntity
+from homeassistant.components.sensor import SensorDeviceClass, SensorEntity, SensorStateClass
 from homeassistant.core import HomeAssistant
 from custom_components.netgear_wax import NetgearDataUpdateCoordinator
 
 from .const import (
-    DOMAIN, SAFETY_DEVICE_CLASS, DEVICES_ICON, UPDATE_ICON, CHART_DONUT_ICON, ROUTER_NETWORK_ICON, LAN_ICON,
+    DOMAIN, DEVICES_ICON, UPDATE_ICON, CHART_DONUT_ICON, ROUTER_NETWORK_ICON, LAN_ICON,
 )
 from .entity import NetgearBaseEntity
 
@@ -43,7 +43,7 @@ class NetgearSensor(NetgearBaseEntity, SensorEntity):
         NetgearBaseEntity.__init__(self, coordinator, config_entry)
         SensorEntity.__init__(self)
         self._coordinator = coordinator
-        self._device_class = SAFETY_DEVICE_CLASS
+        self._device_class = None
         self._name = f"{coordinator.get_device_name()} {sensor_type}"
         self._unique_id = f"{coordinator.get_mac()}_{sensor_type}"
 
@@ -89,9 +89,38 @@ class NetgearTotalDevicesSensor(NetgearSensor):
         NetgearSensor.__init__(self, coordinator, config_entry, sensor_type)
         self._coordinator = coordinator
 
+    async def async_added_to_hass(self) -> None:
+        """Attach initial client activity to this device's sensor entity."""
+        await super().async_added_to_hass()
+        self._coordinator.register_device_activity()
+
     @property
     def state(self):
         return self._coordinator.total_number_of_devices()
+
+    @property
+    def extra_state_attributes(self):
+        """Expose the connected-client list for this access point.
+
+        Each integration entry represents one AP, so this attribute directly
+        answers which AP a client is currently associated with.
+        """
+        return {
+            "connected_clients": [
+                {
+                    "mac_address": client.mac_address,
+                    "ip_address": client.ip_address,
+                    "hostname": client.hostname,
+                    "ssid": client.ssid,
+                    "radio": client.radio,
+                    "operating_system": client.operating_system,
+                    "mode": client.mode,
+                    "vlan_id": client.vlan_id,
+                    "username": client.username,
+                }
+                for client in self._coordinator.get_wireless_clients()
+            ]
+        }
 
     @property
     def icon(self) -> str:
@@ -99,16 +128,18 @@ class NetgearTotalDevicesSensor(NetgearSensor):
 
 
 class NetgearWlanUtilizationSensor(NetgearSensor):
-    """ Sensor to report how many devices are connected """
+    """Report WLAN utilization as a continuous percentage measurement."""
+
+    _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_native_unit_of_measurement = "%"
 
     def __init__(self, coordinator: NetgearDataUpdateCoordinator, config_entry, sensor_type: str, lan: str):
         NetgearSensor.__init__(self, coordinator, config_entry, sensor_type)
         self._coordinator = coordinator
         self._lan = lan
-        self._attr_unit_of_measurement = "%"
 
     @property
-    def state(self):
+    def native_value(self):
         stats = self._coordinator.get_stats()
         if self._lan in stats:
             return self._coordinator.get_stats().get(self._lan).utilization
@@ -120,20 +151,24 @@ class NetgearWlanUtilizationSensor(NetgearSensor):
 
 
 class NetgearInterfaceTrafficSensor(NetgearSensor):
-    """ Sensor to report how many devices are connected """
+    """Report cumulative traffic without flooding Activity with counter updates."""
+
+    _attr_state_class = SensorStateClass.TOTAL_INCREASING
+    _attr_native_unit_of_measurement = "B"
 
     def __init__(self, coordinator: NetgearDataUpdateCoordinator, config_entry, sensor_type: str, lan: str):
         NetgearSensor.__init__(self, coordinator, config_entry, sensor_type)
         self._coordinator = coordinator
         self._lan = lan
-        self._attr_unit_of_measurement = "B"
+        self._device_class = SensorDeviceClass.DATA_SIZE
 
     @property
-    def state(self):
+    def native_value(self):
         stats = self._coordinator.get_stats()
         if self._lan in stats:
             return self._coordinator.get_stats().get(self._lan).bytes_transferred
-        return 0
+        # Missing data is not a counter reset.
+        return None
 
     @property
     def icon(self) -> str:

@@ -2,6 +2,9 @@
 # Base component constants
 NAME = "Netgear WAX"
 DOMAIN = "netgear_wax"
+EVENT_CLIENT_ACTIVITY = f"{DOMAIN}_client_activity"
+EVENT_LOGBOOK_READY = f"{DOMAIN}_logbook_ready"
+DATA_LOGBOOK_READY = "logbook_ready"
 ATTRIBUTION = "Data provided by local device"
 ISSUE_URL = "https://github.com/rroller/netgear/issues"
 
@@ -15,7 +18,6 @@ LAN_ICON = "mdi:lan"
 
 # Device classes - https://www.home-assistant.io/integrations/binary_sensor/#device-class
 CONNECTIVITY_DEVICE_CLASS = "connectivity"
-SAFETY_DEVICE_CLASS = "safety"
 
 # Platforms
 BINARY_SENSOR = "binary_sensor"
