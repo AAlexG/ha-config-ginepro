@@ -958,14 +958,14 @@ config:
           title: Consumo Energia e Acqua 30/gg
         series:
         - entity: sensor.lavatricemielewci870_consumo_energia
-          name: Kwh oggi
+          name: Kwh ultimo lavaggio
           statistics:
             period: day
             type: state
           type: column
           yaxis_id: Kwh
         - entity: sensor.lavatricemielewci870_consumo_acqua
-          name: Litri oggi
+          name: Litri ultimo lavaggio
           statistics:
             period: day
             type: state

@@ -1,8 +1,12 @@
-# config_lavatrice_2.yaml
+# config_lavatrice_3.yaml
 # Package Casa Ginepro - Lavatrice Miele: energia, acqua e conteggio programmi
 # Estratto da configuration_186.yaml. Nome file = nome del package.
 # v2: aggiunti lo shell_command e il sensore command_line che alimentano la
 #     tabella "lavaggi per programma" della plancia fancoil.
+# v3: aggiunto l'utility_meter giornaliero dell'energia. Mancava: la plancia
+#     Casa Ginepro mostrava sotto "Oggi" il sensore per ciclo della Miele, che
+#     resta congelato sull'ultimo lavaggio e quindi non e' il consumo del
+#     giorno.
 
 template:
   - triggers:
@@ -52,6 +56,16 @@ utility_meter:
     name: "Lavatrice Totale"
     unique_id: lavatrice_totale
     source: sensor.lavatrice_energia
+
+  # --- LAVATRICE: energia giornaliera (kWh) ---
+  # La sorgente e' total_increasing e riparte da zero a ogni ciclo: utility_meter
+  # legge l'azzeramento come reset del contatore, non come consumo negativo.
+  # Stesso schema gia' in uso qui sotto per l'acqua.
+  lavatrice_oggi:
+    name: "Lavatrice Oggi"
+    unique_id: lavatrice_oggi
+    source: sensor.lavatrice_energia
+    cycle: daily
 
   # --- LAVATRICE: acqua giornaliera (litri) ---
   # Si azzera a mezzanotte, mentre acqua_reset_mezzanotte accumula alle 23:59:
