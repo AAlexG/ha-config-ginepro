@@ -660,17 +660,6 @@ config:
         name: Cucina
         type: tile
         vertical: false
-      - entity: sensor.lavatricemielewci870_consumo_energia
-        features_position: bottom
-        grid_options:
-          columns: 4
-          rows: 1
-        icon_tap_action:
-          action: navigate
-          navigation_path: /dashboard-fancoil/fancoil
-        name: Lavatrice
-        type: tile
-        vertical: false
       - entity: sensor.solo_sauna_contatore_potenza_di_fase_a
         features_position: bottom
         grid_options:
@@ -686,13 +675,13 @@ config:
         entity: sensor.altri_apparecchi_ora
         features_position: bottom
         grid_options:
-          columns: 4
+          columns: 12
           rows: 1
         icon: mdi:home-lightning-bolt-outline
         icon_tap_action:
           action: navigate
           navigation_path: /dashboard-consumi/elettricita
-        name: Altri apparecchi
+        name: Altri apparecchi incluso lavatrice
         type: tile
         vertical: false
       - heading: Oggi
