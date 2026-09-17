@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# pv_giorni_senza_sole_1.py
+# pv_giorni_senza_sole_4.py
 # Conta, per ogni mese, i giorni in cui il sole non si e' visto nemmeno per
 # un istante, usando l'irraggiamento della stazione meteo HP1000SE Pro e non
 # la produzione fotovoltaica.
@@ -14,7 +14,21 @@
 #
 # CRITERIO
 # Giorno senza sole = il massimo istantaneo della giornata non ha superato il
-# 35% del massimo istantaneo piu' alto registrato nello stesso mese.
+# 35% del RIFERIMENTO MENSILE, cioe' il terzo massimo giornaliero piu' alto
+# del mese.
+#
+# PERCHE' IL TERZO E NON IL PRIMO (v4)
+# Con il massimo assoluto un solo campione anomalo alza la soglia di tutto il
+# mese. Maggio 2026 aveva 1811 W/m2 il giorno 05, contro 1040, 1003, 942, 935
+# dei giorni successivi: un valore non plausibile fisicamente, perche' la
+# radiazione globale su piano orizzontale al livello del mare non supera circa
+# 1000-1100 W/m2 (picchi brevi fino a 1300-1400 sono possibili solo per
+# riflessione dal bordo delle nuvole). La soglia di maggio risultava 634,
+# quasi il doppio di quella di giugno, mese con irraggiamento equivalente.
+# Col terzo massimo le soglie dei mesi da 02/26 a 09/26 diventano 205, 258,
+# 332, 351, 328, 310, 322, 374: omogenee. I conteggi non cambiano su nessun
+# mese, quindi la correzione non altera i risultati noti, rende solo il
+# riferimento insensibile a un singolo dato anomalo.
 #
 # Si usa il massimo orario (colonna max delle statistiche) e non la media,
 # perche' la media non registra le schiarite brevi: il 02/06/2026 ha media
@@ -40,16 +54,25 @@
 #   - totale giornaliero sotto 100 Wh/m2 (il 03/04/2026 ha 18 Wh/m2 con
 #     massimo 23: non e' meteo, e' la stazione ferma)
 #
+# MESE CORRENTE ESCLUSO (v3)
+# La soglia e' una frazione del massimo mensile, che a mese in corso non e'
+# ancora noto: se il mese comincia coperto il massimo resta basso, la soglia
+# scende con lui e i giorni coperti non vengono contati. Il conteggio sarebbe
+# comunque provvisorio e potrebbe diminuire col passare dei giorni. Il mese
+# corrente viene quindi omesso e compare il primo giorno del mese successivo.
+#
 # Output: JSON su stdout -> letto dal command_line sensor in HA
-# Formato mese: MM/YY, ordine cronologico, ultimi 13 mesi
+# Formato mese: MM/YY, ordine cronologico, ultimi 13 mesi completi
 
 import sqlite3, json, sys
 from collections import defaultdict
+from datetime import date
 
 DB = "/config/home-assistant_v2.db"
 SENSORE = "sensor.hp1000se_pro_pro_v1_6_4_solar_radiation"
 
-FRAZIONE_SOGLIA = 0.35   # quota del massimo mensile sotto la quale = senza sole
+FRAZIONE_SOGLIA = 0.35   # quota del riferimento mensile sotto la quale = senza sole
+POSIZIONE_RIFERIMENTO = 3  # 3 = terzo massimo giornaliero del mese
 ORE_MINIME      = 20     # ore registrate sotto le quali il giorno e' scartato
 WH_MINIMI       = 100    # Wh/m2 giornalieri sotto i quali il giorno e' scartato
 MESI_GRAFICO    = 13
@@ -100,10 +123,17 @@ def main():
             else:
                 scartati[g[:7]] += 1
 
+        mese_corrente = date.today().strftime("%Y-%m")
+
         righe = []
         for ym in sorted(validi):
+            if ym >= mese_corrente:
+                continue
             giorni = validi[ym]
-            max_mese = max(picco[g] for g in giorni)
+            # Riferimento robusto: terzo massimo giornaliero del mese. Con meno
+            # di tre giorni validi si usa il piu' alto disponibile.
+            ordinati = sorted((picco[g] for g in giorni), reverse=True)
+            max_mese = ordinati[min(POSIZIONE_RIFERIMENTO - 1, len(ordinati) - 1)]
             soglia = max_mese * FRAZIONE_SOGLIA
             senza = [g for g in giorni if picco[g] < soglia]
             righe.append({
@@ -112,9 +142,11 @@ def main():
                 "validi":   len(giorni),
                 "scartati": scartati.get(ym, 0),
                 "soglia":   round(soglia),
-                "max_mese": round(max_mese),
+                "max_mese": round(max_mese),   # riferimento, non il massimo assoluto
+                # v2: solo giorno e valore, senza unita' di misura: l'unita'
+                # sta nell'intestazione della colonna in plancia.
                 "elenco":   ", ".join(
-                    f"{g[8:]} ({round(picco[g])} W/m2)"
+                    f"{g[8:]} ({round(picco[g])})"
                     for g in sorted(senza, key=lambda g: picco[g])
                 ),
             })

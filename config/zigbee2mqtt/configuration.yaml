@@ -58,7 +58,7 @@ devices:
   '0xa4c138e6a0d06219':
     friendly_name: Termometro Tania zigbee
   '0xa4c1385040d042fb':
-    friendly_name: Presa box zigbee
+    friendly_name: Presa box bici zigbee
   '0xa4c1383e0fd87686':
     friendly_name: Deumidificatore armadio zigbee
   '0xa4c1384b868fa6bd':
@@ -66,7 +66,7 @@ devices:
     power_precision: 3
     current_precision: 3
   '0x0c4314fffe52b0c2':
-    friendly_name: Presa porta box zigbee
+    friendly_name: Presa box porta zigbee
     description: Presa zigbee nuova
   '0xa4c1380eff54ffff':
     friendly_name: Termometro Georgi zigbee
