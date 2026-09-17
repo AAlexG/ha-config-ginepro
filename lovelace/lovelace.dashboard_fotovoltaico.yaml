@@ -561,6 +561,46 @@ config:
               text: kWh
           decimals: 1
           id: kwh
+      - apex_config:
+          dataLabels:
+            enabled: true
+          xaxis:
+            labels:
+              format: MM/yy
+            type: datetime
+          yaxis:
+            forceNiceScale: true
+            min: 0
+            title:
+              text: giorni
+        graph_span: 400d
+        grid_options:
+          columns: 12
+          rows: auto
+        header:
+          show: true
+          title: Giorni senza sole al mese
+        series:
+        - color: '#4A6E8A'
+          data_generator: "const m = entity.attributes.mesi || [];\nreturn m.map(r\
+            \ => {\n  const p = r.mese.split('/');\n  return [new Date(2000 + Number(p[1]),\
+            \ Number(p[0]) - 1, 1).getTime(), r.giorni];\n});\n"
+          entity: sensor.pv_giorni_senza_sole
+          name: Senza sole
+          type: column
+        span:
+          end: month
+        type: custom:apexcharts-card
+      - content: "{% set d = state_attr('sensor.pv_giorni_senza_sole', 'mesi') %}\n\
+          {% if d %}\n| Mese | Senza sole | Soglia W/m\xB2 | Giorni |\n|---|--:|--:|--:|\n\
+          | **TOTALE** | **{{ d | sum(attribute='giorni') }}** | | su {{ d | sum(attribute='validi')\
+          \ }} gg validi |\n{% for r in d | reverse -%}\n| {{ r.mese }} | {{ r.giorni\
+          \ }} | {{ r.soglia }} | {{ r.elenco if r.elenco else '\u2013' }} |\n{% endfor\
+          \ %}\n{% else %}\nDati non disponibili.\n{% endif %}"
+        grid_options:
+          columns: full
+          rows: auto
+        type: markdown
       type: grid
     - cards:
       - heading: "PANELLI: PRODUTTIVIT\xC0 E SEGNALE ORA"

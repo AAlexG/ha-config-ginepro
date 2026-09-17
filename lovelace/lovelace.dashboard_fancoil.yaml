@@ -851,7 +851,7 @@ config:
         days_to_show: 30
         entities:
         - entity: sensor.cameratania_resmed_tania_presa_tuya_energia_totale
-          name: Consumo al giorno
+          name: Resmed al giorno
         period: day
         stat_types:
         - change
@@ -860,7 +860,7 @@ config:
         days_to_show: 365
         entities:
         - entity: sensor.cameratania_resmed_tania_presa_tuya_energia_totale
-          name: Consumo al giorno
+          name: Resmed al mese
         period: month
         stat_types:
         - change
@@ -894,7 +894,7 @@ config:
         days_to_show: 30
         entities:
         - entity: sensor.presa_box_zigbee_energy
-          name: Bici
+          name: Bici al mese
         period: month
         stat_types:
         - change
@@ -999,7 +999,7 @@ config:
         days_to_show: 365
         entities:
         - entity: sensor.lavatricemielewci870_consumo_energia
-          name: Consumo eletricita mese
+          name: Lavatrice kWh al mese
         period: month
         stat_types:
         - state
@@ -1008,7 +1008,7 @@ config:
         days_to_show: 365
         entities:
         - entity: sensor.lavatricemielewci870_consumo_acqua
-          name: Consumo acqua
+          name: Lavatrice acqua al mese
         period: month
         stat_types:
         - state
@@ -1089,7 +1089,7 @@ config:
         days_to_show: 30
         entities:
         - entity: sensor.shellyem_ec64c9c9b75c_channel_1_energia
-          name: Consumo
+          name: Cucina al giorno
         grid_options:
           columns: full
           rows: auto
@@ -1101,7 +1101,7 @@ config:
         days_to_show: 365
         entities:
         - entity: sensor.shellyem_ec64c9c9b75c_channel_1_energia
-          name: Consumo
+          name: Cucina al mese
         period: month
         stat_types:
         - change

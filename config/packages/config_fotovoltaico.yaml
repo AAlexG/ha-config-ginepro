@@ -1,4 +1,4 @@
-# config_fotovoltaico_6.yaml
+# config_fotovoltaico_7.yaml
 # Package Casa Ginepro - Fotovoltaico: inverter UFLEX, pannelli Tigo, surplus, GSE
 # Estratto da configuration_186.yaml. Nome file = nome del package.
 
@@ -469,6 +469,26 @@ command_line:
       unique_id: pv_tabella_mensile
       command: "cat /config/pv_tabella_mensile.json 2>/dev/null"
       scan_interval: 3600
+      value_template: "{{ value_json.mesi | length }}"
+      json_attributes:
+        - mesi
+
+  # ============================================================
+  # GIORNI SENZA SOLE (nuovo in config_fotovoltaico_7)
+  # Conteggio mensile dei giorni in cui il sole non si e' visto
+  # nemmeno per un istante. Il dato viene dall'irraggiamento della
+  # stazione meteo, non dalla produzione FV: la produzione dipende
+  # anche da guasti, batteria e ombreggiamenti, l'irraggiamento no.
+  # Criterio e motivazioni: vedere i commenti nello script.
+  # Lo stato e' il numero di mesi presenti; i dati stanno
+  # nell'attributo "mesi", come per PV Tabella Mensile.
+  # ============================================================
+  - sensor:
+      name: PV Giorni Senza Sole
+      unique_id: pv_giorni_senza_sole
+      command: "python3 /config/pv_giorni_senza_sole.py"
+      scan_interval: 3600
+      command_timeout: 120
       value_template: "{{ value_json.mesi | length }}"
       json_attributes:
         - mesi
