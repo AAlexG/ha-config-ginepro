@@ -1,4 +1,4 @@
-# config_wifi_rete_10.yaml
+# config_wifi_rete_11.yaml
 # Package Casa Ginepro - Rete WiFi: whitelist MAC e tabella dispositivi
 # Estratto da configuration_186.yaml. Nome file = nome del package.
 
@@ -95,16 +95,27 @@ template:
               '44:a5:6e:48:69:d8': 'binary_sensor.192_168_1_15',
               '38:94:ed:0c:78:df': 'binary_sensor.192_168_1_16',
               'a0:40:a0:5e:40:d2': 'binary_sensor.192_168_1_17',
-              '9a:da:c4:ad:e1:ad': 'binary_sensor.192_168_1_36',
+              'a0:85:e3:b4:be:e4': 'binary_sensor.192_168_1_31',
+              'a0:85:e3:b3:f8:1c': 'binary_sensor.192_168_1_32',
+              '9a:da:c4:f4:54:40': 'binary_sensor.192_168_1_36',
+              '38:44:be:46:1f:08': 'binary_sensor.192_168_1_39',
+              '00:25:ca:74:c0:47': 'binary_sensor.192_168_1_41',
+              'ec:64:c9:c9:b7:5c': 'binary_sensor.192_168_1_42',
+              '84:0d:8e:66:14:ff': 'binary_sensor.192_168_1_47',
+              '70:a8:d3:db:50:f6': 'binary_sensor.192_168_1_48',
               '70:89:76:fd:4c:18': 'binary_sensor.192_168_1_54',
               '40:ca:63:39:6c:12': 'binary_sensor.192_168_1_60',
+              '84:f3:eb:ef:11:36': 'binary_sensor.192_168_1_61',
               'd0:27:04:c3:db:32': 'binary_sensor.192_168_1_62',
               '00:33:7a:cc:0b:ff': 'binary_sensor.192_168_1_64',
+              'cc:32:e5:7e:07:5a': 'binary_sensor.192_168_1_66',
+              'd8:f1:5b:a1:e0:13': 'binary_sensor.192_168_1_67',
               '50:8a:06:5c:04:72': 'binary_sensor.192_168_1_69',
               '6c:3c:7c:c5:88:51': 'binary_sensor.192_168_1_72',
               'd8:1f:12:93:61:65': 'binary_sensor.192_168_1_73',
               'f8:6d:cc:3d:26:d4': 'binary_sensor.192_168_1_74',
               '48:9d:ff:04:a3:ed': 'binary_sensor.192_168_1_75',
+              'ec:71:db:f0:01:30': 'binary_sensor.192_168_1_179',
               '94:b3:f7:dc:30:13': 'binary_sensor.192_168_1_182',
               'bc:fd:0c:dc:56:04': 'binary_sensor.192_168_1_183',
               '5c:c3:36:4d:19:67': 'binary_sensor.192_168_1_193'
@@ -126,16 +137,27 @@ template:
           - binary_sensor.192_168_1_15
           - binary_sensor.192_168_1_16
           - binary_sensor.192_168_1_17
+          - binary_sensor.192_168_1_31
+          - binary_sensor.192_168_1_32
           - binary_sensor.192_168_1_36
+          - binary_sensor.192_168_1_39
+          - binary_sensor.192_168_1_41
+          - binary_sensor.192_168_1_42
+          - binary_sensor.192_168_1_47
+          - binary_sensor.192_168_1_48
           - binary_sensor.192_168_1_54
           - binary_sensor.192_168_1_60
+          - binary_sensor.192_168_1_61
           - binary_sensor.192_168_1_62
           - binary_sensor.192_168_1_64
+          - binary_sensor.192_168_1_66
+          - binary_sensor.192_168_1_67
           - binary_sensor.192_168_1_69
           - binary_sensor.192_168_1_72
           - binary_sensor.192_168_1_73
           - binary_sensor.192_168_1_74
           - binary_sensor.192_168_1_75
+          - binary_sensor.192_168_1_179
           - binary_sensor.192_168_1_182
           - binary_sensor.192_168_1_183
           - binary_sensor.192_168_1_193
