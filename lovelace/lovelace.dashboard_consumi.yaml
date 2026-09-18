@@ -242,6 +242,7 @@ config:
         grid_options:
           columns: 4
           rows: 1
+        icon: mdi:car-back
         name: Auto
         type: tile
         vertical: false
@@ -250,6 +251,7 @@ config:
         grid_options:
           columns: 4
           rows: 1
+        icon: mdi:air-humidifier
         icon_tap_action:
           action: navigate
           navigation_path: /dashboard-fancoil/fancoil
@@ -261,6 +263,7 @@ config:
         grid_options:
           columns: 4
           rows: 1
+        icon: mdi:air-humidifier
         icon_tap_action:
           action: navigate
           navigation_path: /dashboard-fancoil/fancoil
@@ -272,21 +275,11 @@ config:
         grid_options:
           columns: 4
           rows: 1
+        icon: mdi:fridge-outline
         icon_tap_action:
           action: navigate
           navigation_path: /dashboard-fancoil/fancoil
         name: Cucina
-        type: tile
-        vertical: false
-      - entity: sensor.lavatricemielewci870_consumo_energia
-        features_position: bottom
-        grid_options:
-          columns: 4
-          rows: 1
-        icon_tap_action:
-          action: navigate
-          navigation_path: /dashboard-fancoil/fancoil
-        name: Lavatrice
         type: tile
         vertical: false
       - entity: sensor.solo_sauna_contatore_potenza_di_fase_a
@@ -294,6 +287,7 @@ config:
         grid_options:
           columns: 4
           rows: 1
+        icon: mdi:spa
         icon_tap_action:
           action: navigate
           navigation_path: /dashboard-fancoil/fancoil
@@ -304,13 +298,13 @@ config:
         entity: sensor.altri_apparecchi_ora
         features_position: bottom
         grid_options:
-          columns: 4
+          columns: 12
           rows: 1
         icon: mdi:home-lightning-bolt-outline
         icon_tap_action:
           action: navigate
           navigation_path: /dashboard-consumi/elettricita
-        name: Altri apparecchi
+        name: Altri apparecchi incluso lavatrice
         type: tile
         vertical: false
       - heading: CONSUMI OGGI
@@ -322,6 +316,7 @@ config:
         grid_options:
           columns: 3
           rows: 1
+        icon: mdi:heat-pump-outline
         icon_tap_action:
           action: navigate
           navigation_path: /dashboard-panasonic/panasonic
@@ -361,12 +356,13 @@ config:
         name: Deumidif.
         type: tile
         vertical: false
-      - entity: sensor.lavatrice_energia
+      - entity: sensor.lavatrice_oggi
         features_position: bottom
         grid_options:
           columns: 6
           rows: 1
         hide_state: false
+        icon: mdi:washing-machine
         icon_tap_action:
           action: navigate
           navigation_path: /dashboard-fancoil
@@ -374,11 +370,12 @@ config:
         show_entity_picture: false
         type: tile
         vertical: false
-      - entity: sensor.shellyem_ec64c9c9b75c_channel_1_energia
+      - entity: sensor.cucina_energia_oggi
         features_position: bottom
         grid_options:
           columns: 4
           rows: 1
+        icon: mdi:fridge-outline
         icon_tap_action:
           action: navigate
           navigation_path: /dashboard-fancoil/fancoil
