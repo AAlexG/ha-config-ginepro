@@ -24,8 +24,8 @@
     "0xa4c138e6a0d06219": {
         "voltage": 2500,
         "battery": 50,
-        "temperature": 24.46,
-        "humidity": 55.13,
+        "temperature": 24.26,
+        "humidity": 54.55,
         "linkquality": 124
     },
     "0xa4c1385040d042fb": {
@@ -35,7 +35,7 @@
         "power_outage_memory": "restore",
         "indicator_mode": "off/on",
         "child_lock": "UNLOCK",
-        "voltage": 223.4,
+        "voltage": 228,
         "power": 0,
         "current": 0,
         "linkquality": 120
@@ -47,7 +47,7 @@
         "power_outage_memory": "restore",
         "indicator_mode": "off/on",
         "child_lock": "UNLOCK",
-        "voltage": 220.5,
+        "voltage": 226.2,
         "linkquality": 68,
         "power": 0,
         "current": 0
@@ -59,7 +59,7 @@
         "power_outage_memory": "restore",
         "indicator_mode": "off/on",
         "child_lock": "UNLOCK",
-        "voltage": 221.6,
+        "voltage": 225.5,
         "power": 0,
         "current": 0,
         "update": {
@@ -78,16 +78,16 @@
         "indicator_mode": "off/on",
         "power": 2,
         "current": 0.03,
-        "voltage": 228,
-        "energy": 0.2,
+        "voltage": 229,
+        "energy": 0.21,
         "linkquality": 56,
         "child_lock": "UNLOCK"
     },
     "0xa4c1380eff54ffff": {
         "battery": 100,
-        "temperature": 25.1,
+        "temperature": 24.8,
         "voltage": 2900,
-        "humidity": 60.3,
+        "humidity": 56.2,
         "temperature_sensor_select": "internal",
         "comfort_temperature_min": 19,
         "comfort_temperature_max": 35.2,
@@ -108,8 +108,8 @@
     "0xa4c1380f0678ffff": {
         "battery": 100,
         "voltage": 3000,
-        "temperature": 24.9,
-        "humidity": 59.9,
+        "temperature": 24.8,
+        "humidity": 60.9,
         "temperature_sensor_select": "internal",
         "comfort_temperature_min": 19,
         "comfort_temperature_max": 43.7,
@@ -136,7 +136,7 @@
         "linkquality": 52
     },
     "0xa4c138013ef60318": {
-        "voltage": 2900,
+        "voltage": 2800,
         "battery": 100,
         "contact": true,
         "tamper": false,
