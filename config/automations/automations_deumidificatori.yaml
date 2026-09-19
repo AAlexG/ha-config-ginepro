@@ -1,4 +1,4 @@
-# automations_deumidificatori_6.yaml
+# automations_deumidificatori_7.yaml
 #
 # ALLARME SERBATOIO PIENO – DEUMIDIFICATORI
 #
@@ -83,17 +83,24 @@
 # Ogni 5 minuti verifica produzione FV e umidità in cantina e decide stato presa.
 # Soglia FV: 1000W. Robusto contro riavvii o eventi mancati.
 #
-# Il deumidificatore non ha igrostato interno (vedi automations_deumidificatori):
+# Il deumidificatore non ha igrostato interno (vedi allarmi serbatoio qui sopra):
 # finche' e' alimentato lavora. L'igrostato lo fa quindi questa automazione, con
 # il sensore sensor.termometro_cantina_zigbee_humidity.
 #
-# ACCENDE se: FV >= 1000 W  E  umidità >= 58%
+# ACCENDE se: FV >= 1000 W  E  umidità >= 60%
 # SPEGNE se:  FV < 1000 W   O  umidità < 56%
-# Isteresi 58/56: la presa si accende solo a 58% o piu', e resta accesa finche'
-# l'umidità non scende sotto 56%. I 2 punti di banda morta evitano che la presa
-# pendoli on/off ogni 5 minuti quando il valore oscilla intorno alla soglia.
-# La finestra tiene la cantina fuori dalla zona di rischio muffa (>60%) senza
-# asciugare oltre il necessario sprecando energia.
+#
+# ISTERESI 56/60 (allargata il 19/09/2026, prima era 56/58).
+# Motivo della modifica: con banda di 2 punti la presa pendolava. Il 19/09/2026,
+# con FV sempre sopra i 2400 W, si sono contati 3 cicli on/off in quattro ore
+# (08:00 ON, 08:30 OFF, 09:40 ON, 10:00 OFF, 11:25 ON, 11:45 OFF); l'08/09/2026
+# ne erano stati contati 8 in quattro ore. Il sensore di umidità di giorno riporta
+# a passi di 1 punto intero, quindi bastavano due letture consecutive per
+# attraversare tutta la banda morta. Con 4 punti (56-60) servono almeno quattro
+# passi, e il pendolamento si ferma.
+#
+# Conseguenza accettata: la cantina puo' ora stazionare fino al 60% prima che la
+# deumidificazione parta, mentre prima partiva al 58%.
 #
 # Se il sensore di umidità e' unavailable/unknown l'automazione torna al solo
 # criterio fotovoltaico (comportamento precedente): un sensore che sparisce non
@@ -105,7 +112,7 @@
   alias: "Deumidificatore Cantina – Controllo Periodico FV"
   description: >
     Ogni 5 minuti accende switch.box_deumidificatore_cantina_sonoff se produzione FV
-    supera 1000W e umidità cantina >= 58%, spegne se FV sotto soglia o umidità < 56%.
+    supera 1000W e umidità cantina >= 60%, spegne se FV sotto soglia o umidità < 56%.
     Bloccato se in gestione manuale.
   mode: single
   triggers:
@@ -126,7 +133,7 @@
             - condition: template
               value_template: >-
                 {{ fv >= 1000 and not presa_on
-                   and (not umid_ok or umid >= 58) }}
+                   and (not umid_ok or umid >= 60) }}
           sequence:
             - action: switch.turn_on
               target:

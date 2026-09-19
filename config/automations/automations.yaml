@@ -1,7 +1,29 @@
-# automations_124.yaml
+# automations_125.yaml
 #prova
 #==================================================================================
 # 1. IRRIGAZIONE – Ciclo programmato (O1/O2) con gate meteo
+#
+# GATE PIOGGIA allineato a quello della pergola (19/09/2026).
+# Prima il gate leggeva un solo sensore, hourly_rain, sotto il nome fuorviante
+# di "rain_rate". hourly_rain e' un accumulo dell'ora corrente e si azzera allo
+# scoccare dell'ora: se piove alle 06:55, alle 07:00 torna a 0 mentre sta ancora
+# piovendo, e il ciclo delle 07:30 partirebbe sotto la pioggia.
+# Ora si usano gli stessi tre parametri della pergola:
+#   - rain_rate    intensita' istantanea, intercetta subito la pioggia in corso
+#   - hourly_rain  accumulo orario, da' persistenza dopo che ha smesso
+#   - previsione   mm di precipitazione nelle prossime 3 ore da weather.casa
+# event_rain resta volutamente NON usato: rimane > 0 per ore dopo la pioggia e
+# bloccherebbe l'irrigazione per l'intera giornata.
+#
+# Restano invariati gli altri criteri di blocco gia' presenti: umidita' terreno
+# su entrambe le sonde, vento medio 1h > 40 km/h e previsione di condizione
+# piovosa nelle prossime 5 ore. Quest'ultima e' piu' larga della finestra a 3
+# ore della pergola ed e' stata tenuta: per l'irrigazione anticipare di piu' non
+# fa danno, si perde al massimo un ciclo.
+#
+# Il motivo di blocco viene troncato a 250 caratteri: input_text ha un massimo
+# di 255 e con piu' motivi contemporanei il testo puo' superarlo, facendo
+# fallire l'azione.
 #==================================================================================
 - id: irrigazione_ciclo_programmato
   alias: "Irrigazione – Ciclo programmato (O1/O2)"
@@ -39,13 +61,24 @@
         s1: "{{ states('sensor.soil_moisture_1') | float(0) }}"
         s2: "{{ states('sensor.soil_moisture_2') | float(0) }}"
         vento: "{{ states('sensor.wind_speed_media_1h') | float(0) }}"
-        rain_rate: "{{ states('sensor.hp1000se_pro_pro_v1_6_4_hourly_rain') | float(0) }}"
+        v_rate: "{{ states('sensor.hp1000se_pro_pro_v1_6_4_rain_rate') | float(0) }}"
+        v_oraria: "{{ states('sensor.hp1000se_pro_pro_v1_6_4_hourly_rain') | float(0) }}"
+        mm_previsti: >-
+          {{ (previsioni['weather.casa'].forecast[0:3]
+             | map(attribute='precipitation')
+             | map('float', 0) | list) | max | default(0) }}
 
     - variables:
         motivi: >
           {% set ns = namespace(lista=[]) %}
-          {% if rain_rate > 0 %}
-            {% set ns.lista = ns.lista + ['🌧️ Pioggia: ' ~ (rain_rate | round(1) | string) ~ ' mm (1h)'] %}
+          {% if v_rate > 0 %}
+            {% set ns.lista = ns.lista + ['🌧️ Pioggia ' ~ (v_rate | round(1) | string) ~ ' mm/h'] %}
+          {% endif %}
+          {% if v_oraria > 0 %}
+            {% set ns.lista = ns.lista + ['🌧️ Accumulo ' ~ (v_oraria | round(1) | string) ~ ' mm (1h)'] %}
+          {% endif %}
+          {% if mm_previsti > 0 %}
+            {% set ns.lista = ns.lista + ['🌦️ Prev. ' ~ (mm_previsti | round(1) | string) ~ ' mm/3h'] %}
           {% endif %}
           {% if s1 > soglia and s2 > soglia %}
             {% set ns.lista = ns.lista + ['💧 Umidità S1=' ~ (s1 | round(0) | int | string) ~ '% S2=' ~ (s2 | round(0) | int | string) ~ '%'] %}
@@ -59,7 +92,9 @@
           {% endif %}
           {{ ns.lista | join('\n') }}
         blocco: >
-          {{ rain_rate > 0
+          {{ v_rate > 0
+             or v_oraria > 0
+             or mm_previsti > 0
              or (s1 > soglia and s2 > soglia)
              or vento > 40
              or (previsioni['weather.casa'].forecast[:5]
@@ -74,7 +109,9 @@
           target:
             entity_id: input_text.irrigazione_motivo_blocco
           data:
-            value: "{{ ('⛔ Bloccata ' ~ ora_esecuzione ~ '\n' ~ (motivi | trim)) | trim }}"
+            value: >-
+              {{ (('⛔ Bloccata ' ~ ora_esecuzione ~ '\n' ~ (motivi | trim)) | trim)
+                 | truncate(250, True, '') }}
         - stop: "Meteo sfavorevole – nessuna irrigazione"
 
     - action: input_text.set_value
