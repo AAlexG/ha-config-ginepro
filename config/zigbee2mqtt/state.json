@@ -78,7 +78,7 @@
         "indicator_mode": "off/on",
         "power": 2,
         "current": 0.03,
-        "voltage": 237,
+        "voltage": 235,
         "energy": 0.24,
         "linkquality": 56,
         "child_lock": "UNLOCK"
