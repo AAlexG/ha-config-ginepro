@@ -35,7 +35,7 @@
         "power_outage_memory": "restore",
         "indicator_mode": "off/on",
         "child_lock": "UNLOCK",
-        "voltage": 218.6,
+        "voltage": 221.1,
         "power": 0,
         "current": 0,
         "linkquality": 120
@@ -47,7 +47,7 @@
         "power_outage_memory": "restore",
         "indicator_mode": "off/on",
         "child_lock": "UNLOCK",
-        "voltage": 217.9,
+        "voltage": 221,
         "linkquality": 68,
         "power": 0,
         "current": 0
@@ -76,9 +76,9 @@
         "countdown": 0,
         "power_outage_memory": "on",
         "indicator_mode": "off/on",
-        "power": 3,
+        "power": 2,
         "current": 0.03,
-        "voltage": 222,
+        "voltage": 224,
         "energy": 0.32,
         "linkquality": 56,
         "child_lock": "UNLOCK"
@@ -138,7 +138,7 @@
     "0xa4c138013ef60318": {
         "voltage": 3100,
         "battery": 100,
-        "contact": true,
+        "contact": false,
         "tamper": false,
         "battery_low": false,
         "linkquality": 32
