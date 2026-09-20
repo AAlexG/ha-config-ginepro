@@ -1,12 +1,20 @@
-# config_wifi_rete_11.yaml
+# config_wifi_rete_12.yaml
 # Package Casa Ginepro - Rete WiFi: whitelist MAC e tabella dispositivi
-# Estratto da configuration_186.yaml. Nome file = nome del package.
+# Nome file = nome del package.
 
 #==================================================================================
-# WHITELIST DISPOSITIVI WIFI - FONTE UNICA (mappa MAC -> nome)
+# WHITELIST DISPOSITIVI WIFI - FONTE UNICA E UNICA LISTA DEL FILE
 # Per aggiungere/togliere un dispositivo modificare SOLO la mappa mac_nomi qui
 # sotto, poi Strumenti per sviluppatori -> YAML -> Ricarica entita' modello.
 # Usata da: automations_presenza (whitelist notifiche) + plancia WiFi (tabella).
+#
+# CONVENZIONE DI NOMENCLATURA: le 3 cifre iniziali del nome sono l'ultimo
+# ottetto dell'IP. Da li' si ricavano, senza altre liste:
+#   IP di convenzione  ->  192.168.1.<ottetto>
+#   entita' Ping       ->  binary_sensor.192_168_1_<ottetto>
+# La mappa mac_ping della v11 e' stata eliminata: era derivabile al 100%.
+# Se l'entita' Ping non esiste, states() torna 'unknown' e la fonte viene
+# semplicemente ignorata.
 #==================================================================================
 template:
 
@@ -71,7 +79,6 @@ template:
               '48:9d:ff:04:a3:ed': '075 Oneplus 8 vecchio x Russia',
               '84:f3:eb:ef:13:5e': '076 Luce terrazza',
               'd8:3a:dd:9f:9e:0a': '077 Honeassistant-Rapsberry 5',
-              '6c:3c:7c:c5:88:51': '078 stampante Canon',
               '4c:f5:dc:fd:39:cc': '085 camera sotto pergola EZVIZ',
               'ec:71:db:db:94:06': '168 camera Georgi ReolinkE1 Zoom',
               'e8:ca:c8:f8:47:65': '177 camera Nata ReolinkE1 Zoom',
@@ -84,86 +91,22 @@ template:
               'd0:12:55:ee:e9:95': '192 camera barbecue',
               '5c:c3:36:4d:19:67': '193 camera cucina Reolink'
             } }}
-          #--- MAC SENZA TRACKER NETGEAR -> BINARY_SENSOR DELL'INTEGRAZIONE PING
-          # Solo per i dispositivi che l'Orbi non vede (cablati, attaccati al
-          # NeXXt, o l'Orbi stesso). Aggiungendo una voce qui, aggiungerla anche
-          # ai trigger di sensor.wifi_tabella piu' sotto.
-          mac_ping: >-
-            {{ {
-              '14:59:c0:51:55:3f': 'binary_sensor.192_168_1_2',
-              '22:7a:a4:df:b7:d7': 'binary_sensor.192_168_1_14',
-              '44:a5:6e:48:69:d8': 'binary_sensor.192_168_1_15',
-              '38:94:ed:0c:78:df': 'binary_sensor.192_168_1_16',
-              'a0:40:a0:5e:40:d2': 'binary_sensor.192_168_1_17',
-              'a0:85:e3:b4:be:e4': 'binary_sensor.192_168_1_31',
-              'a0:85:e3:b3:f8:1c': 'binary_sensor.192_168_1_32',
-              '9a:da:c4:f4:54:40': 'binary_sensor.192_168_1_36',
-              '38:44:be:46:1f:08': 'binary_sensor.192_168_1_39',
-              '00:25:ca:74:c0:47': 'binary_sensor.192_168_1_41',
-              'ec:64:c9:c9:b7:5c': 'binary_sensor.192_168_1_42',
-              '84:0d:8e:66:14:ff': 'binary_sensor.192_168_1_47',
-              '70:a8:d3:db:50:f6': 'binary_sensor.192_168_1_48',
-              '70:89:76:fd:4c:18': 'binary_sensor.192_168_1_54',
-              '40:ca:63:39:6c:12': 'binary_sensor.192_168_1_60',
-              '84:f3:eb:ef:11:36': 'binary_sensor.192_168_1_61',
-              'd0:27:04:c3:db:32': 'binary_sensor.192_168_1_62',
-              '00:33:7a:cc:0b:ff': 'binary_sensor.192_168_1_64',
-              'cc:32:e5:7e:07:5a': 'binary_sensor.192_168_1_66',
-              'd8:f1:5b:a1:e0:13': 'binary_sensor.192_168_1_67',
-              '50:8a:06:5c:04:72': 'binary_sensor.192_168_1_69',
-              '6c:3c:7c:c5:88:51': 'binary_sensor.192_168_1_72',
-              'd8:1f:12:93:61:65': 'binary_sensor.192_168_1_73',
-              'f8:6d:cc:3d:26:d4': 'binary_sensor.192_168_1_74',
-              '48:9d:ff:04:a3:ed': 'binary_sensor.192_168_1_75',
-              'ec:71:db:f0:01:30': 'binary_sensor.192_168_1_179',
-              '94:b3:f7:dc:30:13': 'binary_sensor.192_168_1_182',
-              'bc:fd:0c:dc:56:04': 'binary_sensor.192_168_1_183',
-              '5c:c3:36:4d:19:67': 'binary_sensor.192_168_1_193'
-            } }}
 
-  #--- WIFI: TABELLA DINAMICA PER PLANCIA (righe da tracker Netgear) ---
+
+  #--- WIFI: TABELLA DINAMICA PER PLANCIA (righe da tracker Netgear + Ping) ---
   # Sensore TRIGGER-BASED: il template usa integration_entities()/device_id()/
   # device_entities(), che NON registrano listener sui cambi di stato: senza
-  # trigger resterebbe congelato alla prima valutazione. Unico trigger: la
-  # pressione del pulsante sulla plancia Wi-Fi (funziona da browser e da app).
-  # Stato e attributi dei sensori trigger-based sono ripristinati al riavvio.
+  # trigger resterebbe congelato alla prima valutazione.
+  # Trigger (v12): il pulsante sulla plancia, un ricalcolo periodico ogni 2
+  # minuti e l'avvio di HA. Sostituiscono l'elenco statico dei 29 binary_sensor
+  # della v11, che era la seconda lista da mantenere a mano.
   - trigger:
       - platform: state
         entity_id: input_button.aggiorna_wifi_tabella
-      - platform: state
-        entity_id:
-          - binary_sensor.192_168_1_2
-          - binary_sensor.192_168_1_14
-          - binary_sensor.192_168_1_15
-          - binary_sensor.192_168_1_16
-          - binary_sensor.192_168_1_17
-          - binary_sensor.192_168_1_31
-          - binary_sensor.192_168_1_32
-          - binary_sensor.192_168_1_36
-          - binary_sensor.192_168_1_39
-          - binary_sensor.192_168_1_41
-          - binary_sensor.192_168_1_42
-          - binary_sensor.192_168_1_47
-          - binary_sensor.192_168_1_48
-          - binary_sensor.192_168_1_54
-          - binary_sensor.192_168_1_60
-          - binary_sensor.192_168_1_61
-          - binary_sensor.192_168_1_62
-          - binary_sensor.192_168_1_64
-          - binary_sensor.192_168_1_66
-          - binary_sensor.192_168_1_67
-          - binary_sensor.192_168_1_69
-          - binary_sensor.192_168_1_72
-          - binary_sensor.192_168_1_73
-          - binary_sensor.192_168_1_74
-          - binary_sensor.192_168_1_75
-          - binary_sensor.192_168_1_179
-          - binary_sensor.192_168_1_182
-          - binary_sensor.192_168_1_183
-          - binary_sensor.192_168_1_193
-        to:
-          - "on"
-          - "off"
+      - platform: time_pattern
+        minutes: "/2"
+      - platform: homeassistant
+        event: start
     sensor:
       - name: "WiFi Tabella"
         unique_id: wifi_tabella
@@ -185,27 +128,21 @@ template:
           #--- RIGHE WHITELIST -------------------------------------------------
           # Ogni MAC della whitelist produce sempre una riga. Lo stato non e'
           # mai dedotto: viene dalla fonte piu' affidabile disponibile, in
-          # quest'ordine.
-          #   1. Ping    -> misura diretta: l'IP risponde o no. Ha la priorita'.
-          #   2. Netgear -> il tracker dice 'home': il dispositivo e' associato.
-          #   3. Netgear -> non 'home' MA con attributo 'ip' valorizzato:
-          #                 l'Orbi ha una voce attiva per quel MAC e lo dichiara
-          #                 scollegato. Questo e' un 'fuori' attendibile.
-          #   4. Nessuna fonte -> 'ignoto'. Rientra qui il caso in cui il
-          #      tracker Netgear esiste, dice 'not_home' e NON ha l'attributo
-          #      'ip': l'Orbi conosce il MAC ma non ha alcuna voce attiva.
-          #      Verificato sull'OTGW 11/09/2026: tracker not_home e privo di
-          #      'ip', ma la sua web UI su 192.168.1.36 risponde. Sono i
-          #      dispositivi che non sono client dell'Orbi (dietro RE650, sul
-          #      Wi-Fi del NeXXt, o cablati): l'Orbi non sa, non nega.
-          # L'IP resta ricavabile dalla convenzione di nomenclatura: e' un dato
-          # di configurazione statica, non una misura.
-          # L'IP invece puo' essere ricavato dalla convenzione di nomenclatura
-          # (3 cifre iniziali = ultimo ottetto), perche' e' un dato di
-          # configurazione statica, non una misura.
+          # quest'ordine (v12: prima Netgear, poi Ping).
+          #   1. Netgear 'home'      -> il dispositivo e' associato all'Orbi.
+          #   2. Netgear non 'home'  -> ma con attributo 'ip' valorizzato:
+          #                             l'Orbi ha una voce attiva per quel MAC e
+          #                             lo dichiara scollegato. 'Fuori' attendibile.
+          #   3. Ping on/off         -> misura diretta sull'IP di convenzione.
+          #                             Copre i dispositivi che l'Orbi non vede:
+          #                             dietro RE650, sul Wi-Fi del NeXXt, cablati.
+          #   4. Nessuna fonte       -> 'ignoto'. Rientra qui il tracker Netgear
+          #      che dice 'not_home' e NON ha l'attributo 'ip' (l'Orbi conosce il
+          #      MAC ma non ha alcuna voce attiva: non sa, non nega) quando per
+          #      quell'IP non esiste nemmeno un'entita' Ping.
+          # L'attributo 'fonte' di ogni riga dice da dove viene lo stato.
           righe: >-
             {% set nomi = state_attr('sensor.wifi_dispositivi', 'mac_nomi') or {} %}
-            {% set pingmap = state_attr('sensor.wifi_dispositivi', 'mac_ping') or {} %}
             {% set ng = integration_entities('netgear') %}
             {% set pairs = namespace(l=[]) %}
             {% for e in ng if e.startswith('device_tracker.') %}
@@ -217,20 +154,19 @@ template:
             {% for mac, nome in nomi.items() %}
             {% set e = tmap.get(mac | lower) %}
             {% set pref = nome[:3] %}
-            {% set ip_conv = '192.168.1.' ~ (pref | int) if pref.isdigit() else 'n/d' %}
+            {% set num = pref | int if pref.isdigit() else none %}
+            {% set ip_conv = '192.168.1.' ~ num if num is not none else 'n/d' %}
+            {% set ps = states('binary_sensor.192_168_1_' ~ num) if num is not none else 'unknown' %}
             {% set ng_ip = state_attr(e, 'ip') if e is not none else none %}
             {% set ip_ok = ng_ip not in [none, '', 'unknown', 'unavailable'] %}
-            {% set p = pingmap.get(mac | lower) %}
-            {% if p and states(p) in ['on', 'off'] %}
-            {% set stato = 'in_casa' if states(p) == 'on' else 'fuori' %}
-            {% elif e is none %}
-            {% set stato = 'ignoto' %}
-            {% elif states(e) == 'home' %}
-            {% set stato = 'in_casa' %}
-            {% elif ip_ok %}
-            {% set stato = 'fuori' %}
+            {% if e is not none and states(e) == 'home' %}
+            {% set stato = 'in_casa' %}{% set fonte = 'netgear' %}
+            {% elif e is not none and ip_ok %}
+            {% set stato = 'fuori' %}{% set fonte = 'netgear' %}
+            {% elif ps in ['on', 'off'] %}
+            {% set stato = 'in_casa' if ps == 'on' else 'fuori' %}{% set fonte = 'ping' %}
             {% else %}
-            {% set stato = 'ignoto' %}
+            {% set stato = 'ignoto' %}{% set fonte = 'nessuna' %}
             {% endif %}
             {% set ssid = namespace(v='n/d') %}
             {% set sig = namespace(v=none) %}
@@ -245,7 +181,7 @@ template:
             {% endif %}
             {% endfor %}
             {% endif %}
-            {% set righe.list = righe.list + [{'nome': nome, 'mac': mac | lower, 'ip': ng_ip if ip_ok else ip_conv, 'ssid': ssid.v, 'segnale': sig.v, 'stato': stato}] %}
+            {% set righe.list = righe.list + [{'nome': nome, 'mac': mac | lower, 'ip': ng_ip if ip_ok else ip_conv, 'ssid': ssid.v, 'segnale': sig.v, 'stato': stato, 'fonte': fonte}] %}
             {% endfor %}
             {% set a = righe.list | selectattr('stato', 'eq', 'in_casa') | sort(attribute='nome') | list %}
             {% set b = righe.list | selectattr('stato', 'eq', 'ignoto') | sort(attribute='nome') | list %}
@@ -286,7 +222,7 @@ template:
 
 #==================================================================================
 # PULSANTE DI AGGIORNAMENTO TABELLA WIFI
-# Unico trigger di sensor.wifi_tabella. Esposto sulla plancia Wi-Fi.
+# Forza il ricalcolo immediato di sensor.wifi_tabella. Esposto sulla plancia Wi-Fi.
 #==================================================================================
 input_button:
   aggiorna_wifi_tabella:
