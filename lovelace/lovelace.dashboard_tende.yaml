@@ -84,37 +84,14 @@ config:
         - type: cover-position
         features_position: bottom
         grid_options:
-          columns: 6
+          columns: 12
           rows: auto
-        name: Stato / apertura lamelle %
+        name: Attuale apertura lamelle %
         state_content:
         - state
         - current_tilt_position
         type: tile
         vertical: false
-      - entity: input_number.pergola_min_mattino
-        features:
-        - style: slider
-          type: numeric-input
-        features_position: bottom
-        grid_options:
-          columns: full
-          rows: auto
-        icon: mdi:weather-sunset-up
-        name: "Apertura min mattino (08:30\u201311:15)"
-        type: tile
-        vertical: false
-      - entity: input_boolean.pergola_blocco_manuale
-        features_position: bottom
-        grid_options:
-          columns: 6
-          rows: auto
-        name: Chiudere fino notte
-        tap_action:
-          action: perform-action
-          perform_action: script.pergola_toggle_manuale
-        type: tile
-        vertical: true
       - entity: input_boolean.pergola_meteo_chiusura
         features_position: bottom
         grid_options:
@@ -129,6 +106,28 @@ config:
           columns: full
           rows: auto
         type: markdown
+      - entity: input_boolean.pergola_blocco_manuale
+        features_position: bottom
+        grid_options:
+          columns: 12
+          rows: auto
+        name: Chiudere fino notte
+        tap_action:
+          action: perform-action
+          perform_action: script.pergola_toggle_manuale
+        type: tile
+        vertical: false
+      - entity: input_number.pergola_min_mattino
+        features:
+        - style: slider
+          type: numeric-input
+        features_position: bottom
+        grid_options:
+          columns: full
+          rows: auto
+        name: Apertura min mattino(08:30-11:15)
+        type: tile
+        vertical: false
       type: grid
     title: Tende
     type: sections
