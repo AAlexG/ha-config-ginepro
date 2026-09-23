@@ -1,4 +1,4 @@
-# config_elettricita_13.yaml
+# config_elettricita_14.yaml
 # Package Casa Ginepro - Elettricita: consumi, costi, prezzo kWh, bolletta
 # Estratto da configuration_186.yaml. Nome file = nome del package.
 
@@ -138,12 +138,15 @@ template:
         # sempre, quindi se cade e' un guasto, non uno stato di riposo.
         # Si usa il ciclo giornaliero, non il totale cumulato del
         # dispositivo, per restare omogenei con le altre sorgenti.
+        # Lavatrice (v14): sensor.lavatrice_oggi (utility_meter giornaliero) e non
+        # sensor.lavatrice_energia, che vale per ciclo e resta fermo sull'ultimo
+        # lavaggio: ogni giorno veniva sottratto il lavaggio precedente.
         availability: >-
           {{ has_value('sensor.inverter_uflex_today_load_consumption')
              and has_value('sensor.panasonic_consumata_oggi')
              and has_value('sensor.consumo_deumidificatori_oggi')
              and has_value('sensor.consumo_fancoil_totale_oggi')
-             and has_value('sensor.lavatrice_energia')
+             and has_value('sensor.lavatrice_oggi')
              and has_value('sensor.auto_energia_oggi')
              and has_value('sensor.cucina_energia_oggi') }}
         state: >-
@@ -151,7 +154,7 @@ template:
                - states('sensor.panasonic_consumata_oggi') | float(0)
                - states('sensor.consumo_deumidificatori_oggi') | float(0)
                - states('sensor.consumo_fancoil_totale_oggi') | float(0)
-               - states('sensor.lavatrice_energia') | float(0)
+               - states('sensor.lavatrice_oggi') | float(0)
                - states('sensor.sauna_energia_oggi') | float(0)
                - states('sensor.auto_energia_oggi') | float(0)
                - states('sensor.cucina_energia_oggi') | float(0), 0 ] | max | round(2) }}

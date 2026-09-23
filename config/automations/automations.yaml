@@ -1,5 +1,4 @@
-# automations_125.yaml
-#prova
+# automations_127.yaml
 #==================================================================================
 # 1. IRRIGAZIONE – Ciclo programmato (O1/O2) con gate meteo
 #
@@ -282,7 +281,9 @@
   triggers:
     - platform: state
       entity_id: binary_sensor.hp1000se_pro_pro_v1_6_4_leak_detection_4
-      from: "off"
+      # v126: era from "off", che scattava anche su off -> unavailable
+      # (falso allarme perdita a ogni disconnessione della stazione).
+      to: "on"
   action:
     - action: notify.mobile_app_cph2653
       data:
@@ -300,9 +301,12 @@
   alias: "Batteria bassa - Leak Detector"
   mode: single
   triggers:
+    # v126: binary_sensor.hp1000se_pro_pro_v1_6_4_leak_detection_4_battery non
+    # esiste; la batteria e' esposta solo come sensore numerico, gia' tradotto
+    # in OK/Bassa da sensor.leak_detector_battery_status (config_acqua).
     - platform: state
-      entity_id: binary_sensor.hp1000se_pro_pro_v1_6_4_leak_detection_4_battery
-      to: "on"
+      entity_id: sensor.leak_detector_battery_status
+      to: "Bassa"
   condition: []
   action:
     - action: notify.mobile_app_cph2653
@@ -540,23 +544,58 @@
         options: "{{ mesi_attesi }}"
 
 #==================================================================================
-# 29. ACQUA – Reset dhw_durata_acc all'avvio di HA
-# Resetta SOLO il contatore minuti DHW senza toccare gli accumulatori mensili.
-# I sensori template ricalcolano automaticamente i valori al riavvio.
+# 29. ACQUA – Recupero del reset di mezzanotte saltato (v127)
+#
+# Sostituisce acqua_reset_avvio_ha, che azzerava caldaia_dhw_durata_acc a OGNI
+# avvio di HA: un riavvio a meta' giornata cancellava i minuti DHW gia'
+# accumulati (stima acqua calda e gas in estate).
+#
+# Il caso da coprire e' solo uno: HA spento alle 23:59, quando gira
+# acqua_reset_mezzanotte. All'avvio si confronta il last_triggered di quella
+# automazione (ripristinato dopo il riavvio) con l'ultimo 23:59 passato: se e'
+# piu' vecchio, il reset e' saltato e viene rilanciato per intero. Cosi'
+# vengono recuperati anche l'accumulo di costo e m3 del giorno precedente e
+# l'azzeramento del contatore irrigazione, non solo i minuti DHW.
+# Dopo il recupero last_triggered e' aggiornato: i riavvii successivi della
+# stessa giornata non azzerano piu' nulla.
+# L'entita' e' cercata per id YAML, non per nome, per non dipendere
+# dall'entity_id generato dall'alias.
 #==================================================================================
-- id: acqua_reset_avvio_ha
-  alias: "Acqua – Reset dhw_durata_acc all'avvio HA"
+- id: acqua_recupero_reset_mezzanotte
+  alias: "Acqua – Recupero reset mezzanotte saltato"
   mode: single
   triggers:
-    - platform: homeassistant
+    - trigger: homeassistant
       event: start
-  action:
-    - delay: "00:00:30"
-    - action: input_number.set_value
+  actions:
+    # Attesa per il ripristino degli stati (helper e last_triggered)
+    - delay: "00:01:00"
+    - variables:
+        reset_entity: >-
+          {{ states.automation
+             | selectattr('attributes.id', 'eq', 'acqua_reset_mezzanotte')
+             | map(attribute='entity_id') | first | default('') }}
+        ultimo: "{{ state_attr(reset_entity, 'last_triggered') if reset_entity else none }}"
+        atteso: >-
+          {% set t = today_at('23:59') %}
+          {{ (t if now() >= t else t - timedelta(days=1)).isoformat() }}
+    - condition: template
+      value_template: >-
+        {{ reset_entity != '' and ultimo is not none
+           and as_datetime(ultimo) < as_datetime(atteso) }}
+    - action: automation.trigger
       target:
-        entity_id: input_number.caldaia_dhw_durata_acc
+        entity_id: "{{ reset_entity }}"
       data:
-        value: "0"
+        skip_condition: true
+    - action: persistent_notification.create
+      data:
+        title: "Acqua – reset di mezzanotte recuperato"
+        notification_id: acqua_recupero_reset
+        message: >-
+          HA era spento alle 23:59: il reset giornaliero (ultimo eseguito
+          {{ as_timestamp(ultimo) | timestamp_custom('%d/%m %H:%M') }}) e' stato
+          rilanciato all'avvio.
 
 #==================================================================================
 # 30. TOTALI CONSUMI – Aggiorna input_number rilevato/bollette

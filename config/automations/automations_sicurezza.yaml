@@ -1,4 +1,4 @@
-# automations_sicurezza_18.yaml
+# automations_sicurezza_19.yaml
 
 #==================================================================================
 # 1. ACCENSIONE LUCE (Faretto Intruso) - solo notte
@@ -39,9 +39,13 @@
       entity_id: binary_sensor.179_camera_cancello_persona
       to: "on"
   condition:
-    - condition: state
-      entity_id: person.alex
-      state: "not_home"
+    # v19: "non a casa" invece di "not_home": in una zona con nome (es. Lavoro)
+    # lo stato e' il nome della zona e l'avviso non partiva.
+    - condition: not
+      conditions:
+        - condition: state
+          entity_id: person.alex
+          state: "home"
   action:
     - action: notify.mobile_app_cph2653
       data:
@@ -92,9 +96,13 @@
       entity_id: binary_sensor.camera_portone_reolink_lumus_persona
       to: "on"
   condition:
-    - condition: state
-      entity_id: person.alex
-      state: "not_home"
+    # v19: "non a casa" invece di "not_home": in una zona con nome (es. Lavoro)
+    # lo stato e' il nome della zona e l'avviso non partiva.
+    - condition: not
+      conditions:
+        - condition: state
+          entity_id: person.alex
+          state: "home"
   action:
     - action: notify.mobile_app_cph2653
       data:
@@ -195,9 +203,13 @@
       entity_id: binary_sensor.192_camera_barbecue_reolink_persona
       to: "on"
   condition:
-    - condition: state
-      entity_id: person.alex
-      state: "not_home"
+    # v19: "non a casa" invece di "not_home": in una zona con nome (es. Lavoro)
+    # lo stato e' il nome della zona e l'avviso non partiva.
+    - condition: not
+      conditions:
+        - condition: state
+          entity_id: person.alex
+          state: "home"
   action:
     - action: notify.mobile_app_cph2653
       data:
@@ -248,9 +260,13 @@
       entity_id: binary_sensor.sotto_pergola_ezviz_c8w_movimento
       to: "on"
   condition:
-    - condition: state
-      entity_id: person.alex
-      state: "not_home"
+    # v19: "non a casa" invece di "not_home": in una zona con nome (es. Lavoro)
+    # lo stato e' il nome della zona e l'avviso non partiva.
+    - condition: not
+      conditions:
+        - condition: state
+          entity_id: person.alex
+          state: "home"
   action:
     - action: notify.mobile_app_cph2653
       data:
@@ -298,16 +314,28 @@
   mode: single
   triggers:
     - platform: state
-      entity_id: binary_sensor.0xa4c1380640bfffff_contact
+      entity_id: binary_sensor.persiana_tania_sensore_zigbee_contact
+      # v19: solo aperta/chiusa reali; senza filtri scattava anche su cambi di
+      # attributo e su unavailable (notificato come "CHIUSA").
+      not_from:
+        - unavailable
+        - unknown
+      to:
+        - "on"
+        - "off"
   condition:
-    - condition: state
-      entity_id: person.alex
-      state: "not_home"
+    # v19: "non a casa" invece di "not_home": in una zona con nome (es. Lavoro)
+    # lo stato e' il nome della zona e l'avviso non partiva.
+    - condition: not
+      conditions:
+        - condition: state
+          entity_id: person.alex
+          state: "home"
   action:
     - action: notify.mobile_app_cph2653
       data:
         title: "🪟 Persiana Giardino"
-        message: "{{ 'APERTA' if states('binary_sensor.0xa4c1380640bfffff_contact') == 'on' else 'CHIUSA' }}"
+        message: "{{ 'APERTA' if states('binary_sensor.persiana_tania_sensore_zigbee_contact') == 'on' else 'CHIUSA' }}"
         data:
           tag: "notifica_persiana_giardino"
           priority: high
@@ -321,16 +349,28 @@
   mode: single
   triggers:
     - platform: state
-      entity_id: binary_sensor.0xa4c1380697d6ffff_contact
+      entity_id: binary_sensor.persiana_box_sensore_zigbee_contact
+      # v19: solo aperta/chiusa reali; senza filtri scattava anche su cambi di
+      # attributo e su unavailable (notificato come "CHIUSA").
+      not_from:
+        - unavailable
+        - unknown
+      to:
+        - "on"
+        - "off"
   condition:
-    - condition: state
-      entity_id: person.alex
-      state: "not_home"
+    # v19: "non a casa" invece di "not_home": in una zona con nome (es. Lavoro)
+    # lo stato e' il nome della zona e l'avviso non partiva.
+    - condition: not
+      conditions:
+        - condition: state
+          entity_id: person.alex
+          state: "home"
   action:
     - action: notify.mobile_app_cph2653
       data:
         title: "🪟 Persiana Box"
-        message: "{{ 'APERTA' if states('binary_sensor.0xa4c1380697d6ffff_contact') == 'on' else 'CHIUSA' }}"
+        message: "{{ 'APERTA' if states('binary_sensor.persiana_box_sensore_zigbee_contact') == 'on' else 'CHIUSA' }}"
         data:
           tag: "notifica_persiana_box"
           priority: high

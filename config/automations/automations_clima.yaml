@@ -1,4 +1,4 @@
-# automations_clima_62.yaml
+# automations_clima_63.yaml
 
 
 
@@ -334,35 +334,10 @@
           channel: Clima
           importance: high
 
-- id: fancoil_georgi_prelavoro_sera
-  alias: "Fancoil Georgi – Prelavoro Serale (21:00)"
-  description: >
-    Alle 21:00 innesca il controllo periodico accendendo entrambi i fancoil
-    (camera Tania e camera Georgi) se le condizioni sono soddisfatte. Il
-    controllo periodico fancoil_georgi_controllo mantiene poi lo stato corretto
-    ogni 5 minuti.
-  triggers:
-    - trigger: time
-      at: "21:00:00"
-  conditions:
-    # Blocco fancoil in vacanza (flag attivabile anche a mano da plancia clima)
-    - condition: state
-      entity_id: input_boolean.vacanza
-      state: "off"
-    - condition: not
-      conditions:
-        - condition: state
-          entity_id: input_select.clima_modalita
-          state: "manuale"
-    - condition: state
-      entity_id: switch.panasonic_heat_pump_main_heatpump_state
-      state: "on"
-  actions:
-    - action: automation.trigger
-      target:
-        entity_id: automation.fancoil_georgi_controllo
-      data:
-        skip_condition: false
+# fancoil_georgi_prelavoro_sera RIMOSSA (v63): chiamava automation.fancoil_georgi_controllo,
+# entita' inesistente (quella reale e' automation.fancoil_georgi_controllo_periodico),
+# quindi falliva ogni sera. Era comunque ridondante: il controllo periodico ogni
+# 5 minuti scatta gia' alle 21:00:00 con condizione "after 21:00:00" inclusiva.
 
 #==================================================================================
 # 6. FANCOIL - CAMERE TANIA E GEORGI – CONTROLLO PERIODICO (ogni 5 minuti)
@@ -1044,8 +1019,8 @@
                   data:
                     title: "🌬️ Free cooling attivo"
                     message: >
-                      Temperatura esterna {{ states('sensor.hp1000se_pro_pro_v1_6_4_outdoor_temperature') | round(1) }}°C,
-                      vento medio {{ states('sensor.wind_speed_media_1h') | round(1) }} km/h.
+                      Temperatura esterna {{ states('sensor.hp1000se_pro_pro_v1_6_4_outdoor_temperature') | float(0) | round(1) }}°C,
+                      vento medio {{ states('sensor.wind_speed_media_1h') | float(0) | round(1) }} km/h.
                       Pompa ammorbidita, fancoil in pausa: il raffrescamento naturale basta.
                 - action: input_boolean.turn_on
                   target:
@@ -1135,16 +1110,19 @@
               value_template: >
                 {{ states('input_number.clima_media_esterna_7gg') | float(15) < 
                    states('input_number.clima_soglia_inverno') | float(13) }}
-            - condition: template
-              value_template: >
-                {{ states('select.panasonic_heat_pump_main_operating_mode_state')
-                   in ['Cool', 'Cool only'] }}
+            # v63: si confronta la stagione registrata, non il modo della pompa.
+            # Nessuna automazione cambia il modo Panasonic: con la condizione sul
+            # modo, notifica e spegnimento si ripetevano ogni mattina finche' il
+            # modo non veniva cambiato a mano.
+            - condition: state
+              entity_id: input_select.clima_stagione
+              state: "estate"
           sequence:
             - action: notify.mobile_app_cph2653
               data:
                 title: "🌡️ Cambio Stagione"
                 message: >
-                  Media 7gg: {{ states('input_number.clima_media_esterna_7gg') | round(1) }}°C.
+                  Media 7gg: {{ states('input_number.clima_media_esterna_7gg') | float(0) | round(1) }}°C.
                   Passaggio a modalità INVERNO. Panasonic cooling disattivato.
             - action: input_select.select_option
               target:
@@ -1157,6 +1135,10 @@
                 - condition: state
                   entity_id: input_boolean.pdc_manuale
                   state: "off"
+                - condition: template
+                  value_template: >
+                    {{ states('select.panasonic_heat_pump_main_operating_mode_state')
+                       in ['Cool', 'Cool only'] }}
               then:
                 - action: switch.turn_off
                   target:
@@ -1165,16 +1147,15 @@
             - condition: template
               value_template: >
                 {{ states('input_number.clima_media_esterna_7gg') | float(15) > 16 }}
-            - condition: template
-              value_template: >
-                {{ states('select.panasonic_heat_pump_main_operating_mode_state')
-                   not in ['Cool', 'Cool only'] }}
+            - condition: state
+              entity_id: input_select.clima_stagione
+              state: "inverno"
           sequence:
             - action: notify.mobile_app_cph2653
               data:
                 title: "☀️ Cambio Stagione"
                 message: >
-                  Media 7gg: {{ states('input_number.clima_media_esterna_7gg') | round(1) }}°C.
+                  Media 7gg: {{ states('input_number.clima_media_esterna_7gg') | float(0) | round(1) }}°C.
                   Passaggio a modalità ESTATE. Panasonic cooling disponibile.
             - action: input_select.select_option
               target:
@@ -1365,6 +1346,12 @@
     - condition: state
       entity_id: input_boolean.clima_pid_attivo
       state: "on"
+    # Valvola su Pompa (v63): con switch.shelly_box off il circuito e' della
+    # caldaia (gestione fonte). Senza questa condizione il PID riaccendeva la
+    # PdC entro 5 minuti da ogni commutazione Pompa -> Caldaia.
+    - condition: state
+      entity_id: switch.shelly_box
+      state: "on"
     - condition: template
       value_template: >
         {{ states('select.panasonic_heat_pump_main_operating_mode_state')
@@ -1542,7 +1529,7 @@
                   data:
                     title: "☀️ Free heating attivo"
                     message: >
-                      Temperatura esterna {{ states('sensor.hp1000se_pro_pro_v1_6_4_outdoor_temperature') | round(1) }}°C,
+                      Temperatura esterna {{ states('sensor.hp1000se_pro_pro_v1_6_4_outdoor_temperature') | float(0) | round(1) }}°C,
                       vicina al target. Pompa ammorbidita: il riscaldamento naturale/passivo basta.
                 - action: input_boolean.turn_on
                   target:
@@ -1603,6 +1590,19 @@
             - condition: template
               value_template: "{{ t_sala < soglia and not pompa_accesa }}"
           sequence:
+            # Valvola (v63): la PdC scalda la casa solo con switch.shelly_box su
+            # Pompa. In vacanza il SAT e' gia' spento (spegnimento_inizio_vacanza):
+            # basta portare la valvola su Pompa e attendere la manovra, con gli
+            # stessi 120 s della gestione fonte.
+            - if:
+                - condition: state
+                  entity_id: switch.shelly_box
+                  state: "off"
+              then:
+                - action: switch.turn_on
+                  target:
+                    entity_id: switch.shelly_box
+                - delay: "00:02:00"
             - action: switch.turn_on
               target:
                 entity_id: switch.panasonic_heat_pump_main_heatpump_state
@@ -1882,6 +1882,12 @@
   triggers:
     - platform: homeassistant
       event: start
+  # v63: in vacanza la sanitaria e' spenta (HW=0 da spegnimento_inizio_vacanza);
+  # senza questa condizione un riavvio di HA la riaccendeva.
+  conditions:
+    - condition: state
+      entity_id: input_boolean.vacanza
+      state: "off"
   action:
     - delay: "00:00:30"
     - action: mqtt.publish
@@ -2038,33 +2044,43 @@
           entity_id: sensor.hp1000se_pro_pro_v1_6_4_outdoor_temperature
           below: 17
       then:
-        - action: climate.set_hvac_mode
-          target:
-            entity_id: climate.smart_autotune_thermostat_living_room
-          data:
-            hvac_mode: "heat"
-        - action: climate.set_preset_mode
-          target:
-            entity_id: climate.smart_autotune_thermostat_living_room
-          data:
-            preset_mode: "home"
-        - action: climate.set_temperature
-          target:
-            entity_id: climate.smart_autotune_thermostat_living_room
-          data:
-            temperature: 22
+        # Una sola fonte alla volta (v63), decisa dalla valvola switch.shelly_box
+        # come nella gestione fonte: su Pompa si riaccende la PdC, su Caldaia il
+        # SAT. Prima venivano accesi entrambi.
         - if:
             - condition: state
-              entity_id: select.panasonic_heat_pump_main_operating_mode_state
-              state: "Heat"
-            # Lucchetto manuale pompa (automations_clima_59)
-            - condition: state
-              entity_id: input_boolean.pdc_manuale
-              state: "off"
+              entity_id: switch.shelly_box
+              state: "on"
           then:
-            - action: switch.turn_on
+            - if:
+                - condition: template
+                  value_template: >
+                    {{ states('select.panasonic_heat_pump_main_operating_mode_state')
+                       in ['Heat', 'Heat only'] }}
+                # Lucchetto manuale pompa (automations_clima_59)
+                - condition: state
+                  entity_id: input_boolean.pdc_manuale
+                  state: "off"
+              then:
+                - action: switch.turn_on
+                  target:
+                    entity_id: switch.panasonic_heat_pump_main_heatpump_state
+          else:
+            - action: climate.set_hvac_mode
               target:
-                entity_id: switch.panasonic_heat_pump_main_heatpump_state
+                entity_id: climate.smart_autotune_thermostat_living_room
+              data:
+                hvac_mode: "heat"
+            - action: climate.set_preset_mode
+              target:
+                entity_id: climate.smart_autotune_thermostat_living_room
+              data:
+                preset_mode: "home"
+            - action: climate.set_temperature
+              target:
+                entity_id: climate.smart_autotune_thermostat_living_room
+              data:
+                temperature: 22
       # Ramo raffrescamento: se la PdC e' in modalita' Cool la riaccende;
       # poi la normale automazione a isteresi riprende il controllo.
       else:
@@ -2085,7 +2101,7 @@
       data:
         title: "Rientro vacanza"
         message: >
-          Casa ripristinata: modalita' giorno, acqua sanitaria riattivata,
+          Casa ripristinata: modalita' clima impostata in base all'ora, acqua sanitaria riattivata,
           canto uccelli riavviato. Clima riattivato in base alla stagione.
           Fancoil e pergola ripartono dalle loro automazioni. Benvenuti a casa!
 

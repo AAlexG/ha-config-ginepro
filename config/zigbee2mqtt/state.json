@@ -14,8 +14,8 @@
         "linkquality": 56
     },
     "0xa4c138f820e17e6e": {
-        "voltage": 3000,
-        "battery": 100,
+        "voltage": 2700,
+        "battery": 98,
         "contact": false,
         "tamper": false,
         "battery_low": false,
@@ -24,18 +24,18 @@
     "0xa4c138e6a0d06219": {
         "voltage": 2500,
         "battery": 50,
-        "temperature": 23.68,
-        "humidity": 52.81,
+        "temperature": 23.57,
+        "humidity": 52.72,
         "linkquality": 124
     },
     "0xa4c1385040d042fb": {
         "energy": 1.47,
-        "state": "OFF",
+        "state": "ON",
         "countdown": 0,
         "power_outage_memory": "restore",
         "indicator_mode": "off/on",
         "child_lock": "UNLOCK",
-        "voltage": 221.9,
+        "voltage": 225.6,
         "power": 0,
         "current": 0,
         "linkquality": 120
@@ -47,7 +47,7 @@
         "power_outage_memory": "restore",
         "indicator_mode": "off/on",
         "child_lock": "UNLOCK",
-        "voltage": 226,
+        "voltage": 225.6,
         "linkquality": 68,
         "power": 0,
         "current": 0
@@ -78,16 +78,16 @@
         "indicator_mode": "off/on",
         "power": 3,
         "current": 0.03,
-        "voltage": 226,
+        "voltage": 229,
         "energy": 0.52,
         "linkquality": 56,
         "child_lock": "UNLOCK"
     },
     "0xa4c1380eff54ffff": {
         "battery": 100,
-        "temperature": 22.6,
+        "temperature": 22.4,
         "voltage": 2900,
-        "humidity": 59.4,
+        "humidity": 59.6,
         "temperature_sensor_select": "internal",
         "comfort_temperature_min": 19,
         "comfort_temperature_max": 35.2,
@@ -108,7 +108,7 @@
     "0xa4c1380f0678ffff": {
         "battery": 100,
         "voltage": 3000,
-        "temperature": 24.7,
+        "temperature": 24.6,
         "humidity": 60.4,
         "temperature_sensor_select": "internal",
         "comfort_temperature_min": 19,
@@ -128,7 +128,7 @@
         "linkquality": 120
     },
     "0xa4c1389b51ea7546": {
-        "contact": true,
+        "contact": false,
         "tamper": false,
         "battery_low": false,
         "voltage": 3100,
