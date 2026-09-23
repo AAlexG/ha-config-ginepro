@@ -1,4 +1,4 @@
-# automations_carichi_6.yaml
+# automations_carichi_7.yaml
 #==================================================================================
 # DISTACCO CARICHI SU PRELIEVO DI RETE ALTO
 #
@@ -16,6 +16,12 @@
 # scende, il trigger numeric_state si riarma, e se il consumo risale sopra
 # soglia per altri 30 secondi l'automazione riparte e trova il gradino
 # successivo (il precedente e' gia' spento e viene saltato dal choose).
+#
+# v7: se dopo uno stacco il prelievo resta comunque sopra soglia il
+# numeric_state non si riarma (non c'e' un nuovo attraversamento) e il
+# gradino successivo non partiva mai. Aggiunto un ricontrollo ogni minuto,
+# valido solo se il prelievo e' ancora oltre 5900 W e lo resta per altri
+# 30 secondi (stessa tenuta del trigger principale).
 #
 # Ogni distacco spegne il dispositivo E alza il suo flag manuale, cosi' il
 # carico resta fermo: senza il flag le automazioni FV e clima lo
@@ -43,8 +49,24 @@
       entity_id: sensor.inverter_uflex_external_ct1_power
       above: 5900
       for: "00:00:30"
-  conditions: []
+    - trigger: time_pattern
+      minutes: "/1"
+      id: ricontrollo
+  conditions:
+    - condition: numeric_state
+      entity_id: sensor.inverter_uflex_external_ct1_power
+      above: 5900
   actions:
+    # Ricontrollo (v7): tenuta di 30 s, poi verifica. La condizione e' al
+    # livello principale della sequenza, quindi se fallisce ferma tutto.
+    - if:
+        - condition: trigger
+          id: ricontrollo
+      then:
+        - delay: "00:00:30"
+    - condition: numeric_state
+      entity_id: sensor.inverter_uflex_external_ct1_power
+      above: 5900
     - variables:
         prelievo: >
           {{ states('sensor.inverter_uflex_external_ct1_power') | float(0) | round(0) }}
@@ -175,7 +197,13 @@
       entity_id: sensor.inverter_uflex_external_ct1_power
       above: 5900
       for: "00:00:30"
+    - trigger: time_pattern
+      minutes: "/1"
+      id: ricontrollo
   conditions:
+    - condition: numeric_state
+      entity_id: sensor.inverter_uflex_external_ct1_power
+      above: 5900
     - condition: template
       value_template: >
         {{ not (is_state('switch.solo_auto_contattore_interruttore', 'on')
@@ -187,6 +215,15 @@
         {{ this.attributes.last_triggered is none
            or (now() - this.attributes.last_triggered).total_seconds() > 900 }}
   actions:
+    # Ricontrollo (v7): tenuta di 30 s, poi verifica (vedi C1).
+    - if:
+        - condition: trigger
+          id: ricontrollo
+      then:
+        - delay: "00:00:30"
+    - condition: numeric_state
+      entity_id: sensor.inverter_uflex_external_ct1_power
+      above: 5900
     - variables:
         prelievo: >
           {{ states('sensor.inverter_uflex_external_ct1_power') | float(0) | round(0) }}

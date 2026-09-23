@@ -1,4 +1,4 @@
-# automations_pergola_20.yaml
+# automations_pergola_21.yaml
 
 #==================================================================================
 # PERGOLA – INSEGUIMENTO SOLARE + APERTURA AERAZIONE (1 giugno – 1 novembre)
@@ -124,6 +124,10 @@
 #==================================================================================
 - id: pergola_meteo_chiusura
   alias: "Pergola – Chiusura Sicurezza Meteo"
+  # v21: con il ciclo fitto ogni 2 minuti due trigger possono cadere insieme:
+  # il secondo viene scartato in silenzio.
+  mode: single
+  max_exceeded: silent
   triggers:
     - trigger: numeric_state
       entity_id: sensor.hp1000se_pro_pro_v1_6_4_wind_speed
@@ -140,6 +144,12 @@
       above: 0
     - trigger: time_pattern
       minutes: "/10"
+    # v21: dopo che nella giornata e' stata vista o prevista pioggia
+    # (input_boolean.pergola_pioggia_oggi, azzerato alle 23:59:30) il controllo
+    # gira ogni 2 minuti per il resto della giornata.
+    - trigger: time_pattern
+      minutes: "/2"
+      id: fitto
   conditions:
     - condition: state
       entity_id: input_boolean.vacanza
@@ -147,6 +157,10 @@
     - condition: state
       entity_id: input_boolean.pergola_blocco_manuale
       state: "off"
+    - condition: template
+      value_template: >-
+        {{ trigger.id != 'fitto'
+           or is_state('input_boolean.pergola_pioggia_oggi', 'on') }}
   actions:
     - action: weather.get_forecasts
       target:
@@ -163,6 +177,14 @@
           {{ (previsione['weather.casa'].forecast[0:3]
              | map(attribute='precipitation')
              | map('float', 0) | list) | max | default(0) }}
+    # v21: pioggia vista o prevista -> ciclo fitto per il resto della giornata
+    - if:
+        - condition: template
+          value_template: "{{ v_rate > 0 or v_oraria > 0 or mm_previsti > 0 }}"
+      then:
+        - action: input_boolean.turn_on
+          target:
+            entity_id: input_boolean.pergola_pioggia_oggi
     # Secondo blocco separato: usa le variabili del primo.
     # ora_inizio = ora di alzamento del flag (last_changed se gia' alzato,
     # adesso se sta per essere alzato ora), non ora dell'ultimo controllo.
@@ -310,7 +332,7 @@
           data:
             title: "💨 Tenda giardino chiusa - vento"
             message: >-
-              Raffica di {{ states('sensor.hp1000se_pro_pro_v1_6_4_wind_gust') | round(1) }} km/h rilevata.
+              Raffica di {{ states('sensor.hp1000se_pro_pro_v1_6_4_wind_gust') | float(0) | round(1) }} km/h rilevata.
               Tenda giardino chiusa automaticamente.
             data:
               priority: high
@@ -337,6 +359,7 @@
         entity_id:
           - input_boolean.tenda_notifica_vento_oggi
           - input_boolean.tenda_notifica_pioggia_oggi
+          - input_boolean.pergola_pioggia_oggi
         
 
 #==================================================================================
@@ -388,6 +411,16 @@
     - condition: numeric_state
       entity_id: sensor.hp1000se_pro_pro_v1_6_4_wind_gust
       below: 40
+    # v21: priorita' al vento anche dopo la chiusura. Per 30 minuti dall'ultima
+    # chiusura per vento (last_triggered di tenda_chiusura_vento, cercata per id)
+    # la tenda non viene riaperta: prima bastava una singola lettura di raffica
+    # sotto 40 km/h per riaprirla in mezzo alla burrasca.
+    - condition: template
+      value_template: >-
+        {% set a = states.automation
+                   | selectattr('attributes.id', 'eq', 'tenda_chiusura_vento') | list %}
+        {% set t = a[0].attributes.last_triggered if a else none %}
+        {{ t is none or (now() - t).total_seconds() > 1800 }}
     - condition: numeric_state
       entity_id: cover.all_house_tenda_giardino_new
       attribute: current_position
@@ -483,6 +516,16 @@
     - condition: numeric_state
       entity_id: sensor.hp1000se_pro_pro_v1_6_4_wind_gust
       below: 40
+    # v21: priorita' al vento anche dopo la chiusura. Per 30 minuti dall'ultima
+    # chiusura per vento (last_triggered di tenda_chiusura_vento, cercata per id)
+    # la tenda non viene riaperta: prima bastava una singola lettura di raffica
+    # sotto 40 km/h per riaprirla in mezzo alla burrasca.
+    - condition: template
+      value_template: >-
+        {% set a = states.automation
+                   | selectattr('attributes.id', 'eq', 'tenda_chiusura_vento') | list %}
+        {% set t = a[0].attributes.last_triggered if a else none %}
+        {{ t is none or (now() - t).total_seconds() > 1800 }}
   actions:
     - action: weather.get_forecasts
       target:

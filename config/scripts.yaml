@@ -1,4 +1,4 @@
-# scripts_54.yaml
+# scripts_55.yaml
 
 #==================================================================================
 # SCRIPT: APRI CANCELLO CASA
@@ -631,7 +631,10 @@ panasonic_set_target_mandata:
       value_template: "{{ has_value('input_number.panasonic_target_mandata_manuale') }}"
     - action: mqtt.publish
       data:
-        topic: "panasonic_heat_pump/commands/SetZ1CoolRequestTemperature"
+        # v55: topic secondo il modo operativo. Prima usava sempre il comando
+        # del raffrescamento, anche con la pompa in riscaldamento.
+        topic: >-
+          {% if states('select.panasonic_heat_pump_main_operating_mode_state') in ['Heat', 'Heat only'] %}panasonic_heat_pump/commands/SetZ1HeatRequestTemperature{% else %}panasonic_heat_pump/commands/SetZ1CoolRequestTemperature{% endif %}
         payload: "{{ states('input_number.panasonic_target_mandata_manuale') | int(0) }}"
 
 #==================================================================================

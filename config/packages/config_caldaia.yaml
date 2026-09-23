@@ -1,25 +1,13 @@
-# config_caldaia_1.yaml
+# config_caldaia_2.yaml
 # Package Casa Ginepro - Caldaia Baxi / OTGW: DHW, costi termici, scelta fonte caldaia-PdC
 # Estratto da configuration_186.yaml. Nome file = nome del package.
 
 template:
-  - binary_sensor:
-      - name: "Caldaia DHW Attiva"
-        unique_id: "caldaia_dhw_attiva"
-        state: >-
-          {{ is_state('binary_sensor.opentherm_gateway_otgw_otgw_flame', 'on') and
-             states('sensor.opentherm_gateway_otgw_otgw_relative_modulation_level') | float(0) >= 80 }}
-        device_class: heat
-        icon: mdi:water-boiler
-
-  # ============================================================
-  # PORTONE BOX: sensore con logica invertita (configuration_128)
-  # binary_sensor.portone_box_sensore_zigbee_contact:
-  #   stato "off" (chiuso) = portone APERTO
-  #   stato "on"  (aperto) = portone CHIUSO
-  # Questo sensore proxy inverte la logica per mostrare correttamente
-  # "Aperto"/"Chiuso" nelle plance (device_class garage_door: on=Aperto, off=Chiuso)
-  # ============================================================
+  # v2: rimossi binary_sensor "Caldaia DHW Attiva" e il history_stats
+  # "Caldaia DHW Durata Oggi" che lo leggeva: nessuno dei due era usato. La
+  # durata DHW giornaliera viene da input_number.caldaia_dhw_durata_acc
+  # (automazione caldaia_dhw_accumula_minuti). Rimosso anche un commento sul
+  # portone box rimasto qui: quel sensore vive in config_aperture.
   - sensor:
 
       - name: "Caldaia DHW Durata Oggi Minuti"
@@ -161,19 +149,6 @@ template:
           {% else %}
             Codice sconosciuto ({{ code }})
           {% endif %}
-
-sensor:
-
-  # Durata giornaliera DHW caldaia (per stima consumo acqua calda)
-  # Usa binary_sensor.caldaia_dhw_attiva (fiamma + mod≥80%) invece di
-  # acqua_calda_2 che è sempre ON per via del dhw_override: 1
-  - platform: history_stats
-    name: "Caldaia DHW Durata Oggi"
-    entity_id: binary_sensor.caldaia_dhw_attiva
-    state: "on"
-    type: time
-    start: "{{ now().replace(hour=0, minute=0, second=0, microsecond=0).isoformat() }}"
-    end: "{{ now().isoformat() }}"
 
 input_number:
 

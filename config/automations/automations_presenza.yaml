@@ -1,4 +1,4 @@
-# automations_presenza_10.yaml
+# automations_presenza_11.yaml
 
 #==================================================================================
 # 1. NOTIFICA - Nuovo dispositivo MAI VISTO rilevato sulla rete
@@ -85,7 +85,6 @@
         - device_tracker.018_repeater_tp_re650
         - device_tracker.077_rapsberry_pi
         - device_tracker.037_heishamon_via_re650
-        - device_tracker.036_otgw_x_baxi_via_re650
         - device_tracker.stazione_meteo_sottotetto
         - device_tracker.google_home_camera_georgi
         - device_tracker.presa_luce_cucina

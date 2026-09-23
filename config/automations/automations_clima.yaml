@@ -1,4 +1,4 @@
-# automations_clima_63.yaml
+# automations_clima_64.yaml
 
 
 
@@ -12,27 +12,37 @@
   triggers:
     - trigger: time_pattern
       minutes: "/1"
-  conditions:
-    - condition: numeric_state
-      entity_id: sensor.panasonic_potenza_prodotta_calcolata
-      above: 0
+  # v64: prodotta e consumata sono accumulate in modo indipendente. Prima la
+  # condizione "prodotta > 0" valeva per entrambe: il consumo del compressore
+  # con delta mandata/ritorno < 0,2 C o portata nulla (sbrinamento, avvio)
+  # andava perso, sottostimando i kWh consumati e gonfiando il COP.
   actions:
-    - action: input_number.set_value
-      target:
-        entity_id: input_number.panasonic_energia_prodotta_acc
-      data:
-        value: >
-          {{ (states('input_number.panasonic_energia_prodotta_acc') | float(0) +
-              states('sensor.panasonic_potenza_prodotta_calcolata') | float(0) / 1000 / 60)
-             | round(4) }}
-    - action: input_number.set_value
-      target:
-        entity_id: input_number.panasonic_energia_consumata_acc
-      data:
-        value: >
-          {{ (states('input_number.panasonic_energia_consumata_acc') | float(0) +
-              states('sensor.panasonic_potenza_consumata_calcolata') | float(0) / 1000 / 60)
-             | round(4) }}
+    - if:
+        - condition: numeric_state
+          entity_id: sensor.panasonic_potenza_prodotta_calcolata
+          above: 0
+      then:
+        - action: input_number.set_value
+          target:
+            entity_id: input_number.panasonic_energia_prodotta_acc
+          data:
+            value: >
+              {{ (states('input_number.panasonic_energia_prodotta_acc') | float(0) +
+                  states('sensor.panasonic_potenza_prodotta_calcolata') | float(0) / 1000 / 60)
+                 | round(4) }}
+    - if:
+        - condition: numeric_state
+          entity_id: sensor.panasonic_potenza_consumata_calcolata
+          above: 0
+      then:
+        - action: input_number.set_value
+          target:
+            entity_id: input_number.panasonic_energia_consumata_acc
+          data:
+            value: >
+              {{ (states('input_number.panasonic_energia_consumata_acc') | float(0) +
+                  states('sensor.panasonic_potenza_consumata_calcolata') | float(0) / 1000 / 60)
+                 | round(4) }}
 
 
 #==================================================================================
@@ -1215,87 +1225,12 @@
       data:
         value: 0
 
-#==================================================================================
-# 11. PANASONIC - PID – AUTOTUNING PID (METODO RELAY)
-#==================================================================================
-- id: clima_autotune_pid
-  alias: "Clima – Autotuning PID"
-  description: "Calcola Kp/Ki/Kd ottimali con metodo relay (Ziegler-Nichols)"
-  mode: single
-  triggers:
-    - trigger: state
-      entity_id: input_boolean.clima_autotune_attivo
-      to: "on"
-  conditions:
-    - condition: state
-      entity_id: switch.panasonic_heat_pump_main_heatpump_state
-      state: "on"
-    - condition: template
-      value_template: >
-        {{ states('select.panasonic_heat_pump_main_operating_mode_state')
-           in ['Cool', 'Cool only'] }}
-  actions:
-    - action: notify.mobile_app_cph2653
-      data:
-        title: "🔧 Autotuning PID Avviato"
-        message: "Misurazione risposta sistema. Durata ~2 ore. Non modificare setpoint."
-    - action: mqtt.publish
-      data:
-        topic: "panasonic_heat_pump/commands/SetZ1CoolRequestTemperature"
-        payload: "{{ states('input_number.panasonic_mandata_cool_min') | float(14) | round(0) | int }}"
-    - delay: "01:00:00"
-    - variables:
-        t_minima: "{{ states('sensor.hp1000se_pro_pro_v1_6_4_indoor_temperature') | float(25) }}"
-    - action: mqtt.publish
-      data:
-        topic: "panasonic_heat_pump/commands/SetZ1CoolRequestTemperature"
-        payload: "{{ states('input_number.panasonic_mandata_cool_max') | float(18) | round(0) | int }}"
-    - delay: "01:00:00"
-    - variables:
-        t_massima: "{{ states('sensor.hp1000se_pro_pro_v1_6_4_indoor_temperature') | float(25) }}"
-        ampiezza: "{{ ((t_massima - t_minima) | abs) / 2 }}"
-        # Formula del rele': Ku = 4d / (pi * a), con d = 4 C (meta' dell'escursione
-        # di setpoint 10<->18) e a = ampiezza della risposta misurata.
-        # La parentesi esterna e' necessaria: in Jinja i filtri legano piu' delle
-        # operazioni aritmetiche, quindi senza di essa round(3) si applicava
-        # ad ampiezza e non al risultato.
-        ku: >
-          {% if ampiezza > 0 %}
-            {{ ((4 * 4) / (3.14159 * ampiezza)) | round(3) }}
-          {% else %}
-            2.0
-          {% endif %}
-        # ATTENZIONE: Tu qui non e' il periodo ultimo misurato, e' il periodo
-        # imposto dalla prova (due semiperiodi da 1 ora). I guadagni che ne
-        # derivano sono quindi indicativi, non un vero Ziegler-Nichols.
-        tu: 120
-        kp_new: "{{ (0.6 * ku) | round(3) }}"
-        ki_new: "{{ (1.2 * ku / tu) | round(4) }}"
-        kd_new: "{{ (0.075 * ku * tu) | round(3) }}"
-    - action: input_number.set_value
-      target:
-        entity_id: input_number.panasonic_pid_kp
-      data:
-        value: "{{ kp_new }}"
-    - action: input_number.set_value
-      target:
-        entity_id: input_number.panasonic_pid_ki
-      data:
-        value: "{{ ki_new }}"
-    - action: input_number.set_value
-      target:
-        entity_id: input_number.panasonic_pid_kd
-      data:
-        value: "{{ kd_new }}"
-    - action: input_boolean.turn_off
-      target:
-        entity_id: input_boolean.clima_autotune_attivo
-    - action: notify.mobile_app_cph2653
-      data:
-        title: "✅ Autotuning Completato"
-        message: >
-          Kp={{ kp_new }}, Ki={{ ki_new }}, Kd={{ kd_new }}.
-          Parametri applicati automaticamente.
+# 11. AUTOTUNING PID RIMOSSO (v64): durante le 2 ore di prova il PID cooling
+# continuava a pubblicare il proprio setpoint ogni 5 minuti e invalidava il
+# test; la formula usava ampiezza relay e periodo Tu fissi, con Tu in minuti
+# e derivativo in C/h (Kd ~ 9 x Ku). Rimossi anche input_boolean
+# clima_autotune_attivo (config_clima_11) e il tile in plancia clima (19).
+# Kp/Ki/Kd restano regolabili a mano dalla plancia clima.
 
 #==================================================================================
 # 12. PANASONIC – SINCRONIZZA TARGET MANDATA MANUALE
@@ -1771,15 +1706,10 @@
       to: "on"
       for:
         minutes: 10
+  # v64: tolta la condizione "codice OEM diverso da unknown/unavailable".
+  # Il 23/09 il codice OEM risultava unknown: se la Baxi non lo invia, la
+  # notifica non sarebbe mai partita. Il segnale e' il bit fault per 10 minuti.
   conditions:
-    - condition: not
-      conditions:
-        - condition: state
-          entity_id: sensor.opentherm_gateway_otgw_otgw_oemfaultcode
-          state: "unknown"
-        - condition: state
-          entity_id: sensor.opentherm_gateway_otgw_otgw_oemfaultcode
-          state: "unavailable"
     - condition: state
       entity_id: input_boolean.caldaia_fault_notificato
       state: "off"
@@ -1792,7 +1722,7 @@
         title: "⚠️ Fault Caldaia"
         message: >
           La caldaia Baxi riporta un fault da oltre 10 minuti.
-          {{ states('sensor.otgw_baxi_fault_descrizione') }}
+          {% if has_value('sensor.opentherm_gateway_otgw_otgw_oemfaultcode') %}{{ states('sensor.otgw_baxi_fault_descrizione') }}{% else %}Codice OEM non inviato dalla caldaia: leggere il codice sul display.{% endif %}
           Codice fault: {{ states('sensor.opentherm_gateway_otgw_otgw_application_specific_fault') }}
           Codice OEM: {{ states('sensor.opentherm_gateway_otgw_otgw_oemfaultcode') }}
 

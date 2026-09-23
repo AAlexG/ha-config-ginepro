@@ -1,25 +1,12 @@
-# config_clima_10.yaml
+# config_clima_11.yaml
 # Package Casa Ginepro - Clima: fancoil, free cooling/heating, target temperatura, consumi
 # Estratto da configuration_186.yaml. Nome file = nome del package.
 
 template:
+# v11: rimosso il sensore template "Clima Media Esterna 7gg": ripeteva il
+# calcolo della media mobile che l'automazione clima_media_esterna_7gg scrive
+# ogni ora in input_number.clima_media_esterna_7gg, e non era letto da nessuno.
   - sensor:
-
-      - name: "Clima Media Esterna 7gg"
-        unique_id: "clima_media_esterna_7gg"
-        unit_of_measurement: "°C"
-        device_class: temperature
-        state_class: measurement
-        icon: mdi:thermometer
-        state: >-
-          {% set t = states('sensor.hp1000se_pro_pro_v1_6_4_outdoor_temperature') | float(15) %}
-          {% set media = states('input_number.clima_media_esterna_7gg') | float(15) %}
-          {{ (media * 0.979 + t * 0.021) | round(2) }}
-
-#--- PANASONIC AQUAREA (TEMPLATE SENSORS) ---
-  - sensor:
-
-#--- CONSUMO TOTALE DEUMIDIFICATORI: vedi blocco trigger-based a fine sezione template ---
 
 #--- CONSUMO STIMATO FANCOIL A VELOCITA' MINIMA ---
 # Stima basata su: ore di accensione oggi (history_stats) x potenza a velocità
@@ -103,15 +90,6 @@ template:
           {% else %}
             {{ [nuovo, this.state | float(0)] | max | round(3) }}
           {% endif %}
-
-#--- LAVATRICE MIELE: sorgente sempre numerica ------------------------------
-# sensor.lavatricemielewci870_consumo_energia va in 'unknown' quando la lavatrice
-# e' spenta. Utility Meter eredita unita' e device_class dalla sorgente al primo
-# stato valido: se al riavvio la sorgente e' unknown, i contatori restano senza
-# kWh e senza device_class energy (quindi inutilizzabili nel cruscotto Energia).
-# Questo wrapper trattiene l'ultimo valore noto quando la sorgente sparisce e
-# dichiara unita' e device_class in modo esplicito. Gli azzeramenti di fine ciclo
-# restano visibili e vengono gestiti normalmente da Utility Meter.
 
 #--- CONDIZIONE FREE COOLING CON PERSISTENZA 1 ORA ---
 # Riproduce la sola condizione meteo di attivazione del free cooling (delta
@@ -453,10 +431,8 @@ input_boolean:
   # automations_clima_54. Il pre-raffrescamento serale e' ora la modalita notte
   # anticipata alle 21:00, gestita da input_select.clima_modalita.
 
-  clima_autotune_attivo:
-    name: "Clima Autotuning Attivo"
-    initial: false
-    icon: mdi:tune-vertical
+  # clima_autotune_attivo rimosso in config_clima_11 insieme all'automazione
+  # clima_autotune_pid (automations_clima_64) e al tile in plancia clima.
 
   # --- GESTIONE MANUALE FANCOIL E DEUMIDIFICATORE ---
   # Si attivano quando l'utente tocca lo switch a mano (toggle plancia o app Shelly).

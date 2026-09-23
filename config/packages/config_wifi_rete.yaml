@@ -1,4 +1,4 @@
-# config_wifi_rete_13.yaml
+# config_wifi_rete_14.yaml
 # Package Casa Ginepro - Rete WiFi: whitelist MAC e tabella dispositivi
 # Nome file = nome del package.
 
@@ -39,8 +39,8 @@ template:
               'd8:f1:5b:15:26:40': '011 stazione meteo sala',
               '22:7a:a4:df:b7:d7': '014 fritz repeater 2400',
               '44:a5:6e:48:69:d8': '015 RBS20 di riserva',
-              '38:94:ed:0c:78:df': '016 RBS50 box',
-              'a0:40:a0:5e:40:d2': '017 RBS50 sopra',
+              '38:94:ed:0c:78:df': '017 RBS50 tetto',
+              'a0:40:a0:5e:40:d2': '016 RBS50 box',
               '9a:da:c4:71:89:d4': '018 repeater TP-Link RE650',
               'd4:27:87:51:9f:4c': '019 inverter fotovoltaico UFLEX',
               '7c:f0:e5:ef:0f:73': '026 OnePlus 13 Sasha',

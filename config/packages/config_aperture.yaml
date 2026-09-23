@@ -1,4 +1,4 @@
-# config_aperture_8.yaml
+# config_aperture_9.yaml
 # Package Casa Ginepro - Aperture e sicurezza: portone box, cancelli, pergola, tenda, sirena
 # Estratto da configuration_186.yaml. Nome file = nome del package.
 
@@ -67,6 +67,15 @@ input_boolean:
     name: "Tenda – Notifica Pioggia Oggi"
     initial: false
     icon: mdi:bell-ring-outline
+
+  # Pioggia vista o prevista oggi (config_aperture_9). Acceso dalla chiusura
+  # sicurezza meteo della pergola quando rileva pioggia in corso, accumulo
+  # orario o previsione a 3 ore; da quel momento il controllo pergola gira ogni
+  # 2 minuti fino a sera. Azzerato alle 23:59:30 insieme ai flag notifica tenda.
+  # NIENTE "initial": un riavvio in giornata non deve perdere l'informazione.
+  pergola_pioggia_oggi:
+    name: "Pergola – Pioggia Oggi"
+    icon: mdi:weather-pouring
 
 #==================================================================================
 # PERGOLA - SICUREZZA METEO: HELPER DI SUPPORTO (nuovi in config_aperture_2)

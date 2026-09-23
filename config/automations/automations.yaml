@@ -1,4 +1,4 @@
-# automations_127.yaml
+# automations_128.yaml
 #==================================================================================
 # 1. IRRIGAZIONE – Ciclo programmato (O1/O2) con gate meteo
 #
@@ -406,7 +406,7 @@
 #==================================================================================
 # 26. ACQUA – Reset giornaliero mezzanotte
 #
-# Ogni notte alle 23:00:
+# Ogni notte alle 23:59:
 #   1. Legge sensor.acqua_oggi_euro e lo aggiunge all'accumulatore.
 #   2. Accumula m³ giornalieri.
 #   3. Azzera counter.irrigazione_minuti_oggi.
@@ -812,9 +812,9 @@
     - condition: template
       value_template: "{{ state_attr('media_player.googlehome8851', 'media_title') is none }}"
   action:
+    # v128: tolto il ramo notte (volume 0.01): con la condizione 08:30-23:00
+    # non poteva mai essere eseguito.
     - variables:
-        ora: "{{ now().hour + now().minute / 60 }}"
-        e_notte: "{{ not (ora >= 8.5 and ora < 24.0) }}"
         vol_attuale: "{{ (state_attr('media_player.googlehome8851', 'volume_level') | float(0) * 100) | round(0) }}"
     - action: media_player.media_stop
       target:
@@ -822,23 +822,13 @@
     - delay: "00:00:03"
     - if:
         - condition: template
-          value_template: "{{ e_notte }}"
+          value_template: "{{ vol_attuale == 1 }}"
       then:
         - action: media_player.volume_set
           target:
             entity_id: media_player.googlehome8851
           data:
-            volume_level: 0.01
-      else:
-        - if:
-            - condition: template
-              value_template: "{{ vol_attuale == 1 }}"
-          then:
-            - action: media_player.volume_set
-              target:
-                entity_id: media_player.googlehome8851
-              data:
-                volume_level: 0.20
+            volume_level: 0.20
     - action: media_player.play_media
       target:
         entity_id: media_player.googlehome8851
