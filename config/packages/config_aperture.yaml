@@ -1,4 +1,4 @@
-# config_aperture_7.yaml
+# config_aperture_8.yaml
 # Package Casa Ginepro - Aperture e sicurezza: portone box, cancelli, pergola, tenda, sirena
 # Estratto da configuration_186.yaml. Nome file = nome del package.
 
@@ -101,3 +101,23 @@ input_text:
     name: "Pergola - Causa Chiusura Meteo"
     max: 255
     icon: mdi:text-box-outline
+
+#==================================================================================
+# PERGOLA - POSIZIONE MINIMA DEL MATTINO
+# Letta da pergola_inseguimento_solare negli slot 08:30 / 10:00 / 11:15:
+# bersaglio = max(formula + 5, questo valore). Serve ad aerare quando il sole
+# e' basso e la formula da' valori negativi. Regolabile dalla plancia Tende.
+# Il nuovo valore si applica al primo slot successivo, non subito.
+# NIENTE "initial": il valore scelto in plancia deve sopravvivere ai riavvii.
+# Al primo avvio vale il minimo (0): impostarlo a 30 dalla plancia.
+#==================================================================================
+input_number:
+
+  pergola_min_mattino:
+    name: "Pergola - Minimo Mattino"
+    min: 0
+    max: 100
+    step: 5
+    mode: slider
+    unit_of_measurement: "%"
+    icon: mdi:weather-sunset-up

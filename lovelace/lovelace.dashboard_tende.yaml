@@ -92,6 +92,18 @@ config:
         - current_tilt_position
         type: tile
         vertical: false
+      - entity: input_number.pergola_min_mattino
+        features:
+        - style: slider
+          type: numeric-input
+        features_position: bottom
+        grid_options:
+          columns: full
+          rows: auto
+        icon: mdi:weather-sunset-up
+        name: "Apertura min mattino (08:30\u201311:15)"
+        type: tile
+        vertical: false
       - entity: input_boolean.pergola_blocco_manuale
         features_position: bottom
         grid_options:

@@ -1,4 +1,4 @@
-# automations_pergola_18.yaml
+# automations_pergola_20.yaml
 
 #==================================================================================
 # PERGOLA – INSEGUIMENTO SOLARE + APERTURA AERAZIONE (1 giugno – 1 novembre)
@@ -10,6 +10,15 @@
 #                 al punto intero. Taratura empirica: 15% alle 12:00 di
 #                 luglio (slot 11:15 -> ~17). NOTA: prima mattina ancora
 #                 da verificare sul campo.
+#                 v19: posizione MINIMA 30% (variabile min_mattino) per
+#                 aerare. Da fine agosto il sole e' basso e la formula da'
+#                 valori negativi: senza minimo la pergola restava al 5%
+#                 fino al passaggio dei 145° di azimut (~11:30 a fine
+#                 settembre). Il 30% lascia entrare un po' di sole al
+#                 mattino: e' voluto.
+#                 v20: il minimo si legge da input_number.pergola_min_mattino
+#                 (regolabile in plancia Tende); se l'helper non e' disponibile
+#                 vale 30.
 #   azimut >= 145° (il sole passa il piano lamelle: luglio ~12:30,
 #                 ottobre ~11:10, lo scatto segue la stagione da solo):
 #                 posizione fissa 97%, regge tutto il primo pomeriggio.
@@ -71,6 +80,7 @@
         normal: 145
         travel: 135
         margin: 41
+        min_mattino: "{{ states('input_number.pergola_min_mattino') | float(30) }}"
         az: "{{ state_attr('sun.sun','azimuth') | float(180) }}"
         el: "{{ state_attr('sun.sun','elevation') | float(0) }}"
         c: "{{ cos((az - normal) * pi / 180) }}"
@@ -78,7 +88,7 @@
         pct: "{{ [[pct_grezzo, 0] | max, 100] | min }}"
         ora: "{{ now().strftime('%H:%M') }}"
         target: >-
-          {% if '08:30' <= ora < '15:00' %}{% if az < 145 %}{{ [pct + 5, 100] | min | round | int }}{% else %}97{% endif %}{% elif '15:00' <= ora < '23:00' %}80{% else %}0{% endif %}
+          {% if '08:30' <= ora < '15:00' %}{% if az < 145 %}{{ [[pct + 5, min_mattino] | max, 100] | min | round | int }}{% else %}97{% endif %}{% elif '15:00' <= ora < '23:00' %}80{% else %}0{% endif %}
     - action: cover.set_cover_tilt_position
       target:
         entity_id: cover.terrazzo_pergola_terrazza
