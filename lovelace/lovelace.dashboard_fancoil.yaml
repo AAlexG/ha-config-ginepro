@@ -249,7 +249,7 @@ config:
         features:
         - type: toggle
         type: tile
-      - color: blue
+      - color: '#2196F3'
         entity: sensor.irrigazione_attiva
         features_position: bottom
         grid_options:
@@ -1002,7 +1002,7 @@ config:
           name: Lavatrice kWh al mese
         period: month
         stat_types:
-        - state
+        - change
         type: statistics-graph
       - chart_type: bar
         days_to_show: 365
@@ -1011,7 +1011,7 @@ config:
           name: Lavatrice acqua al mese
         period: month
         stat_types:
-        - state
+        - change
         type: statistics-graph
       - heading: 'Lavaggi per programma (ultimi 12 mesi, totale da sempre):'
         heading_style: subtitle

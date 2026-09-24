@@ -102,7 +102,7 @@ config:
         name: Sopra n.3
         type: tile
         vertical: false
-      - color: '#43A047'
+      - color: '#0072B2'
         grid_options:
           columns: 6
           rows: auto
@@ -116,7 +116,7 @@ config:
           action: perform-action
           perform_action: script.irrigazione_cicla_ora
         type: button
-      - color: '#E53935'
+      - color: '#D55E00'
         grid_options:
           columns: 6
           rows: auto

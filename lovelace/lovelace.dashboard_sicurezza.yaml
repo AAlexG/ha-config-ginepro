@@ -66,19 +66,29 @@ config:
           action: perform-action
           perform_action: script.apri_grande_cancello
         type: button
+      - entity: binary_sensor.cancello_entrata_zigbee_contact
+        features_position: bottom
+        name: CancelloEntrata
+        type: tile
+        vertical: false
+      - entity: binary_sensor.cancello_grande_zigbee_contact
+        features_position: bottom
+        name: CancelloGrande
+        type: tile
+        vertical: false
       - entity: binary_sensor.portone_box_stato
         features_position: bottom
         name: Portone box
         type: tile
         vertical: false
-      - entity: binary_sensor.persiana_tania_sensore_zigbee_contact
-        features_position: bottom
-        name: Tania pers
-        type: tile
-        vertical: false
       - entity: binary_sensor.persiana_box_sensore_zigbee_contact
         features_position: bottom
         name: Box Persiana
+        type: tile
+        vertical: false
+      - entity: binary_sensor.persiana_tania_sensore_zigbee_contact
+        features_position: bottom
+        name: Tania pers
         type: tile
         vertical: false
       - entity: binary_sensor.hp1000se_pro_pro_v1_6_4_leak_detection_4
@@ -91,6 +101,24 @@ config:
         heading_style: title
         icon: mdi:door-open
         type: heading
+      - entity: binary_sensor.cancello_entrata_zigbee_contact
+        features_position: bottom
+        name: CancelloEntrata
+        type: tile
+        vertical: false
+      - entity: sensor.cancello_entrata_zigbee_battery
+        features_position: bottom
+        name: CancelloEntrata
+        type: tile
+        vertical: false
+      - entity: sensor.0xa4c138013ef60318_linkquality
+        features_position: bottom
+        grid_options:
+          columns: 12
+          rows: 1
+        name: CancelloEntrata
+        type: tile
+        vertical: false
       - camera_view: live
         entity: camera.179_camera_cancello_lente_scorrevole_0
         fit_mode: cover
@@ -145,7 +173,22 @@ config:
         heading_style: title
         icon: mdi:door-open
         type: heading
+      - entity: binary_sensor.cancello_grande_zigbee_contact
+        features_position: bottom
+        name: CancelloGrande
+        type: tile
+        vertical: false
+      - entity: sensor.cancello_grande_zigbee_battery
+        features_position: bottom
+        name: CancelloGrande
+        type: tile
+        vertical: false
       - entity: binary_sensor.portone_box_stato
+        features_position: bottom
+        name: Portone
+        type: tile
+        vertical: false
+      - entity: sensor.portone_box_sensore_zigbee_battery
         features_position: bottom
         name: Portone
         type: tile
@@ -155,24 +198,27 @@ config:
         name: Persiana
         type: tile
         vertical: false
-      - entity: sensor.portone_box_sensore_zigbee_battery
-        features_position: bottom
-        name: Portone Batteria
-        type: tile
-        vertical: false
       - entity: sensor.persiana_box_sensore_zigbee_battery
         features_position: bottom
-        name: Persiana Batteria
+        name: Persiana
         type: tile
         vertical: false
       - entity: sensor.0xa4c138f820e17e6e_linkquality
         features_position: bottom
-        name: Portone Connetivita
+        name: Portone
         type: tile
         vertical: false
       - entity: sensor.persiana_box_sensore_zigbee_linkquality
         features_position: bottom
-        name: "Persiana connettivit\xE0"
+        name: Persiana
+        type: tile
+        vertical: false
+      - entity: sensor.cancello_grande_zigbee_linkquality
+        features_position: bottom
+        grid_options:
+          columns: 12
+          rows: 1
+        name: CancelloGrande
         type: tile
         vertical: false
       - camera_view: live
