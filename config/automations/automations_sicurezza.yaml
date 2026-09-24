@@ -1,4 +1,4 @@
-# automations_sicurezza_20.yaml
+# automations_sicurezza_21.yaml
 
 #==================================================================================
 # 1. ACCENSIONE LUCE (Faretto Intruso) - solo notte
@@ -408,24 +408,11 @@
 
 #==================================================================================
 # 12. CHIUSURA AUTOMATICA CANCELLO GRANDE SE RIMANE APERTO > 10 MIN
-#     Nota: sensore binary_sensor.cancello_grande_zigbee_contact ha logica
-#     NORMALE -> stato "on" = cancello APERTO, stato "off" = cancello CHIUSO
-#     (verificato in Strumenti per sviluppatori -> Modello il 2026-09-08)
-#
-#     Sequenza di recupero introdotta in automations_sicurezza_16:
-#       1) impulso #1 (chiusura)
-#       2) attesa max 2 min: se il sensore passa a "off" la sequenza finisce qui
-#       3) se ancora "on": impulso #2 (riapertura) -> attesa fissa 2 min ->
-#          impulso #3 (nuova chiusura)
-#       4) attesa max 2 min: se ancora "on" si alza
-#          input_boolean.cancello_grande_guasto e l'automazione resta inattiva
-#     Finche' il flag di guasto e' alzato questa automazione non fa nulla
-#     (condizione di ingresso). Il flag viene abbassato dall'automazione 12b
-#     all'apertura del portone box (vedi 12b).
-#
-#     input_boolean.grande_cancello_status_helper rimosso da questa automazione
-#     in automations_sicurezza_18: in tutto il repository e' solo scritto, mai
-#     letto (nessuna condizione, nessun modello, nessuna plancia lo usa).
+#     Nota: dal 2026-09-24 il sensore binary_sensor.cancello_grande_zigbee_contact
+#     e' stato riposizionato e ha logica INVERTITA (come il portone box):
+#     stato "off" (chiuso) = cancello APERTO, stato "on" (aperto) = cancello CHIUSO
+#     Singolo impulso di chiusura: rimossa la sequenza di secondo tentativo,
+#     l'automazione 12b e il flag input_boolean.cancello_grande_guasto.
 #==================================================================================
 - id: chiusura_automatica_cancello_grande
   alias: "Chiusura Automatica Cancello Grande - Timeout 10 min"
@@ -434,18 +421,13 @@
   triggers:
     - platform: state
       entity_id: binary_sensor.cancello_grande_zigbee_contact
-      to: "on"
+      to: "off"
       for: "00:10:00"
   condition:
     - condition: state
       entity_id: binary_sensor.cancello_grande_zigbee_contact
-      state: "on"
-    - condition: state
-      entity_id: input_boolean.cancello_grande_guasto
       state: "off"
   action:
-
-    # --- FASE 1: impulso #1, chiusura ---
     - action: notify.mobile_app_cph2653
       data:
         title: "Cancello Grande"
@@ -457,90 +439,6 @@
     - action: button.press
       target:
         entity_id: button.10007c3b31_1
-
-    # --- FASE 2: verifica entro 2 minuti ---
-    - wait_for_trigger:
-        - platform: state
-          entity_id: binary_sensor.cancello_grande_zigbee_contact
-          to: "off"
-      timeout: "00:02:00"
-      continue_on_timeout: true
-    - condition: state
-      entity_id: binary_sensor.cancello_grande_zigbee_contact
-      state: "on"
-
-    # --- FASE 3: impulso #2 (riapre), 2 min, impulso #3 (richiude) ---
-    - action: notify.mobile_app_cph2653
-      data:
-        title: "Cancello Grande"
-        message: "Sensore ancora aperto dopo 2 minuti. Riapertura e secondo tentativo di chiusura."
-        data:
-          tag: "notifica_cancello_grande_timeout"
-          priority: high
-          ttl: 0
-    - action: button.press
-      target:
-        entity_id: button.10007c3b31_1
-    - delay: "00:02:00"
-    - action: button.press
-      target:
-        entity_id: button.10007c3b31_1
-
-    # --- FASE 4: verifica finale, alzata del flag di guasto ---
-    - wait_for_trigger:
-        - platform: state
-          entity_id: binary_sensor.cancello_grande_zigbee_contact
-          to: "off"
-      timeout: "00:02:00"
-      continue_on_timeout: true
-    - condition: state
-      entity_id: binary_sensor.cancello_grande_zigbee_contact
-      state: "on"
-    - action: input_boolean.turn_on
-      target:
-        entity_id: input_boolean.cancello_grande_guasto
-    - action: notify.mobile_app_cph2653
-      data:
-        title: "Cancello Grande"
-        message: "Cancello grande non si chiude bene. Chiusura automatica sospesa fino alla prossima apertura del portone box."
-        data:
-          tag: "notifica_cancello_grande_guasto"
-          priority: high
-          ttl: 0
-
-#==================================================================================
-# 12b. RESET DEL FLAG "CANCELLO GRANDE NON SI CHIUDE BENE"
-#      Trigger: APERTURA DEL PORTONE BOX.
-#      Nota: binary_sensor.portone_box_sensore_zigbee_contact ha logica
-#      INVERTITA -> "on" (aperto) = portone CHIUSO, "off" (chiuso) = portone
-#      APERTO (stessa nota dell'automazione 11). Il fronte "on" -> "off"
-#      corrisponde quindi al portone che viene aperto.
-#      Motivo: il portone box viene aperto quasi sempre insieme al cancello
-#      grande, quindi e' il momento giusto per riarmare la chiusura automatica.
-#==================================================================================
-- id: reset_flag_cancello_grande_guasto
-  alias: "Reset Flag Cancello Grande Non Si Chiude Bene"
-  mode: single
-  triggers:
-    - platform: state
-      entity_id: binary_sensor.portone_box_sensore_zigbee_contact
-      from: "on"
-      to: "off"
-  condition:
-    - condition: state
-      entity_id: input_boolean.cancello_grande_guasto
-      state: "on"
-  action:
-    - action: input_boolean.turn_off
-      target:
-        entity_id: input_boolean.cancello_grande_guasto
-    - action: notify.mobile_app_cph2653
-      data:
-        title: "Cancello Grande"
-        message: "Portone box aperto: flag azzerato, chiusura automatica del cancello grande riattivata."
-        data:
-          tag: "notifica_cancello_grande_guasto"
-          ttl: 0
 
 #==================================================================================
 # 13. NOTIFICA CANCELLO ENTRATA APERTO > 10 MIN (solo avviso, nessuna chiusura)

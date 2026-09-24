@@ -1153,5 +1153,5 @@ config:
         - state
         type: statistics-graph
       type: grid
-    title: Devices
+    title: Devices v.10
     type: sections

@@ -1,4 +1,4 @@
-# config_aperture_9.yaml
+# config_aperture_10.yaml
 # Package Casa Ginepro - Aperture e sicurezza: portone box, cancelli, pergola, tenda, sirena
 # Estratto da configuration_186.yaml. Nome file = nome del package.
 
@@ -40,15 +40,6 @@ input_boolean:
     name: "Pergola - Chiusura Sicurezza Meteo"
     initial: false
     icon: mdi:weather-windy
-
-  # Alzato dall'automazione 12 (automations_sicurezza) quando, dopo tre impulsi
-  # e due verifiche a 2 minuti, il sensore Zigbee del cancello grande risulta
-  # ancora aperto. Finche' e' alzato la chiusura automatica non interviene.
-  # Abbassato dall'automazione 12b all'apertura del portone box.
-  # NIENTE "initial": deve sopravvivere ai riavvii.
-  cancello_grande_guasto:
-    name: "Cancello Grande - Non Si Chiude Bene"
-    icon: mdi:gate-alert
 
   sirena_attiva:
     name: "Sirena Attiva"

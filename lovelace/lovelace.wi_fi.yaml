@@ -1,18 +1,6 @@
 config:
   views:
-  - badges:
-    - entity: sensor.nexxt_one_velocita_di_scaricamento
-      name: "Velocit\xE0 download Nexxt"
-      show_icon: true
-      show_name: true
-      show_state: true
-      type: entity
-    - entity: sensor.nexxt_one_velocita_di_caricamento
-      name: "Velocit\xE0 upload Nexxt"
-      show_icon: true
-      show_name: true
-      show_state: true
-      type: entity
+  - badges: []
     cards:
     - cards:
       - entity: sensor.0xa4c1383e0fd87686_linkquality
@@ -201,4 +189,5 @@ config:
       type: custom:flex-table-card
     icon: mdi:wifi
     path: wifi
-    title: WiFi
+    title: WiFi v.4
+    type: masonry

@@ -127,5 +127,5 @@ config:
         type: tile
         vertical: false
       type: grid
-    title: Tende
+    title: Tende v.11
     type: sections
