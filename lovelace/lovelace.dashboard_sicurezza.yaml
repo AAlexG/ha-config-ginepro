@@ -73,7 +73,7 @@ config:
         name: CancelloEntrata
         type: tile
         vertical: false
-      - entity: binary_sensor.cancello_grande_zigbee_contact
+      - entity: binary_sensor.cancello_grande_stato
         features_position: bottom
         name: CancelloGrande
         type: tile
@@ -175,7 +175,7 @@ config:
         heading_style: title
         icon: mdi:door-open
         type: heading
-      - entity: binary_sensor.cancello_grande_zigbee_contact
+      - entity: binary_sensor.cancello_grande_stato
         features_position: bottom
         name: CancelloGrande
         type: tile

@@ -1,4 +1,4 @@
-# config_aperture_10.yaml
+# config_aperture_11.yaml
 # Package Casa Ginepro - Aperture e sicurezza: portone box, cancelli, pergola, tenda, sirena
 # Estratto da configuration_186.yaml. Nome file = nome del package.
 
@@ -10,6 +10,18 @@ template:
           {{ is_state('binary_sensor.portone_box_sensore_zigbee_contact', 'off') }}
         device_class: garage_door
         icon: mdi:garage
+
+      # Cancello grande: dal 2026-09-24 il sensore Zigbee e' riposizionato e ha
+      # logica INVERTITA ("off" = cancello APERTO). Questo sensore riporta lo
+      # stato reale del cancello per le plance: "on" = aperto, "off" = chiuso.
+      - name: "Cancello Grande Stato"
+        unique_id: "cancello_grande_stato_invertito"
+        state: >-
+          {{ is_state('binary_sensor.cancello_grande_zigbee_contact', 'off') }}
+        availability: >-
+          {{ states('binary_sensor.cancello_grande_zigbee_contact') in ['on', 'off'] }}
+        device_class: door
+        icon: mdi:gate
 
   # ============================================================
   # ACQUA: sensori calcolati (NUOVO – configuration_53)
