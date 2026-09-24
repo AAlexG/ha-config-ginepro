@@ -1,7 +1,9 @@
 config:
   path: meteo
+  title: Meteo v.7
   views:
-  - max_columns: 2
+  - cards: []
+    max_columns: 2
     path: meteo
     sections:
     - cards:

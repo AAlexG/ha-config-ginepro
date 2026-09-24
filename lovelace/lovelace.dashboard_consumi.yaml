@@ -1,7 +1,9 @@
 config:
+  title: consumi v.51
   views:
   - cards: []
     header: {}
+    max_columns: 4
     path: elettricita
     sections:
     - cards:

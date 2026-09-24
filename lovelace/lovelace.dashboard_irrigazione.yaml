@@ -1,6 +1,8 @@
 config:
+  titoe: Irrigazione v.4
   views:
-  - icon: mdi:sprinkler-variant
+  - cards: []
+    icon: mdi:sprinkler-variant
     max_columns: 2
     path: irrigazione
     sections:
@@ -235,3 +237,4 @@ config:
         type: entity
       type: grid
     title: Irrigazione
+    type: sections

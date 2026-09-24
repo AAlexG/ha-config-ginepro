@@ -1,8 +1,9 @@
 config:
   path: fotovoltaico
-  title: Fotovoltaico
+  title: Fotovoltaico v.23
   views:
-  - max_columns: 2
+  - cards: []
+    max_columns: 2
     path: fotovoltaico
     sections:
     - cards:

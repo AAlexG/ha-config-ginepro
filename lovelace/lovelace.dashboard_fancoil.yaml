@@ -1,6 +1,8 @@
 config:
+  titor: Devices/Fancoil v.29
   views:
   - cards: []
+    header: {}
     max_columns: 2
     path: fancoil
     sections:
@@ -285,16 +287,6 @@ config:
         heading_style: subtitle
         icon: mdi:home-thermometer-outline
         type: heading
-      - entity: binary_sensor.cancello_grande_zigbee_contact
-        features_position: bottom
-        name: CancGrande
-        type: tile
-        vertical: false
-      - entity: sensor.cancello_grande_zigbee_battery
-        features_position: bottom
-        name: CancGrande
-        type: tile
-        vertical: false
       - entity: binary_sensor.cancello_entrata_zigbee_contact
         features_position: bottom
         name: CancEntrata
@@ -319,6 +311,16 @@ config:
         heading_style: subtitle
         icon: mdi:home-thermometer-outline
         type: heading
+      - entity: binary_sensor.cancello_grande_zigbee_contact
+        features_position: bottom
+        name: CancGrande
+        type: tile
+        vertical: false
+      - entity: sensor.cancello_grande_zigbee_battery
+        features_position: bottom
+        name: CancGrande
+        type: tile
+        vertical: false
       - entity: binary_sensor.portone_box_sensore_zigbee_contact
         features_position: bottom
         name: PortoneBox
@@ -1153,5 +1155,5 @@ config:
         - state
         type: statistics-graph
       type: grid
-    title: Devices v.10
+    title: Devices/Fancoil
     type: sections

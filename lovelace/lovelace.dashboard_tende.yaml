@@ -1,4 +1,5 @@
 config:
+  title: Tende v.11
   views:
   - cards: []
     max_columns: 2
@@ -127,5 +128,5 @@ config:
         type: tile
         vertical: false
       type: grid
-    title: Tende v.11
+    title: Tende
     type: sections

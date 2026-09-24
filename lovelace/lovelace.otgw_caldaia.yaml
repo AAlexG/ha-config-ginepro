@@ -1,5 +1,5 @@
 config:
-  title: Caldaia & OTGW
+  title: Caldaia & OTGW v.12
   views:
   - badges: []
     cards:
@@ -250,5 +250,5 @@ config:
       type: statistics-graph
     icon: mdi:water-boiler
     path: otgw
-    title: CALDAIA BAXI LUNA DUO-TEC+ & OTGW
+    title: CALDAIA/OTGW
     type: masonry

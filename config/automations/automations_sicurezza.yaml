@@ -1,4 +1,4 @@
-# automations_sicurezza_21.yaml
+# automations_sicurezza_22.yaml
 
 #==================================================================================
 # 1. ACCENSIONE LUCE (Faretto Intruso) - solo notte
@@ -413,6 +413,12 @@
 #     stato "off" (chiuso) = cancello APERTO, stato "on" (aperto) = cancello CHIUSO
 #     Singolo impulso di chiusura: rimossa la sequenza di secondo tentativo,
 #     l'automazione 12b e il flag input_boolean.cancello_grande_guasto.
+#
+#     Trigger aggiuntivi "avvio" (avvio HA e ricarica automazioni): il trigger
+#     di stato con "for" parte solo su un passaggio a "off"; se il cancello e'
+#     gia' aperto quando l'automazione viene caricata non partirebbe mai
+#     (successo il 2026-09-24). Con "avvio" si attendono 10 minuti: se nel
+#     frattempo il cancello si chiude non si fa nulla, altrimenti un solo impulso.
 #==================================================================================
 - id: chiusura_automatica_cancello_grande
   alias: "Chiusura Automatica Cancello Grande - Timeout 10 min"
@@ -423,11 +429,31 @@
       entity_id: binary_sensor.cancello_grande_zigbee_contact
       to: "off"
       for: "00:10:00"
+      id: timeout
+    - platform: homeassistant
+      event: start
+      id: avvio
+    - platform: event
+      event_type: automation_reloaded
+      id: avvio
   condition:
     - condition: state
       entity_id: binary_sensor.cancello_grande_zigbee_contact
       state: "off"
   action:
+    - if:
+        - condition: trigger
+          id: avvio
+      then:
+        - wait_for_trigger:
+            - platform: state
+              entity_id: binary_sensor.cancello_grande_zigbee_contact
+              to: "on"
+          timeout: "00:10:00"
+          continue_on_timeout: true
+        - condition: state
+          entity_id: binary_sensor.cancello_grande_zigbee_contact
+          state: "off"
     - action: notify.mobile_app_cph2653
       data:
         title: "Cancello Grande"

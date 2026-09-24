@@ -1,7 +1,9 @@
 config:
   path: sicurezza
+  title: Sicurezza v.7
   views:
-  - max_columns: 4
+  - cards: []
+    max_columns: 4
     path: meteo
     sections:
     - cards:

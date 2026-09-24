@@ -1,6 +1,9 @@
 config:
+  title: zone casa v.1
   views:
-  - sections:
+  - cards: []
+    max_columns: 4
+    sections:
     - cards:
       - heading: Sottotetto
         heading_style: title
@@ -80,4 +83,5 @@ config:
         square: false
         type: grid
       type: grid
+    title: 'Zone di casa '
     type: sections

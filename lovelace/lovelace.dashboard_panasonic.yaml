@@ -1,6 +1,6 @@
 config:
   path: panasonic
-  title: Panasonic Aquarea
+  title: Panasonic/Heishamon v.24
   views:
   - cards: []
     icon: mdi:heat-pump
@@ -457,5 +457,5 @@ config:
           id: kwh
       type: grid
     show_icon_and_title: true
-    title: Panasonic & Heishamon
+    title: Pompa&Heisha
     type: sections

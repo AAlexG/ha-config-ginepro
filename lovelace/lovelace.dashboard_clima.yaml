@@ -1,8 +1,9 @@
 config:
   path: clima
-  title: Clima
+  title: Clima v.19
   views:
-  - max_columns: 2
+  - cards: []
+    max_columns: 2
     path: clima
     sections:
     - cards:
@@ -598,5 +599,5 @@ config:
         type: tile
         vertical: false
       type: grid
-    title: Clima
+    title: 'Clima '
     type: sections

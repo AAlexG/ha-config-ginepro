@@ -1,6 +1,8 @@
 config:
+  title: Casa Ginepro v.50
   views:
-  - max_columns: 2
+  - cards: []
+    max_columns: 2
     path: home
     sections:
     - cards:
@@ -1694,3 +1696,5 @@ config:
         type: tile
         vertical: false
       type: grid
+    title: 'Casa Ginepro '
+    type: sections

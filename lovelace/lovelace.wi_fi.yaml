@@ -1,4 +1,5 @@
 config:
+  title: Wifi/Zigbee v.4
   views:
   - badges: []
     cards:
@@ -189,5 +190,5 @@ config:
       type: custom:flex-table-card
     icon: mdi:wifi
     path: wifi
-    title: WiFi v.4
+    title: WiFi/Zigbee
     type: masonry
