@@ -112,6 +112,29 @@ config:
               text: max tens.V
           decimals: 2
           id: volt
+      - graph_span: 24h
+        grid_options:
+          columns: 12
+          rows: auto
+        header:
+          show: true
+          title: "max Temp inventer \xB0C/24h"
+        series:
+        - entity: sensor.inverter_uflex_dc_temperature
+          name: inverter DC
+          statistics:
+            period: hour
+            type: max
+          type: line
+          yaxis_id: C
+        type: custom:apexcharts-card
+        yaxis:
+        - apex_config:
+            title:
+              text: "\xB0C"
+          decimals: 2
+          id: C
+          min: 35
       - graph_span: 60d
         grid_options:
           columns: 12
@@ -188,7 +211,7 @@ config:
               text: "\xB0C"
           decimals: 2
           id: C
-          min: 70
+          min: 55
       type: grid
     - cards:
       - heading: PANELLI FOTOVOLTAICI
