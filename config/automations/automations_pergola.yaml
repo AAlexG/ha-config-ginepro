@@ -1,4 +1,4 @@
-# automations_pergola_21.yaml
+# automations_pergola_23.yaml
 
 #==================================================================================
 # PERGOLA – INSEGUIMENTO SOLARE + APERTURA AERAZIONE (1 giugno – 1 novembre)
@@ -97,9 +97,20 @@
 
 #==================================================================================
 # PERGOLA – CHIUSURA SICUREZZA METEO
-# Chiude a 0% se: vento medio > 10 km/h per 3 minuti, raffica > 20 km/h,
-# intensita' di pioggia > 0 mm/h, accumulo orario > 0 mm, oppure previsione
-# pioggia > 0 mm nelle prossime 3 ore (weather.casa).
+# Chiude a 0% se: raffica > 40 km/h, intensita' di pioggia > 0 mm/h,
+# accumulo orario > 0 mm, oppure previsione pioggia > 0 mm nelle prossime
+# 3 ore (weather.casa).
+#
+# v22 - VENTO: unica soglia raffica > 40 km/h, uguale alla tenda giardino.
+# Eliminati la soglia raffica 20 km/h e il vento medio > 10 km/h: con quei
+# valori una brezza normale teneva la pergola chiusa per ore (25/09: chiusa
+# dalle 13:10, allarme rinnovato da raffiche di 20-21 km/h). Inoltre il
+# ciclo ogni 10 minuti controllava il vento medio istantaneo, senza i 3
+# minuti del trigger.
+# Riferimento: Corradi Alba classe 6 UNI EN 13561:2015 (>= 400 Pa, 88 km/h,
+# dato del costruttore). 40 km/h lascia ampio margine. Il manuale Alba
+# prescrive lamelle completamente chiuse oltre la velocita' di classe:
+# la chiusura a 0% e' la posizione corretta.
 #
 # v15 - RIMOSSO il controllo sulla radiazione solare (era < 30 W/m2 per 30
 # minuti; il commento diceva 150, il codice 30). Motivo: la posizione
@@ -119,6 +130,10 @@
 #
 # v15 - Scrive input_datetime.pergola_meteo_ultimo_allarme (usato dal
 # rilascio) e input_text.pergola_meteo_causa (mostrato in plancia Tende).
+# v23 - Formato della causa: "Chiusa dalle HH:MM · ultimo allarme HH:MM:
+# <cause con valori> · riapre non prima delle HH:MM". Riscritta ad ogni
+# ciclo di emergenza, quindi l'ora di riapertura si sposta in avanti ad
+# ogni rinnovo dell'allarme.
 # Rispetta solo il blocco manuale: la sicurezza meteo ha sempre priorità
 # sull'inseguimento solare.
 #==================================================================================
@@ -130,12 +145,8 @@
   max_exceeded: silent
   triggers:
     - trigger: numeric_state
-      entity_id: sensor.hp1000se_pro_pro_v1_6_4_wind_speed
-      above: 10
-      for: "00:03:00"
-    - trigger: numeric_state
       entity_id: sensor.hp1000se_pro_pro_v1_6_4_wind_gust
-      above: 20
+      above: 40
     - trigger: numeric_state
       entity_id: sensor.hp1000se_pro_pro_v1_6_4_rain_rate
       above: 0
@@ -169,7 +180,6 @@
         type: hourly
       response_variable: previsione
     - variables:
-        v_vento: "{{ states('sensor.hp1000se_pro_pro_v1_6_4_wind_speed') | float(0) }}"
         v_raffica: "{{ states('sensor.hp1000se_pro_pro_v1_6_4_wind_gust') | float(0) }}"
         v_rate: "{{ states('sensor.hp1000se_pro_pro_v1_6_4_rain_rate') | float(0) }}"
         v_oraria: "{{ states('sensor.hp1000se_pro_pro_v1_6_4_hourly_rain') | float(0) }}"
@@ -190,20 +200,32 @@
     # adesso se sta per essere alzato ora), non ora dell'ultimo controllo.
     - variables:
         emergenza: >-
-          {{ v_vento > 10 or v_raffica > 20 or v_rate > 0
+          {{ v_raffica > 40 or v_rate > 0
              or v_oraria > 0 or mm_previsti > 0 }}
         ora_inizio: >-
           {% if is_state('input_boolean.pergola_meteo_chiusura','on') %}
           {{ states.input_boolean.pergola_meteo_chiusura.last_changed
              | as_local | as_timestamp | timestamp_custom('%H:%M') }}
           {% else %}{{ now().strftime('%H:%M') }}{% endif %}
+        # v23: prima riapertura possibile = primo controllo del rilascio
+        # (minuti /10, secondi 30) che cade almeno 20 minuti dopo adesso.
+        # Il fuso orario ha offset di ore intere, quindi il modulo 600 sul
+        # timestamp coincide con i minuti :x0 dell'ora locale.
+        ora_riapertura: >-
+          {% set t = now().timestamp() + 1200 %}
+          {{ (((t - 30) / 600) | round(0, 'ceil') * 600 + 30)
+             | timestamp_custom('%H:%M') }}
+        # v23: il testo separa i tre momenti. Prima valore e ora d'inizio
+        # comparivano insieme ("raffica 20.6 km/h – dalle 13:10") ma il valore
+        # era quello dell'ultimo rinnovo, non quello della chiusura.
         causa: >-
-          {{ ([ ('vento ' ~ (v_vento | round(1)) ~ ' km/h') if v_vento > 10 else none,
-                ('raffica ' ~ (v_raffica | round(1)) ~ ' km/h') if v_raffica > 20 else none,
-                ('pioggia ' ~ (v_rate | round(1)) ~ ' mm/h') if v_rate > 0 else none,
-                ('accumulo ' ~ (v_oraria | round(1)) ~ ' mm') if v_oraria > 0 else none,
-                ('previsione ' ~ (mm_previsti | round(1)) ~ ' mm/3h') if mm_previsti > 0 else none ]
-              | reject('none') | list | join(' + ')) ~ ' – dalle ' ~ ora_inizio }}
+          {{ 'Chiusa dalle ' ~ ora_inizio ~ ' · ultimo allarme ' ~ now().strftime('%H:%M') ~ ': '
+             ~ ([ ('raffica ' ~ (v_raffica | round(1)) ~ ' km/h') if v_raffica > 40 else none,
+                  ('pioggia ' ~ (v_rate | round(1)) ~ ' mm/h') if v_rate > 0 else none,
+                  ('accumulo ' ~ (v_oraria | round(1)) ~ ' mm') if v_oraria > 0 else none,
+                  ('previsione ' ~ (mm_previsti | round(1)) ~ ' mm/3h') if mm_previsti > 0 else none ]
+                | reject('none') | list | join(' + '))
+             ~ ' · riapre non prima delle ' ~ ora_riapertura }}
     - condition: template
       value_template: "{{ emergenza }}"
     - action: cover.set_cover_tilt_position
@@ -269,8 +291,7 @@
               | float(0)) >= 1200 }}
     - condition: template
       value_template: >-
-        {{ (states('sensor.hp1000se_pro_pro_v1_6_4_wind_speed') | float(0) <= 10)
-           and (states('sensor.hp1000se_pro_pro_v1_6_4_wind_gust') | float(0) <= 20)
+        {{ (states('sensor.hp1000se_pro_pro_v1_6_4_wind_gust') | float(0) <= 40)
            and (states('sensor.hp1000se_pro_pro_v1_6_4_rain_rate') | float(0) <= 0)
            and (states('sensor.hp1000se_pro_pro_v1_6_4_hourly_rain') | float(0) <= 0) }}
   actions:
