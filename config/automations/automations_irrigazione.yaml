@@ -1,4 +1,4 @@
-# automations_irrigazione_4.yaml
+# automations_irrigazione_5.yaml
 #==================================================================================
 # WATCHDOG IRRIGAZIONE - Casa Ginepro
 #
@@ -37,6 +37,24 @@
 # Modifiche versione 4:
 #   - Aggiunta W5: ritorno online del Sonoff. Notifica informativa che chiude il
 #     ciclo aperto da W3 o W4 e cancella le relative notifiche persistenti.
+#
+# Modifiche versione 5 (analisi 26/09/2026):
+#   - W5: la notifica push era generata a ogni riavvio di HA e a ogni ricarica
+#     dell'integrazione Sonoff, non solo sulle cadute reali del dispositivo.
+#     Misura su 7 giorni: 7 notifiche, di cui 5 da riavvio/ricarica (283-623 entita'
+#     "unavailable" nella stessa finestra) e 1 sola caduta vera (12 secondi,
+#     10 entita'). Il "for: 00:02:00" del trigger non filtrava nulla: impone che lo
+#     stato NUOVO persista 2 minuti, non che l'irraggiungibilita' sia durata 2 minuti.
+#   - W5: la push e' ora subordinata a due filtri. Primo, durata effettiva della
+#     caduta almeno 5 minuti (un ciclo completo dura 9 minuti: sotto i 5 il
+#     dispositivo non ha perso nulla). Secondo, esclusione degli eventi globali:
+#     se altre entita' Sonoff estranee al 10028b1d36 sono tornate nello stesso
+#     istante, e' un riavvio di HA o una ricarica dell'integrazione, non una caduta.
+#   - W5: la push viene comunque inviata, qualunque sia la durata, se al ritorno un
+#     canale risulta ACCESO. Quello e' il caso critico dell'incidente 07/08/2026 e
+#     non va mai silenziato.
+#   - W5: la cancellazione delle notifiche persistenti di W3 e W4 avviene sempre,
+#     anche quando la push viene soppressa, per non lasciare avvisi orfani.
 #==================================================================================
 
 #==================================================================================
@@ -268,14 +286,16 @@
 # da 3 ore): quando sei fuori casa, sapere che il dispositivo e' tornato raggiungibile
 # vale quanto sapere che era caduto.
 #
-# for 00:02:00: evita di notificare riconnessioni istantanee che ricadono subito.
-# Simmetrico all'attesa di W3.
+# for 00:02:00: ritarda la valutazione di 2 minuti, per non reagire a un ritorno
+# che ricade subito. NON filtra la durata della caduta: per quella serve il calcolo
+# su trigger.from_state.last_changed fatto in "durata_caduta".
 #
 # Riporta lo stato dei tre canali al ritorno: se un canale risulta ancora acceso,
 # significa che il rele' era rimasto chiuso durante l'assenza di connessione. In quel
 # caso W1 sta gia' ritentando lo spegnimento e W2 escalera' dopo 10 minuti.
 #
 # Le notifiche persistenti di W3 e W4 vengono cancellate: hanno esaurito la funzione.
+# La cancellazione non e' condizionata, la push si.
 #==================================================================================
 - id: irrigazione_watchdog_sonoff_online
   alias: "Irrigazione - Watchdog Sonoff tornato online"
@@ -304,20 +324,57 @@
         {% endif %}
       {% endfor %}
       {{ ns.v }}
+    # Durata reale dell'irraggiungibilita', in secondi: dal passaggio a "unavailable"
+    # al ritorno. Non coincide con il "for" del trigger. Zero se from_state manca.
+    durata_caduta: >
+      {% if trigger.from_state is not none and trigger.to_state is not none %}
+        {{ (as_timestamp(trigger.to_state.last_changed)
+            - as_timestamp(trigger.from_state.last_changed)) | round(0) }}
+      {% else %}
+        0
+      {% endif %}
+    # Riavvio di HA o ricarica dell'integrazione: in quel caso tornano disponibili
+    # nello stesso istante anche le entita' degli ALTRI dispositivi Sonoff (RF Bridge,
+    # deumidificatore, prese). In una caduta reale del 10028b1d36 cambia solo lui.
+    # Riferimento temporale: l'istante di ritorno del canale 1, non now() (il trigger
+    # scatta 2 minuti dopo). Soglia 3 entita' e finestra +/-20 s: in un riavvio sono
+    # decine, in una coincidenza fortuita al massimo una.
+    evento_globale: >
+      {% set rif = as_timestamp(trigger.to_state.last_changed)
+                   if trigger.to_state is not none else 0 %}
+      {% set ns = namespace(n=0) %}
+      {% for e in integration_entities('sonoff') if '10028b1d36' not in e %}
+        {% if states[e] is not none
+              and (as_timestamp(states[e].last_changed) - rif) | abs < 20 %}
+          {% set ns.n = ns.n + 1 %}
+        {% endif %}
+      {% endfor %}
+      {{ rif > 0 and ns.n >= 3 }}
+    # La push parte se la caduta e' stata significativa e non era un evento globale,
+    # oppure sempre se un canale risulta acceso al ritorno (caso critico).
+    notifica: >
+      {{ (qualche_canale_acceso | bool)
+         or ((durata_caduta | int) >= 300 and not (evento_globale | bool)) }}
   action:
-    - action: notify.mobile_app_cph2653
-      continue_on_error: true
-      data:
-        title: "✅ Irrigazione - Sonoff tornato online"
-        message: >
-          Il Sonoff 4CHPROR3 dell'irrigazione e' di nuovo raggiungibile alle
-          {{ now().strftime('%d/%m/%Y %H:%M') }}. Stato canali: {{ stato_canali }}.
-          {% if qualche_canale_acceso | bool %}Un canale risulta ACCESO: spegnimento
-          automatico in corso.{% else %}Tutti i canali sono spenti.{% endif %}
-        data:
-          priority: high
-          ttl: 0
-          persistent: "true"
+    - if:
+        - condition: template
+          value_template: "{{ notifica | bool }}"
+      then:
+        - action: notify.mobile_app_cph2653
+          continue_on_error: true
+          data:
+            title: "✅ Irrigazione - Sonoff tornato online"
+            message: >
+              Il Sonoff 4CHPROR3 dell'irrigazione e' di nuovo raggiungibile alle
+              {{ now().strftime('%d/%m/%Y %H:%M') }} dopo
+              {{ ((durata_caduta | int) / 60) | round(1) }} minuti di assenza.
+              Stato canali: {{ stato_canali }}.
+              {% if qualche_canale_acceso | bool %}Un canale risulta ACCESO: spegnimento
+              automatico in corso.{% else %}Tutti i canali sono spenti.{% endif %}
+            data:
+              priority: high
+              ttl: 0
+              persistent: "true"
     - action: persistent_notification.dismiss
       continue_on_error: true
       data:
