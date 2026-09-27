@@ -118,7 +118,7 @@ config:
           rows: auto
         header:
           show: true
-          title: "max Temp inventer \xB0C/24h"
+          title: Temp max inventer DC oggi
         series:
         - entity: sensor.inverter_uflex_dc_temperature
           name: inverter DC
@@ -141,7 +141,7 @@ config:
           rows: auto
         header:
           show: true
-          title: Tensione max condens.60gg,V
+          title: Tensione max condens.60gg
         series:
         - color: '#0072B2'
           entity: sensor.inverter_uflex_battery_voltage
@@ -158,6 +158,29 @@ config:
               text: max tens.V
           decimals: 2
           id: volt
+      - graph_span: 60d
+        grid_options:
+          columns: 12
+          rows: auto
+        header:
+          show: true
+          title: Temp max inventer DC 60gg
+        series:
+        - entity: sensor.inverter_uflex_dc_temperature
+          name: inverter DC
+          statistics:
+            period: day
+            type: max
+          type: line
+          yaxis_id: C
+        type: custom:apexcharts-card
+        yaxis:
+        - apex_config:
+            title:
+              text: "\xB0C"
+          decimals: 2
+          id: C
+          min: 55
       - graph_span: 60d
         grid_options:
           columns: 12
@@ -182,36 +205,6 @@ config:
           decimals: 0
           id: conteggio
           min: 0
-      - graph_span: 30d
-        grid_options:
-          columns: 12
-          rows: auto
-        header:
-          show: true
-          title: "max Temp inventer \xB0C/gg"
-        series:
-        - entity: sensor.inverter_uflex_dc_temperature
-          name: inverter DC
-          statistics:
-            period: day
-            type: max
-          type: line
-          yaxis_id: C
-        - entity: sensor.inverter_uflex_temperature
-          name: inverter AC
-          statistics:
-            period: day
-            type: max
-          type: line
-          yaxis_id: C
-        type: custom:apexcharts-card
-        yaxis:
-        - apex_config:
-            title:
-              text: "\xB0C"
-          decimals: 2
-          id: C
-          min: 55
       type: grid
     - cards:
       - heading: PANELLI FOTOVOLTAICI
