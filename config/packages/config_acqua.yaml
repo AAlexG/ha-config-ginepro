@@ -1,15 +1,22 @@
-# config_acqua_1.yaml
+# config_acqua_2.yaml
 # Package Casa Ginepro - Acqua: sanitaria, consumi, costi e bolletta IRETI
 # Estratto da configuration_186.yaml. Nome file = nome del package.
 
 template:
   - sensor:
+      # Batteria leak detector CH4. Il gateway Ecowitt non fornisce la tensione
+      # di questo sensore: invia un livello 0-5 che l'integrazione converte in
+      # percentuale (livello x 20). 0 % = batteria scarica.
+      # Prima il modello mostrava 'OK' proprio con 0 % (logica invertita).
       - name: "Leak Detector Battery Status"
         unique_id: "leak_detector_battery_status"
+        unit_of_measurement: "%"
+        device_class: battery
+        state_class: measurement
+        availability: >-
+          {{ is_number(states('sensor.hp1000se_pro_pro_v1_6_4_leak_detection_4_battery')) }}
         state: >-
-          {{ 'OK' if states('sensor.hp1000se_pro_pro_v1_6_4_leak_detection_4_battery') | int(0) == 0 else 'Bassa' }}
-        icon: >-
-          {{ 'mdi:battery' if states('sensor.hp1000se_pro_pro_v1_6_4_leak_detection_4_battery') | int(0) == 0 else 'mdi:battery-alert' }}
+          {{ states('sensor.hp1000se_pro_pro_v1_6_4_leak_detection_4_battery') | int }}
 
   # --- IRRIGAZIONE: stato del programma automatico ---
   # salta_oggi OFF = programma attivo (parte agli orari O1/O2 se il meteo lo permette)

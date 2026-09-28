@@ -1,4 +1,4 @@
-# automations_128.yaml
+# automations_129.yaml
 #==================================================================================
 # 1. IRRIGAZIONE – Ciclo programmato (O1/O2) con gate meteo
 #
@@ -301,18 +301,17 @@
   alias: "Batteria bassa - Leak Detector"
   mode: single
   triggers:
-    # v126: binary_sensor.hp1000se_pro_pro_v1_6_4_leak_detection_4_battery non
-    # esiste; la batteria e' esposta solo come sensore numerico, gia' tradotto
-    # in OK/Bassa da sensor.leak_detector_battery_status (config_acqua).
-    - platform: state
+    # sensor.leak_detector_battery_status ora e' in % (0/20/40/60/80/100).
+    # Scatta a 20 % o meno (livello Ecowitt 0 o 1).
+    - platform: numeric_state
       entity_id: sensor.leak_detector_battery_status
-      to: "Bassa"
+      below: 21
   condition: []
   action:
     - action: notify.mobile_app_cph2653
       data:
         title: "🔋 Batteria bassa - Meteo"
-        message: "Leak Detector: batteria bassa segnalata."
+        message: "Leak Detector: batteria al {{ states('sensor.leak_detector_battery_status') }} %."
 
 #==================================================================================
 # 11. NOTIFICA BATTERIA BASSA - SOIL 1
