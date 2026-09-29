@@ -1,4 +1,4 @@
-# automations_carichi_7.yaml
+# automations_carichi_8.yaml
 #==================================================================================
 # DISTACCO CARICHI SU PRELIEVO DI RETE ALTO
 #
@@ -90,8 +90,8 @@
                 title: "Distacco carichi - Auto"
                 message: >
                   Prelievo da rete {{ prelievo }} W oltre 5900 W per 30 s.
-                  Staccato il contattore auto (circa 3600 W) e alzato il flag
-                  manuale: resta fermo finche' non lo abbassi dalla plancia.
+                  Staccato il contattore auto (circa 3600 W). Nessuna automazione
+                  lo riaccende: va riacceso a mano dalla plancia.
                 data:
                   tag: distacco_carichi
                   priority: high
@@ -179,10 +179,18 @@
 #==================================================================================
 # C2. NESSUN CARICO GESTIBILE: AVVISO PUSH + VOCALE
 #==================================================================================
-# Scatta sullo stesso trigger di C1 ma con tutti e quattro i carichi gia'
+# Scatta quando il prelievo e' oltre 5900 W con tutti e quattro i carichi gia'
 # spenti, quindi C1 non ha nulla da fare. Antispam di 15 minuti sul
 # last_triggered dell'automazione stessa: senza, un consumo che oscilla
 # intorno ai 5900 W farebbe parlare gli speaker in continuazione.
+#
+# v8: trigger unico di tipo template "prelievo alto E nessun carico acceso"
+# tenuto 30 s. Copre sia il superamento con carichi gia' spenti sia lo
+# stacco dell'ultimo carico con prelievo ancora alto, senza ricontrollo ogni
+# minuto e senza attesa nelle azioni. Prima l'attesa di 30 s stava dopo le
+# condizioni: se nel frattempo il prelievo scendeva, l'automazione si
+# fermava senza notificare ma aveva gia' aggiornato last_triggered, e
+# l'antispam bloccava per 15 minuti anche un superamento reale.
 #==================================================================================
 - id: carichi_nessun_carico_gestibile
   alias: "Carichi - Prelievo alto senza carichi gestibili"
@@ -193,37 +201,20 @@
   mode: single
   max_exceeded: silent
   triggers:
-    - trigger: numeric_state
-      entity_id: sensor.inverter_uflex_external_ct1_power
-      above: 5900
-      for: "00:00:30"
-    - trigger: time_pattern
-      minutes: "/1"
-      id: ricontrollo
-  conditions:
-    - condition: numeric_state
-      entity_id: sensor.inverter_uflex_external_ct1_power
-      above: 5900
-    - condition: template
+    - trigger: template
       value_template: >
-        {{ not (is_state('switch.solo_auto_contattore_interruttore', 'on')
-                or is_state('switch.panasonic_heat_pump_main_heatpump_state', 'on')
-                or is_state('switch.box_deumidificatore_cantina_sonoff', 'on')
-                or is_state('switch.deumidificatore_armadio_zigbee', 'on')) }}
+        {{ states('sensor.inverter_uflex_external_ct1_power') | float(0) > 5900
+           and not (is_state('switch.solo_auto_contattore_interruttore', 'on')
+                    or is_state('switch.panasonic_heat_pump_main_heatpump_state', 'on')
+                    or is_state('switch.box_deumidificatore_cantina_sonoff', 'on')
+                    or is_state('switch.deumidificatore_armadio_zigbee', 'on')) }}
+      for: "00:00:30"
+  conditions:
     - condition: template
       value_template: >
         {{ this.attributes.last_triggered is none
            or (now() - this.attributes.last_triggered).total_seconds() > 900 }}
   actions:
-    # Ricontrollo (v7): tenuta di 30 s, poi verifica (vedi C1).
-    - if:
-        - condition: trigger
-          id: ricontrollo
-      then:
-        - delay: "00:00:30"
-    - condition: numeric_state
-      entity_id: sensor.inverter_uflex_external_ct1_power
-      above: 5900
     - variables:
         prelievo: >
           {{ states('sensor.inverter_uflex_external_ct1_power') | float(0) | round(0) }}

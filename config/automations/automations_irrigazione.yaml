@@ -1,4 +1,4 @@
-# automations_irrigazione_5.yaml
+# automations_irrigazione_6.yaml
 #==================================================================================
 # WATCHDOG IRRIGAZIONE - Casa Ginepro
 #
@@ -56,6 +56,176 @@
 #   - W5: la cancellazione delle notifiche persistenti di W3 e W4 avviene sempre,
 #     anche quando la push viene soppressa, per non lasciare avvisi orfani.
 #==================================================================================
+
+# Modifiche versione 6 (29/09/2026):
+#   - Spostate qui da automations.yaml, con id invariati, le tre automazioni
+#     di gestione: ciclo programmato, accumulo minuti, reset salta-oggi.
+#   - W5: al ritorno online con tutti i canali spenti chiude anche le
+#     notifiche persistenti di W1 e W2, non solo quelle di W3 e W4.
+#==================================================================================
+
+#==================================================================================
+# 1. IRRIGAZIONE – Ciclo programmato (O1/O2) con gate meteo
+#
+# GATE PIOGGIA allineato a quello della pergola (19/09/2026).
+# Prima il gate leggeva un solo sensore, hourly_rain, sotto il nome fuorviante
+# di "rain_rate". hourly_rain e' un accumulo dell'ora corrente e si azzera allo
+# scoccare dell'ora: se piove alle 06:55, alle 07:00 torna a 0 mentre sta ancora
+# piovendo, e il ciclo delle 07:30 partirebbe sotto la pioggia.
+# Ora si usano gli stessi tre parametri della pergola:
+#   - rain_rate    intensita' istantanea, intercetta subito la pioggia in corso
+#   - hourly_rain  accumulo orario, da' persistenza dopo che ha smesso
+#   - previsione   mm di precipitazione nelle prossime 3 ore da weather.casa
+# event_rain resta volutamente NON usato: rimane > 0 per ore dopo la pioggia e
+# bloccherebbe l'irrigazione per l'intera giornata.
+#
+# Restano invariati gli altri criteri di blocco gia' presenti: umidita' terreno
+# su entrambe le sonde, vento medio 1h > 40 km/h e previsione di condizione
+# piovosa nelle prossime 5 ore. Quest'ultima e' piu' larga della finestra a 3
+# ore della pergola ed e' stata tenuta: per l'irrigazione anticipare di piu' non
+# fa danno, si perde al massimo un ciclo.
+#
+# Il motivo di blocco viene troncato a 250 caratteri: input_text ha un massimo
+# di 255 e con piu' motivi contemporanei il testo puo' superarlo, facendo
+# fallire l'azione.
+#==================================================================================
+- id: irrigazione_ciclo_programmato
+  alias: "Irrigazione – Ciclo programmato (O1/O2)"
+  mode: single
+  max_exceeded: silent
+  triggers:
+    - platform: time
+      at: input_datetime.irrigazione_ora_mattino
+    - platform: time
+      at: input_datetime.irrigazione_ora_sera
+  condition: []
+  action:
+    - if:
+        - condition: state
+          entity_id: input_boolean.irrigazione_salta_oggi
+          state: 'on'
+      then:
+        - action: input_text.set_value
+          target:
+            entity_id: input_text.irrigazione_motivo_blocco
+          data:
+            value: "🖐️ Programma saltato per oggi"
+        - stop: "Salta oggi attivo"
+
+    - action: weather.get_forecasts
+      target:
+        entity_id: weather.casa
+      data:
+        type: hourly
+      response_variable: previsioni
+
+    - variables:
+        ora_esecuzione: "{{ now().strftime('%d/%m/%Y %H:%M') }}"
+        soglia: "{{ states('input_number.irrigazione_soglia_umidita') | float(40) }}"
+        s1: "{{ states('sensor.soil_moisture_1') | float(0) }}"
+        s2: "{{ states('sensor.soil_moisture_2') | float(0) }}"
+        vento: "{{ states('sensor.wind_speed_media_1h') | float(0) }}"
+        v_rate: "{{ states('sensor.hp1000se_pro_pro_v1_6_4_rain_rate') | float(0) }}"
+        v_oraria: "{{ states('sensor.hp1000se_pro_pro_v1_6_4_hourly_rain') | float(0) }}"
+        mm_previsti: >-
+          {{ (previsioni['weather.casa'].forecast[0:3]
+             | map(attribute='precipitation')
+             | map('float', 0) | list) | max | default(0) }}
+
+    - variables:
+        motivi: >
+          {% set ns = namespace(lista=[]) %}
+          {% if v_rate > 0 %}
+            {% set ns.lista = ns.lista + ['🌧️ Pioggia ' ~ (v_rate | round(1) | string) ~ ' mm/h'] %}
+          {% endif %}
+          {% if v_oraria > 0 %}
+            {% set ns.lista = ns.lista + ['🌧️ Accumulo ' ~ (v_oraria | round(1) | string) ~ ' mm (1h)'] %}
+          {% endif %}
+          {% if mm_previsti > 0 %}
+            {% set ns.lista = ns.lista + ['🌦️ Prev. ' ~ (mm_previsti | round(1) | string) ~ ' mm/3h'] %}
+          {% endif %}
+          {% if s1 > soglia and s2 > soglia %}
+            {% set ns.lista = ns.lista + ['💧 Umidità S1=' ~ (s1 | round(0) | int | string) ~ '% S2=' ~ (s2 | round(0) | int | string) ~ '%'] %}
+          {% endif %}
+          {% if vento > 40 %}
+            {% set ns.lista = ns.lista + ['🌬️ Vento ' ~ (vento | round(1) | string) ~ ' km/h'] %}
+          {% endif %}
+          {% set f = previsioni['weather.casa'].forecast %}
+          {% if f[:5] | selectattr('condition', 'in', ['rainy','showers','pouring','hail']) | list | count > 0 %}
+            {% set ns.lista = ns.lista + ['🌦️ Prev. pioggia 5h'] %}
+          {% endif %}
+          {{ ns.lista | join('\n') }}
+        blocco: >
+          {{ v_rate > 0
+             or v_oraria > 0
+             or mm_previsti > 0
+             or (s1 > soglia and s2 > soglia)
+             or vento > 40
+             or (previsioni['weather.casa'].forecast[:5]
+                 | selectattr('condition', 'in', ['rainy','showers','pouring','hail'])
+                 | list | count > 0) }}
+
+    - if:
+        - condition: template
+          value_template: "{{ blocco | bool }}"
+      then:
+        - action: input_text.set_value
+          target:
+            entity_id: input_text.irrigazione_motivo_blocco
+          data:
+            value: >-
+              {{ (('⛔ Bloccata ' ~ ora_esecuzione ~ '\n' ~ (motivi | trim)) | trim)
+                 | truncate(250, True, '') }}
+        - stop: "Meteo sfavorevole – nessuna irrigazione"
+
+    - action: input_text.set_value
+      target:
+        entity_id: input_text.irrigazione_motivo_blocco
+      data:
+        value: "✅ Permessa {{ ora_esecuzione }}"
+    - action: script.irrigazione_esegui_sequenza
+
+#==================================================================================
+# 1b. ACQUA – Accumula minuti irrigazione (tick ogni minuto)
+# Interblocco HW: max 1 canale ON => 1 tick = 1 minuto-canale. Robusto ai riavvii.
+#==================================================================================
+- id: acqua_accumula_minuti_irrigazione
+  alias: "Acqua – Accumula minuti irrigazione"
+  mode: single
+  triggers:
+    - platform: time_pattern
+      minutes: "/1"
+  condition:
+    - condition: or
+      conditions:
+        - condition: state
+          entity_id: switch.irrigazione_sonoff_switch_4chpror3_sonoff_10028b1d36_1
+          state: "on"
+        - condition: state
+          entity_id: switch.irrigazione_sonoff_switch_4chpror3_sonoff_10028b1d36_2
+          state: "on"
+        - condition: state
+          entity_id: switch.irrigazione_sonoff_switch_4chpror3_sonoff_10028b1d36_3
+          state: "on"
+  action:
+    - action: counter.increment
+      target:
+        entity_id: counter.irrigazione_minuti_oggi
+
+#==================================================================================
+# 2. IRRIGAZIONE – RESET GESTIONE MANUALE A MEZZANOTTE
+#==================================================================================
+- id: irrigazione_reset_salta_mezzanotte
+  alias: "Irrigazione - Reset salta-oggi a mezzanotte"
+  mode: single
+  triggers:
+    - platform: time
+      at: "23:59:00"
+  condition: []
+  action:
+    - action: input_boolean.turn_off
+      target:
+        entity_id: input_boolean.irrigazione_salta_oggi
 
 #==================================================================================
 # W1. SPEGNIMENTO FORZATO CON RITENTATIVO (silenzioso)
@@ -383,3 +553,16 @@
       continue_on_error: true
       data:
         notification_id: watchdog_irrigazione_perso
+    # v6: con tutti i canali spenti chiude anche gli avvisi di W1 e W2.
+    - if:
+        - condition: template
+          value_template: "{{ not (qualche_canale_acceso | bool) }}"
+      then:
+        - action: persistent_notification.dismiss
+          continue_on_error: true
+          data:
+            notification_id: watchdog_irrigazione
+        - action: persistent_notification.dismiss
+          continue_on_error: true
+          data:
+            notification_id: watchdog_irrigazione_bloccato

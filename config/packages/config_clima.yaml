@@ -1,4 +1,4 @@
-# config_clima_11.yaml
+# config_clima_12.yaml
 # Package Casa Ginepro - Clima: fancoil, free cooling/heating, target temperatura, consumi
 # Estratto da configuration_186.yaml. Nome file = nome del package.
 
@@ -325,6 +325,7 @@ input_number:
     icon: mdi:snowflake
 
   clima_media_esterna_7gg:
+    # Media esponenziale oraria su 168 h (alfa 0,0118 da automations_clima_66).
     name: "Media Temperatura Esterna 7gg"
     min: -20
     max: 45
@@ -443,11 +444,15 @@ input_boolean:
   # start lo stato precedente allo stop invece di forzare lo spento.
   # Fonte: https://www.home-assistant.io/integrations/input_boolean/ (Restore state)
   fancoil_georgi_manuale:
-    name: "Fancoil Georgi - Gestione Manuale"
+    # v12: nome allineato alla camera servita. Lo switch
+    # switch.camerageorgi_shelly_fancoil_georgi comanda il fancoil di camera
+    # TANIA (nome entita' storico); entity_id del flag invariato.
+    name: "Fancoil Camera Tania - Gestione Manuale"
     icon: mdi:hand-back-right
 
   fancoil_georgi2_manuale:
-    name: "Fancoil Georgi 2 - Gestione Manuale"
+    # v12: switch ..._fancoil_georgi_2 = fancoil camera GEORGI.
+    name: "Fancoil Camera Georgi - Gestione Manuale"
     icon: mdi:hand-back-right
 
   fancoil_sala_manuale:

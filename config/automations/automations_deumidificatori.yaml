@@ -1,4 +1,4 @@
-# automations_deumidificatori_7.yaml
+# automations_deumidificatori_8.yaml
 #
 # ALLARME SERBATOIO PIENO – DEUMIDIFICATORI
 #
@@ -149,10 +149,13 @@
                 entity_id: switch.box_deumidificatore_cantina_sonoff
 
 #==================================================================================
-# DEUMIDIFICATORE TANIA (ex armadio) – CONTROLLO PERIODICO SU PRODUZIONE FV
+# DEUMIDIFICATORE ARMADIO – CONTROLLO PERIODICO SU PRODUZIONE FV
 # Ogni 5 minuti verifica produzione FV e decide stato presa deumidificatore.
 # Soglia: 1000W. Robusto contro riavvii o eventi mancati.
-# L'umidità è gestita dall'igrostat interno del deumidificatore.
+# DA CONFERMARE (v8): questo commento diceva "umidita' gestita
+# dall'igrostato interno", in contrasto con l'intestazione del file. Se
+# l'igrostato interno c'e', l'allarme serbatoio pieno qui sopra puo' scattare
+# a vuoto quando la macchina si ferma per umidita' raggiunta.
 # Rispetta input_boolean.deumidificatore_armadio_manuale.
 #==================================================================================
 - id: deumidificatore_armadio_controllo

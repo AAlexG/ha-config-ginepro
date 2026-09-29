@@ -1,4 +1,4 @@
-# config_caldaia_2.yaml
+# config_caldaia_3.yaml
 # Package Casa Ginepro - Caldaia Baxi / OTGW: DHW, costi termici, scelta fonte caldaia-PdC
 # Estratto da configuration_186.yaml. Nome file = nome del package.
 
@@ -14,7 +14,8 @@ template:
         unique_id: "caldaia_dhw_durata_oggi_minuti"
         # Riscaldamento OFF (estate): legge input_number.caldaia_dhw_durata_acc,
         #   accumulato minuto per minuto dall'automazione caldaia_dhw_accumula_minuti
-        #   quando binary_sensor.caldaia_opentherm_acqua_calda_2 è ON.
+        #   quando DHW (binary_sensor.opentherm_gateway_otgw_otgw_domestic_hot_water)
+        #   e fiamma sono ON.
         # Riscaldamento ON (inverno): restituisce il valore fisso configurabile
         #   input_number.caldaia_dhw_durata_invernale (default 3 min).
         state: >-
@@ -222,8 +223,8 @@ input_number:
 
   # Accumulatore minuti DHW giornalieri (solo estate, riscaldamento OFF).
   # Incrementato ogni minuto dall'automazione caldaia_dhw_accumula_minuti
-  # quando binary_sensor.caldaia_opentherm_acqua_calda_2 è ON.
-  # Azzerato ogni sera alle 23:00 da acqua_reset_mezzanotte.
+  # quando DHW (binary_sensor.opentherm_gateway_otgw_otgw_domestic_hot_water)
+  # e fiamma sono ON. Azzerato ogni sera alle 23:59 da acqua_reset_mezzanotte.
   caldaia_dhw_durata_acc:
     name: "Accumulatore minuti DHW giornalieri"
     min: 0

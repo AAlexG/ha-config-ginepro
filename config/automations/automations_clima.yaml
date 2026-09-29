@@ -1,4 +1,4 @@
-# automations_clima_65.yaml
+# automations_clima_66.yaml
 
 
 
@@ -151,6 +151,9 @@
 - id: clima_media_esterna_7gg
   alias: "Clima – Aggiorna Media Esterna 7gg"
   description: "Calcola EMA temperatura esterna ogni ora per soglia inverno/estate"
+  # v66: alfa da 0,021 a 0,0118 = 2/(168+1), media esponenziale su 168 ore.
+  # Con 0,021 la costante di tempo era 1/0,021 = 48 h (dimezzamento 33 h):
+  # una media di circa 2 giorni, non di 7.
   triggers:
     - trigger: time_pattern
       hours: "/1"
@@ -162,12 +165,13 @@
         value: >
           {% set t = states('sensor.hp1000se_pro_pro_v1_6_4_outdoor_temperature') | float(15) %}
           {% set media = states('input_number.clima_media_esterna_7gg') | float(15) %}
-          {{ (media * 0.979 + t * 0.021) | round(2) }}
+          {{ (media * 0.9882 + t * 0.0118) | round(2) }}
 
 #==================================================================================
 # 4. FANCOIL - CLIMA – COMMUTAZIONE MODALITÀ GIORNALIERA
-# Comfort: 07:00-20:00 / Eco: 20:00-23:00 / Notte: 23:00-07:00
-# Solo se non in modalità manuale e casa non in vacanza
+# Giorno dalle 07:00. Notte dalle 21:00 in raffrescamento (modo pompa Cool)
+# e dalle 23:00 in riscaldamento. Solo se non in modalita' manuale e casa non
+# in vacanza.
 #==================================================================================
 - id: clima_modalita_giorno
   alias: "Clima – Modalità Giorno (07:00)"
@@ -204,30 +208,28 @@
         - action: switch.turn_off
           target:
             entity_id: switch.camerageorgi_shelly_fancoil_georgi_2
-    # Nessun flag di gestione manuale viene piu' abbassato qui: fancoil e
+    # Nessun flag di gestione manuale viene abbassato qui: fancoil e
     # deumidificatori restano bloccati finche' e' l'utente ad abbassare il flag
     # dalla plancia. Il promemoria delle 10:00 / 22:00 serve a non dimenticarli.
-    # Le due voci rimaste non sono gestioni manuali dell'utente:
-    #   pergola_blocco_manuale  -> lo azzera comunque pergola_blocco_manuale_rilascio
-    #                              in automations_pergola, agli stessi orari.
-    #   clima_pompa_latch_notte -> stato interno del PID notturno: se non viene
-    #                              azzerato al cambio fascia, la soglia di
-    #                              riaccensione della pompa resta a target + 2 C
-    #                              anche di giorno.
+    # v66: pergola_blocco_manuale non viene piu' toccato qui. Il suo unico
+    # rilascio orario e' pergola_blocco_manuale_rilascio (07:00 e 23:00):
+    # prima d'estate il blocco cadeva gia' alle 21:00 con clima_modalita_notte.
+    # clima_pompa_latch_notte e' stato interno del PID notturno: se non viene
+    # azzerato al mattino la soglia di riaccensione resta a target + 2 C anche
+    # di giorno.
     - action: input_boolean.turn_off
       target:
-        entity_id:
-          - input_boolean.pergola_blocco_manuale
-          - input_boolean.clima_pompa_latch_notte
+        entity_id: input_boolean.clima_pompa_latch_notte
 
 - id: clima_modalita_notte
   alias: "Clima – Modalità Notte (21:00 estate / 23:00 inverno)"
   description: >
-    D'estate la notte inizia alle 21:00: dalle 21 la zona comandante diventano
+    In raffrescamento (modo pompa Cool) la notte inizia alle 21:00: dalle 21 la zona comandante diventano
     le camere (PID, riaccensione pompa e free cooling leggono tutti
     clima_modalita) e la sala viene abbandonata. D'inverno resta alle 23:00,
     perche' fino a quell'ora la sala e' occupata e deve continuare a essere
-    servita dal PID heating e dal setpoint SAT.
+    servita dal PID heating e dal setpoint SAT. La stagione e' quella del modo
+    operativo della pompa (v66).
     Il fancoil camera Tania NON viene piu' spento qui: nella fascia 21-23 e'
     parte del ciclo serale e lo spegne fancoil_tania_spegnimento_notte alle
     23:00.
@@ -248,15 +250,19 @@
         - condition: state
           entity_id: input_select.clima_modalita
           state: "manuale"
-    # Un solo orario e' valido per volta, in base a input_select.clima_stagione.
-    # NON si usa il modo operativo della pompa: clima_commutazione_stagionale
-    # cambia clima_stagione alle 06:00 ma il modo Panasonic lo si cambia a mano,
-    # quindi nella finestra fra i due il sistema avrebbe due stagioni diverse.
-    # clima_sync_sat_target, che e' l'automazione da proteggere dall'anticipo a
-    # 21:00, si regola gia' su clima_stagione: qui si usa la stessa sorgente.
+    # Un solo orario e' valido per volta.
+    # v66: SORGENTE UNICA DELLA STAGIONE = modo operativo della pompa. E' lo
+    # stato fisico dell'impianto e lo leggono gia' PID, fancoil, free
+    # cooling/heating, riaccensione e antigelo. input_select.clima_stagione e'
+    # ora solo la stagione CONSIGLIATA dalla media esterna (vedi
+    # clima_commutazione_stagionale): prima notte, SAT e gestione fonte
+    # seguivano clima_stagione e il resto il modo pompa, e fra il cambio di
+    # clima_stagione e il cambio a mano del modo le due meta' del sistema
+    # lavoravano in stagioni diverse.
     - condition: template
       value_template: >
-        {% set estate = is_state('input_select.clima_stagione', 'estate') %}
+        {% set estate = states('select.panasonic_heat_pump_main_operating_mode_state')
+                        in ['Cool', 'Cool only'] %}
         {{ (trigger.id == 'estate' and estate)
            or (trigger.id == 'inverno' and not estate) }}
   actions:
@@ -265,31 +271,17 @@
         entity_id: input_select.clima_modalita
       data:
         option: "notte"
-    # Nessun flag di gestione manuale viene piu' abbassato qui: fancoil e
-    # deumidificatori restano bloccati finche' e' l'utente ad abbassare il flag
-    # dalla plancia. Il promemoria delle 10:00 / 22:00 serve a non dimenticarli.
-    # Le due voci rimaste non sono gestioni manuali dell'utente:
-    #   pergola_blocco_manuale  -> lo azzera comunque pergola_blocco_manuale_rilascio
-    #                              in automations_pergola, agli stessi orari.
-    #   clima_pompa_latch_notte -> stato interno del PID notturno: se non viene
-    #                              azzerato al cambio fascia, la soglia di
-    #                              riaccensione della pompa resta a target + 2 C
-    #                              anche di giorno.
-    - action: input_boolean.turn_off
-      target:
-        entity_id:
-          - input_boolean.pergola_blocco_manuale
-          - input_boolean.clima_pompa_latch_notte
+    # v66: tolto l'azzeramento di pergola_blocco_manuale (lo rilascia solo
+    # pergola_blocco_manuale_rilascio alle 07:00 e 23:00) e di
+    # clima_pompa_latch_notte (si arma solo dopo le 23:00, qui era gia' spento).
 
 #==================================================================================
 # GESTIONE MANUALE FANCOIL E DEUMIDIFICATORE
-# Il toggle in plancia fancoil su ogni switch reale chiama uno script dedicato
-# (es. script.fancoil_georgi_toggle_manuale) che fa solo due cose: inverte lo
-# switch fisico e attiva il relativo input_boolean.*_manuale. Quel boolean
-# blocca tutte le automazioni di controllo finché non viene resettato al
-# prossimo cambio giorno/notte (07:00/23:00). Nessun detector, nessun flag
-# "comando_automatico": il blocco è sempre il risultato esplicito di un'azione
-# dell'utente sul tile, mai dedotto.
+# In plancia fancoil ogni switch ha accanto il proprio input_boolean.*_manuale
+# (tile con toggle diretto). Con il flag alzato tutte le automazioni di
+# controllo lasciano l'attuatore com'e'. Il flag lo alza e lo abbassa solo
+# l'utente (oppure il distacco carichi, che lo alza): nessuna automazione lo
+# abbassa a orario. Il promemoria qui sotto segnala i flag dimenticati.
 #==================================================================================
 
 #==================================================================================
@@ -431,15 +423,27 @@
         # Latch notturno: quando entrambe le camere hanno raggiunto il target
         # la pompa viene fermata fino alle 07:00 e i fancoil restano spenti.
         latch_notte: "{{ is_state('input_boolean.clima_pompa_latch_notte', 'on') }}"
+        # v66: ISTERESI 0,3 C. Prima la stessa soglia valeva per accendere e
+        # spegnere: il fancoil si spegneva appena la camera toccava il target e
+        # ripartiva al primo decimo sopra, ciclando ogni 5 minuti. Ora un
+        # fancoil acceso resta acceso fino a 0,3 C oltre il target (sotto in
+        # estate, sopra in inverno); uno spento parte solo oltre il target.
+        isteresi: 0.3
+        georgi_acceso: "{{ is_state('switch.camerageorgi_shelly_fancoil_georgi_2', 'on') }}"
+        tania_acceso: "{{ is_state('switch.camerageorgi_shelly_fancoil_georgi', 'on') }}"
+        soglia_estate_georgi: "{{ target_estate_georgi - isteresi if georgi_acceso else target_estate_georgi }}"
+        soglia_inverno_georgi: "{{ target_inverno_georgi + isteresi if georgi_acceso else target_inverno_georgi }}"
+        soglia_estate_tania: "{{ target_estate_tania - isteresi if tania_acceso else target_estate_tania }}"
+        soglia_inverno_tania: "{{ target_inverno_tania + isteresi if tania_acceso else target_inverno_tania }}"
         # Decisione per camera Georgi
         fancoil_georgi_on: >
           {% if not georgi_vivo %}
             false
           {% elif mode in ['Cool', 'Cool only'] %}
-            {{ t_georgi > target_estate_georgi and acqua_ok_georgi_estate
+            {{ t_georgi > soglia_estate_georgi and acqua_ok_georgi_estate
                and not freecooling_on and not latch_notte }}
           {% elif mode in ['Heat', 'Heat only'] %}
-            {{ t_georgi < target_inverno_georgi and acqua_ok_georgi_inverno
+            {{ t_georgi < soglia_inverno_georgi and acqua_ok_georgi_inverno
                and not freeheating_on }}
           {% else %}
             false
@@ -449,10 +453,10 @@
           {% if not tania_viva %}
             false
           {% elif mode in ['Cool', 'Cool only'] %}
-            {{ t_tania > target_estate_tania and acqua_ok_tania_estate
+            {{ t_tania > soglia_estate_tania and acqua_ok_tania_estate
                and not freecooling_on and not latch_notte }}
           {% elif mode in ['Heat', 'Heat only'] %}
-            {{ t_tania < target_inverno_tania and acqua_ok_tania_inverno
+            {{ t_tania < soglia_inverno_tania and acqua_ok_tania_inverno
                and not freeheating_on }}
           {% else %}
             false
@@ -476,8 +480,8 @@
               target:
                 entity_id: switch.camerageorgi_shelly_fancoil_georgi_2
     # --- CAMERA TANIA (switch ..._fancoil_georgi) ---
-    # Attivo solo nel prelavoro 21-23: di notte resta spento e viene spento
-    # comunque alle 23:00 da clima_modalita_notte.
+    # Attivo solo nel prelavoro 21-23: di notte resta spento, e alle 23:00 lo
+    # spegne fancoil_tania_spegnimento_notte.
     - if:
         - condition: template
           value_template: "{{ periodo_prelavoro }}"
@@ -497,116 +501,22 @@
               target:
                 entity_id: switch.camerageorgi_shelly_fancoil_georgi
 
-- id: fancoil_sala_accendi
-  alias: "Fancoil Sala – Accendi (fuori target)"
-  description: >
-    Accende il fancoil sala appena T_sala esce dal target E l'acqua e ancora
-    efficace. Attivo solo in modalita giorno.
-  triggers:
-    - trigger: numeric_state
-      entity_id: sensor.hp1000se_pro_pro_v1_6_4_indoor_temperature
-      above: input_number.maxtemp_giorno_estate_sala
-      id: "estate"
-    - trigger: numeric_state
-      entity_id: sensor.hp1000se_pro_pro_v1_6_4_indoor_temperature
-      below: input_number.mintemp_giorno_inverno_sala
-      id: "inverno"
-  conditions:
-    # Blocco fancoil in vacanza (flag attivabile anche a mano da plancia clima)
-    - condition: state
-      entity_id: input_boolean.vacanza
-      state: "off"
-    # La sala e' servita solo in modalita giorno. Sostituisce la vecchia
-    # finestra oraria 07:00-23:00: cosi' l'orario di fine e' uno solo, quello
-    # del passaggio a notte (21:00 in estate, 23:00 in inverno), e non c'e' un
-    # secondo orologio da tenere allineato. "giorno" esclude gia' "manuale".
-    - condition: state
-      entity_id: input_select.clima_modalita
-      state: "giorno"
-    - condition: state
-      entity_id: switch.sala_fancoil_sala_shelly_1gen4
-      state: "off"
-    - condition: state
-      entity_id: input_boolean.fancoil_sala_manuale
-      state: "off"
-    # Guardia dati (v58): outlet ripiega su 20 con | float(20), valore che
-    # supererebbe da solo la verifica di efficacia dell'acqua in estate.
-    - condition: template
-      value_template: "{{ has_value('sensor.panasonic_heat_pump_main_main_outlet_temp') }}"
-    - condition: template
-      value_template: >
-        {% set mode = states('select.panasonic_heat_pump_main_operating_mode_state') %}
-        {% set outlet = states('sensor.panasonic_heat_pump_main_main_outlet_temp') | float(20) %}
-        {% set tid = trigger.id %}
-        {% if tid == 'estate' and mode in ['Cool', 'Cool only'] %}
-          {{ outlet <= states('input_number.maxtemp_giorno_estate_sala') | float(25) - 4
-             and is_state('input_boolean.clima_freecooling_attivo', 'off') }}
-        {% elif tid == 'inverno' and mode in ['Heat', 'Heat only'] %}
-          {{ outlet >= states('input_number.mintemp_giorno_inverno_sala') | float(22) + 6
-             and is_state('input_boolean.clima_freeheating_attivo', 'off') }}
-        {% else %}
-          false
-        {% endif %}
-  actions:
-    - action: switch.turn_on
-      target:
-        entity_id: switch.sala_fancoil_sala_shelly_1gen4
+# fancoil_sala_accendi e fancoil_sala_spegni_target_raggiunto RIMOSSE (v66).
+# Decidevano la stessa cosa del controllo periodico qui sotto, che pero'
+# spegneva appena T_sala rientrava nel target: i 10 minuti di attesa dello
+# spegnimento non avevano effetto e il fancoil ciclava intorno alla soglia.
+# Ora l'unico controllo e' quello periodico, con isteresi 0,3 C.
 
 #==================================================================================
-# 6c. FANCOIL SALA – SPEGNIMENTO PER TARGET RAGGIUNTO (debounce 10 min)
-# Spegne solo se T_sala e rientrata nel target per 10 minuti consecutivi,
-# evitando cicli ON/OFF troppo frequenti vicino alla soglia.
-#==================================================================================
-- id: fancoil_sala_spegni_target_raggiunto
-  alias: "Fancoil Sala – Spegni (target raggiunto 10 min)"
-  description: >
-    Spegne il fancoil sala se T_sala e rientrata nel target per 10 minuti
-    consecutivi. Attivo solo in modalita giorno.
-  triggers:
-    - trigger: numeric_state
-      entity_id: sensor.hp1000se_pro_pro_v1_6_4_indoor_temperature
-      below: input_number.maxtemp_giorno_estate_sala
-      for:
-        minutes: 10
-      id: "estate"
-    - trigger: numeric_state
-      entity_id: sensor.hp1000se_pro_pro_v1_6_4_indoor_temperature
-      above: input_number.mintemp_giorno_inverno_sala
-      for:
-        minutes: 10
-      id: "inverno"
-  conditions:
-    - condition: state
-      entity_id: input_select.clima_modalita
-      state: "giorno"
-    - condition: state
-      entity_id: switch.sala_fancoil_sala_shelly_1gen4
-      state: "on"
-    - condition: state
-      entity_id: input_boolean.fancoil_sala_manuale
-      state: "off"
-    - condition: template
-      value_template: >
-        {% set mode = states('select.panasonic_heat_pump_main_operating_mode_state') %}
-        {% set tid = trigger.id %}
-        {{ (tid == 'estate' and mode in ['Cool', 'Cool only'])
-           or (tid == 'inverno' and mode in ['Heat', 'Heat only']) }}
-  actions:
-    - action: switch.turn_off
-      target:
-        entity_id: switch.sala_fancoil_sala_shelly_1gen4
-
-#==================================================================================
-# 6d. FANCOIL SALA – CONTROLLO PERIODICO DI SICUREZZA (ogni 5 minuti)
-# Rete di sicurezza: riallinea lo stato anche se i trigger numeric_state
-# sopra hanno perso un evento (es. dopo riavvio HA).
+# 6d. FANCOIL SALA – CONTROLLO PERIODICO (ogni 5 minuti)
+# Unico controllo del fancoil sala dalla v66 (accendi/spegni a soglia
+# rimosse). Robusto a riavvii ed eventi persi.
 #==================================================================================
 - id: fancoil_sala_controllo
   alias: "Fancoil Sala – Controllo Periodico Sicurezza"
   description: >
-    Ogni 5 minuti verifica e corregge lo stato del fancoil sala in base a
-    T_sala vs target giorno e outlet_temp. Rete di sicurezza per riallineare
-    lo stato dopo riavvii o eventi mancati. Attivo solo in modalita giorno.
+    Ogni 5 minuti decide lo stato del fancoil sala in base a T_sala vs target
+    giorno (isteresi 0,3 C) e outlet_temp. Attivo solo in modalita giorno.
   mode: single
   triggers:
     - trigger: time_pattern
@@ -616,7 +526,8 @@
     - condition: state
       entity_id: input_boolean.vacanza
       state: "off"
-    # La sala e' servita solo in modalita giorno (vedi fancoil_sala_accendi).
+    # La sala e' servita solo in modalita giorno: l'orario di fine e' quello
+    # del passaggio a notte (21:00 in raffrescamento, 23:00 in riscaldamento).
     - condition: state
       entity_id: input_select.clima_modalita
       state: "giorno"
@@ -640,8 +551,14 @@
         soglia_acqua_inverno: "{{ states('input_number.mintemp_giorno_inverno_sala') | float(22) + 6 }}"
         acqua_efficace_estate: "{{ outlet <= soglia_acqua_estate }}"
         acqua_efficace_inverno: "{{ outlet >= soglia_acqua_inverno }}"
-        temp_sala_fuori_target_estate: "{{ t_sala > target_sala_estate }}"
-        temp_sala_fuori_target_inverno: "{{ t_sala < target_sala_inverno }}"
+        # v66: isteresi 0,3 C come per le camere. Acceso resta acceso fino a
+        # 0,3 C oltre il target, spento parte solo oltre il target.
+        isteresi: 0.3
+        sala_acceso: "{{ is_state('switch.sala_fancoil_sala_shelly_1gen4', 'on') }}"
+        temp_sala_fuori_target_estate: >
+          {{ t_sala > (target_sala_estate - isteresi if sala_acceso else target_sala_estate) }}
+        temp_sala_fuori_target_inverno: >
+          {{ t_sala < (target_sala_inverno + isteresi if sala_acceso else target_sala_inverno) }}
         # Free cooling/heating naturale attivo: fancoil sempre spento
         freecooling_on: "{{ is_state('input_boolean.clima_freecooling_attivo', 'on') }}"
         freeheating_on: "{{ is_state('input_boolean.clima_freeheating_attivo', 'on') }}"
@@ -725,8 +642,8 @@
 - id: panasonic_pid_cooling_completo
   alias: "Panasonic – PID Cooling Dual-Zone"
   description: >
-    Giorno (07-23): sensore sala vs maxtemp_giorno_estate_sala.
-    Notte (23-07): camera Georgi e camera Tania, ognuna col proprio termometro
+    Giorno (07-21): sensore sala vs maxtemp_giorno_estate_sala.
+    Notte (21-07, segue clima_modalita): camera Georgi e camera Tania, ognuna col proprio termometro
     e col proprio target; comanda la camera piu' lontana dal target.
     Spegne pompa se temperatura gia sotto target (isteresi 0.5C al riavvio).
   triggers:
@@ -790,7 +707,7 @@
              - states('input_number.maxtemp_giorno_estate_sala') | float(25) }}
         kp: "{{ states('input_number.panasonic_pid_kp') | float(2.0) }}"
         ki: "{{ states('input_number.panasonic_pid_ki') | float(0.05) }}"
-        kd: "{{ states('input_number.panasonic_pid_kd') | float(1.0) }}"
+        kd: "{{ states('input_number.panasonic_pid_kd') | float(0.2) }}"
         integrale_prec: "{{ states('input_number.panasonic_pid_integrale') | float(0) }}"
         errore_prec: "{{ states('input_number.panasonic_pid_errore_prec') | float(0) }}"
         # Se entrambi i termometri camera sono fuori uso si ripiega sulla sala,
@@ -817,7 +734,7 @@
         # raggiungibile con gli emettitori disponibili, il PID satura e resterebbe
         # al minimo per ore. Il massimo e' anche la mandata a errore nullo.
         smin: "{{ states('input_number.panasonic_mandata_cool_min') | float(14) }}"
-        smax: "{{ states('input_number.panasonic_mandata_cool_max') | float(18) }}"
+        smax: "{{ states('input_number.panasonic_mandata_cool_max') | float(19) }}"
         # Boost solare: mandata piu' fredda quando il fotovoltaico produce
         bd: >
           {% set prod = states('sensor.inverter_uflex_pv_power') | float(0) %}
@@ -833,7 +750,7 @@
         raw_candidato: >
           {{ smax - (errore | float(0)) * (kp | float(2))
                   - (integrale_candidato | float(0)) * (ki | float(0.05))
-                  - (derivativo | float(0)) * (kd | float(1)) - bd }}
+                  - (derivativo | float(0)) * (kd | float(0.2)) - bd }}
         nuovo_integrale: >
           {% if raw_candidato < smin and errore > 0 %}
             {{ integrale_prec }}
@@ -847,7 +764,7 @@
         setpoint: >
           {% set raw = smax - (errore | float(0)) * (kp | float(2))
                             - (nuovo_integrale | float(0)) * (ki | float(0.05))
-                            - (derivativo | float(0)) * (kd | float(1)) - bd %}
+                            - (derivativo | float(0)) * (kd | float(0.2)) - bd %}
           {{ [[raw, smin] | max, smax] | min | round(0) | int }}
     - choose:
         # --- TARGET RAGGIUNTO ---
@@ -927,8 +844,9 @@
 # SOLO IN MODALITA GIORNO (v55). Il free cooling presuppone porte e finestre
 # aperte: di notte, con la casa chiusa e nessuno che possa aprire, il ricambio
 # d'aria non avviene e il flag bloccherebbe i fancoil delle camere senza che
-# nulla raffreschi davvero. All'ingresso in notte il flag viene spento da
-# clima_modalita_notte, e questo controllo lo tiene spento fino alle 07:00.
+# nulla raffreschi davvero. All'ingresso in notte il flag lo spegne questo
+# stesso controllo (trigger sul passaggio a notte) e lo tiene spento fino
+# alle 07:00.
 # Il target del delta e' quindi sempre quello della sala.
 # Controllo periodico (non a fronte): robusto contro riavvii, freeze
 # HeishaMon e trigger persi. Isteresi 0.5 C sulla disattivazione.
@@ -1036,7 +954,7 @@
                     message: >
                       Temperatura esterna {{ states('sensor.hp1000se_pro_pro_v1_6_4_outdoor_temperature') | float(0) | round(1) }}°C,
                       vento medio {{ states('sensor.wind_speed_media_1h') | float(0) | round(1) }} km/h.
-                      Pompa ammorbidita, fancoil in pausa: il raffrescamento naturale basta.
+                      Pompa spenta, fancoil in pausa: il raffrescamento naturale basta.
                 - action: input_boolean.turn_on
                   target:
                     entity_id: input_boolean.clima_freecooling_notifica_oggi
@@ -1110,102 +1028,88 @@
 #==================================================================================
 
 #==================================================================================
-# 9. PANASONIC - CLIMA – COMMUTAZIONE STAGIONALE AUTOMATICA
+# 9. PANASONIC - CLIMA – COMMUTAZIONE STAGIONALE (STAGIONE CONSIGLIATA)
+#
+# v66: input_select.clima_stagione e' la stagione CONSIGLIATA dalla media
+# esterna. Tutte le automazioni seguono invece il modo operativo della pompa,
+# che si cambia a mano: questa automazione registra la stagione consigliata e
+# avvisa quando il modo va cambiato.
+# Soglie: inverno sotto input_number.clima_soglia_inverno, estate sopra la
+# stessa soglia + 3 C (v66: prima 16 fisso nel codice; con soglia 13 il
+# comportamento e' identico, ma ora segue lo slider).
+# Il ramo valvola aggiunto in v65 e' stato tolto: con il modo pompa come
+# sorgente unica la valvola la riporta su Pompa panasonic_cooling_riaccensione,
+# appena la pompa e' in Cool.
 #==================================================================================
 - id: clima_commutazione_stagionale
   alias: "Clima – Commutazione Stagionale"
-  description: "Passa automaticamente estate/inverno basandosi su media 7gg"
+  description: "Registra la stagione consigliata dalla media esterna e avvisa di cambiare il modo pompa"
   triggers:
     - trigger: time
       at: "06:00:00"
+  variables:
+    media: "{{ states('input_number.clima_media_esterna_7gg') | float(15) }}"
+    soglia_inverno: "{{ states('input_number.clima_soglia_inverno') | float(13) }}"
+    soglia_estate: "{{ soglia_inverno + 3 }}"
+    modo: "{{ states('select.panasonic_heat_pump_main_operating_mode_state') }}"
   actions:
     - choose:
         - conditions:
             - condition: template
-              value_template: >
-                {{ states('input_number.clima_media_esterna_7gg') | float(15) < 
-                   states('input_number.clima_soglia_inverno') | float(13) }}
-            # v63: si confronta la stagione registrata, non il modo della pompa.
-            # Nessuna automazione cambia il modo Panasonic: con la condizione sul
-            # modo, notifica e spegnimento si ripetevano ogni mattina finche' il
-            # modo non veniva cambiato a mano.
+              value_template: "{{ media < soglia_inverno }}"
+            # v63: si confronta la stagione registrata, cosi' notifica e
+            # spegnimento avvengono una volta sola.
             - condition: state
               entity_id: input_select.clima_stagione
               state: "estate"
           sequence:
-            - action: notify.mobile_app_cph2653
-              data:
-                title: "🌡️ Cambio Stagione"
-                message: >
-                  Media 7gg: {{ states('input_number.clima_media_esterna_7gg') | float(0) | round(1) }}°C.
-                  Passaggio a modalità INVERNO. Panasonic cooling disattivato.
             - action: input_select.select_option
               target:
                 entity_id: input_select.clima_stagione
               data:
                 option: "inverno"
-            # Lucchetto manuale pompa (automations_clima_59): il cambio di
-            # stagione avviene comunque, ma la pompa non viene toccata.
+            - action: notify.mobile_app_cph2653
+              data:
+                title: "🌡️ Stagione consigliata: INVERNO"
+                message: >
+                  Media 7gg: {{ media | round(1) }}°C, sotto {{ soglia_inverno }}°C.
+                  {% if modo in ['Heat', 'Heat only'] %}La pompa e' gia' in Heat.
+                  {% else %}Modo pompa attuale: {{ modo }}. Cambialo in Heat:
+                  riscaldamento, SAT e gestione fonte seguono il modo della pompa.
+                  {% if modo in ['Cool', 'Cool only'] %}Raffrescamento fermato.{% endif %}{% endif %}
+            # Lucchetto manuale pompa (automations_clima_59): la pompa non viene
+            # toccata con il flag alzato.
             - if:
                 - condition: state
                   entity_id: input_boolean.pdc_manuale
                   state: "off"
                 - condition: template
-                  value_template: >
-                    {{ states('select.panasonic_heat_pump_main_operating_mode_state')
-                       in ['Cool', 'Cool only'] }}
+                  value_template: "{{ modo in ['Cool', 'Cool only'] }}"
               then:
                 - action: switch.turn_off
                   target:
                     entity_id: switch.panasonic_heat_pump_main_heatpump_state
         - conditions:
             - condition: template
-              value_template: >
-                {{ states('input_number.clima_media_esterna_7gg') | float(15) > 16 }}
+              value_template: "{{ media > soglia_estate }}"
             - condition: state
               entity_id: input_select.clima_stagione
               state: "inverno"
           sequence:
-            - action: notify.mobile_app_cph2653
-              data:
-                title: "☀️ Cambio Stagione"
-                message: >
-                  Media 7gg: {{ states('input_number.clima_media_esterna_7gg') | float(0) | round(1) }}°C.
-                  Passaggio a modalità ESTATE. Panasonic cooling disponibile.
             - action: input_select.select_option
               target:
                 entity_id: input_select.clima_stagione
               data:
                 option: "estate"
-            # v65: la gestione fonte gira solo in inverno. Se a fine stagione
-            # la valvola e' rimasta su Caldaia nessuno la riportava su Pompa.
-            # Stessa sequenza sicura della gestione fonte: SAT spento, 30 s,
-            # valvola, registrazione della manovra.
-            - if:
-                - condition: state
-                  entity_id: switch.shelly_box
-                  state: "off"
-              then:
-                - action: climate.set_hvac_mode
-                  target:
-                    entity_id: climate.smart_autotune_thermostat_living_room
-                  data:
-                    hvac_mode: "off"
-                - delay: "00:00:30"
-                - action: switch.turn_on
-                  target:
-                    entity_id: switch.shelly_box
-                - action: input_datetime.set_datetime
-                  target:
-                    entity_id: input_datetime.fonte_ultima_commutazione
-                  data:
-                    datetime: "{{ now().strftime('%Y-%m-%d %H:%M:%S') }}"
-                - action: notify.mobile_app_cph2653
-                  data:
-                    title: "Valvola su Pompa"
-                    message: >-
-                      Passaggio a estate: la valvola era su Caldaia, riportata su
-                      Pompa e SAT spento.
+            - action: notify.mobile_app_cph2653
+              data:
+                title: "☀️ Stagione consigliata: ESTATE"
+                message: >
+                  Media 7gg: {{ media | round(1) }}°C, sopra {{ soglia_estate }}°C.
+                  {% if modo in ['Cool', 'Cool only'] %}La pompa e' gia' in Cool.
+                  {% else %}Modo pompa attuale: {{ modo }}. Cambialo in Cool per il
+                  raffrescamento: finche' resta in Heat valgono le regole invernali
+                  (notte alle 23:00, SAT, gestione fonte).{% endif %}
 
 #==================================================================================
 # 10. PANASONIC - PID – RESET INTEGRALE PID
@@ -1365,7 +1269,7 @@
         pompa_accesa: "{{ is_state('switch.panasonic_heat_pump_main_heatpump_state', 'on') }}"
         kp: "{{ states('input_number.panasonic_pid_kp') | float(2.0) }}"
         ki: "{{ states('input_number.panasonic_pid_ki') | float(0.05) }}"
-        kd: "{{ states('input_number.panasonic_pid_kd') | float(1.0) }}"
+        kd: "{{ states('input_number.panasonic_pid_kd') | float(0.2) }}"
         integrale_prec: "{{ states('input_number.panasonic_pid_heat_integrale') | float(0) }}"
         errore_prec: "{{ states('input_number.panasonic_pid_heat_errore_prec') | float(0) }}"
         # Se entrambi i termometri camera sono fuori uso si ripiega sulla sala,
@@ -1706,14 +1610,11 @@
     - condition: state
       entity_id: input_boolean.clima_freecooling_attivo
       state: "off"
-    # v65: valvola. In inverno la valvola e' della gestione fonte: con la
-    # valvola su Caldaia il cooling non parte. In estate, se la valvola e'
-    # su Caldaia, la riporta su Pompa nelle azioni prima di accendere.
+    # v66: valvola. Con la pompa in Cool la gestione fonte non gira (segue il
+    # modo Heat): se la valvola e' su Caldaia la riporta su Pompa nelle azioni
+    # prima di accendere. Valvola unavailable: nessuna accensione.
     - condition: template
-      value_template: >
-        {{ is_state('switch.shelly_box', 'on')
-           or (is_state('switch.shelly_box', 'off')
-               and is_state('input_select.clima_stagione', 'estate')) }}
+      value_template: "{{ has_value('switch.shelly_box') }}"
     # Isteresi di riaccensione, sulla camera piu' lontana dal proprio target
     # (di notte comandano sia Tania sia Georgi; di giorno la sala).
     # Con il latch notturno armato la soglia sale da +0.5 a +2.0 C: e' lo
@@ -1755,8 +1656,8 @@
     - action: input_boolean.turn_off
       target:
         entity_id: input_boolean.clima_pompa_latch_notte
-    # v65: valvola su Caldaia in estate -> SAT spento, valvola su Pompa,
-    # 120 s di manovra (come gestione fonte e antigelo), poi pompa.
+    # v65: valvola su Caldaia -> SAT spento, valvola su Pompa, 120 s di
+    # manovra (come gestione fonte e antigelo), poi pompa.
     - if:
         - condition: state
           entity_id: switch.shelly_box
@@ -1787,8 +1688,13 @@
 - id: clima_sync_sat_target
   alias: "Clima – Sincronizza SAT con Target Sala Inverno"
   description: >
-    Aggiorna il setpoint SAT ogni volta che cambia il target sala inverno
-    o la modalita giorno/notte. Solo in inverno.
+    Aggiorna il setpoint SAT ogni volta che cambia il target sala inverno,
+    la modalita giorno/notte, il modo della pompa o quando il SAT viene
+    acceso. Solo con la pompa in Heat.
+  # v66: aggiunto il trigger sull'accensione del SAT. La gestione fonte
+  # (Pompa -> Caldaia) e il rientro vacanza accendevano il SAT senza target,
+  # che restava l'ultimo usato (o 22 fisso nel rientro, anche di notte).
+  # Stagione dal modo operativo della pompa (v66), non da clima_stagione.
   triggers:
     - trigger: state
       entity_id: input_number.mintemp_giorno_inverno_sala
@@ -1797,11 +1703,18 @@
     - trigger: state
       entity_id: input_select.clima_modalita
     - trigger: state
-      entity_id: input_select.clima_stagione
+      entity_id: select.panasonic_heat_pump_main_operating_mode_state
+      to:
+        - "Heat"
+        - "Heat only"
+    - trigger: state
+      entity_id: climate.smart_autotune_thermostat_living_room
+      to: "heat"
   conditions:
-    - condition: state
-      entity_id: input_select.clima_stagione
-      state: "inverno"
+    - condition: template
+      value_template: >
+        {{ states('select.panasonic_heat_pump_main_operating_mode_state')
+           in ['Heat', 'Heat only'] }}
     - condition: state
       entity_id: climate.smart_autotune_thermostat_living_room
       state: "heat"
@@ -2061,8 +1974,9 @@
   description: >
     Parte quando input_boolean.vacanza viene spento a mano dalla plancia clima:
     ripristina la casa con qualsiasi temperatura, riattiva acqua sanitaria e
-    canto degli uccelli. Riscaldamento acceso solo se T esterna < 17; in
-    alternativa riattiva il cooling se la PdC e' in Cool. Fancoil e pergola NON
+    canto degli uccelli. Con la pompa in Heat riaccende la fonte su cui e' la
+    valvola (PdC o SAT); con la pompa in Cool la riaccensione la fa
+    panasonic_cooling_riaccensione (v66). Fancoil e pergola NON
     vengono comandati direttamente: ripartono da soli dalle rispettive
     automazioni una volta spento il flag.
     Dalla v55 il trigger orario delle 15:00 con condizione sul calendario e'
@@ -2093,11 +2007,13 @@
         payload: "HW=1"
     # Riavvia canto uccelli (volume 20% + play)
     - action: script.riaggancia_yamaha
-    # Ramo riscaldamento: solo se fa freddo
+    # Ramo riscaldamento. v66: deciso dal modo operativo della pompa
+    # (sorgente unica della stagione), non piu' da T esterna < 17 C.
     - if:
-        - condition: numeric_state
-          entity_id: sensor.hp1000se_pro_pro_v1_6_4_outdoor_temperature
-          below: 17
+        - condition: template
+          value_template: >
+            {{ states('select.panasonic_heat_pump_main_operating_mode_state')
+               in ['Heat', 'Heat only'] }}
       then:
         # Una sola fonte alla volta (v63), decisa dalla valvola switch.shelly_box
         # come nella gestione fonte: su Pompa si riaccende la PdC, su Caldaia il
@@ -2131,33 +2047,28 @@
                 entity_id: climate.smart_autotune_thermostat_living_room
               data:
                 preset_mode: "home"
+            # v66: target come clima_sync_sat_target (giorno o notte), non 22
+            # fisso. Impostato dopo il preset, che puo' cambiare il target.
             - action: climate.set_temperature
               target:
                 entity_id: climate.smart_autotune_thermostat_living_room
               data:
-                temperature: 22
-      # Ramo raffrescamento: se la PdC e' in modalita' Cool la riaccende;
-      # poi la normale automazione a isteresi riprende il controllo.
-      else:
-        - if:
-            - condition: template
-              value_template: >
-                {{ states('select.panasonic_heat_pump_main_operating_mode_state')
-                   in ['Cool', 'Cool only'] }}
-            # Lucchetto manuale pompa (automations_clima_59)
-            - condition: state
-              entity_id: input_boolean.pdc_manuale
-              state: "off"
-          then:
-            - action: switch.turn_on
-              target:
-                entity_id: switch.panasonic_heat_pump_main_heatpump_state
+                temperature: >
+                  {% if states('input_select.clima_modalita') == 'notte' %}
+                    {{ states('input_number.mintemp_notte_inverno_sala') | float(20) }}
+                  {% else %}
+                    {{ states('input_number.mintemp_giorno_inverno_sala') | float(22) }}
+                  {% endif %}
+    # Ramo raffrescamento (v66): la pompa non viene piu' accesa qui.
+    # panasonic_cooling_riaccensione riparte da sola appena vacanza e' spento e
+    # una zona e' oltre target + 0,5 C, e prima porta la valvola su Pompa se
+    # serve. Accenderla qui scavalcava sia l'isteresi sia la valvola.
     - action: notify.mobile_app_cph2653
       data:
         title: "Rientro vacanza"
         message: >
           Casa ripristinata: modalita' clima impostata in base all'ora, acqua sanitaria riattivata,
-          canto uccelli riavviato. Clima riattivato in base alla stagione.
+          canto uccelli riavviato. Clima riattivato in base al modo della pompa.
           Fancoil e pergola ripartono dalle loro automazioni. Benvenuti a casa!
 
 #==================================================================================

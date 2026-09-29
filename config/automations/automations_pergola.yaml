@@ -1,4 +1,4 @@
-# automations_pergola_23.yaml
+# automations_pergola_24.yaml
 
 #==================================================================================
 # PERGOLA – INSEGUIMENTO SOLARE + APERTURA AERAZIONE (1 giugno – 1 novembre)
@@ -308,7 +308,7 @@
 # TENDA GIARDINO - Chiusura automatica per vento pericoloso
 #
 # Soglia: 40 km/h (raffiche) - margine di sicurezza rispetto alla Classe 3
-# UNI EN 13561 (49 km/h). Coerente con la soglia vento del blocco irrigazione.
+# UNI EN 13561 (49 km/h). Stessa soglia di raffica della pergola.
 # Sensore: sensor.hp1000se_pro_pro_v1_6_4_wind_gust
 #
 # v16 - Nuovo motore Somfy io al posto del vecchio RTS. L'entita' e' ora
@@ -591,9 +591,10 @@
 
 #==================================================================================
 # PERGOLA – RILASCIO BLOCCO MANUALE (07:00 / 23:00)
-# Il blocco attivato da script.pergola_toggle_manuale dura fino al prossimo
-# cambio giorno/notte, come descritto nel commento dell'helper
-# input_boolean.pergola_blocco_manuale in configuration.yaml.
+# Il blocco attivato da script.pergola_toggle_manuale dura fino alle 07:00 o
+# alle 23:00 successive. Dalla v24 (automations_clima_66) e' l'unico rilascio
+# orario: prima lo azzeravano anche clima_modalita_giorno e
+# clima_modalita_notte, e d'estate il blocco cadeva gia' alle 21:00.
 # (Alla partenza per vacanza il flag viene già azzerato dall'automazione clima.)
 #==================================================================================
 - id: pergola_blocco_manuale_rilascio

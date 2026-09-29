@@ -1,166 +1,10 @@
-# automations_129.yaml
+# automations_130.yaml
 #==================================================================================
-# 1. IRRIGAZIONE – Ciclo programmato (O1/O2) con gate meteo
-#
-# GATE PIOGGIA allineato a quello della pergola (19/09/2026).
-# Prima il gate leggeva un solo sensore, hourly_rain, sotto il nome fuorviante
-# di "rain_rate". hourly_rain e' un accumulo dell'ora corrente e si azzera allo
-# scoccare dell'ora: se piove alle 06:55, alle 07:00 torna a 0 mentre sta ancora
-# piovendo, e il ciclo delle 07:30 partirebbe sotto la pioggia.
-# Ora si usano gli stessi tre parametri della pergola:
-#   - rain_rate    intensita' istantanea, intercetta subito la pioggia in corso
-#   - hourly_rain  accumulo orario, da' persistenza dopo che ha smesso
-#   - previsione   mm di precipitazione nelle prossime 3 ore da weather.casa
-# event_rain resta volutamente NON usato: rimane > 0 per ore dopo la pioggia e
-# bloccherebbe l'irrigazione per l'intera giornata.
-#
-# Restano invariati gli altri criteri di blocco gia' presenti: umidita' terreno
-# su entrambe le sonde, vento medio 1h > 40 km/h e previsione di condizione
-# piovosa nelle prossime 5 ore. Quest'ultima e' piu' larga della finestra a 3
-# ore della pergola ed e' stata tenuta: per l'irrigazione anticipare di piu' non
-# fa danno, si perde al massimo un ciclo.
-#
-# Il motivo di blocco viene troncato a 250 caratteri: input_text ha un massimo
-# di 255 e con piu' motivi contemporanei il testo puo' superarlo, facendo
-# fallire l'azione.
+# 1-2. IRRIGAZIONE – spostate in automations_irrigazione (v130):
+# irrigazione_ciclo_programmato, acqua_accumula_minuti_irrigazione e
+# irrigazione_reset_salta_mezzanotte, id invariati. Tutta la logica
+# irrigazione e' ora in un solo file.
 #==================================================================================
-- id: irrigazione_ciclo_programmato
-  alias: "Irrigazione – Ciclo programmato (O1/O2)"
-  mode: single
-  max_exceeded: silent
-  triggers:
-    - platform: time
-      at: input_datetime.irrigazione_ora_mattino
-    - platform: time
-      at: input_datetime.irrigazione_ora_sera
-  condition: []
-  action:
-    - if:
-        - condition: state
-          entity_id: input_boolean.irrigazione_salta_oggi
-          state: 'on'
-      then:
-        - action: input_text.set_value
-          target:
-            entity_id: input_text.irrigazione_motivo_blocco
-          data:
-            value: "🖐️ Programma saltato per oggi"
-        - stop: "Salta oggi attivo"
-
-    - action: weather.get_forecasts
-      target:
-        entity_id: weather.casa
-      data:
-        type: hourly
-      response_variable: previsioni
-
-    - variables:
-        ora_esecuzione: "{{ now().strftime('%d/%m/%Y %H:%M') }}"
-        soglia: "{{ states('input_number.irrigazione_soglia_umidita') | float(40) }}"
-        s1: "{{ states('sensor.soil_moisture_1') | float(0) }}"
-        s2: "{{ states('sensor.soil_moisture_2') | float(0) }}"
-        vento: "{{ states('sensor.wind_speed_media_1h') | float(0) }}"
-        v_rate: "{{ states('sensor.hp1000se_pro_pro_v1_6_4_rain_rate') | float(0) }}"
-        v_oraria: "{{ states('sensor.hp1000se_pro_pro_v1_6_4_hourly_rain') | float(0) }}"
-        mm_previsti: >-
-          {{ (previsioni['weather.casa'].forecast[0:3]
-             | map(attribute='precipitation')
-             | map('float', 0) | list) | max | default(0) }}
-
-    - variables:
-        motivi: >
-          {% set ns = namespace(lista=[]) %}
-          {% if v_rate > 0 %}
-            {% set ns.lista = ns.lista + ['🌧️ Pioggia ' ~ (v_rate | round(1) | string) ~ ' mm/h'] %}
-          {% endif %}
-          {% if v_oraria > 0 %}
-            {% set ns.lista = ns.lista + ['🌧️ Accumulo ' ~ (v_oraria | round(1) | string) ~ ' mm (1h)'] %}
-          {% endif %}
-          {% if mm_previsti > 0 %}
-            {% set ns.lista = ns.lista + ['🌦️ Prev. ' ~ (mm_previsti | round(1) | string) ~ ' mm/3h'] %}
-          {% endif %}
-          {% if s1 > soglia and s2 > soglia %}
-            {% set ns.lista = ns.lista + ['💧 Umidità S1=' ~ (s1 | round(0) | int | string) ~ '% S2=' ~ (s2 | round(0) | int | string) ~ '%'] %}
-          {% endif %}
-          {% if vento > 40 %}
-            {% set ns.lista = ns.lista + ['🌬️ Vento ' ~ (vento | round(1) | string) ~ ' km/h'] %}
-          {% endif %}
-          {% set f = previsioni['weather.casa'].forecast %}
-          {% if f[:5] | selectattr('condition', 'in', ['rainy','showers','pouring','hail']) | list | count > 0 %}
-            {% set ns.lista = ns.lista + ['🌦️ Prev. pioggia 5h'] %}
-          {% endif %}
-          {{ ns.lista | join('\n') }}
-        blocco: >
-          {{ v_rate > 0
-             or v_oraria > 0
-             or mm_previsti > 0
-             or (s1 > soglia and s2 > soglia)
-             or vento > 40
-             or (previsioni['weather.casa'].forecast[:5]
-                 | selectattr('condition', 'in', ['rainy','showers','pouring','hail'])
-                 | list | count > 0) }}
-
-    - if:
-        - condition: template
-          value_template: "{{ blocco | bool }}"
-      then:
-        - action: input_text.set_value
-          target:
-            entity_id: input_text.irrigazione_motivo_blocco
-          data:
-            value: >-
-              {{ (('⛔ Bloccata ' ~ ora_esecuzione ~ '\n' ~ (motivi | trim)) | trim)
-                 | truncate(250, True, '') }}
-        - stop: "Meteo sfavorevole – nessuna irrigazione"
-
-    - action: input_text.set_value
-      target:
-        entity_id: input_text.irrigazione_motivo_blocco
-      data:
-        value: "✅ Permessa {{ ora_esecuzione }}"
-    - action: script.irrigazione_esegui_sequenza
-
-#==================================================================================
-# 1b. ACQUA – Accumula minuti irrigazione (tick ogni minuto)
-# Interblocco HW: max 1 canale ON => 1 tick = 1 minuto-canale. Robusto ai riavvii.
-#==================================================================================
-- id: acqua_accumula_minuti_irrigazione
-  alias: "Acqua – Accumula minuti irrigazione"
-  mode: single
-  triggers:
-    - platform: time_pattern
-      minutes: "/1"
-  condition:
-    - condition: or
-      conditions:
-        - condition: state
-          entity_id: switch.irrigazione_sonoff_switch_4chpror3_sonoff_10028b1d36_1
-          state: "on"
-        - condition: state
-          entity_id: switch.irrigazione_sonoff_switch_4chpror3_sonoff_10028b1d36_2
-          state: "on"
-        - condition: state
-          entity_id: switch.irrigazione_sonoff_switch_4chpror3_sonoff_10028b1d36_3
-          state: "on"
-  action:
-    - action: counter.increment
-      target:
-        entity_id: counter.irrigazione_minuti_oggi
-
-#==================================================================================
-# 2. IRRIGAZIONE – RESET GESTIONE MANUALE A MEZZANOTTE
-#==================================================================================
-- id: irrigazione_reset_salta_mezzanotte
-  alias: "Irrigazione - Reset salta-oggi a mezzanotte"
-  mode: single
-  triggers:
-    - platform: time
-      at: "23:59:00"
-  condition: []
-  action:
-    - action: input_boolean.turn_off
-      target:
-        entity_id: input_boolean.irrigazione_salta_oggi
 
 #==================================================================================
 # 3. ALLERTA PANNELLO A 0 PER 1 ORA (SOLO DI GIORNO)
@@ -310,7 +154,7 @@
   action:
     - action: notify.mobile_app_cph2653
       data:
-        title: "🔋 Batteria bassa - Meteo"
+        title: "🔋 Batteria bassa - Leak Detector"
         message: "Leak Detector: batteria al {{ states('sensor.leak_detector_battery_status') }} %."
 
 #==================================================================================
@@ -630,7 +474,7 @@
 #
 # Mantiene la Yamaha WS-B1A sempre accesa evitando l'Auto Standby (8h).
 # File audio locale: /config/www/birdssongs.mp3
-# Volume giorno  (08:30–00:00): 0.5 (50%)
+# Volume giorno  (08:30–00:00): 0.20 (20%), solo se trovato all'1%
 # Volume notte   (00:00–08:30): 0.01 (1%)
 # Entità: media_player.googlehome8851
 #==================================================================================
@@ -740,9 +584,11 @@
         media_content_id: "http://192.168.1.77:8123/local/birdssongs.mp3"
         media_content_type: "music"
 
-# 31d. REFRESH ANTI-STANDBY – ogni 7h25m
+# 31d. REFRESH ANTI-STANDBY – alle 00:25, 07:25, 14:25, 21:25
+# (hours "/7" = ore 0, 7, 14, 21). Di giorno e' coperto anche dal reset
+# ogni 15 minuti; serve soprattutto per la notte (00:25 e 07:25).
 - id: yamaha_keepalive_refresh_antistandby
-  alias: "Yamaha Keepalive - Refresh anti-standby (7h25m)"
+  alias: "Yamaha Keepalive - Refresh anti-standby (00:25/07:25/14:25/21:25)"
   mode: single
   triggers:
     - platform: time_pattern

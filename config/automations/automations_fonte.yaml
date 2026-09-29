@@ -1,4 +1,4 @@
-# automations_fonte_3.yaml
+# automations_fonte_4.yaml
 # Gestione automatica della fonte di riscaldamento (caldaia Baxi via
 # SAT/OTGW vs PdC Panasonic via HeishaMon) in base al costo €/kWh
 # termico (sensor.pdc_costo_kwh_termico / caldaia_costo_kwh_termico).
@@ -35,9 +35,14 @@
     - condition: state
       entity_id: input_boolean.pdc_manuale
       state: "off"
-    - condition: state
-      entity_id: input_select.clima_stagione
-      state: "inverno"
+    # v4: stagione dal modo operativo della pompa (sorgente unica, vedi
+    # automations_clima_66), non piu' da input_select.clima_stagione, che e'
+    # ora solo la stagione consigliata. Con la pompa non in Heat la
+    # commutazione verso la PdC sarebbe comunque inutile.
+    - condition: template
+      value_template: >-
+        {{ states('select.panasonic_heat_pump_main_operating_mode_state')
+           in ['Heat', 'Heat only'] }}
     - condition: state
       entity_id: input_boolean.vacanza
       state: "off"
@@ -80,6 +85,8 @@
               target:
                 entity_id: switch.shelly_box
             - delay: "00:02:00"
+            # Il target SAT lo imposta clima_sync_sat_target, che scatta
+            # sull'accensione del SAT (automations_clima_66).
             - action: climate.set_hvac_mode
               target:
                 entity_id: climate.smart_autotune_thermostat_living_room
