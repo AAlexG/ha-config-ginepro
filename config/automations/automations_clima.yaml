@@ -1,4 +1,4 @@
-# automations_clima_64.yaml
+# automations_clima_65.yaml
 
 
 
@@ -803,7 +803,12 @@
             {{ delta_sala }}
           {% endif %}
         dt: 5
-        derivativo: "{{ (errore - errore_prec) / (dt / 60) }}"
+        # v65: errore_prec = -20 (minimo dell'helper) e' la sentinella scritta
+        # da clima_reset_pid: primo ciclo dopo un reset, derivativo nullo.
+        # Prima il reset scriveva 0 e alla ripartenza il derivativo valeva
+        # errore x 12 (es. 0,6 C -> 7,2), spostando il primo setpoint di
+        # 7,2 x Kd gradi.
+        derivativo: "{{ 0 if errore_prec <= -19.9 else (errore - errore_prec) / (dt / 60) }}"
         pompa_accesa: "{{ is_state('switch.panasonic_heat_pump_main_heatpump_state', 'on') }}"
         # --- Limiti di mandata, regolabili in plancia clima ---
         # Il minimo NON e' piu' cablato a 10 C. Acqua troppo fredda nel circuito
@@ -1172,6 +1177,35 @@
                 entity_id: input_select.clima_stagione
               data:
                 option: "estate"
+            # v65: la gestione fonte gira solo in inverno. Se a fine stagione
+            # la valvola e' rimasta su Caldaia nessuno la riportava su Pompa.
+            # Stessa sequenza sicura della gestione fonte: SAT spento, 30 s,
+            # valvola, registrazione della manovra.
+            - if:
+                - condition: state
+                  entity_id: switch.shelly_box
+                  state: "off"
+              then:
+                - action: climate.set_hvac_mode
+                  target:
+                    entity_id: climate.smart_autotune_thermostat_living_room
+                  data:
+                    hvac_mode: "off"
+                - delay: "00:00:30"
+                - action: switch.turn_on
+                  target:
+                    entity_id: switch.shelly_box
+                - action: input_datetime.set_datetime
+                  target:
+                    entity_id: input_datetime.fonte_ultima_commutazione
+                  data:
+                    datetime: "{{ now().strftime('%Y-%m-%d %H:%M:%S') }}"
+                - action: notify.mobile_app_cph2653
+                  data:
+                    title: "Valvola su Pompa"
+                    message: >-
+                      Passaggio a estate: la valvola era su Caldaia, riportata su
+                      Pompa e SAT spento.
 
 #==================================================================================
 # 10. PANASONIC - PID – RESET INTEGRALE PID
@@ -1204,6 +1238,9 @@
     - condition: template
       value_template: "{{ trigger.to_state.state not in ['unavailable', 'unknown'] }}"
   actions:
+    # v65: errore_prec va a -20 (minimo dell'helper), non a 0. E' la
+    # sentinella "primo ciclo dopo il reset": i due PID la riconoscono e
+    # usano derivativo nullo, poi la sovrascrivono con l'errore reale.
     - action: input_number.set_value
       target:
         entity_id: input_number.panasonic_pid_integrale
@@ -1213,7 +1250,7 @@
       target:
         entity_id: input_number.panasonic_pid_errore_prec
       data:
-        value: 0
+        value: -20
     - action: input_number.set_value
       target:
         entity_id: input_number.panasonic_pid_heat_integrale
@@ -1223,7 +1260,7 @@
       target:
         entity_id: input_number.panasonic_pid_heat_errore_prec
       data:
-        value: 0
+        value: -20
 
 # 11. AUTOTUNING PID RIMOSSO (v64): durante le 2 ore di prova il PID cooling
 # continuava a pubblicare il proprio setpoint ogni 5 minuti e invalidava il
@@ -1341,7 +1378,12 @@
             {{ delta_sala }}
           {% endif %}
         dt: 5
-        derivativo: "{{ (errore - errore_prec) / (dt / 60) }}"
+        # v65: errore_prec = -20 (minimo dell'helper) e' la sentinella scritta
+        # da clima_reset_pid: primo ciclo dopo un reset, derivativo nullo.
+        # Prima il reset scriveva 0 e alla ripartenza il derivativo valeva
+        # errore x 12 (es. 0,6 C -> 7,2), spostando il primo setpoint di
+        # 7,2 x Kd gradi.
+        derivativo: "{{ 0 if errore_prec <= -19.9 else (errore - errore_prec) / (dt / 60) }}"
         freeheating_on: "{{ is_state('input_boolean.clima_freeheating_attivo', 'on') }}"
         fh: >
           {{ states('input_number.clima_freeheating_setpoint_offset') | float(5) if freeheating_on else 0 }}
@@ -1371,9 +1413,13 @@
             - action: switch.turn_off
               target:
                 entity_id: switch.panasonic_heat_pump_main_heatpump_state
+        # v65: l'isteresi 0,5 C vale solo per la RIACCENSIONE. A pompa accesa
+        # il PID modula per ogni errore > 0, come il cooling. Prima con errore
+        # fra 0 e 0,5 C e pompa accesa non succedeva nulla: setpoint, integrale
+        # ed errore precedente restavano fermi.
         - conditions:
             - condition: template
-              value_template: "{{ errore > 0.5 }}"
+              value_template: "{{ errore > 0.5 or (errore > 0 and pompa_accesa) }}"
           sequence:
             - if:
                 - condition: template
@@ -1517,10 +1563,52 @@
            in ['Heat', 'Heat only'] }}
   actions:
     - variables:
+        # v65: guardia sul sensore. Prima t_sala ripiegava su 20 con
+        # | float(20): con la stazione interna fuori uso l'antigelo non
+        # scattava mai, senza alcun avviso.
+        sala_ok: "{{ has_value('sensor.hp1000se_pro_pro_v1_6_4_indoor_temperature') }}"
         t_sala: "{{ states('sensor.hp1000se_pro_pro_v1_6_4_indoor_temperature') | float(20) }}"
         soglia: "{{ states('input_number.clima_target_emergenza_antigelo') | float(15) }}"
         pompa_accesa: "{{ is_state('switch.panasonic_heat_pump_main_heatpump_state', 'on') }}"
+    # Sensore tornato: chiude l'eventuale avviso (nessun effetto se non c'e').
+    - if:
+        - condition: template
+          value_template: "{{ sala_ok }}"
+      then:
+        - action: persistent_notification.dismiss
+          data:
+            notification_id: antigelo_sensore_sala
     - choose:
+        # Sensore sala assente: nessuna decisione sulla pompa, solo avviso.
+        # Notifica persistente con id fisso (sovrascritta ogni 30 min, non
+        # duplicata); push una sola volta, quando la notifica non esiste ancora.
+        - conditions:
+            - condition: template
+              value_template: "{{ not sala_ok }}"
+          sequence:
+            - if:
+                - condition: template
+                  value_template: >-
+                    {{ states.persistent_notification
+                       | selectattr('attributes.notification_id', 'eq', 'antigelo_sensore_sala')
+                       | list | count == 0 }}
+              then:
+                - action: notify.mobile_app_cph2653
+                  data:
+                    title: "Antigelo senza sensore"
+                    message: >-
+                      Vacanza in inverno: la temperatura sala non e' disponibile,
+                      l'antigelo non puo' intervenire. Controllare la stazione interna.
+                    data:
+                      priority: high
+                      ttl: 0
+            - action: persistent_notification.create
+              data:
+                title: "Antigelo senza sensore"
+                notification_id: antigelo_sensore_sala
+                message: >-
+                  Temperatura sala non disponibile alle {{ now().strftime('%d/%m %H:%M') }}:
+                  antigelo sospeso finche' il sensore non torna.
         - conditions:
             - condition: template
               value_template: "{{ t_sala < soglia and not pompa_accesa }}"
@@ -1537,6 +1625,13 @@
                 - action: switch.turn_on
                   target:
                     entity_id: switch.shelly_box
+                # v65: registra la manovra, come la gestione fonte, per
+                # rispettare le ore minime fra due commutazioni della valvola.
+                - action: input_datetime.set_datetime
+                  target:
+                    entity_id: input_datetime.fonte_ultima_commutazione
+                  data:
+                    datetime: "{{ now().strftime('%Y-%m-%d %H:%M:%S') }}"
                 - delay: "00:02:00"
             - action: switch.turn_on
               target:
@@ -1611,6 +1706,14 @@
     - condition: state
       entity_id: input_boolean.clima_freecooling_attivo
       state: "off"
+    # v65: valvola. In inverno la valvola e' della gestione fonte: con la
+    # valvola su Caldaia il cooling non parte. In estate, se la valvola e'
+    # su Caldaia, la riporta su Pompa nelle azioni prima di accendere.
+    - condition: template
+      value_template: >
+        {{ is_state('switch.shelly_box', 'on')
+           or (is_state('switch.shelly_box', 'off')
+               and is_state('input_select.clima_stagione', 'estate')) }}
     # Isteresi di riaccensione, sulla camera piu' lontana dal proprio target
     # (di notte comandano sia Tania sia Georgi; di giorno la sala).
     # Con il latch notturno armato la soglia sale da +0.5 a +2.0 C: e' lo
@@ -1652,6 +1755,28 @@
     - action: input_boolean.turn_off
       target:
         entity_id: input_boolean.clima_pompa_latch_notte
+    # v65: valvola su Caldaia in estate -> SAT spento, valvola su Pompa,
+    # 120 s di manovra (come gestione fonte e antigelo), poi pompa.
+    - if:
+        - condition: state
+          entity_id: switch.shelly_box
+          state: "off"
+      then:
+        - action: climate.set_hvac_mode
+          target:
+            entity_id: climate.smart_autotune_thermostat_living_room
+          data:
+            hvac_mode: "off"
+        - delay: "00:00:30"
+        - action: switch.turn_on
+          target:
+            entity_id: switch.shelly_box
+        - action: input_datetime.set_datetime
+          target:
+            entity_id: input_datetime.fonte_ultima_commutazione
+          data:
+            datetime: "{{ now().strftime('%Y-%m-%d %H:%M:%S') }}"
+        - delay: "00:02:00"
     - action: switch.turn_on
       target:
         entity_id: switch.panasonic_heat_pump_main_heatpump_state

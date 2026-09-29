@@ -1,4 +1,4 @@
-# automations_presenza_11.yaml
+# automations_presenza_12.yaml
 
 #==================================================================================
 # 1. NOTIFICA - Nuovo dispositivo MAI VISTO rilevato sulla rete
@@ -133,6 +133,12 @@
 
 #==================================================================================
 # 3. NOTIFICA - Tania esce di casa (ritardo 2 min anti falsi positivi GPS)
+#
+# v12: trigger "da home verso qualsiasi stato", non piu' "verso not_home".
+# In una zona con nome (Lavoro, Palestra) lo stato di person e' il nome della
+# zona: con to "not_home" l'uscita verso una zona non veniva notificata.
+# Stesso criterio gia' usato in sicurezza (v19) e in carichi C3.
+# Con person in unknown/unavailable (riavvio) non si notifica.
 #==================================================================================
 - id: notifica_tania_uscita
   alias: "Presenza - Tania esce di casa"
@@ -141,8 +147,11 @@
     - platform: state
       entity_id: person.tania
       from: "home"
-      to: "not_home"
       for: "00:02:00"
+  condition:
+    - condition: template
+      value_template: >
+        {{ has_value('person.tania') and not is_state('person.tania', 'home') }}
   action:
     - action: notify.mobile_app_cph2653
       data:
@@ -152,6 +161,9 @@
 
 #==================================================================================
 # 4. NOTIFICA - Tania rientra a casa (immediata)
+#
+# v12: rientro da qualsiasi stato (not_home o zona con nome), escluso il
+# ritorno da unknown/unavailable dopo un riavvio di HA.
 #==================================================================================
 - id: notifica_tania_rientro
   alias: "Presenza - Tania rientra a casa"
@@ -159,7 +171,9 @@
   triggers:
     - platform: state
       entity_id: person.tania
-      from: "not_home"
+      not_from:
+        - "unknown"
+        - "unavailable"
       to: "home"
   action:
     - action: notify.mobile_app_cph2653
