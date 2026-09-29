@@ -1,4 +1,4 @@
-# config_caldaia_3.yaml
+# config_caldaia_5.yaml
 # Package Casa Ginepro - Caldaia Baxi / OTGW: DHW, costi termici, scelta fonte caldaia-PdC
 # Estratto da configuration_186.yaml. Nome file = nome del package.
 
@@ -12,18 +12,21 @@ template:
 
       - name: "Caldaia DHW Durata Oggi Minuti"
         unique_id: "caldaia_dhw_durata_oggi_minuti"
-        # Riscaldamento OFF (estate): legge input_number.caldaia_dhw_durata_acc,
-        #   accumulato minuto per minuto dall'automazione caldaia_dhw_accumula_minuti
-        #   quando DHW (binary_sensor.opentherm_gateway_otgw_otgw_domestic_hot_water)
-        #   e fiamma sono ON.
-        # Riscaldamento ON (inverno): restituisce il valore fisso configurabile
-        #   input_number.caldaia_dhw_durata_invernale (default 3 min).
+        # Legge input_number.caldaia_dhw_durata_acc, accumulato minuto per
+        # minuto dall'automazione caldaia_dhw_accumula_minuti quando DHW
+        # (binary_sensor.opentherm_gateway_otgw_otgw_domestic_hot_water) e
+        # fiamma sono ON.
+        # v4: conteggio reale tutto l'anno. Tolto il valore fisso invernale
+        # (input_number.caldaia_dhw_durata_invernale, rimosso): con la gestione
+        # fonte il SAT si accende e si spegne anche d'inverno e il valore del
+        # giorno saltava fra i due metodi.
+        # Il bit usato e' ..._domestic_hot_water (DHW ATTIVO, on solo durante
+        # la produzione di acqua calda), NON ..._domestic_hot_water_enable
+        # (DHW ABILITATO, sempre on con HW=1). Verificato il 29/09/2026 con
+        # prelievo di prova: dettagli in automations_clima,
+        # caldaia_dhw_accumula_minuti.
         state: >-
-          {% if is_state('climate.smart_autotune_thermostat_living_room', 'off') %}
-            {{ states('input_number.caldaia_dhw_durata_acc') | float(0) | round(1) }}
-          {% else %}
-            {{ states('input_number.caldaia_dhw_durata_invernale') | float(3) | round(1) }}
-          {% endif %}
+          {{ states('input_number.caldaia_dhw_durata_acc') | float(0) | round(1) }}
         unit_of_measurement: "min"
         icon: mdi:clock-outline
   - sensor:
@@ -209,19 +212,9 @@ input_number:
   # ============================================================
   # CALDAIA DHW: durata sanitaria (NUOVO – configuration_70)
   # ============================================================
-  # Durata fissa sanitaria in inverno (riscaldamento ON).
-  # Quando climate è in modalità heat, sensor.caldaia_dhw_durata_oggi_minuti
-  # restituisce sempre questo valore invece di accumulare minuto per minuto.
-  caldaia_dhw_durata_invernale:
-    name: "Durata caldaia x sanitaria al giorno in inverno"
-    min: 0
-    max: 60
-    step: 0.5
-    unit_of_measurement: "min"
-    mode: slider
-    icon: mdi:water-boiler-timer
+  # v4: rimosso caldaia_dhw_durata_invernale (valore fisso invernale).
 
-  # Accumulatore minuti DHW giornalieri (solo estate, riscaldamento OFF).
+  # Accumulatore minuti DHW giornalieri (tutto l'anno).
   # Incrementato ogni minuto dall'automazione caldaia_dhw_accumula_minuti
   # quando DHW (binary_sensor.opentherm_gateway_otgw_otgw_domestic_hot_water)
   # e fiamma sono ON. Azzerato ogni sera alle 23:59 da acqua_reset_mezzanotte.

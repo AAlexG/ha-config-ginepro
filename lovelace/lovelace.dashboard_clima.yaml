@@ -31,7 +31,7 @@ config:
         grid_options:
           columns: 6
           rows: 1
-        name: Stagione
+        name: StagioneConsigliata
         type: tile
         vertical: false
       - entity: input_boolean.clima_pid_attivo

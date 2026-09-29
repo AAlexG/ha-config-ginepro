@@ -1043,12 +1043,6 @@ config:
           rows: auto
         name: Consumo Acqua fredda al giorno
         type: entity
-      - entity: input_number.caldaia_dhw_durata_invernale
-        grid_options:
-          columns: 12
-          rows: auto
-        name: Durata caldaia x sanitaria al giorno in inverno
-        type: entity
       - entity: input_number.acqua_flusso_doccia
         grid_options:
           columns: 9

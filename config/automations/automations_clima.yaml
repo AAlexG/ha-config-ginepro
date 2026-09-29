@@ -1,4 +1,4 @@
-# automations_clima_66.yaml
+# automations_clima_68.yaml
 
 
 
@@ -1893,6 +1893,20 @@
 #   minuto con fiamma ON, anche a modulazione 0%.
 #   consumo m³/h = Qmin + (Qmax − Qmin) × mod/100
 #   Qmax scelto in base alla modalità: DHW attivo → 2,61 / riscaldamento → 2,177
+#
+# NOTA BIT DHW OTGW (verificata il 29/09/2026)
+# L'OTGW espone due binary_sensor con lo stesso nome base "hot water":
+#   binary_sensor.opentherm_gateway_otgw_otgw_domestic_hot_water
+#     = DHW ATTIVO, bit della caldaia (OpenTherm slave DHW active): on SOLO
+#       mentre la caldaia produce acqua calda. E' QUESTO da usare.
+#   binary_sensor.opentherm_gateway_otgw_otgw_domestic_hot_water_enable
+#     = DHW ABILITATO, bit del termostato (master DHW enable): con l'override
+#       HW=1 resta on sempre. NON usarlo per contare o per il gas: d'inverno
+#       conterebbe come acqua calda anche i minuti di solo riscaldamento.
+# Prova del 29/09 17:25: aprendo l'acqua calda il primo e' passato a on,
+# il secondo era on da prima e non e' cambiato.
+# Fonte: homeassistant/components/opentherm_gw/binary_sensor.py
+# (DATA_SLAVE_DHW_ACTIVE e DATA_MASTER_DHW_ENABLED, stesso translation_key).
 #==================================================================================
 - id: caldaia_accumula_gas
   alias: "Caldaia - Accumula consumo gas"
@@ -1929,25 +1943,37 @@
 #==================================================================================
 # 24. CALDAIA - Accumula minuti DHW acqua sanitaria
 #
-# Logica:
-#   - Riscaldamento OFF → ogni minuto in cui binary_sensor.opentherm_gateway_otgw_otgw_domestic_hot_water
-#     è ON viene conteggiato come minuto di produzione acqua sanitaria.
-#     Il valore si accumula in input_number.caldaia_dhw_durata_acc.
-#   - Riscaldamento ON → il sensore sensor.caldaia_dhw_durata_oggi_minuti restituisce
-#     direttamente il valore fisso input_number.caldaia_dhw_durata_invernale (default 3 min),
-#     quindi questa automazione non deve accumulare nulla in inverno.
+# Ogni minuto in cui binary_sensor.opentherm_gateway_otgw_otgw_domestic_hot_water
+# e la fiamma sono ON viene conteggiato come minuto di produzione acqua
+# sanitaria, in input_number.caldaia_dhw_durata_acc.
+# v67: conteggio reale tutto l'anno. Prima con il SAT acceso si usava il valore
+# fisso input_number.caldaia_dhw_durata_invernale (rimosso in config_caldaia_4):
+# con la gestione fonte il SAT si accende e si spegne durante l'inverno e il
+# valore del giorno saltava fra i due metodi a ogni commutazione.
+# D'inverno la fiamma accesa per il solo riscaldamento NON viene contata:
+# conta solo se e' on anche il bit DHW attivo (vedi nota sotto).
+#
+# NOTA BIT DHW OTGW (verificata il 29/09/2026)
+# L'OTGW espone due binary_sensor con lo stesso nome base "hot water":
+#   binary_sensor.opentherm_gateway_otgw_otgw_domestic_hot_water
+#     = DHW ATTIVO, bit della caldaia (OpenTherm slave DHW active): on SOLO
+#       mentre la caldaia produce acqua calda. E' QUESTO da usare.
+#   binary_sensor.opentherm_gateway_otgw_otgw_domestic_hot_water_enable
+#     = DHW ABILITATO, bit del termostato (master DHW enable): con l'override
+#       HW=1 resta on sempre. NON usarlo per contare o per il gas: d'inverno
+#       conterebbe come acqua calda anche i minuti di solo riscaldamento.
+# Prova del 29/09 17:25: aprendo l'acqua calda il primo e' passato a on,
+# il secondo era on da prima e non e' cambiato.
+# Fonte: homeassistant/components/opentherm_gw/binary_sensor.py
+# (DATA_SLAVE_DHW_ACTIVE e DATA_MASTER_DHW_ENABLED, stesso translation_key).
 #==================================================================================
 - id: caldaia_dhw_accumula_minuti
-  alias: "Caldaia - Accumula minuti DHW (solo riscaldamento spento)"
+  alias: "Caldaia - Accumula minuti DHW"
   mode: single
   triggers:
     - platform: time_pattern
       minutes: "/1"
   condition:
-    # Solo quando il riscaldamento è spento (estate / sanitaria pura)
-    - condition: state
-      entity_id: climate.smart_autotune_thermostat_living_room
-      state: "off"
     # Il sensore DHW indica produzione acqua calda sanitaria
     - condition: state
       entity_id: binary_sensor.opentherm_gateway_otgw_otgw_domestic_hot_water

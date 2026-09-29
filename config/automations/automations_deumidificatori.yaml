@@ -1,4 +1,4 @@
-# automations_deumidificatori_8.yaml
+# automations_deumidificatori_9.yaml
 #
 # ALLARME SERBATOIO PIENO – DEUMIDIFICATORI
 #
@@ -152,10 +152,10 @@
 # DEUMIDIFICATORE ARMADIO – CONTROLLO PERIODICO SU PRODUZIONE FV
 # Ogni 5 minuti verifica produzione FV e decide stato presa deumidificatore.
 # Soglia: 1000W. Robusto contro riavvii o eventi mancati.
-# DA CONFERMARE (v8): questo commento diceva "umidita' gestita
-# dall'igrostato interno", in contrasto con l'intestazione del file. Se
-# l'igrostato interno c'e', l'allarme serbatoio pieno qui sopra puo' scattare
-# a vuoto quando la macchina si ferma per umidita' raggiunta.
+# Igrostato interno presente ma sempre al massimo (confermato 29/09): la
+# macchina lavora finche' e' alimentata, quindi l'allarme serbatoio pieno
+# qui sopra vale anche per questo deumidificatore. Nessun controllo di
+# umidita' da HA: solo produzione FV.
 # Rispetta input_boolean.deumidificatore_armadio_manuale.
 #==================================================================================
 - id: deumidificatore_armadio_controllo
