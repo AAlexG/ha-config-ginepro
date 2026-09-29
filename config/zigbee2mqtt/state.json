@@ -24,33 +24,33 @@
     "0xa4c138e6a0d06219": {
         "voltage": 2500,
         "battery": 50,
-        "temperature": 23.77,
-        "humidity": 48.3,
+        "temperature": 23.52,
+        "humidity": 52.22,
         "linkquality": 124
     },
     "0xa4c1385040d042fb": {
-        "energy": 1.8,
+        "energy": 1.81,
         "state": "ON",
         "countdown": 0,
         "power_outage_memory": "restore",
         "indicator_mode": "off/on",
         "child_lock": "UNLOCK",
-        "voltage": 223.8,
+        "voltage": 227.2,
         "power": 0,
         "current": 0,
         "linkquality": 120
     },
     "0xa4c1383e0fd87686": {
         "state": "OFF",
-        "energy": 38.6,
+        "energy": 38.62,
         "countdown": 0,
         "power_outage_memory": "restore",
         "indicator_mode": "off/on",
         "child_lock": "UNLOCK",
-        "voltage": 222.7,
+        "voltage": 227,
         "linkquality": 68,
-        "power": 17.7,
-        "current": 0.08
+        "power": 0,
+        "current": 0
     },
     "0xa4c1384b868fa6bd": {
         "state": "OFF",
@@ -78,16 +78,16 @@
         "indicator_mode": "off/on",
         "power": 3,
         "current": 0.03,
-        "voltage": 228,
-        "energy": 0.81,
+        "voltage": 231,
+        "energy": 0.02,
         "linkquality": 56,
         "child_lock": "UNLOCK"
     },
     "0xa4c1380eff54ffff": {
         "battery": 100,
-        "temperature": 24.2,
+        "temperature": 23.9,
         "voltage": 2900,
-        "humidity": 56.1,
+        "humidity": 55.9,
         "temperature_sensor_select": "internal",
         "comfort_temperature_min": 19,
         "comfort_temperature_max": 35.2,
@@ -108,8 +108,8 @@
     "0xa4c1380f0678ffff": {
         "battery": 100,
         "voltage": 3000,
-        "temperature": 24,
-        "humidity": 60.7,
+        "temperature": 23.9,
+        "humidity": 61.6,
         "temperature_sensor_select": "internal",
         "comfort_temperature_min": 19,
         "comfort_temperature_max": 43.7,
@@ -122,8 +122,8 @@
             "state": "idle",
             "installed_version": 4101,
             "latest_version": 4101,
-            "latest_source": null,
-            "latest_release_notes": null
+            "latest_source": "https://raw.githubusercontent.com/Koenkk/zigbee-OTA/master/images/Sonoff/SN-TLSR8656-02DR2-01-v1.0.5.ota",
+            "latest_release_notes": "Home Assistant and eWeLink ecosystem gateways now support two remote temperature and humidity data sources.\n\nFixed several known issues to improve system stability."
         },
         "linkquality": 120
     },
