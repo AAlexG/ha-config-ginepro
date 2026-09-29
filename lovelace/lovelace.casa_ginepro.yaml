@@ -1,5 +1,5 @@
 config:
-  title: Casa Ginepro v.50
+  title: Casa Ginepro v.51
   views:
   - cards: []
     max_columns: 2
@@ -515,10 +515,12 @@ config:
         hours_to_show: 24
         refresh_interval: 60
         type: history-graph
-      - content: "{% set mod = states('input_select.clima_modalita') %} {% set stagione\
-          \ = states('input_select.clima_stagione') %} {% if stagione == 'estate'\
-          \ %}\n  {% if mod == 'notte' %}\n    **Sala max disiderata:** {{ states('input_number.maxtemp_notte_estate_sala')\
-          \ }}\xB0C\n    **Georgi max disiderata:** {{ states('input_number.maxtemp_notte_estate_letto')\
+      - content: "{% set mod = states('input_select.clima_modalita') %} {% set cool\
+          \ = states('select.panasonic_heat_pump_main_operating_mode_state') in ['Cool',\
+          \ 'Cool only'] %}{% set stagione = 'estate' if cool else 'inverno' %} {%\
+          \ if stagione == 'estate' %}\n  {% if mod == 'notte' %}\n    **Sala max\
+          \ disiderata:** {{ states('input_number.maxtemp_notte_estate_sala') }}\xB0\
+          C\n    **Georgi max disiderata:** {{ states('input_number.maxtemp_notte_estate_letto')\
           \ }}\xB0C\n  {% else %}\n    **Sala max disiderata:** {{ states('input_number.maxtemp_giorno_estate_sala')\
           \ }}\xB0C\n    **Georgi max disiderata:** {{ states('input_number.maxtemp_giorno_estate_letto')\
           \ }}\xB0C\n  {% endif %}\n{% else %}\n  {% if mod == 'notte' %}\n    **Sala\
