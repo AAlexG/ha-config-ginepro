@@ -223,6 +223,26 @@ config:
           rows: 2
         name: Quota fissa mensile in bolletta
         type: entity
+      - color: '#009E73'
+        entity: sensor.fv_co2_evitata
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        icon: mdi:molecule-co2
+        name: CO2 evitata
+        type: tile
+        vertical: false
+      - color: '#009E73'
+        entity: sensor.fv_alberi_equivalenti
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        icon: mdi:forest
+        name: Alberi equivalenti
+        type: tile
+        vertical: false
     - cards:
       - heading: CONSUMI ORA
         heading_style: title
@@ -1218,15 +1238,15 @@ config:
     path: bollette
     sections:
     - cards:
+      - heading: "Elettricit\xE0"
+        heading_style: subtitle
+        type: heading
       - entity: input_select.bolletta_mese_sel
         grid_options:
           columns: 12
           rows: auto
         name: Mese bolletta
         type: entity
-      - heading: "Elettricit\xE0"
-        heading_style: subtitle
-        type: heading
       - entity: input_number.bolletta_elec_kwh
         grid_options:
           columns: 6
@@ -1241,9 +1261,9 @@ config:
         type: entity
       - entity: input_number.bolletta_gse_euro
         grid_options:
-          columns: 6
+          columns: 12
           rows: auto
-        name: "\u20AC pagato GSE"
+        name: "\u20AC pagato da parte di GSE x eletricita a rete"
         type: entity
       - heading: Gas
         heading_style: subtitle

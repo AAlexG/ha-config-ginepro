@@ -1,5 +1,5 @@
 config:
-  title: Casa Ginepro v.51
+  title: Casa Ginepro v.52
   views:
   - cards: []
     max_columns: 2
@@ -819,6 +819,26 @@ config:
           action: navigate
           navigation_path: /dashboard-consumi/elettricita
         name: Da GSE
+        type: tile
+        vertical: false
+      - color: '#009E73'
+        entity: sensor.fv_co2_evitata
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        icon: mdi:molecule-co2
+        name: CO2 evitata
+        type: tile
+        vertical: false
+      - color: '#009E73'
+        entity: sensor.fv_alberi_equivalenti
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        icon: mdi:forest
+        name: Alberi equivalenti
         type: tile
         vertical: false
       - grid_options:

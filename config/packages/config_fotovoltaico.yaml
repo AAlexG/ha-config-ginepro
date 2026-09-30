@@ -1,4 +1,5 @@
-# config_fotovoltaico_8.yaml
+# config_fotovoltaico_9.yaml
+# v9 (30/09/2026): aggiunti FV CO2 evitata e FV Alberi equivalenti (coefficienti Solarman).
 # v8 (30/09/2026): aggiunto shell_command calcola_pv_tabella, spostato da config_sistema.
 # Package Casa Ginepro - Fotovoltaico: inverter UFLEX, pannelli Tigo, surplus, GSE
 # Estratto da configuration_186.yaml. Nome file = nome del package.
@@ -314,6 +315,26 @@ template:
         unit_of_measurement: "W"
         device_class: power
         state_class: measurement
+
+      # --- BENEFICI AMBIENTALI (come app Solarman) ---
+      # Coefficienti ricavati dai valori Solarman del 30/09/2026:
+      # 9709,9 kWh -> 7,69 t CO2 e 529 alberi.
+      # 7,69 / 9709,9 = 0,000792 t/kWh ; 529 / 9709,9 = 0,05448 alberi/kWh
+      - name: "FV CO2 evitata"
+        unique_id: "fv_co2_evitata"
+        icon: mdi:molecule-co2
+        unit_of_measurement: "t"
+        availability: "{{ has_value('sensor.inverter_uflex_total_production') }}"
+        state: >-
+          {{ (states('sensor.inverter_uflex_total_production') | float(0) * 0.000792) | round(2) }}
+
+      - name: "FV Alberi equivalenti"
+        unique_id: "fv_alberi_equivalenti"
+        icon: mdi:forest
+        unit_of_measurement: "alberi"
+        availability: "{{ has_value('sensor.inverter_uflex_total_production') }}"
+        state: >-
+          {{ (states('sensor.inverter_uflex_total_production') | float(0) * 0.05448) | round(0) | int }}
 
   # --- LEAK DETECTOR: batteria binaria (0=OK, 1=Bassa) ---
   - binary_sensor:
