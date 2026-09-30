@@ -1,4 +1,8 @@
-# automations_pergola_24.yaml
+# automations_tende_1.yaml
+#
+# Automazioni di pergola terrazza e tenda giardino (plancia Tende).
+# Rinominato il 30/09/2026 da automations_pergola.yaml (ultima versione
+# automations_pergola_26): contenuto e id invariati.
 
 #==================================================================================
 # PERGOLA – INSEGUIMENTO SOLARE + APERTURA AERAZIONE (1 giugno – 1 novembre)
@@ -387,7 +391,7 @@
 # TENDA GIARDINO - Apertura all'85% per pioggia (nuova in v17)
 #
 # La tenda si APRE all'85% quando piove o quando la pioggia e' prevista nelle
-# prossime 3 ore, per riparare la zona sottostante.
+# prossime 3 ore (regola decisa da Alex).
 #
 # Sorgenti pioggia (stesse della sicurezza meteo pergola):
 #   - rain_rate    : intensita' istantanea, intercetta subito la pioggia locale
@@ -460,6 +464,8 @@
           {{ (previsione['weather.casa'].forecast[0:3]
              | map(attribute='precipitation')
              | map('float', 0) | list) | max | default(0) }}
+        # v25: posizione prima dell'apertura, riportata nella notifica.
+        pos_prima: "{{ state_attr('cover.all_house_tenda_giardino_new', 'current_position') | int(-1) }}"
     - condition: template
       value_template: "{{ v_rate > 0 or v_oraria > 0 or mm_previsti > 0 }}"
     - action: cover.set_cover_position
@@ -474,12 +480,15 @@
       then:
         - action: notify.mobile_app_cph2653
           data:
-            title: "🌧️ Tenda giardino aperta - pioggia"
+            # v25: testo in chiaro. Prima era "Aperta all'85%: accumulo 0.1 mm.",
+            # senza dire perche' ne da dove venisse il dato.
+            title: "🌧️ Pioggia: tenda giardino aperta"
             message: >-
-              Aperta all'85%: {{ ([ ('pioggia ' ~ (v_rate | round(1)) ~ ' mm/h') if v_rate > 0 else none,
-                 ('accumulo ' ~ (v_oraria | round(1)) ~ ' mm') if v_oraria > 0 else none,
-                 ('previsione ' ~ (mm_previsti | round(1)) ~ ' mm/3h') if mm_previsti > 0 else none ]
-                | reject('none') | list | join(' + ')) }}.
+              {{ ([ ('sta piovendo (' ~ (v_rate | round(1)) ~ ' mm/h)') if v_rate > 0 else none,
+                    ("la stazione meteo ha misurato " ~ (v_oraria | round(1)) ~ " mm di pioggia nell'ora in corso") if v_oraria > 0 else none,
+                    ('la previsione indica ' ~ (mm_previsti | round(1)) ~ ' mm di pioggia nelle prossime 3 ore') if mm_previsti > 0 else none ]
+                  | reject('none') | list | join(', ')) | capitalize }}.
+              La tenda giardino e' stata aperta all'85%{% if pos_prima == 0 %} (prima era chiusa){% elif pos_prima > 0 %} (prima era al {{ pos_prima }}%){% endif %}.
             data:
               priority: high
               ttl: 0

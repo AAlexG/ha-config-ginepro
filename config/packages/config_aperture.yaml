@@ -1,4 +1,4 @@
-# config_aperture_11.yaml
+# config_aperture_12.yaml
 # Package Casa Ginepro - Aperture e sicurezza: portone box, cancelli, pergola, tenda, sirena
 # Estratto da configuration_186.yaml. Nome file = nome del package.
 
@@ -64,7 +64,7 @@ input_boolean:
     icon: mdi:bell-check
 
   # Limita a una sola notifica al giorno l'apertura per pioggia
-  # (automations_pergola_18). Azzerato alle 23:59:30 dalla stessa
+  # (automations_pergola_18, ora automations_tende). Azzerato alle 23:59:30 dalla stessa
   # automazione che azzera il flag del vento.
   tenda_notifica_pioggia_oggi:
     name: "Tenda – Notifica Pioggia Oggi"
@@ -84,7 +84,7 @@ input_boolean:
 # PERGOLA - SICUREZZA METEO: HELPER DI SUPPORTO (nuovi in config_aperture_2)
 #
 # input_datetime.pergola_meteo_ultimo_allarme
-#   Ora dell'ultima condizione di emergenza rilevata da automations_pergola.
+#   Ora dell'ultima condizione di emergenza rilevata da automations_tende (ex automations_pergola).
 #   Il rilascio del flag avviene solo dopo 20 minuti da questo istante.
 #   Sostituisce il precedente "for: 00:20:00" sul trigger template del rilascio:
 #   quel trigger scattava solo sulla transizione falso -> vero e, tolto il
