@@ -1,40 +1,8 @@
-# config_aperture_12.yaml
-# Package Casa Ginepro - Aperture e sicurezza: portone box, cancelli, pergola, tenda, sirena
-# Estratto da configuration_186.yaml. Nome file = nome del package.
-
-template:
-  - binary_sensor:
-      - name: "Portone Box Stato"
-        unique_id: "portone_box_stato_invertito"
-        state: >-
-          {{ is_state('binary_sensor.portone_box_sensore_zigbee_contact', 'off') }}
-        device_class: garage_door
-        icon: mdi:garage
-
-      # Cancello grande: dal 2026-09-24 il sensore Zigbee e' riposizionato e ha
-      # logica INVERTITA ("off" = cancello APERTO). Questo sensore riporta lo
-      # stato reale del cancello per le plance: "on" = aperto, "off" = chiuso.
-      - name: "Cancello Grande Stato"
-        unique_id: "cancello_grande_stato_invertito"
-        state: >-
-          {{ is_state('binary_sensor.cancello_grande_zigbee_contact', 'off') }}
-        availability: >-
-          {{ states('binary_sensor.cancello_grande_zigbee_contact') in ['on', 'off'] }}
-        device_class: door
-        icon: mdi:gate
-
-  # ============================================================
-  # ACQUA: sensori calcolati (NUOVO – configuration_53)
-  # ============================================================
-  # Soglie tariffarie ATO Genova 2025 (derive dalle bollette IRETI):
-  #   2 residenti pro-die (mc/giorno):
-  #   Agevolata  :  0 – 0.1765
-  #   Base       :  0.1765 – 0.3333
-  #   I° Eccedenza: 0.3333 – 0.5000
-  #   II° Eccedenza: 0.5000 – 0.6471
-  #   III° Eccedenza: > 0.6471
-  # Flusso di default sanitaria calda: 8 L/min
-  # C3 = ore_DHW × flusso_L_min × 0.06  (L/min × h × 60min/h / 1000 L/m³)
+# config_tende_1.yaml
+# Package Casa Ginepro - Tende: pergola terrazza e tenda giardino (helper delle
+# automazioni in automations_tende).
+# Creato il 30/09/2026 dalla riorganizzazione per argomento: parte "tende"
+# di config_aperture (eliminato). Entity_id invariati.
 
 input_boolean:
 
@@ -52,11 +20,6 @@ input_boolean:
     name: "Pergola - Chiusura Sicurezza Meteo"
     initial: false
     icon: mdi:weather-windy
-
-  sirena_attiva:
-    name: "Sirena Attiva"
-    initial: false
-    icon: mdi:alarm-light
 
   tenda_notifica_vento_oggi:
     name: "Tenda – Notifica Vento Oggi"

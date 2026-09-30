@@ -1,0 +1,64 @@
+# automations_gas_1.yaml
+#
+# Gas: accumulo del consumo stimato della caldaia.
+# File creato il 30/09/2026 dalla riorganizzazione "un argomento = automations_X + config_X".
+# Automazioni spostate da: automations_clima. Id e alias invariati.
+
+#==================================================================================
+# CALDAIA - Accumula consumo gas ogni minuto
+#
+# Formula basata su dati ufficiali Baxi (manuale 7710414, sez. 22, mod. 24 GA):
+#   Qmin (G20) = 0,37 m³/h  (portata termica ridotta 3,5 kW)
+#   Qmax (G20) = 2,61 m³/h  (portata termica nominale sanitario 24,7 kW)
+#   Qmax riscaldamento = 2,61 × 20,6/24,7 = 2,177 m³/h (nominale risc. 20,6 kW)
+# La modulazione relativa OpenTherm (ID 17) è la % tra livello MINIMO e MASSIMO:
+#   0% = caldaia al minimo (0,37 m³/h), NON a zero. Si accumula quindi ogni
+#   minuto con fiamma ON, anche a modulazione 0%.
+#   consumo m³/h = Qmin + (Qmax − Qmin) × mod/100
+#   Qmax scelto in base alla modalità: DHW attivo → 2,61 / riscaldamento → 2,177
+#
+# NOTA BIT DHW OTGW (verificata il 29/09/2026)
+# L'OTGW espone due binary_sensor con lo stesso nome base "hot water":
+#   binary_sensor.opentherm_gateway_otgw_otgw_domestic_hot_water
+#     = DHW ATTIVO, bit della caldaia (OpenTherm slave DHW active): on SOLO
+#       mentre la caldaia produce acqua calda. E' QUESTO da usare.
+#   binary_sensor.opentherm_gateway_otgw_otgw_domestic_hot_water_enable
+#     = DHW ABILITATO, bit del termostato (master DHW enable): con l'override
+#       HW=1 resta on sempre. NON usarlo per contare o per il gas: d'inverno
+#       conterebbe come acqua calda anche i minuti di solo riscaldamento.
+# Prova del 29/09 17:25: aprendo l'acqua calda il primo e' passato a on,
+# il secondo era on da prima e non e' cambiato.
+# Fonte: homeassistant/components/opentherm_gw/binary_sensor.py
+# (DATA_SLAVE_DHW_ACTIVE e DATA_MASTER_DHW_ENABLED, stesso translation_key).
+#==================================================================================
+- id: caldaia_accumula_gas
+  alias: "Caldaia - Accumula consumo gas"
+  mode: single
+  triggers:
+    - platform: time_pattern
+      minutes: "/1"
+  conditions:
+    # Guardia anti-reset: al riavvio di HA (o durante un glitch OTGW)
+    # l'accumulatore o la modulazione possono valere 'unknown'/'unavailable';
+    # senza questa condizione 'precedente | float(0)' azzererebbe lo storico gas.
+    - condition: template
+      value_template: >
+        {{ states('input_number.caldaia_gas_totale_acc') not in ['unknown', 'unavailable']
+           and states('sensor.opentherm_gateway_otgw_otgw_relative_modulation_level') not in ['unknown', 'unavailable'] }}
+  action:
+    - variables:
+        fiamma: "{{ is_state('binary_sensor.opentherm_gateway_otgw_otgw_flame', 'on') }}"
+        dhw: "{{ is_state('binary_sensor.opentherm_gateway_otgw_otgw_domestic_hot_water', 'on') }}"
+        mod: "{{ states('sensor.opentherm_gateway_otgw_otgw_relative_modulation_level') | float(0) }}"
+        precedente: "{{ states('input_number.caldaia_gas_totale_acc') | float(0) }}"
+        q_min: 0.37
+        q_max: "{{ 2.61 if dhw else 2.177 }}"
+    - if:
+        - condition: template
+          value_template: "{{ fiamma }}"
+      then:
+        - action: input_number.set_value
+          target:
+            entity_id: input_number.caldaia_gas_totale_acc
+          data:
+            value: "{{ (precedente + (q_min + (q_max - q_min) * (mod / 100)) / 60) | round(4) }}"

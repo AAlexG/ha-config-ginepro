@@ -1,5 +1,7 @@
-# config_sistema_4.yaml
-# Package Casa Ginepro - Sistema: monitoraggio Raspberry, shell_command, bollette, vacanza
+# config_sistema_5.yaml
+# Package Casa Ginepro - Sistema: monitoraggio Raspberry, ultima modifica configurazione, Vivino proxy, vacanza
+# v5 (30/09/2026): bollette e totali consumi spostati in config_consumi,
+# shell_command calcola_pv_tabella spostato in config_fotovoltaico.
 # Estratto da configuration_186.yaml. Nome file = nome del package.
 
 #--- MONITORAGGIO HARDWARE ---
@@ -25,43 +27,8 @@ command_line:
       scan_interval: 120
       value_template: "{{ value | int(none) }}"
 
-input_select:
-
-  # Mese di riferimento per inserimento bollette.
-  # Le opzioni (ultimi 12 mesi) vengono aggiornate automaticamente
-  # all'avvio di HA e ogni 1° del mese dall'automazione aggiorna_bolletta_mese.
-  bolletta_mese_sel:
-    name: "Bolletta – Mese di riferimento"
-    # Solo il placeholder: la lista dei 12 mesi e' generata a runtime
-    # dall'automazione aggiorna_bolletta_mese (automations.yaml, n. 28).
-    # NON reinserire qui un elenco di mesi: le opzioni impostate con
-    # input_select.set_options vivono in memoria e a ogni ricarica YAML
-    # HA rimette esattamente cio' che e' scritto sotto (async_update_config).
-    # Un elenco statico tornerebbe quindi a mostrarsi silenziosamente
-    # obsoleto. Con il solo placeholder un eventuale guasto e' visibile
-    # subito e l'automazione ripristina la lista entro pochi secondi.
-    options:
-      - "-- seleziona --"
-    initial: "-- seleziona --"
-    icon: mdi:calendar-month
-
 shell_command:
   avvia_vivino_proxy: "python3 /config/vivino_proxy.py &"
-  # Chiama lo script Python che inietta le statistiche mensili delle bollette.
-  # Mese e valori sono passati come ARGOMENTI, resi dallo stato vivo di HA
-  # da script.salva_bolletta: NON vanno letti dal DB del recorder, che puo'
-  # non aver ancora scritto su disco l'importo appena digitato (v10).
-  # Ordine: mese elec_kwh elec_euro gas_mc gas_euro acqua_mc acqua_euro gse_euro
-  # Stdout = JSON letto da script.salva_bolletta (response_variable).
-  # Log diagnostico su /config/bolletta_log.txt (scritto dallo script stesso).
-  salva_bolletta: >-
-    python3 /config/salva_bolletta.py
-    '{{ mese }}' '{{ elec_kwh }}' '{{ elec_euro }}'
-    '{{ gas_mc }}' '{{ gas_euro }}'
-    '{{ acqua_mc }}' '{{ acqua_euro }}' '{{ gse_euro }}'
-    2>> /config/bolletta_log.txt
-  calcola_totali_consumi: "python3 /config/totali_consumi.py 2>> /config/totali_consumi.log"
-  calcola_pv_tabella: "python3 /config/pv_tabella_mensile.py > /config/pv_tabella_mensile.json 2>/config/pv_tabella_mensile.log"
 
 input_boolean:
 

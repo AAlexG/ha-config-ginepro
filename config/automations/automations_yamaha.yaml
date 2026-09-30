@@ -1,0 +1,218 @@
+# automations_yamaha_1.yaml
+#
+# Yamaha WS-B1A: keepalive con il canto degli uccelli via Google Mini.
+# File creato il 30/09/2026 dalla riorganizzazione "un argomento = automations_X + config_X".
+# Automazioni spostate da: automations.yaml. Id e alias invariati.
+
+#==================================================================================
+# YAMAHA WS-B1A KEEPALIVE – Suono uccelli via Google Mini
+#
+# Mantiene la Yamaha WS-B1A sempre accesa evitando l'Auto Standby (8h).
+# File audio locale: /config/www/birdssongs.mp3
+# Volume giorno  (08:30–00:00): 0.20 (20%), solo se trovato all'1%
+# Volume notte   (00:00–08:30): 0.01 (1%)
+# Entità: media_player.googlehome8851
+#==================================================================================
+
+# AVVIO MATTUTINO – 08:30
+- id: yamaha_keepalive_avvio_mattino
+  alias: "Yamaha Keepalive - Avvio mattino (08:30)"
+  mode: single
+  triggers:
+    - platform: time
+      at: "08:30:00"
+  condition:
+    - condition: state
+      entity_id: input_boolean.vacanza
+      state: "off"
+    - condition: template
+      value_template: "{{ state_attr('media_player.googlehome8851', 'media_title') is none }}"
+  action:
+    - if:
+        - condition: template
+          value_template: "{{ (state_attr('media_player.googlehome8851', 'volume_level') | float(0) * 100) | round(0) == 1 }}"
+      then:
+        - action: media_player.volume_set
+          target:
+            entity_id: media_player.googlehome8851
+          data:
+            volume_level: 0.20
+    - action: media_player.play_media
+      target:
+        entity_id: media_player.googlehome8851
+      data:
+        media_content_id: "http://192.168.1.77:8123/local/birdssongs.mp3"
+        media_content_type: "music"
+
+# TRANSIZIONE NOTTE – 00:00
+- id: yamaha_keepalive_transizione_notte
+  alias: "Yamaha Keepalive - Transizione notte (00:00)"
+  mode: single
+  triggers:
+    - platform: time
+      at: "00:00:00"
+  condition:
+    - condition: state
+      entity_id: input_boolean.vacanza
+      state: "off"
+    - condition: template
+      value_template: "{{ state_attr('media_player.googlehome8851', 'media_title') is none }}"
+  action:
+    - action: media_player.volume_set
+      target:
+        entity_id: media_player.googlehome8851
+      data:
+        volume_level: 0.01
+    - action: media_player.play_media
+      target:
+        entity_id: media_player.googlehome8851
+      data:
+        media_content_id: "http://192.168.1.77:8123/local/birdssongs.mp3"
+        media_content_type: "music"
+
+# RIPRISTINO DOPO STOP (es. "Ok Google, stop")
+- id: yamaha_keepalive_ripristino_dopo_stop
+  alias: "Yamaha Keepalive - Ripristino dopo stop"
+  mode: single
+  max_exceeded: silent
+  triggers:
+    - platform: state
+      entity_id: media_player.googlehome8851
+      to:
+        - "idle"
+        - "paused"
+      for: "00:00:30"
+  condition:
+    - condition: state
+      entity_id: input_boolean.vacanza
+      state: "off"
+    - condition: template
+      value_template: "{{ state_attr('media_player.googlehome8851', 'media_title') is none }}"
+  action:
+    - variables:
+        ora: "{{ now().hour + now().minute / 60 }}"
+        e_notte: "{{ not (ora >= 8.5 and ora < 24.0) }}"
+        vol_attuale: "{{ (state_attr('media_player.googlehome8851', 'volume_level') | float(0) * 100) | round(0) }}"
+    - if:
+        - condition: template
+          value_template: "{{ e_notte }}"
+      then:
+        - action: media_player.volume_set
+          target:
+            entity_id: media_player.googlehome8851
+          data:
+            volume_level: 0.01
+      else:
+        - if:
+            - condition: template
+              value_template: "{{ vol_attuale == 1 }}"
+          then:
+            - action: media_player.volume_set
+              target:
+                entity_id: media_player.googlehome8851
+              data:
+                volume_level: 0.20
+    - action: media_player.play_media
+      target:
+        entity_id: media_player.googlehome8851
+      data:
+        media_content_id: "http://192.168.1.77:8123/local/birdssongs.mp3"
+        media_content_type: "music"
+
+# REFRESH ANTI-STANDBY – alle 00:25, 07:25, 14:25, 21:25
+# (hours "/7" = ore 0, 7, 14, 21). Di giorno e' coperto anche dal reset
+# ogni 15 minuti; serve soprattutto per la notte (00:25 e 07:25).
+- id: yamaha_keepalive_refresh_antistandby
+  alias: "Yamaha Keepalive - Refresh anti-standby (00:25/07:25/14:25/21:25)"
+  mode: single
+  triggers:
+    - platform: time_pattern
+      hours: "/7"
+      minutes: "25"
+  condition:
+    - condition: state
+      entity_id: input_boolean.vacanza
+      state: "off"
+    - condition: state
+      entity_id: media_player.googlehome8851
+      state: "playing"
+    - condition: template
+      value_template: "{{ state_attr('media_player.googlehome8851', 'media_title') is none }}"
+  action:
+    - variables:
+        ora: "{{ now().hour + now().minute / 60 }}"
+        e_notte: "{{ not (ora >= 8.5 and ora < 24.0) }}"
+        vol_attuale: "{{ (state_attr('media_player.googlehome8851', 'volume_level') | float(0) * 100) | round(0) }}"
+    - action: media_player.media_stop
+      target:
+        entity_id: media_player.googlehome8851
+    - delay: "00:00:05"
+    - if:
+        - condition: template
+          value_template: "{{ e_notte }}"
+      then:
+        - action: media_player.volume_set
+          target:
+            entity_id: media_player.googlehome8851
+          data:
+            volume_level: 0.01
+      else:
+        - if:
+            - condition: template
+              value_template: "{{ vol_attuale == 1 }}"
+          then:
+            - action: media_player.volume_set
+              target:
+                entity_id: media_player.googlehome8851
+              data:
+                volume_level: 0.20
+    - action: media_player.play_media
+      target:
+        entity_id: media_player.googlehome8851
+      data:
+        media_content_id: "http://192.168.1.77:8123/local/birdssongs.mp3"
+        media_content_type: "music"
+
+# RESET ALTOPARLANTE PREDEFINITO – ogni 15 minuti
+- id: yamaha_keepalive_reset_speaker
+  alias: "Yamaha Keepalive - Reset altoparlante predefinito (15min)"
+  mode: single
+  triggers:
+    - platform: time_pattern
+      minutes: "/15"
+  condition:
+    - condition: state
+      entity_id: input_boolean.vacanza
+      state: "off"
+    - condition: time
+      after: "08:30:00"
+      before: "23:00:00"
+    - condition: state
+      entity_id: media_player.googlehome8851
+      state: "playing"
+    - condition: template
+      value_template: "{{ state_attr('media_player.googlehome8851', 'media_title') is none }}"
+  action:
+    # v128: tolto il ramo notte (volume 0.01): con la condizione 08:30-23:00
+    # non poteva mai essere eseguito.
+    - variables:
+        vol_attuale: "{{ (state_attr('media_player.googlehome8851', 'volume_level') | float(0) * 100) | round(0) }}"
+    - action: media_player.media_stop
+      target:
+        entity_id: media_player.googlehome8851
+    - delay: "00:00:03"
+    - if:
+        - condition: template
+          value_template: "{{ vol_attuale == 1 }}"
+      then:
+        - action: media_player.volume_set
+          target:
+            entity_id: media_player.googlehome8851
+          data:
+            volume_level: 0.20
+    - action: media_player.play_media
+      target:
+        entity_id: media_player.googlehome8851
+      data:
+        media_content_id: "http://192.168.1.77:8123/local/birdssongs.mp3"
+        media_content_type: "music"

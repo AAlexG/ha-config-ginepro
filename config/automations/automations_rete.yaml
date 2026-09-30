@@ -1,7 +1,11 @@
-# automations_presenza_12.yaml
+# automations_rete_1.yaml
+#
+# Rete: nuovi dispositivi e dispositivi collegati alla rete, uscita/rientro Tania.
+# File creato il 30/09/2026 dalla riorganizzazione "un argomento = automations_X + config_X".
+# Automazioni spostate da: automations_presenza. Id e alias invariati.
 
 #==================================================================================
-# 1. NOTIFICA - Nuovo dispositivo MAI VISTO rilevato sulla rete
+# NOTIFICA - Nuovo dispositivo MAI VISTO rilevato sulla rete
 #==================================================================================
 - id: notifica_nuovo_dispositivo_rete
   alias: "Presenza - Nuovo dispositivo sulla rete"
@@ -36,7 +40,7 @@
           | Host: {{ state_attr(eid, 'host_name') or 'n/d' }}
 
 #==================================================================================
-# 2. NOTIFICA - Dispositivo noto (non whitelist) si collega alla rete
+# NOTIFICA - Dispositivo noto (non whitelist) si collega alla rete
 #    Notifica solo se il MAC NON è nella whitelist dei dispositivi conosciuti.
 #    Il S22 di Tania è volutamente fuori whitelist: la sua connessione notifica.
 #    Tracker senza attributo MAC (app Companion, GPS) vengono ignorati.
@@ -129,10 +133,11 @@
           | IP: {{ trigger.to_state.attributes.get('ip', 'n/d') }}
           | MAC: {{ trigger.to_state.attributes.get('mac', 'n/d') }}
           | Host: {{ trigger.to_state.attributes.get('host_name', 'n/d') }}
+
           
 
 #==================================================================================
-# 3. NOTIFICA - Tania esce di casa (ritardo 2 min anti falsi positivi GPS)
+# NOTIFICA - Tania esce di casa (ritardo 2 min anti falsi positivi GPS)
 #
 # v12: trigger "da home verso qualsiasi stato", non piu' "verso not_home".
 # In una zona con nome (Lavoro, Palestra) lo stato di person e' il nome della
@@ -160,7 +165,7 @@
           Tania è uscita di casa alle {{ (now() - timedelta(minutes=2)).strftime('%H:%M') }}
 
 #==================================================================================
-# 4. NOTIFICA - Tania rientra a casa (immediata)
+# NOTIFICA - Tania rientra a casa (immediata)
 #
 # v12: rientro da qualsiasi stato (not_home o zona con nome), escluso il
 # ritorno da unknown/unavailable dopo un riavvio di HA.

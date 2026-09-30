@@ -1,4 +1,7 @@
-# automations_fotovoltaico_3.yaml
+# automations_fotovoltaico_4.yaml
+#
+# v4 (30/09/2026): aggiunte da automations.yaml, con id invariati, l'allerta
+# pannello Tigo a 0 per 1 ora e il calcolo della tabella mensile FV.
 #==================================================================================
 # SORVEGLIANZA SOVRATENSIONE CONDENSATORE - Casa Ginepro
 #
@@ -110,3 +113,73 @@
           priority: normal
           ttl: 0
           channel: general
+
+#==================================================================================
+# ALLERTA PANNELLO A 0 PER 1 ORA (SOLO DI GIORNO)
+#==================================================================================
+- id: tigo_alert_panel_zero_1h
+  alias: "Tigo - Pannello a 0 per 1h (solo giorno)"
+  mode: parallel
+  triggers:
+    - platform: state
+      entity_id:
+        - sensor.tetto_vs_ovest_panel_a1_power
+        - sensor.tetto_vs_ovest_panel_a2_power
+        - sensor.tetto_vs_ovest_panel_a3_power
+        - sensor.tetto_vs_ovest_panel_a4_power
+        - sensor.tetto_vs_ovest_panel_a5_power
+        - sensor.tetto_vs_mare_panel_a6_power
+        - sensor.tetto_vs_mare_panel_a7_power
+        - sensor.tetto_vs_mare_panel_a8_power
+        - sensor.tetto_vs_mare_panel_a9_power
+        - sensor.tetto_vs_mare_panel_a10_power
+        - sensor.sopra_pergola_panel_b1_power
+        - sensor.sopra_pergola_panel_b2_power
+        - sensor.sopra_pergola_panel_b3_power
+        - sensor.sopra_pergola_panel_b4_power
+        - sensor.sopra_pergola_panel_b5_power
+        - sensor.sopra_tenda_giardino_panel_b6_power
+        - sensor.sopra_tenda_giardino_panel_b7_power
+        - sensor.sopra_tenda_giardino_panel_b8_power
+        - sensor.sopra_tenda_giardino_panel_b9_power
+        - sensor.sopra_pergola_panel_b10_power
+        - sensor.sopra_tenda_giardino_panel_b11_power
+      to: "0"
+      for: "01:00:00"
+  condition:
+    - condition: state
+      entity_id: sun.sun
+      state: "above_horizon"
+    - condition: template
+      value_template: "{{ states(trigger.entity_id) | float(0) == 0 }}"
+  action:
+    - action: notify.mobile_app_cph2653
+      data:
+        title: "⚠️ Pannello a 0 da 1h"
+        message: >-
+          Pannello {{ trigger.entity_id.split('panel_')[1].split('_')[0] | upper }} = 0 W da almeno 1 ora.
+        data:
+          clickAction: "/casa-ginepro/home"
+          priority: high
+          ttl: 0
+          persistent: "true"
+
+#==================================================================================
+# CALCOLO TABELLA MENSILE FV – Avvio HA + ogni ora
+#==================================================================================
+- id: calcola_pv_tabella_mensile
+  alias: "PV – Calcola tabella mensile"
+  mode: single
+  triggers:
+    - platform: homeassistant
+      event: start
+    - platform: time_pattern
+      hours: "/1"
+  action:
+    - action: shell_command.calcola_pv_tabella
+    # Il command_line sensor ha scan_interval 3600: senza questo forzamento
+    # il JSON appena riscritto resterebbe invisibile fino alla lettura
+    # successiva, con le tabelle ferme ai valori precedenti (v124).
+    - action: homeassistant.update_entity
+      data:
+        entity_id: sensor.pv_tabella_mensile

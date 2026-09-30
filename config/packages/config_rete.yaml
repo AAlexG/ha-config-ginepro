@@ -1,5 +1,7 @@
-# config_wifi_rete_14.yaml
-# Package Casa Ginepro - Rete WiFi: whitelist MAC e tabella dispositivi
+# config_rete_1.yaml
+# Package Casa Ginepro - Rete: whitelist MAC e tabella dispositivi WiFi.
+# Rinominato il 30/09/2026 da config_wifi_rete (ultima versione 14), contenuto
+# invariato. Automazioni collegate: automations_rete.
 # Nome file = nome del package.
 
 #==================================================================================

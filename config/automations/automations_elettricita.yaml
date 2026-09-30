@@ -1,4 +1,9 @@
-# automations_carichi_8.yaml
+# automations_elettricita_1.yaml
+#
+# Elettricita': distacco carichi su prelievo alto e prezzo kWh da PUN.
+# File creato il 30/09/2026 dalla riorganizzazione "un argomento = automations_X + config_X".
+# Automazioni spostate da: automations_carichi, automations_prezzo. Id e alias invariati.
+
 #==================================================================================
 # DISTACCO CARICHI SU PRELIEVO DI RETE ALTO
 #
@@ -312,3 +317,33 @@
           priority: high
           ttl: 0
           channel: alarm_stream
+
+# Aggiorna input_number.elettricita_prezzo_kwh con il prezzo a consumo
+# (parte variabile) ricostruito dal PUN (sensor.elettricita_prezzo_kwh_variabile).
+# Tutti i sensori di costo esistenti continuano a leggere l'input_number,
+# che ora si allinea automaticamente all'indice mensile del contratto.
+- id: elettricita_prezzo_aggiorna_da_pun
+  alias: "Elettricità – aggiorna prezzo kWh da PUN"
+  description: >-
+    Copia il valore di sensor.elettricita_prezzo_kwh_variabile in
+    input_number.elettricita_prezzo_kwh a ogni variazione e all'avvio di HA.
+  mode: single
+  triggers:
+    - trigger: state
+      entity_id: sensor.elettricita_prezzo_kwh_variabile
+      not_to:
+        - unavailable
+        - unknown
+    - trigger: homeassistant
+      event: start
+  conditions:
+    - condition: template
+      value_template: >-
+        {{ has_value('sensor.elettricita_prezzo_kwh_variabile')
+           and states('sensor.elettricita_prezzo_kwh_variabile') | float(0) > 0 }}
+  actions:
+    - action: input_number.set_value
+      target:
+        entity_id: input_number.elettricita_prezzo_kwh
+      data:
+        value: "{{ states('sensor.elettricita_prezzo_kwh_variabile') | float(0) | round(4) }}"

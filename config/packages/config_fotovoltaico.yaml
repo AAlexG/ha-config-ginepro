@@ -1,4 +1,5 @@
-# config_fotovoltaico_7.yaml
+# config_fotovoltaico_8.yaml
+# v8 (30/09/2026): aggiunto shell_command calcola_pv_tabella, spostato da config_sistema.
 # Package Casa Ginepro - Fotovoltaico: inverter UFLEX, pannelli Tigo, surplus, GSE
 # Estratto da configuration_186.yaml. Nome file = nome del package.
 
@@ -588,3 +589,7 @@ utility_meter:
     name: Produzione Anno
     source: sensor.inverter_uflex_total_production
     cycle: yearly
+
+shell_command:
+  # Genera /config/pv_tabella_mensile.json (automazione calcola_pv_tabella_mensile).
+  calcola_pv_tabella: "python3 /config/pv_tabella_mensile.py > /config/pv_tabella_mensile.json 2>/config/pv_tabella_mensile.log"

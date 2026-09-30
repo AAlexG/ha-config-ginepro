@@ -1,0 +1,32 @@
+# config_sicurezza_1.yaml
+# Package Casa Ginepro - Sicurezza: stato reale di portone box e cancello grande, sirena.
+# Creato il 30/09/2026 dalla riorganizzazione per argomento: parte "sicurezza"
+# di config_aperture (eliminato). Entity_id e unique_id invariati.
+
+template:
+  - binary_sensor:
+      - name: "Portone Box Stato"
+        unique_id: "portone_box_stato_invertito"
+        state: >-
+          {{ is_state('binary_sensor.portone_box_sensore_zigbee_contact', 'off') }}
+        device_class: garage_door
+        icon: mdi:garage
+
+      # Cancello grande: dal 2026-09-24 il sensore Zigbee e' riposizionato e ha
+      # logica INVERTITA ("off" = cancello APERTO). Questo sensore riporta lo
+      # stato reale del cancello per le plance: "on" = aperto, "off" = chiuso.
+      - name: "Cancello Grande Stato"
+        unique_id: "cancello_grande_stato_invertito"
+        state: >-
+          {{ is_state('binary_sensor.cancello_grande_zigbee_contact', 'off') }}
+        availability: >-
+          {{ states('binary_sensor.cancello_grande_zigbee_contact') in ['on', 'off'] }}
+        device_class: door
+        icon: mdi:gate
+
+input_boolean:
+
+  sirena_attiva:
+    name: "Sirena Attiva"
+    initial: false
+    icon: mdi:alarm-light

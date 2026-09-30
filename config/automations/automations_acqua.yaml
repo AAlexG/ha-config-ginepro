@@ -1,0 +1,149 @@
+# automations_acqua_1.yaml
+#
+# Acqua: reset giornaliero, recupero del reset, leak detector.
+# File creato il 30/09/2026 dalla riorganizzazione "un argomento = automations_X + config_X".
+# Automazioni spostate da: automations.yaml. Id e alias invariati.
+
+#==================================================================================
+# ACQUA – Reset giornaliero mezzanotte
+#
+# Ogni notte alle 23:59:
+#   1. Legge sensor.acqua_oggi_euro e lo aggiunge all'accumulatore.
+#   2. Accumula m³ giornalieri.
+#   3. Azzera counter.irrigazione_minuti_oggi.
+#   4. Azzera input_number.caldaia_dhw_durata_acc → ripartenza da 0 per il nuovo
+#      giorno (conteggio reale tutto l'anno dalla v131).
+#==================================================================================
+- id: acqua_reset_mezzanotte
+  alias: "Acqua – Reset giornaliero mezzanotte"
+  description: "Salva costo e m³ giornalieri negli accumulatori, azzera contatori"
+  mode: single
+  triggers:
+    - platform: time
+      at: "23:59:00"
+  action:
+    # 1. Accumula costo del giorno nell'accumulatore
+    - action: input_number.set_value
+      target:
+        entity_id: input_number.acqua_costo_acc
+      data:
+        value: >
+          {{ ([states('input_number.acqua_costo_acc') | float(0) +
+               states('sensor.acqua_oggi_euro') | float(0), 0] | max) | round(2) }}
+    # 2. Accumula m³ del giorno nell'accumulatore
+    - action: input_number.set_value
+      target:
+        entity_id: input_number.acqua_consumo_acc
+      data:
+        value: >
+          {{ ([states('input_number.acqua_consumo_acc') | float(0) +
+               states('sensor.acqua_oggi_mc') | float(0), 0] | max) | round(4) }}
+    # 3. Azzera minuti irrigazione per il nuovo giorno
+    - action: counter.reset
+      target:
+        entity_id: counter.irrigazione_minuti_oggi
+    # 4. Azzera accumulatore minuti DHW per il nuovo giorno
+    #    (ricostruito ogni minuto dall'automazione caldaia_dhw_accumula_minuti,
+    #     tutto l'anno)
+    - action: input_number.set_value
+      target:
+        entity_id: input_number.caldaia_dhw_durata_acc
+      data:
+        value: "0"
+    # 5. C4 (acqua fredda manuale) NON viene azzerata:
+    #    il valore del giorno precedente resta come punto di partenza
+
+#==================================================================================
+# ACQUA – Recupero del reset di mezzanotte saltato (v127)
+#
+# Sostituisce acqua_reset_avvio_ha, che azzerava caldaia_dhw_durata_acc a OGNI
+# avvio di HA: un riavvio a meta' giornata cancellava i minuti DHW gia'
+# accumulati (stima acqua calda e gas in estate).
+#
+# Il caso da coprire e' solo uno: HA spento alle 23:59, quando gira
+# acqua_reset_mezzanotte. All'avvio si confronta il last_triggered di quella
+# automazione (ripristinato dopo il riavvio) con l'ultimo 23:59 passato: se e'
+# piu' vecchio, il reset e' saltato e viene rilanciato per intero. Cosi'
+# vengono recuperati anche l'accumulo di costo e m3 del giorno precedente e
+# l'azzeramento del contatore irrigazione, non solo i minuti DHW.
+# Dopo il recupero last_triggered e' aggiornato: i riavvii successivi della
+# stessa giornata non azzerano piu' nulla.
+# L'entita' e' cercata per id YAML, non per nome, per non dipendere
+# dall'entity_id generato dall'alias.
+#==================================================================================
+- id: acqua_recupero_reset_mezzanotte
+  alias: "Acqua – Recupero reset mezzanotte saltato"
+  mode: single
+  triggers:
+    - trigger: homeassistant
+      event: start
+  actions:
+    # Attesa per il ripristino degli stati (helper e last_triggered)
+    - delay: "00:01:00"
+    - variables:
+        reset_entity: >-
+          {{ states.automation
+             | selectattr('attributes.id', 'eq', 'acqua_reset_mezzanotte')
+             | map(attribute='entity_id') | first | default('') }}
+        ultimo: "{{ state_attr(reset_entity, 'last_triggered') if reset_entity else none }}"
+        atteso: >-
+          {% set t = today_at('23:59') %}
+          {{ (t if now() >= t else t - timedelta(days=1)).isoformat() }}
+    - condition: template
+      value_template: >-
+        {{ reset_entity != '' and ultimo is not none
+           and as_datetime(ultimo) < as_datetime(atteso) }}
+    - action: automation.trigger
+      target:
+        entity_id: "{{ reset_entity }}"
+      data:
+        skip_condition: true
+    - action: persistent_notification.create
+      data:
+        title: "Acqua – reset di mezzanotte recuperato"
+        notification_id: acqua_recupero_reset
+        message: >-
+          HA era spento alle 23:59: il reset giornaliero (ultimo eseguito
+          {{ as_timestamp(ultimo) | timestamp_custom('%d/%m %H:%M') }}) e' stato
+          rilanciato all'avvio.
+
+#==================================================================================
+# NOTIFICA LEAK DETECTOR
+#==================================================================================
+- id: notifica_leak_detector
+  alias: "Notifica Leak Detector"
+  mode: single
+  triggers:
+    - platform: state
+      entity_id: binary_sensor.hp1000se_pro_pro_v1_6_4_leak_detection_4
+      # v126: era from "off", che scattava anche su off -> unavailable
+      # (falso allarme perdita a ogni disconnessione della stazione).
+      to: "on"
+  action:
+    - action: notify.mobile_app_cph2653
+      data:
+        title: "💧 PERDITA D'ACQUA RILEVATA!"
+        message: "Il sensore leak detector ha rilevato presenza di acqua."
+        data:
+          priority: high
+          ttl: 0
+          persistent: "true"
+
+#==================================================================================
+# NOTIFICA BATTERIA BASSA - LEAK DETECTOR
+#==================================================================================
+- id: notifica_batteria_leak_detector
+  alias: "Batteria bassa - Leak Detector"
+  mode: single
+  triggers:
+    # sensor.leak_detector_battery_status ora e' in % (0/20/40/60/80/100).
+    # Scatta a 20 % o meno (livello Ecowitt 0 o 1).
+    - platform: numeric_state
+      entity_id: sensor.leak_detector_battery_status
+      below: 21
+  condition: []
+  action:
+    - action: notify.mobile_app_cph2653
+      data:
+        title: "🔋 Batteria bassa - Leak Detector"
+        message: "Leak Detector: batteria al {{ states('sensor.leak_detector_battery_status') }} %."

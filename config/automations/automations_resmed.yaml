@@ -1,4 +1,8 @@
-# automations_devices_5.yaml
+# automations_resmed_1.yaml
+#
+# ResMed Tania: accensione/spegnimento programmato della presa.
+# File creato il 30/09/2026 dalla riorganizzazione "un argomento = automations_X + config_X".
+# Automazioni spostate da: automations_devices. Id e alias invariati.
 
 # ACCENSIONE/SPEGNIMENTO PROGRAMMATO – PRESA RESMED TANIA
 

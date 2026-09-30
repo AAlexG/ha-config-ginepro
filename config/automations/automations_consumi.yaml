@@ -1,0 +1,125 @@
+# automations_consumi_1.yaml
+#
+# Consumi e bollette: lista mesi, totali rilevato/bollette, baseline di inizio mese.
+# File creato il 30/09/2026 dalla riorganizzazione "un argomento = automations_X + config_X".
+# Automazioni spostate da: automations.yaml. Id e alias invariati.
+
+#==================================================================================
+# BOLLETTE – Aggiorna lista mesi nel combo box
+#
+# Mantiene input_select.bolletta_mese_sel allineato agli ultimi 12 mesi
+# + placeholder. Formato opzioni: "MM/YYYY" (es. "08/2026").
+#
+# Le opzioni impostate con input_select.set_options vivono solo in memoria:
+# qualsiasi ricarica della configurazione YAML (input_select.reload,
+# homeassistant.reload_all) le riporta ai valori scritti in
+# packages/config_sistema.yaml. Per questo l'automazione e' AUTORIPARANTE:
+#   - avvio HA            -> ripristino immediato dopo ogni riavvio
+#   - attributo "options" -> ripristino immediato dopo ogni ricarica YAML
+#   - ogni ora            -> cambio mese e rete di sicurezza
+# La condizione confronta le opzioni attuali con quelle attese e agisce solo
+# se differiscono: nessun loop quando e' l'automazione stessa a cambiarle.
+#
+# La lista attesa e' calcolata in "variables", che HA renderizza PRIMA delle
+# condizioni, quindi e' un'unica fonte di verita' per condizione e azione.
+# Aritmetica su indice assoluto dei mesi (anno*12 + mese-1): niente gestione
+# manuale del cambio anno. Zero-padding per concatenazione, senza il filtro
+# format e senza str.format (bloccato dalla sandbox Jinja di HA).
+#==================================================================================
+- id: aggiorna_bolletta_mese
+  alias: "Bollette – Aggiorna lista mesi"
+  mode: single
+  max_exceeded: silent
+  variables:
+    mesi_attesi: >
+      {% set ns = namespace(o=["-- seleziona --"]) %}
+      {% set idx = now().year * 12 + now().month - 1 %}
+      {% for j in range(11, -1, -1) %}
+        {% set k = idx - j %}
+        {% set mm = k % 12 + 1 %}
+        {% set ns.o = ns.o + [ ('0' ~ mm if mm < 10 else mm | string) ~ '/' ~ (k // 12) ] %}
+      {% endfor %}
+      {{ ns.o }}
+  triggers:
+    - trigger: homeassistant
+      event: start
+      id: avvio
+    - trigger: state
+      entity_id: input_select.bolletta_mese_sel
+      attribute: options
+      id: opzioni_cambiate
+    - trigger: time_pattern
+      hours: "/1"
+      minutes: 0
+      seconds: 0
+      id: orario
+  conditions:
+    - condition: template
+      value_template: >
+        {{ (state_attr('input_select.bolletta_mese_sel', 'options') or []) | list != mesi_attesi }}
+  actions:
+    - action: input_select.set_options
+      target:
+        entity_id: input_select.bolletta_mese_sel
+      data:
+        options: "{{ mesi_attesi }}"
+
+#==================================================================================
+# TOTALI CONSUMI – Aggiorna input_number rilevato/bollette
+#
+# Il corpo e' stato spostato in script.aggiorna_totali_consumi (scripts.yaml)
+# per poterlo richiamare anche da script.salva_bolletta subito dopo un
+# salvataggio: prima i totali si aggiornavano solo al giro d'orologio
+# successivo e la plancia restava ferma fino a un'ora.
+#
+# Il ritardo di 60 secondi serve solo all'avvio di HA, per dare tempo al
+# recorder di essere pronto: sulle esecuzioni orarie e su quelle richiamate
+# a mano sarebbe solo attesa inutile, quindi e' condizionato al trigger.
+#==================================================================================
+- id: calcola_totali_consumi
+  alias: "Consumi – Aggiorna totali rilevato e bollette"
+  mode: single
+  triggers:
+    - trigger: homeassistant
+      event: start
+      id: avvio
+    - trigger: time_pattern
+      hours: "/1"
+      id: orario
+  actions:
+    - if:
+        - condition: trigger
+          id: avvio
+      then:
+        - delay: "00:01:00"
+    - action: script.aggiorna_totali_consumi
+
+#==================================================================================
+# RESET INIZIO MESE – ogni 1° del mese alle 00:00:30
+# Salva i valori correnti degli accumulatori come baseline del nuovo mese
+#==================================================================================
+- id: reset_inizio_mese
+  alias: "Reset inizio mese – aggiorna baseline accumulatori"
+  mode: single
+  triggers:
+    - platform: time
+      at: "00:00:30"
+  conditions:
+    - condition: template
+      value_template: "{{ now().day == 1 }}"
+  action:
+    - action: input_number.set_value
+      target:
+        entity_id: input_number.gas_inizio_mese
+      data:
+        value: "{{ states('input_number.caldaia_gas_totale_acc') | float(0) }}"
+    - action: input_number.set_value
+      target:
+        entity_id: input_number.acqua_costo_inizio_mese
+      data:
+        value: "{{ states('input_number.acqua_costo_acc') | float(0) }}"
+    - action: input_number.set_value
+      target:
+        entity_id: input_number.acqua_mc_inizio_mese
+      data:
+        value: "{{ states('input_number.acqua_consumo_acc') | float(0) }}"

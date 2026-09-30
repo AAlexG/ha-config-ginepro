@@ -1,0 +1,189 @@
+# automations_sistema_1.yaml
+#
+# Sistema: UPS, ventola Raspberry, aggiornamenti, backup GitHub, Vivino proxy.
+# File creato il 30/09/2026 dalla riorganizzazione "un argomento = automations_X + config_X".
+# Automazioni spostate da: automations.yaml. Id e alias invariati.
+
+#==================================================================================
+# UPS - BLACKOUT RILEVATO
+#==================================================================================
+- id: ups_blackout_rilevato
+  alias: "UPS - Blackout rilevato"
+  mode: single
+  triggers:
+    - platform: state
+      entity_id: sensor.ups_eaton_camera_georgii_stato
+      to: "On Battery"
+  action:
+    - action: notify.mobile_app_cph2653
+      data:
+        title: "🔴 BLACKOUT!"
+        message: "Mancanza di corrente! UPS Eaton in funzione su batteria."
+        data:
+          priority: high
+          ttl: 0
+          persistent: "true"
+
+#==================================================================================
+# UPS - CORRENTE RIPRISTINATA
+#==================================================================================
+- id: ups_corrente_ripristinata
+  alias: "UPS - Corrente ripristinata"
+  mode: single
+  triggers:
+    - platform: state
+      entity_id: sensor.ups_eaton_camera_georgii_stato
+      to: "On Line"
+  action:
+    - action: notify.mobile_app_cph2653
+      data:
+        title: "✅ Corrente ripristinata"
+        message: "La rete elettrica è tornata online. UPS Eaton di nuovo in carica."
+        data:
+          priority: high
+          ttl: 0
+
+#==================================================================================
+# CONTROLLO VELOCITÀ VENTOLA ARGON (CPU TEMP + LIMITE NOTTE)
+#==================================================================================
+- id: controllo_ventola_argon_cpu
+  alias: "Ventola Argon - Controllo velocità per CPU temp"
+  mode: single
+  triggers:
+    - platform: time_pattern
+      minutes: "/5"
+  condition: []
+  action:
+    - variables:
+        cpu_temp: "{{ states('sensor.rpi_cpu_temperature') | float(0) }}"
+        notte: "{{ now().hour + now().minute / 60 >= 23.5 or now().hour + now().minute / 60 < 8.5 }}"
+        velocita: "{{ 0 if cpu_temp | float < 15 else 10 if cpu_temp | float < 30 else 20 if cpu_temp | float < 45 else 40 if cpu_temp | float < 55 else (40 if notte else 70) if cpu_temp | float < 65 else (40 if notte else 100) }}"
+    - action: fan.set_percentage
+      target:
+        entity_id: fan.rpi_fan_controller_ventilatore_argon
+      data:
+        percentage: "{{ velocita | int }}"
+
+#==================================================================================
+# SISTEMA – Aggiornamenti automatici dopo il backup notturno
+#
+# Il backup giornaliero parte alle 05:00. L'installazione degli aggiornamenti
+# parte alle 05:30 per lasciare margine al completamento del backup.
+# La notifica con l'elenco viene inviata PRIMA dell'installazione, perché
+# gli aggiornamenti di Core/OS riavviano HA e interromperebbero l'automazione
+# prima dell'invio.
+#==================================================================================
+- id: sistema_aggiornamenti_automatici_notturni
+  alias: "Sistema - Aggiornamenti automatici dopo backup"
+  mode: single
+  triggers:
+    - platform: time
+      at: "05:30:00"
+  condition:
+    - condition: template
+      value_template: >
+        {{ states.update | selectattr('state', 'eq', 'on') | list | count > 0 }}
+  action:
+    - variables:
+        entita_da_aggiornare: >
+          {{ states.update | selectattr('state', 'eq', 'on')
+             | map(attribute='entity_id') | list }}
+        elenco_aggiornamenti: >-
+          {% for e in states.update | selectattr('state', 'eq', 'on') %}
+          • {{ e.name }}: {{ e.attributes.installed_version }} → {{ e.attributes.latest_version }}
+          {% endfor %}
+        # v131: gli aggiornamenti partono solo se l'ultimo backup automatico e'
+        # riuscito ed e' recente. Prima venivano installati tutti, Core e OS
+        # compresi, anche con il backup delle 05:00 fallito.
+        # Criterio: l'ultimo tentativo coincide con l'ultimo successo (nessun
+        # tentativo fallito dopo) e il successo risale a meno di 24 ore.
+        # Timestamp Unix (0 = non disponibile).
+        ts_ok: "{{ as_timestamp(states('sensor.backup_last_successful_automatic_backup'), 0) }}"
+        ts_tentativo: "{{ as_timestamp(states('sensor.backup_last_attempted_automatic_backup'), 0) }}"
+        backup_ok: >-
+          {{ ts_ok > 0 and ts_tentativo > 0
+             and ts_ok >= ts_tentativo
+             and (as_timestamp(now()) - ts_ok) < 86400 }}
+    - if:
+        - condition: template
+          value_template: "{{ not backup_ok }}"
+      then:
+        - action: notify.mobile_app_cph2653
+          data:
+            title: "⛔ Aggiornamenti NON installati ({{ entita_da_aggiornare | count }})"
+            message: >-
+              Ultimo backup automatico riuscito:
+              {{ ts_ok | timestamp_custom('%d/%m %H:%M') if ts_ok > 0 else 'sconosciuto' }},
+              ultimo tentativo:
+              {{ ts_tentativo | timestamp_custom('%d/%m %H:%M') if ts_tentativo > 0 else 'sconosciuto' }}.
+              Backup non riuscito o non recente: aggiornamenti rimandati.
+              {{ elenco_aggiornamenti | trim }}
+            data:
+              priority: high
+              ttl: 0
+        - stop: "Backup non valido"
+    - action: notify.mobile_app_cph2653
+      data:
+        title: "🔄 Installazione aggiornamenti ({{ entita_da_aggiornare | count }})"
+        message: "{{ elenco_aggiornamenti | trim }}"
+        data:
+          ttl: 0
+    - action: update.install
+      target:
+        entity_id: "{{ entita_da_aggiornare }}"
+      continue_on_error: true
+
+#==================================================================================
+# BACKUP CONFIG SU GITHUB
+#
+# Avvia l'addon Home Assistant Git Exporter ogni notte alle 03:15 e ad ogni
+# riavvio del core (rapido o completo), per mantenere sincronizzato il
+# repository GitHub con la configurazione reale su /config.
+#==================================================================================
+- id: copy_config_su_github
+  alias: "Copia su GitHub alle 3:15"
+  mode: single
+  triggers:
+    - platform: time
+      at: "03:15:00"
+    - platform: homeassistant
+      event: start
+  action:
+    - action: hassio.addon_start
+      data:
+        addon: "68413af6_git-exporter"
+
+#==================================================================================
+# BACKUP CONFIG SU GITHUB - DOPO MODIFICA (DEBOUNCE 5 MIN)
+#==================================================================================
+- id: copy_config_su_github_debounce
+  alias: "Copia su GitHub dopo modifica"
+  mode: restart
+  triggers:
+    - platform: state
+      entity_id: sensor.ultima_modifica_configurazione
+  conditions:
+    - condition: template
+      value_template: >-
+        {{ trigger.from_state is not none 
+           and trigger.from_state.state not in ['unknown', 'unavailable'] 
+           and trigger.to_state.state not in ['unknown', 'unavailable']
+           and trigger.to_state.state | int(0) > trigger.from_state.state | int(0) }}
+  actions:
+    - delay: "00:05:00" # <--- Attende 5 minuti dall'ultimo cambio di stato del sensore
+    - action: hassio.addon_start
+      data:
+        addon: "68413af6_git-exporter"
+
+#==================================================================================
+# AVVIA VIVINO PROXY ALL'AVVIO DI HA
+#==================================================================================
+- id: avvia_vivino_proxy_avvio
+  alias: "Vivino Proxy - Avvia all'avvio di HA"
+  mode: single
+  triggers:
+    - platform: homeassistant
+      event: start
+  action:
+    - delay: "00:00:30"
+    - action: shell_command.avvia_vivino_proxy

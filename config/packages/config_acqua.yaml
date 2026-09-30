@@ -1,6 +1,21 @@
-# config_acqua_2.yaml
+# config_acqua_3.yaml
 # Package Casa Ginepro - Acqua: sanitaria, consumi, costi e bolletta IRETI
 # Estratto da configuration_186.yaml. Nome file = nome del package.
+#
+# v3 (30/09/2026): aggiunto qui sotto il commento sulle soglie tariffarie, che
+# per errore stava in config_aperture (eliminato).
+# ============================================================
+# ACQUA: sensori calcolati (NUOVO – configuration_53)
+# ============================================================
+# Soglie tariffarie ATO Genova 2025 (derive dalle bollette IRETI):
+#   2 residenti pro-die (mc/giorno):
+#   Agevolata  :  0 – 0.1765
+#   Base       :  0.1765 – 0.3333
+#   I° Eccedenza: 0.3333 – 0.5000
+#   II° Eccedenza: 0.5000 – 0.6471
+#   III° Eccedenza: > 0.6471
+# Flusso di default sanitaria calda: 8 L/min
+# C3 = ore_DHW × flusso_L_min × 0.06  (L/min × h × 60min/h / 1000 L/m³)
 
 template:
   - sensor:

@@ -1,0 +1,90 @@
+# automations_meteo_1.yaml
+#
+# Stazione meteo: batterie dei sensori.
+# File creato il 30/09/2026 dalla riorganizzazione "un argomento = automations_X + config_X".
+# Automazioni spostate da: automations.yaml. Id e alias invariati.
+
+#==================================================================================
+# NOTIFICA BATTERIA BASSA - SOIL 1
+#==================================================================================
+- id: notifica_batteria_soil_1
+  alias: "Batteria bassa - Soil 1"
+  mode: single
+  triggers:
+    - platform: numeric_state
+      entity_id: sensor.hp1000se_pro_pro_v1_6_4_soil_battery_1
+      below: 1.1
+  condition: []
+  action:
+    - action: notify.mobile_app_cph2653
+      data:
+        title: "🔋 Batteria bassa - Meteo"
+        message: "Soil 1: batteria al {{ states('sensor.hp1000se_pro_pro_v1_6_4_soil_battery_1') }}V"
+
+#==================================================================================
+# NOTIFICA BATTERIA BASSA - SOIL 2
+#==================================================================================
+- id: notifica_batteria_soil_2
+  alias: "Batteria bassa - Soil 2"
+  mode: single
+  triggers:
+    - platform: numeric_state
+      entity_id: sensor.hp1000se_pro_pro_v1_6_4_soil_battery_2
+      below: 1.1
+  condition: []
+  action:
+    - action: notify.mobile_app_cph2653
+      data:
+        title: "🔋 Batteria bassa - Meteo"
+        message: "Soil 2: batteria al {{ states('sensor.hp1000se_pro_pro_v1_6_4_soil_battery_2') }}V"
+
+#==================================================================================
+# NOTIFICA BATTERIA BASSA - WH25 SENSOR INTERNO
+#==================================================================================
+- id: notifica_batteria_wh25
+  alias: "Batteria bassa - Sensor Interno WH25"
+  mode: single
+  triggers:
+    - platform: state
+      entity_id: binary_sensor.hp1000se_pro_pro_v1_6_4_wh25_battery
+      to: "on"
+  condition: []
+  action:
+    - action: notify.mobile_app_cph2653
+      data:
+        title: "🔋 Batteria bassa - Meteo"
+        message: "Sensor Interno (WH25): batteria bassa segnalata."
+
+#==================================================================================
+# NOTIFICA BATTERIA BASSA - PIOVIMETRO WH40
+#==================================================================================
+- id: notifica_batteria_wh40
+  alias: "Batteria bassa - Piovimetro WH40"
+  mode: single
+  triggers:
+    - platform: numeric_state
+      entity_id: sensor.meteo_wh40_battery
+      below: 1.1
+  condition: []
+  action:
+    - action: notify.mobile_app_cph2653
+      data:
+        title: "🔋 Batteria bassa - Meteo"
+        message: "Piovimetro (WH40): batteria al {{ states('sensor.meteo_wh40_battery') }}V"
+
+#==================================================================================
+# NOTIFICA BATTERIA BASSA - SENSOR ESTERNO WH80
+#==================================================================================
+- id: notifica_batteria_wh80
+  alias: "Batteria bassa - Sensor Esterno WH80"
+  mode: single
+  triggers:
+    - platform: numeric_state
+      entity_id: sensor.hp1000se_pro_pro_v1_6_4_wh80_battery
+      below: 2.6
+  condition: []
+  action:
+    - action: notify.mobile_app_cph2653
+      data:
+        title: "🔋 Batteria bassa - Meteo"
+        message: "Sensor Esterno (WH80): batteria al {{ states('sensor.hp1000se_pro_pro_v1_6_4_wh80_battery') }}V"
