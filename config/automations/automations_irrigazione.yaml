@@ -1,4 +1,4 @@
-# automations_irrigazione_6.yaml
+# automations_irrigazione_8.yaml
 #==================================================================================
 # WATCHDOG IRRIGAZIONE - Casa Ginepro
 #
@@ -57,6 +57,31 @@
 #     anche quando la push viene soppressa, per non lasciare avvisi orfani.
 #==================================================================================
 
+# Modifiche versione 8 (30/09/2026):
+#   - Tolta la probabilita' di pioggia aggiunta in v7: weather.casa non
+#     fornisce precipitation_probability (verificato con weather.get_forecasts
+#     il 30/09 alle 08:13), il valore sarebbe stato sempre 0.
+#   - NOTA sulla previsione di weather.casa (verificata il 30/09):
+#     * la previsione oraria parte dall'ora SUCCESSIVA: alle 08:00 locali il
+#       primo elemento e' 09:00. L'ora in corso non e' mai coperta;
+#     * precipitation vale 0 anche nelle ore con condizione "rainy" (es.
+#       01/10 09:00-11:00): il criterio in mm da solo non basta, il blocco
+#       vero lo da' la condizione piovosa sulle 5 ore;
+#     * alle 08:13, con pioggia in corso (0,6 mm/h dalle 08:06), la
+#       previsione per tutto il 30/09 era cloudy/partlycloudy con 0 mm.
+#
+# Modifiche versione 7 (30/09/2026):
+#   - Ciclo programmato: l'esito "Permessa" riporta i valori letti al momento
+#     del controllo (pioggia, accumulo, mm e probabilita' previsti, suolo),
+#     per poter ricostruire a posteriori cosa diceva la previsione. Il
+#     30/09 il ciclo delle 08:00 e' partito e la pioggia e' arrivata alle
+#     08:06:38: senza i valori non era verificabile cosa prevedeva weather.casa.
+#   - Condizioni piovose: elenco allineato ai valori ufficiali di Home
+#     Assistant (rainy, pouring, lightning-rainy, snowy-rainy, hail).
+#     "showers" non esiste fra le condizioni HA e non scattava mai;
+#     mancavano lightning-rainy (temporale) e snowy-rainy.
+#     Fonte: developers.home-assistant.io/docs/core/entity/weather/
+#
 # Modifiche versione 6 (29/09/2026):
 #   - Spostate qui da automations.yaml, con id invariati, le tre automazioni
 #     di gestione: ciclo programmato, accumulo minuti, reset salta-oggi.
@@ -131,6 +156,11 @@
           {{ (previsioni['weather.casa'].forecast[0:3]
              | map(attribute='precipitation')
              | map('float', 0) | list) | max | default(0) }}
+        # v8: condizioni delle prime 5 ore, mostrate nell'esito.
+        cond_previste: >-
+          {{ previsioni['weather.casa'].forecast[:5]
+             | map(attribute='condition') | join('/') }}
+        condizioni_pioggia: ['rainy', 'pouring', 'lightning-rainy', 'snowy-rainy', 'hail']
 
     - variables:
         motivi: >
@@ -151,7 +181,7 @@
             {% set ns.lista = ns.lista + ['🌬️ Vento ' ~ (vento | round(1) | string) ~ ' km/h'] %}
           {% endif %}
           {% set f = previsioni['weather.casa'].forecast %}
-          {% if f[:5] | selectattr('condition', 'in', ['rainy','showers','pouring','hail']) | list | count > 0 %}
+          {% if f[:5] | selectattr('condition', 'in', condizioni_pioggia) | list | count > 0 %}
             {% set ns.lista = ns.lista + ['🌦️ Prev. pioggia 5h'] %}
           {% endif %}
           {{ ns.lista | join('\n') }}
@@ -162,7 +192,7 @@
              or (s1 > soglia and s2 > soglia)
              or vento > 40
              or (previsioni['weather.casa'].forecast[:5]
-                 | selectattr('condition', 'in', ['rainy','showers','pouring','hail'])
+                 | selectattr('condition', 'in', condizioni_pioggia)
                  | list | count > 0) }}
 
     - if:
@@ -182,7 +212,13 @@
       target:
         entity_id: input_text.irrigazione_motivo_blocco
       data:
-        value: "✅ Permessa {{ ora_esecuzione }}"
+        value: >-
+          {{ ('✅ Permessa ' ~ ora_esecuzione
+              ~ ' · pioggia ' ~ (v_rate | round(1)) ~ ' mm/h'
+              ~ ' · accumulo ' ~ (v_oraria | round(1)) ~ ' mm'
+              ~ ' · prev. ' ~ (mm_previsti | round(1)) ~ ' mm/3h ' ~ cond_previste
+              ~ ' · S1 ' ~ (s1 | round(0) | int) ~ '% S2 ' ~ (s2 | round(0) | int) ~ '%')
+             | truncate(250, True, '') }}
     - action: script.irrigazione_esegui_sequenza
 
 #==================================================================================
