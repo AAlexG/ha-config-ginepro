@@ -1,4 +1,4 @@
-# automations_irrigazione_8.yaml
+# automations_irrigazione_9.yaml
 #==================================================================================
 # WATCHDOG IRRIGAZIONE - Casa Ginepro
 #
@@ -57,6 +57,17 @@
 #     anche quando la push viene soppressa, per non lasciare avvisi orfani.
 #==================================================================================
 
+# Modifiche versione 9 (30/09/2026):
+#   - Ciclo programmato: nuovo blocco sulla pioggia gia' caduta nella
+#     giornata (sensor...daily_rain della stazione >= 2 mm). Le previsioni
+#     di Open-Meteo e Met.no per Cogoleto non vedono le piogge leggere
+#     (verificato il 30/09): la stazione e' la fonte piu' affidabile.
+#     Il contatore giornaliero della stazione riparte a mezzanotte.
+#   - Nuova automazione irrigazione_stop_pioggia: se durante il ciclo
+#     programmato la stazione rileva pioggia (intensita' o accumulo orario
+#     > 0) la sequenza viene fermata con script.irrigazione_stop. Non
+#     interviene sul ciclo manuale "Cicla ora", che ignora il meteo.
+#
 # Modifiche versione 8 (30/09/2026):
 #   - Tolta la probabilita' di pioggia aggiunta in v7: weather.casa non
 #     fornisce precipitation_probability (verificato con weather.get_forecasts
@@ -152,6 +163,9 @@
         vento: "{{ states('sensor.wind_speed_media_1h') | float(0) }}"
         v_rate: "{{ states('sensor.hp1000se_pro_pro_v1_6_4_rain_rate') | float(0) }}"
         v_oraria: "{{ states('sensor.hp1000se_pro_pro_v1_6_4_hourly_rain') | float(0) }}"
+        # v9: pioggia gia' caduta oggi (stazione) e soglia di blocco in mm.
+        v_giorno: "{{ states('sensor.hp1000se_pro_pro_v1_6_4_daily_rain') | float(0) }}"
+        soglia_pioggia_giorno: 2
         mm_previsti: >-
           {{ (previsioni['weather.casa'].forecast[0:3]
              | map(attribute='precipitation')
@@ -171,6 +185,9 @@
           {% if v_oraria > 0 %}
             {% set ns.lista = ns.lista + ['🌧️ Accumulo ' ~ (v_oraria | round(1) | string) ~ ' mm (1h)'] %}
           {% endif %}
+          {% if v_giorno >= soglia_pioggia_giorno %}
+            {% set ns.lista = ns.lista + ['🌧️ Caduti oggi ' ~ (v_giorno | round(1) | string) ~ ' mm'] %}
+          {% endif %}
           {% if mm_previsti > 0 %}
             {% set ns.lista = ns.lista + ['🌦️ Prev. ' ~ (mm_previsti | round(1) | string) ~ ' mm/3h'] %}
           {% endif %}
@@ -188,6 +205,7 @@
         blocco: >
           {{ v_rate > 0
              or v_oraria > 0
+             or v_giorno >= soglia_pioggia_giorno
              or mm_previsti > 0
              or (s1 > soglia and s2 > soglia)
              or vento > 40
@@ -216,10 +234,53 @@
           {{ ('✅ Permessa ' ~ ora_esecuzione
               ~ ' · pioggia ' ~ (v_rate | round(1)) ~ ' mm/h'
               ~ ' · accumulo ' ~ (v_oraria | round(1)) ~ ' mm'
+              ~ ' · oggi ' ~ (v_giorno | round(1)) ~ ' mm'
               ~ ' · prev. ' ~ (mm_previsti | round(1)) ~ ' mm/3h ' ~ cond_previste
               ~ ' · S1 ' ~ (s1 | round(0) | int) ~ '% S2 ' ~ (s2 | round(0) | int) ~ '%')
              | truncate(250, True, '') }}
     - action: script.irrigazione_esegui_sequenza
+
+#==================================================================================
+# 1a. IRRIGAZIONE – STOP PER PIOGGIA DURANTE IL CICLO (v9)
+#
+# Il gate meteo decide una sola volta, all'avvio. Se la pioggia arriva mentre
+# la sequenza e' in corso, la stazione la rileva e il ciclo viene fermato con
+# script.irrigazione_stop (spegne tutti i canali), poi il motivo viene
+# riscritto per la plancia.
+# Solo sul ciclo programmato: con "Cicla ora" (script.irrigazione_cicla_ora
+# in esecuzione) l'utente ha scelto di irrigare a prescindere dal meteo.
+# Trigger sulle stesse grandezze del gate: intensita' istantanea e accumulo
+# orario della stazione.
+#==================================================================================
+- id: irrigazione_stop_pioggia
+  alias: "Irrigazione – Stop per pioggia durante il ciclo"
+  mode: single
+  max_exceeded: silent
+  triggers:
+    - trigger: numeric_state
+      entity_id: sensor.hp1000se_pro_pro_v1_6_4_rain_rate
+      above: 0
+    - trigger: numeric_state
+      entity_id: sensor.hp1000se_pro_pro_v1_6_4_hourly_rain
+      above: 0
+  conditions:
+    - condition: state
+      entity_id: script.irrigazione_esegui_sequenza
+      state: "on"
+    - condition: state
+      entity_id: script.irrigazione_cicla_ora
+      state: "off"
+  actions:
+    - action: script.irrigazione_stop
+    - action: input_text.set_value
+      target:
+        entity_id: input_text.irrigazione_motivo_blocco
+      data:
+        value: >-
+          {{ ('🌧️ Fermata per pioggia ' ~ now().strftime('%d/%m/%Y %H:%M')
+              ~ ' · pioggia ' ~ (states('sensor.hp1000se_pro_pro_v1_6_4_rain_rate') | float(0) | round(1)) ~ ' mm/h'
+              ~ ' · accumulo ' ~ (states('sensor.hp1000se_pro_pro_v1_6_4_hourly_rain') | float(0) | round(1)) ~ ' mm')
+             | truncate(250, True, '') }}
 
 #==================================================================================
 # 1b. ACQUA – Accumula minuti irrigazione (tick ogni minuto)

@@ -25,7 +25,7 @@
         "voltage": 2500,
         "battery": 49,
         "temperature": 23.81,
-        "humidity": 54.22,
+        "humidity": 55.31,
         "linkquality": 124
     },
     "0xa4c1385040d042fb": {
@@ -87,7 +87,7 @@
         "battery": 100,
         "temperature": 23.7,
         "voltage": 2900,
-        "humidity": 62.2,
+        "humidity": 63.2,
         "temperature_sensor_select": "internal",
         "comfort_temperature_min": 19,
         "comfort_temperature_max": 35.2,
