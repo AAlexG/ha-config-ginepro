@@ -1,0 +1,42 @@
+# automations_luci_1.yaml
+#
+# Luci e prese: spegnimento notturno.
+# File creato il 30/09/2026: sostituisce la routine Google Home "Spegni tutto alla 1 di notte".
+# La luce box (RF Bridge 047, button.10007c3b31_3) è esclusa: il comando RF è un impulso
+# a commutazione, quindi "spegni" la accendeva.
+
+#==================================================================================
+# SPEGNI TUTTO ALLE 01:00
+#==================================================================================
+# Spegne solo ciò che risulta acceso: un dispositivo già spento, o non raggiungibile
+# (unavailable/unknown), non riceve alcun comando.
+# TV: entità androidtv_remote (_2), non quelle cast, che non comandano l'alimentazione.
+- id: luci_spegni_tutto_notte
+  alias: "Luci - Spegni tutto alle 01:00"
+  mode: single
+  triggers:
+    - trigger: time
+      at: "01:00:00"
+  action:
+    - variables:
+        dispositivi:
+          - switch.lenzuola_sotto
+          - media_player.tv_soggiorno_2
+          - light.luce_divano
+          - switch.presa_luci_cucina_socket_1
+          - light.luce_sopra
+          - media_player.tv_sopra_2
+          - light.luce_terrazza
+        accesi: >-
+          {{ dispositivi
+             | reject('is_state', ['off', 'unavailable', 'unknown'])
+             | list }}
+    - condition: template
+      value_template: "{{ accesi | count > 0 }}"
+    - action: homeassistant.turn_off
+      target:
+        entity_id: "{{ accesi }}"
+    - action: logbook.log
+      data:
+        name: "Spegni tutto alle 01:00"
+        message: "spenti {{ accesi | map('state_attr', 'friendly_name') | join(', ') }}"
