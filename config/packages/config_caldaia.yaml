@@ -1,4 +1,4 @@
-# config_caldaia_5.yaml
+# config_caldaia_6.yaml
 # Package Casa Ginepro - Caldaia Baxi / OTGW: DHW, costi termici, scelta fonte caldaia-PdC
 # Estratto da configuration_186.yaml. Nome file = nome del package.
 
@@ -7,7 +7,7 @@ template:
   # "Caldaia DHW Durata Oggi" che lo leggeva: nessuno dei due era usato. La
   # durata DHW giornaliera viene da input_number.caldaia_dhw_durata_acc
   # (automazione caldaia_dhw_accumula_minuti). Rimosso anche un commento sul
-  # portone box rimasto qui: quel sensore vive in config_aperture.
+  # portone box rimasto qui: quel sensore vive in config_sicurezza.
   - sensor:
 
       - name: "Caldaia DHW Durata Oggi Minuti"

@@ -1,4 +1,4 @@
-# config_rete_1.yaml
+# config_rete_2.yaml
 # Package Casa Ginepro - Rete: whitelist MAC e tabella dispositivi WiFi.
 # Rinominato il 30/09/2026 da config_wifi_rete (ultima versione 14), contenuto
 # invariato. Automazioni collegate: automations_rete.
@@ -8,7 +8,7 @@
 # WHITELIST DISPOSITIVI WIFI - FONTE UNICA E UNICA LISTA DEL FILE
 # Per aggiungere/togliere un dispositivo modificare SOLO la mappa mac_nomi qui
 # sotto, poi Strumenti per sviluppatori -> YAML -> Ricarica entita' modello.
-# Usata da: automations_presenza (whitelist notifiche) + plancia WiFi (tabella).
+# Usata da: automations_rete (whitelist notifiche) + plancia WiFi (tabella).
 #
 # CONVENZIONE DI NOMENCLATURA: le 3 cifre iniziali del nome sono l'ultimo
 # ottetto dell'IP. Da li' si ricavano, senza altre liste:

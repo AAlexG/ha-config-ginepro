@@ -1,4 +1,4 @@
-# scripts_55.yaml
+# scripts_56.yaml
 
 #==================================================================================
 # SCRIPT: APRI CANCELLO CASA
@@ -259,7 +259,7 @@ speaker_allarme:
 
 #==================================================================================
 # SCRIPT: AVVISO VOCALE SOVRACCARICO (scripts_52)
-# Richiamato da automations_carichi quando il prelievo da rete resta sopra
+# Richiamato da automations_elettricita (distacco carichi) quando il prelievo da rete resta sopra
 # soglia e non c'e' piu' nessun carico gestibile da staccare: auto, pompa e
 # deumidificatori sono gia' fermi, quindi i kW arrivano da elettrodomestici
 # che HA non comanda.
@@ -350,7 +350,7 @@ avviso_vocale_sovraccarico:
 # (scripts_40): i prezzi medi restano solo nel log Python come dato di
 # controllo. I prezzi A CONSUMO sono gestiti altrove:
 #   input_number.elettricita_prezzo_kwh -> automatico dal PUN
-#     (automations_prezzo, sensor.elettricita_prezzo_kwh_variabile)
+#     (automations_elettricita, sensor.elettricita_prezzo_kwh_variabile)
 #   input_number.gas_prezzo_mc          -> manuale da bolletta
 #     (Corrispettivo Gas Index + contributo + rete + accise, IVA inclusa)
 # Le quote fisse mensili sono in input_number.*_quota_fissa_mese (manuali).
@@ -708,7 +708,7 @@ pergola_toggle_manuale:
 #==================================================================================
 # Reimposta tutti i parametri manuali della gestione fonte ai valori
 # consigliati/di contratto. Richiamato dalla sentinella all'avvio di HA
-# (automations_fonte_2) quando rileva la perdita dello stato salvato,
+# (automations_caldaia, fonte_sentinella_parametri) quando rileva la perdita dello stato salvato,
 # oppure manualmente da Strumenti per sviluppatori -> Azioni.
 # Provenienza dei valori:
 #   rendimento 0.95      -> Baxi a condensazione, PCS

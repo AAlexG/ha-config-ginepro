@@ -1,4 +1,4 @@
-# config_elettricita_15.yaml
+# config_elettricita_16.yaml
 # Package Casa Ginepro - Elettricita: consumi, costi, prezzo kWh, bolletta
 # Estratto da configuration_186.yaml. Nome file = nome del package.
 
@@ -242,7 +242,7 @@ input_boolean:
   # Oggi nessuna automazione comanda switch.solo_auto_contattore_interruttore,
   # quindi il flag non blocca nulla: serve a rendere esplicito che il contattore
   # e' nello stato scelto a mano ed e' il presidio per automatismi futuri.
-  # Viene alzato in automatico dal distacco carichi (automations_carichi) quando
+  # Viene alzato in automatico dal distacco carichi (automations_elettricita) quando
   # l'auto viene staccata per prelievo di rete oltre soglia.
   auto_manuale:
     name: "Auto Contattore - Gestione Manuale"

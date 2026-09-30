@@ -1,4 +1,4 @@
-# config_clima_12.yaml
+# config_clima_13.yaml
 # Package Casa Ginepro - Clima: fancoil, free cooling/heating, target temperatura, consumi
 # Estratto da configuration_186.yaml. Nome file = nome del package.
 
@@ -465,7 +465,7 @@ input_boolean:
   # resta nello stato scelto a mano, acceso o spento che sia.
   # Unica eccezione voluta: "Panasonic - Antigelo Vacanze Inverno" resta libera,
   # perche' e' una protezione e non deve mai essere inibita.
-  # Viene alzato in automatico dal distacco carichi (automations_carichi) quando
+  # Viene alzato in automatico dal distacco carichi (automations_elettricita) quando
   # la pompa viene staccata per prelievo di rete oltre soglia.
   pdc_manuale:
     name: "Pompa di Calore - Gestione Manuale"
