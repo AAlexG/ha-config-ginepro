@@ -24,8 +24,8 @@
     "0xa4c138e6a0d06219": {
         "voltage": 2500,
         "battery": 49,
-        "temperature": 23.35,
-        "humidity": 52.07,
+        "temperature": 23.65,
+        "humidity": 45.94,
         "linkquality": 96
     },
     "0xa4c1385040d042fb": {
@@ -35,19 +35,19 @@
         "power_outage_memory": "restore",
         "indicator_mode": "off/on",
         "child_lock": "UNLOCK",
-        "voltage": 224.2,
+        "voltage": 226.9,
         "power": 0,
         "current": 0,
         "linkquality": 120
     },
     "0xa4c1383e0fd87686": {
         "state": "OFF",
-        "energy": 38.96,
+        "energy": 39.1,
         "countdown": 0,
         "power_outage_memory": "restore",
         "indicator_mode": "off/on",
         "child_lock": "UNLOCK",
-        "voltage": 224.1,
+        "voltage": 227.1,
         "linkquality": 40,
         "power": 0,
         "current": 0
@@ -76,18 +76,18 @@
         "countdown": 0,
         "power_outage_memory": "on",
         "indicator_mode": "off/on",
-        "power": 2,
+        "power": 3,
         "current": 0.03,
-        "voltage": 227,
-        "energy": 0.21,
+        "voltage": 230,
+        "energy": 0.28,
         "linkquality": 92,
         "child_lock": "UNLOCK"
     },
     "0xa4c1380eff54ffff": {
         "battery": 100,
-        "temperature": 23.5,
+        "temperature": 24,
         "voltage": 2900,
-        "humidity": 55.3,
+        "humidity": 54.6,
         "temperature_sensor_select": "internal",
         "comfort_temperature_min": 19,
         "comfort_temperature_max": 35.2,
@@ -108,7 +108,7 @@
     "0xa4c1380f0678ffff": {
         "battery": 100,
         "voltage": 3000,
-        "temperature": 23.8,
+        "temperature": 23.6,
         "humidity": 61,
         "temperature_sensor_select": "internal",
         "comfort_temperature_min": 19,
@@ -136,9 +136,9 @@
         "linkquality": 48
     },
     "0xa4c138013ef60318": {
-        "voltage": 2600,
-        "battery": 93,
-        "contact": false,
+        "voltage": 2500,
+        "battery": 87,
+        "contact": true,
         "tamper": false,
         "battery_low": false,
         "linkquality": 48
