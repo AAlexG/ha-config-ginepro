@@ -556,6 +556,7 @@ config:
               text: kWh
           decimals: 1
           id: kwh
+          min: 0
       - graph_span: 365d
         grid_options:
           columns: 12
@@ -578,6 +579,7 @@ config:
               text: kWh
           decimals: 1
           id: kwh
+          min: 0
       type: grid
     - cards:
       - heading: "PANELLI: PRODUTTIVIT\xC0 E SEGNALE ORA"

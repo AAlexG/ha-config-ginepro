@@ -644,6 +644,41 @@ config:
         stat_types:
         - state
         type: statistics-graph
+      - graph_span: 30d
+        grid_options:
+          columns: 12
+          rows: auto
+        header:
+          show: true
+          title: "Cantina - umidit\xE0&potenza deum."
+        series:
+        - entity: sensor.box_deumidificatore_cantina_sonoff_power
+          name: Potenza deum.
+          statistics:
+            period: day
+            type: mean
+          type: line
+          yaxis_id: W
+        - entity: sensor.termometro_cantina_zigbee_humidity
+          name: "umidit\xE0"
+          statistics:
+            period: day
+            type: mean
+          type: line
+          yaxis_id: percent
+        type: custom:apexcharts-card
+        yaxis:
+        - apex_config:
+            title:
+              text: Potenza W
+          decimals: 1
+          id: W
+        - apex_config:
+            title:
+              text: "umidit\xE0 %"
+          decimals: 1
+          id: percent
+          opposite: true
       type: grid
     - cards:
       - heading: Fancoil via Shelly
@@ -738,41 +773,6 @@ config:
         stat_types:
         - mean
         type: statistics-graph
-      - graph_span: 30d
-        grid_options:
-          columns: 12
-          rows: auto
-        header:
-          show: true
-          title: "Cantina - umidit\xE0&potenza deum."
-        series:
-        - entity: sensor.box_deumidificatore_cantina_sonoff_power
-          name: Potenza deum.
-          statistics:
-            period: day
-            type: mean
-          type: line
-          yaxis_id: W
-        - entity: sensor.termometro_cantina_zigbee_humidity
-          name: "umidit\xE0"
-          statistics:
-            period: day
-            type: mean
-          type: line
-          yaxis_id: percent
-        type: custom:apexcharts-card
-        yaxis:
-        - apex_config:
-            title:
-              text: Potenza W
-          decimals: 1
-          id: W
-        - apex_config:
-            title:
-              text: "umidit\xE0 %"
-          decimals: 1
-          id: percent
-          opposite: true
       - chart_type: line
         days_to_show: 30
         entities:

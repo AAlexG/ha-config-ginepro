@@ -468,17 +468,20 @@ config:
               text: kWh
           decimals: 1
           id: kwh
+          min: 0
         - apex_config:
             title:
               text: kwh
           decimals: 1
           id: jwh
+          min: 0
           opposite: true
         - apex_config:
             title:
               text: kwh
           decimals: 1
           id: kwh
+          min: 0
           opposite: true
       - heading: Da rete, kWh e Euro/gg
         heading_style: subtitle
@@ -511,11 +514,13 @@ config:
               text: kWh
           decimals: 1
           id: kwh
+          min: 0
         - apex_config:
             title:
               text: Euro
           decimals: 2
           id: euro
+          min: 0
           opposite: true
       - heading: Tutti apparecchi, kWh/gg
         heading_style: subtitle
@@ -597,7 +602,7 @@ config:
           rows: auto
         period: day
         stat_types:
-        - state
+        - change
         type: statistics-graph
       - heading: Cucina kWh/gg
         heading_style: subtitle

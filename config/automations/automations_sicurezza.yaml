@@ -1,4 +1,4 @@
-# automations_sicurezza_25.yaml
+# automations_sicurezza_26.yaml
 
 #==================================================================================
 # 1. ACCENSIONE LUCE (Faretto Intruso) - solo notte
@@ -388,6 +388,13 @@
 #     il portone si chiude non si fa nulla, altrimenti un solo impulso.
 #     Mode single (era restart): con "avvio" l'attesa e' dentro le azioni e un
 #     riavvio del trigger la azzererebbe.
+#
+#     v26: rispetta input_boolean.portone_box_manuale (stessa logica dei flag
+#     manuali di fancoil e deumidificatori). Con il flag alzato l'automazione non
+#     fa nulla: nessuna notifica, nessun impulso. Se il flag viene alzato durante
+#     l'attesa iniziale, la condizione dopo l'attesa la ferma. Quando il flag viene
+#     abbassato e il portone e' ancora aperto, si riparte come all'avvio: 10 minuti
+#     di attesa, poi un solo impulso.
 #==================================================================================
 - id: chiusura_automatica_portone_box
   alias: "Chiusura Automatica Portone Box - Timeout 10 min"
@@ -405,9 +412,18 @@
     - platform: event
       event_type: automation_reloaded
       id: avvio
+    # v26: flag manuale abbassato -> ripartono i 10 minuti come all'avvio
+    - platform: state
+      entity_id: input_boolean.portone_box_manuale
+      from: "on"
+      to: "off"
+      id: avvio
   condition:
     - condition: state
       entity_id: binary_sensor.portone_box_sensore_zigbee_contact
+      state: "off"
+    - condition: state
+      entity_id: input_boolean.portone_box_manuale
       state: "off"
   action:
     - if:
@@ -422,6 +438,9 @@
           continue_on_timeout: true
         - condition: state
           entity_id: binary_sensor.portone_box_sensore_zigbee_contact
+          state: "off"
+        - condition: state
+          entity_id: input_boolean.portone_box_manuale
           state: "off"
     - action: notify.mobile_app_cph2653
       data:
@@ -476,6 +495,11 @@
 #     (binary_sensor.persiana_box_sensore_zigbee_contact, logica NORMALE:
 #     "on" = aperta, "off" = chiusa). Se non e' chiusa impedisce la chiusura
 #     del cancello: nessun impulso, solo notifica al cellulare.
+#
+#     v26: rispetta input_boolean.cancello_grande_manuale (stessa logica dei flag
+#     manuali di fancoil e deumidificatori). Con il flag alzato l'automazione non
+#     fa nulla: nessuna notifica, nessun impulso. Flag abbassato con cancello
+#     ancora aperto -> si riparte come all'avvio: 10 minuti, poi un solo impulso.
 #==================================================================================
 - id: chiusura_automatica_cancello_grande
   alias: "Chiusura Automatica Cancello Grande - Timeout 10 min"
@@ -493,9 +517,18 @@
     - platform: event
       event_type: automation_reloaded
       id: avvio
+    # v26: flag manuale abbassato -> ripartono i 10 minuti come all'avvio
+    - platform: state
+      entity_id: input_boolean.cancello_grande_manuale
+      from: "on"
+      to: "off"
+      id: avvio
   condition:
     - condition: state
       entity_id: binary_sensor.cancello_grande_zigbee_contact
+      state: "off"
+    - condition: state
+      entity_id: input_boolean.cancello_grande_manuale
       state: "off"
   action:
     - if:
@@ -510,6 +543,9 @@
           continue_on_timeout: true
         - condition: state
           entity_id: binary_sensor.cancello_grande_zigbee_contact
+          state: "off"
+        - condition: state
+          entity_id: input_boolean.cancello_grande_manuale
           state: "off"
     # Verifica persiana box subito prima del comando: se non risulta chiusa
     # ("off") il cancello non si puo' chiudere -> solo notifica, nessun impulso.

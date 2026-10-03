@@ -186,9 +186,9 @@ config:
           action: navigate
           navigation_path: /dashboard-consumi/acqua
         type: button
-      - content: "Consumo = minuti-canale erogati oggi \xD7 flusso per canale. Con\
-          \ 0.0333 m\xB3/min per canale e durate 3+3+3 min, 2 cicli/giorno \u2248\
-          \ 0.6 m\xB3/giorno."
+      - content: "Consumo = minuti-canale erogati oggi \xD7 flusso per canale. Per\
+          \ es. con 0.0333 m\xB3/min per canale e durate 3+3+3 min, 2 cicli/giorno\
+          \ \u2248 0.6 m\xB3/giorno."
         grid_options:
           columns: 12
           rows: auto
@@ -203,7 +203,7 @@ config:
         grid_options:
           columns: 12
           rows: auto
-        name: "Soglia umidit\xE0 per blocco irrigazione "
+        name: Soglia blocco x 2 sensori umidita
         type: entity
       - entity: input_datetime.irrigazione_ora_mattino
         grid_options:

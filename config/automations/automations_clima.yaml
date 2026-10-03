@@ -1,4 +1,6 @@
-# automations_clima_69.yaml
+# automations_clima_70.yaml
+#
+# v70 (04/10/2026): promemoria flag manuali esteso a portone box e cancello grande.
 #
 # v69 (30/09/2026): riorganizzazione per argomento. Spostate con id invariati:
 #   pompa di calore (PID, riaccensione, antigelo, energia) -> automations_pompa_calore
@@ -271,6 +273,8 @@
       - input_boolean.fancoil_sala_manuale
       - input_boolean.deumidificatore_cantina_manuale
       - input_boolean.deumidificatore_armadio_manuale
+      - input_boolean.portone_box_manuale
+      - input_boolean.cancello_grande_manuale
     flag_attivi: >
       {% set ns = namespace(elenco=[]) %}
       {% for f in flag_elenco %}

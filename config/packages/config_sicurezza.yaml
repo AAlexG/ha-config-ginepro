@@ -1,4 +1,4 @@
-# config_sicurezza_1.yaml
+# config_sicurezza_2.yaml
 # Package Casa Ginepro - Sicurezza: stato reale di portone box e cancello grande, sirena.
 # Creato il 30/09/2026 dalla riorganizzazione per argomento: parte "sicurezza"
 # di config_aperture (eliminato). Entity_id e unique_id invariati.
@@ -30,3 +30,20 @@ input_boolean:
     name: "Sirena Attiva"
     initial: false
     icon: mdi:alarm-light
+
+  # --- GESTIONE MANUALE PORTONE BOX E CANCELLO GRANDE (v2) ---
+  # Stessa logica dei flag manuali di fancoil e deumidificatori: quando sono ON le
+  # automazioni di chiusura automatica (automations_sicurezza) non fanno nulla e
+  # nessuna automazione li abbassa; li abbassa solo l'utente dalla plancia
+  # Sicurezza. Il promemoria delle 10:00 / 22:00 (automations_clima) segnala
+  # quelli dimenticati.
+  # Nessuna chiave di valore iniziale: Home Assistant ripristina allo start lo
+  # stato precedente allo stop. Fonte:
+  # https://www.home-assistant.io/integrations/input_boolean/ (Restore state)
+  portone_box_manuale:
+    name: "Portone Box - Gestione Manuale"
+    icon: mdi:hand-back-right
+
+  cancello_grande_manuale:
+    name: "Cancello Grande - Gestione Manuale"
+    icon: mdi:hand-back-right
