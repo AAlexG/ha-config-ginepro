@@ -772,6 +772,18 @@ config:
         name: Sauna
         type: tile
         vertical: false
+      - entity: sensor.presa_luci_cucina_energia_totale
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        icon: mdi:fridge-outline
+        icon_tap_action:
+          action: navigate
+          navigation_path: /dashboard-fancoil/fancoil
+        name: Cucina
+        type: tile
+        vertical: false
       - color: '#7E57C2'
         entity: sensor.altri_apparecchi_oggi
         features_position: bottom

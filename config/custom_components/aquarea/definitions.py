@@ -105,7 +105,10 @@ class OperatingMode(Flag):
         return operating_mode
 
     def to_mqtt(self) -> str:
-        return str(int(self))
+        # heishamon reports Auto as 7/8 (TOP4) while cooling but only accepts 0-6
+        # to set it (SET9): Auto is 2 and Auto+DHW is 6 whatever the current state
+        value = int(self)
+        return str({7: 2, 8: 6}.get(value, value))
 
 
 def convert_pressure_to_kPa(str_repr: str) -> float:
@@ -113,7 +116,7 @@ def convert_pressure_to_kPa(str_repr: str) -> float:
 
 
 def operating_mode_to_state(str_repr: str):
-    return str(int(OperatingMode.from_str(str_repr)))
+    return OperatingMode.from_str(str_repr).to_mqtt()
 
 
 def read_enabled_disabled(value: str) -> Optional[bool]:
@@ -722,6 +725,20 @@ def build_numbers(mqtt_prefix: str) -> list[HeishaMonNumberEntityDescription]:
             state_to_mqtt=int,
         ),
         HeishaMonNumberEntityDescription(
+            heishamon_topic_id="SET46",  # corresponds to TOP78
+            key=f"{mqtt_prefix}main/Heater_On_Outdoor_Temp",
+            command_topic=f"{mqtt_prefix}commands/SetHeaterOnOutdoorTemp",
+            name="Aquarea Outdoor temperature backup heater power on",
+            entity_category=EntityCategory.CONFIG,
+            device_class=NumberDeviceClass.TEMPERATURE,
+            native_unit_of_measurement="°C",
+            native_min_value=-15,
+            native_max_value=20,
+            native_step=1,
+            state=int,
+            state_to_mqtt=int,
+        ),
+        HeishaMonNumberEntityDescription(
             heishamon_topic_id="SetDemandControl",
             key=f"{mqtt_prefix}commands/SetDemandControl",
             command_topic=f"{mqtt_prefix}commands/SetDemandControl",
@@ -1080,7 +1097,7 @@ def build_switches(mqtt_prefix: str) -> list[HeishaMonSwitchEntityDescription]:
             state=bit_to_bool,
         ),
         HeishaMonSwitchEntityDescription(
-            heishamon_topic_id="SET26",  # corresponds to "TOP108"
+            heishamon_topic_id="SET25",  # corresponds to TOP108
             key=f"{mqtt_prefix}main/Alt_External_Sensor",
             command_topic=f"{mqtt_prefix}commands/SetAltExternalSensor",
             name="Aquarea use external outdoor sensor",
@@ -1226,14 +1243,14 @@ def build_binary_sensors(
             key=f"{mqtt_prefix}main/Internal_Heater_State",
             name="Aquarea Internal Heater State",
             state=bit_to_bool,
-            device_class=BinarySensorDeviceClass.HEAT,
+            device_class=BinarySensorDeviceClass.RUNNING,
         ),
         HeishaMonBinarySensorEntityDescription(
             heishamon_topic_id="TOP61",
             key=f"{mqtt_prefix}main/External_Heater_State",
             name="Aquarea External Heater State",
             state=bit_to_bool,
-            device_class=BinarySensorDeviceClass.HEAT,
+            device_class=BinarySensorDeviceClass.RUNNING,
         ),
         HeishaMonBinarySensorEntityDescription(
             heishamon_topic_id="TOP68",
