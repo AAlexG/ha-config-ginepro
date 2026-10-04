@@ -10,17 +10,82 @@ config:
       - heading: Apperture Porte/Cancelli/Persiane
         heading_style: title
         type: heading
+      - heading: Cancello grande box
+        heading_style: subtitle
+        type: heading
+      - entity: binary_sensor.cancello_grande_stato
+        features_position: bottom
+        name: 'StatoAttuale '
+        type: tile
+        vertical: false
       - grid_options:
-          columns: 2
+          columns: 6
           rows: auto
-        icon: mdi:gate-arrow-right
-        name: Canc ello
+        icon: mdi:gate
+        icon_height: 15px
+        name: Apri/chiudi
         show_icon: true
         show_name: true
         show_state: false
         tap_action:
           action: perform-action
-          perform_action: script.apri_cancello_casa
+          perform_action: script.apri_grande_cancello
+        type: button
+      - entity: input_boolean.cancello_grande_manuale
+        features_position: bottom
+        grid_options:
+          columns: 12
+          rows: 1
+        name: Blocco stato manuale
+        tap_action:
+          action: toggle
+        type: tile
+        vertical: false
+      - heading: Portone box
+        heading_style: subtitle
+        type: heading
+      - entity: binary_sensor.portone_box_stato
+        features_position: bottom
+        name: StatoAttuale
+        type: tile
+        vertical: false
+      - grid_options:
+          columns: 6
+          rows: auto
+        icon: mdi:garage
+        icon_height: 15px
+        name: Apri/chiudi
+        show_icon: true
+        show_name: true
+        show_state: false
+        tap_action:
+          action: perform-action
+          perform_action: button.press
+          target:
+            entity_id: button.portone_telecomando
+        type: button
+      - entity: input_boolean.portone_box_manuale
+        features_position: bottom
+        grid_options:
+          columns: 12
+          rows: 1
+        name: Blocco stato manuale
+        tap_action:
+          action: toggle
+        type: tile
+        vertical: false
+      - grid_options:
+          columns: 5
+          rows: auto
+        icon: mdi:garage-open
+        icon_height: 15px
+        name: Box (Port+cancello)
+        show_icon: true
+        show_name: true
+        show_state: false
+        tap_action:
+          action: perform-action
+          perform_action: script.apri_box_combo
         type: button
       - grid_options:
           columns: 2
@@ -37,67 +102,18 @@ config:
             entity_id: button.10007c3b31_0
         type: button
       - grid_options:
-          columns: 2
+          columns: 5
           rows: auto
-        icon: mdi:garage-open
-        name: Box
+        icon: mdi:gate-arrow-right
+        icon_height: 15px
+        name: Cancello Entrata
+        show_icon: true
+        show_name: true
         show_state: false
         tap_action:
           action: perform-action
-          perform_action: script.apri_box_combo
+          perform_action: script.apri_cancello_casa
         type: button
-      - grid_options:
-          columns: 3
-          rows: auto
-        icon: mdi:garage
-        name: Portone Box
-        show_state: false
-        tap_action:
-          action: perform-action
-          perform_action: button.press
-          target:
-            entity_id: button.portone_telecomando
-        type: button
-      - grid_options:
-          columns: 3
-          rows: auto
-        icon: mdi:gate
-        name: Grande Cancello
-        show_state: false
-        tap_action:
-          action: perform-action
-          perform_action: script.apri_grande_cancello
-        type: button
-      - entity: binary_sensor.cancello_grande_stato
-        features_position: bottom
-        name: CancelloGrande
-        type: tile
-        vertical: false
-      - entity: input_boolean.cancello_grande_manuale
-        features_position: bottom
-        grid_options:
-          columns: 6
-          rows: 1
-        name: CancelloGrande manuale
-        tap_action:
-          action: toggle
-        type: tile
-        vertical: false
-      - entity: binary_sensor.portone_box_stato
-        features_position: bottom
-        name: Portone box
-        type: tile
-        vertical: false
-      - entity: input_boolean.portone_box_manuale
-        features_position: bottom
-        grid_options:
-          columns: 6
-          rows: 1
-        name: Portone manuale
-        tap_action:
-          action: toggle
-        type: tile
-        vertical: false
       - entity: binary_sensor.cancello_entrata_zigbee_contact
         features_position: bottom
         name: CancelloEntrata
