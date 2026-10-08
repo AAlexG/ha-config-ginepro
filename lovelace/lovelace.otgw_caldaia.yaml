@@ -1,11 +1,19 @@
 config:
-  title: Caldaia & OTGW v.12
+  title: Caldaia & OTGW v.13
   views:
   - badges: []
     cards:
-    - entity: switch.shelly_box
+    - double_tap_action:
+        action: none
+      entity: switch.shelly_box
       features_position: bottom
+      hold_action:
+        action: none
+      icon_tap_action:
+        action: none
       name: Acceso->pompa/Spento->caldaia
+      tap_action:
+        action: none
       type: tile
       vertical: false
     - cards:

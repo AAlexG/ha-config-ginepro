@@ -1,5 +1,5 @@
 config:
-  titor: Devices/Fancoil v.29
+  title: Devices/Fancoil v.31
   views:
   - cards: []
     header: {}
@@ -11,11 +11,17 @@ config:
         heading_style: title
         icon: mdi:hand-back-right
         type: heading
-      - entity: switch.panasonic_heat_pump_main_heatpump_state
+      - double_tap_action:
+          action: none
+        entity: switch.panasonic_heat_pump_main_heatpump_state
         features_position: bottom
         grid_options:
           columns: 6
           rows: 1
+        hold_action:
+          action: none
+        icon_tap_action:
+          action: none
         name: Pompa
         tap_action:
           action: none
@@ -31,7 +37,10 @@ config:
         show_state: false
         tap_action:
           action: perform-action
-          perform_action: script.panasonic_toggle
+          confirmation:
+            text: Accendo o spengo la pompa (in accensione, se serve, spengo la caldaia
+              e sposto la valvola su Pompa). Il flag Pompa manuale non cambia. Confermi?
+          perform_action: script.pompa_commuta
         type: button
       - entity: binary_sensor.panasonic_heat_pump_lwt
         features_position: bottom
@@ -87,20 +96,28 @@ config:
         name: LuceSopra
         type: tile
         vertical: false
-      - heading: Blocca automatismi fino cambio giorno/notte (07:00 / 23:00)
+      - heading: Gestione manuale (il flag si abbassa solo a mano)
         heading_style: title
         icon: ''
         type: heading
-      - heading: Pompa e Auto
+      - heading: Pompa, caldaia e auto
         heading_style: subtitle
         icon: ''
         type: heading
-      - entity: switch.panasonic_heat_pump_main_heatpump_state
+      - double_tap_action:
+          action: none
+        entity: switch.panasonic_heat_pump_main_heatpump_state
         features_position: bottom
         grid_options:
           columns: 6
           rows: 1
+        hold_action:
+          action: none
+        icon_tap_action:
+          action: none
         name: Pompa ora
+        tap_action:
+          action: none
         type: tile
         vertical: false
       - entity: input_boolean.pdc_manuale
@@ -109,6 +126,32 @@ config:
           columns: 6
           rows: 1
         name: Pompa manuale
+        tap_action:
+          action: toggle
+        type: tile
+        vertical: false
+      - double_tap_action:
+          action: none
+        entity: climate.smart_autotune_thermostat_living_room
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        hold_action:
+          action: none
+        icon_tap_action:
+          action: none
+        name: Caldaia ora
+        tap_action:
+          action: none
+        type: tile
+        vertical: false
+      - entity: input_boolean.caldaia_manuale
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        name: Caldaia manuale
         tap_action:
           action: toggle
         type: tile

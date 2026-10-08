@@ -24,8 +24,8 @@
     "0xa4c138e6a0d06219": {
         "voltage": 2500,
         "battery": 49,
-        "temperature": 22.1,
-        "humidity": 64.51,
+        "temperature": 22.29,
+        "humidity": 63.54,
         "linkquality": 132
     },
     "0xa4c1385040d042fb": {
@@ -35,19 +35,19 @@
         "power_outage_memory": "restore",
         "indicator_mode": "off/on",
         "child_lock": "UNLOCK",
-        "voltage": 223.2,
+        "voltage": 228.8,
         "power": 0,
         "current": 0,
         "linkquality": 124
     },
     "0xa4c1383e0fd87686": {
         "state": "ON",
-        "energy": 39.69,
+        "energy": 39.74,
         "countdown": 0,
         "power_outage_memory": "restore",
         "indicator_mode": "off/on",
         "child_lock": "UNLOCK",
-        "voltage": 221.3,
+        "voltage": 225.8,
         "linkquality": 80,
         "power": 19,
         "current": 0.08
@@ -76,18 +76,18 @@
         "countdown": 0,
         "power_outage_memory": "on",
         "indicator_mode": "off/on",
-        "power": 2,
+        "power": 3,
         "current": 0.03,
         "voltage": 227,
-        "energy": 0.62,
+        "energy": 0.63,
         "linkquality": 96,
         "child_lock": "UNLOCK"
     },
     "0xa4c1380eff54ffff": {
         "battery": 100,
-        "temperature": 22,
+        "temperature": 22.6,
         "voltage": 2900,
-        "humidity": 74.5,
+        "humidity": 71.5,
         "temperature_sensor_select": "internal",
         "comfort_temperature_min": 19,
         "comfort_temperature_max": 35.2,
@@ -108,8 +108,8 @@
     "0xa4c1380f0678ffff": {
         "battery": 100,
         "voltage": 3000,
-        "temperature": 23.5,
-        "humidity": 59.1,
+        "temperature": 23.7,
+        "humidity": 57.9,
         "temperature_sensor_select": "internal",
         "comfort_temperature_min": 19,
         "comfort_temperature_max": 43.7,
@@ -136,8 +136,8 @@
         "linkquality": 108
     },
     "0xa4c138013ef60318": {
-        "voltage": 2500,
-        "battery": 87,
+        "voltage": 2600,
+        "battery": 93,
         "contact": true,
         "tamper": false,
         "battery_low": false,

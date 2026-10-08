@@ -1,5 +1,5 @@
 config:
-  title: Casa Ginepro v.53
+  title: Casa Ginepro v.55
   views:
   - cards: []
     max_columns: 2
@@ -299,12 +299,18 @@ config:
         name: Pompa Online
         type: tile
         vertical: false
-      - entity: switch.panasonic_heat_pump_main_heatpump_state
+      - double_tap_action:
+          action: none
+        entity: switch.panasonic_heat_pump_main_heatpump_state
         features_position: bottom
         grid_options:
           columns: 6
           rows: 1
+        hold_action:
+          action: none
         icon: mdi:heat-pump-outline
+        icon_tap_action:
+          action: none
         name: Pompa
         tap_action:
           action: none
@@ -355,11 +361,11 @@ config:
           name: Caldaia ON
           tap_action:
             action: perform-action
-            data:
-              hvac_mode: heat
-            perform_action: climate.set_hvac_mode
-            target:
-              entity_id: climate.smart_autotune_thermostat_living_room
+            confirmation:
+              text: 'Accendo il riscaldamento a caldaia: se serve spengo la pompa
+                e sposto la valvola su Caldaia. Il flag Caldaia manuale non cambia.
+                Confermi?'
+            perform_action: script.caldaia_accendi
           type: button
         conditions:
         - condition: state
@@ -377,11 +383,10 @@ config:
           name: Caldaia OFF
           tap_action:
             action: perform-action
-            data:
-              hvac_mode: 'off'
-            perform_action: climate.set_hvac_mode
-            target:
-              entity_id: climate.smart_autotune_thermostat_living_room
+            confirmation:
+              text: 'Spengo il riscaldamento a caldaia. Il flag Caldaia manuale non
+                cambia: senza flag alzato le automazioni possono riaccenderla. Confermi?'
+            perform_action: script.caldaia_spegni
           type: button
         conditions:
         - condition: state
@@ -972,11 +977,11 @@ config:
           name: Caldaia ON
           tap_action:
             action: perform-action
-            data:
-              hvac_mode: heat
-            perform_action: climate.set_hvac_mode
-            target:
-              entity_id: climate.smart_autotune_thermostat_living_room
+            confirmation:
+              text: 'Accendo il riscaldamento a caldaia: se serve spengo la pompa
+                e sposto la valvola su Caldaia. Il flag Caldaia manuale non cambia.
+                Confermi?'
+            perform_action: script.caldaia_accendi
           type: button
         conditions:
         - condition: state
@@ -994,11 +999,10 @@ config:
           name: Caldaia OFF
           tap_action:
             action: perform-action
-            data:
-              hvac_mode: 'off'
-            perform_action: climate.set_hvac_mode
-            target:
-              entity_id: climate.smart_autotune_thermostat_living_room
+            confirmation:
+              text: 'Spengo il riscaldamento a caldaia. Il flag Caldaia manuale non
+                cambia: senza flag alzato le automazioni possono riaccenderla. Confermi?'
+            perform_action: script.caldaia_spegni
           type: button
         conditions:
         - condition: state

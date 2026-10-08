@@ -1,5 +1,5 @@
 config:
-  title: Tende v.11
+  title: Tende v.12
   views:
   - cards: []
     max_columns: 2
@@ -113,10 +113,11 @@ config:
         grid_options:
           columns: 12
           rows: auto
-        name: Chiudere fino notte
+        icon_tap_action:
+          action: toggle
+        name: Pergola manuale (si abbassa solo a mano)
         tap_action:
-          action: perform-action
-          perform_action: script.pergola_toggle_manuale
+          action: toggle
         type: tile
         vertical: false
       - entity: input_number.pergola_min_mattino

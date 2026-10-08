@@ -1,6 +1,6 @@
 config:
   path: panasonic
-  title: Panasonic/Heishamon v.24
+  title: Panasonic/Heishamon v.26
   views:
   - cards: []
     icon: mdi:heat-pump
@@ -8,14 +8,20 @@ config:
     path: panasonic
     sections:
     - cards:
-      - entity: switch.shelly_box
-        features:
-        - type: toggle
+      - double_tap_action:
+          action: none
+        entity: switch.shelly_box
         features_position: bottom
         grid_options:
           columns: full
           rows: auto
+        hold_action:
+          action: none
+        icon_tap_action:
+          action: none
         name: Accesso->pompa/Spento->caldaia
+        tap_action:
+          action: none
         type: tile
         vertical: false
       - heading: HEISHAMON - stato
@@ -59,11 +65,17 @@ config:
         heading_style: title
         icon: mdi:heat-pump
         type: heading
-      - entity: switch.panasonic_heat_pump_main_heatpump_state
+      - double_tap_action:
+          action: none
+        entity: switch.panasonic_heat_pump_main_heatpump_state
         features_position: bottom
         grid_options:
           columns: 6
           rows: 1
+        hold_action:
+          action: none
+        icon_tap_action:
+          action: none
         name: Stato Pompa
         tap_action:
           action: none
@@ -88,7 +100,10 @@ config:
         show_state: false
         tap_action:
           action: perform-action
-          perform_action: script.panasonic_toggle
+          confirmation:
+            text: Accendo o spengo la pompa (in accensione, se serve, spengo la caldaia
+              e sposto la valvola su Pompa). Il flag Pompa manuale non cambia. Confermi?
+          perform_action: script.pompa_commuta
         type: button
       - grid_options:
           columns: 6

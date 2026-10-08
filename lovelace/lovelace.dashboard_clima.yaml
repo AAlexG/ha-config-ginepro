@@ -1,6 +1,6 @@
 config:
   path: clima
-  title: Clima v.23
+  title: Clima v.25
   views:
   - cards: []
     max_columns: 2
@@ -11,11 +11,19 @@ config:
         heading_style: title
         icon: mdi:thermometer-check
         type: heading
-      - entity: switch.shelly_box
+      - double_tap_action:
+          action: none
+        entity: switch.shelly_box
         features_position: bottom
         grid_options:
           columns: full
-        name: Acceso>Pompa/Spento>Caldaia
+        hold_action:
+          action: none
+        icon_tap_action:
+          action: none
+        name: 'Valvola: Acceso>Pompa / Spento>Caldaia'
+        tap_action:
+          action: none
         type: tile
         vertical: false
       - entity: binary_sensor.opentherm_gateway_otgw_otgw_flame
@@ -34,6 +42,22 @@ config:
         name: Pompa manuale
         type: tile
         vertical: false
+      - entity: input_boolean.caldaia_manuale
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        name: Caldaia manuale
+        type: tile
+        vertical: false
+      - entity: input_boolean.vacanza
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        name: Vacanza
+        type: tile
+        vertical: false
       - entity: input_number.clima_minuti_verso_heat
         features_position: bottom
         grid_options:
@@ -50,18 +74,10 @@ config:
         name: Minuti verso Cool
         type: tile
         vertical: false
-      - entity: input_boolean.vacanza
-        features_position: bottom
-        grid_options:
-          columns: 6
-          rows: 1
-        name: Vacanza
-        type: tile
-        vertical: false
       - entity: input_select.clima_modalita
         features_position: bottom
         grid_options:
-          columns: 6
+          columns: 12
           rows: 1
         name: "Modalit\xE0"
         type: tile
@@ -144,14 +160,58 @@ config:
         name: "Modalit\xE0"
         type: tile
         vertical: false
-      - entity: switch.panasonic_heat_pump_main_heatpump_state
+      - double_tap_action:
+          action: none
+        entity: switch.panasonic_heat_pump_main_heatpump_state
         features_position: bottom
         grid_options:
           columns: 6
           rows: 1
-        name: PompaOn/Off
+        hold_action:
+          action: none
+        icon_tap_action:
+          action: none
+        name: Pompa On/Off
+        tap_action:
+          action: none
         type: tile
         vertical: false
+      - grid_options:
+          columns: 6
+          rows: auto
+        hold_action:
+          action: none
+        icon: mdi:heat-pump
+        icon_height: 20px
+        name: Accendi pompa
+        show_icon: true
+        show_name: true
+        show_state: false
+        tap_action:
+          action: perform-action
+          confirmation:
+            text: 'Accendo la pompa: se serve spengo la caldaia e sposto la valvola
+              su Pompa. Il flag Pompa manuale non cambia. Confermi?'
+          perform_action: script.pompa_accendi
+        type: button
+      - grid_options:
+          columns: 6
+          rows: auto
+        hold_action:
+          action: none
+        icon: mdi:heat-pump-outline
+        icon_height: 20px
+        name: Spegni pompa
+        show_icon: true
+        show_name: true
+        show_state: false
+        tap_action:
+          action: perform-action
+          confirmation:
+            text: 'Spengo la pompa. Il flag Pompa manuale non cambia: senza flag alzato
+              le automazioni possono riaccenderla. Confermi?'
+          perform_action: script.pompa_spegni
+        type: button
       - entity: input_boolean.clima_boost_solare_attivo
         features_position: bottom
         grid_options:
@@ -175,6 +235,42 @@ config:
         heading_style: title
         icon: mdi:water-boiler
         type: heading
+      - grid_options:
+          columns: 6
+          rows: auto
+        hold_action:
+          action: none
+        icon: mdi:radiator
+        icon_height: 20px
+        name: Accendi caldaia
+        show_icon: true
+        show_name: true
+        show_state: false
+        tap_action:
+          action: perform-action
+          confirmation:
+            text: 'Accendo il riscaldamento a caldaia: se serve spengo la pompa e
+              sposto la valvola su Caldaia. Il flag Caldaia manuale non cambia. Confermi?'
+          perform_action: script.caldaia_accendi
+        type: button
+      - grid_options:
+          columns: 6
+          rows: auto
+        hold_action:
+          action: none
+        icon: mdi:radiator-off
+        icon_height: 20px
+        name: Spegni caldaia
+        show_icon: true
+        show_name: true
+        show_state: false
+        tap_action:
+          action: perform-action
+          confirmation:
+            text: 'Spengo il riscaldamento a caldaia. Il flag Caldaia manuale non
+              cambia: senza flag alzato le automazioni possono riaccenderla. Confermi?'
+          perform_action: script.caldaia_spegni
+        type: button
       - entities:
         - entity: binary_sensor.opentherm_gateway_otgw_otgw_flame
           icon: mdi:fire

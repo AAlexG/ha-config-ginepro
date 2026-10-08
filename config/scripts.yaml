@@ -1,4 +1,12 @@
-# scripts_56.yaml
+# scripts_58.yaml
+# v58 (08/10/2026): i comandi di pompa e caldaia (pompa_accendi/_spegni/_commuta,
+#   caldaia_accendi/_spegni, prima *_manuale_*) non toccano piu' i flag manuali:
+#   accendere o spegnere e' un comando, il flag dice solo alle automazioni di
+#   non toccare l'apparecchio e lo cambia solo l'utente dal suo tile.
+#   Rimosso pergola_toggle_manuale (alzava il flag e chiudeva le lamelle
+#   insieme): il flag pergola ora e' un tile a se', le lamelle dal tile cover.
+# v57 (08/10/2026): nuovi fonte_imposta (unico punto che sposta la valvola
+#   pompa/caldaia) e comandi manuali pompa/caldaia; rimosso panasonic_toggle.
 
 #==================================================================================
 # SCRIPT: APRI CANCELLO CASA
@@ -589,22 +597,271 @@ riaggancia_yamaha:
         media_content_type: "music"
 
 #==================================================================================
-# SCRIPT: PANASONIC TOGGLE ON/OFF
-# Invia comando diretto via MQTT a HeishaMon
+# SCRIPT: FONTE – IMPOSTA LA FONTE DI CALORE IN SICUREZZA (scripts_57)
+#
+# Unico punto che sposta la valvola pompa/caldaia (switch.shelly_box:
+# on = Pompa, off = Caldaia). Lo usano gestione fonte, riaccensione in
+# raffrescamento, antigelo e i comandi manuali delle plance.
+# Sequenza: spegne la fonte opposta -> 30 s -> valvola -> 120 s -> accende
+# la fonte scelta (se richiesto). Due fonti non sono mai accese insieme e
+# nessuna fonte si accende con la valvola nella posizione sbagliata.
+#
+# Flag manuali (li abbassa solo l'utente, lo script non li cambia mai):
+#   pdc_manuale     -> la pompa non viene toccata, salvo chi = manuale
+#   caldaia_manuale -> il SAT non viene toccato, salvo chi = manuale
+# (chi = manuale: comando dell'utente dalle plance. L'antigelo usa
+# chi = antigelo e sceglie gia' una fonte libera.)
+# Se per completare la sequenza servirebbe toccare un apparecchio bloccato, o
+# se la caldaia viene chiesta con la pompa non in Heat, non fa nulla, notifica
+# e restituisce ok = false.
+# Risposta (response_variable): {ok: true/false, motivo: testo}.
+# Il controllo fonte_sicurezza (automations_caldaia) resta attivo comunque.
 #==================================================================================
-panasonic_toggle:
-  alias: "Panasonic – Toggle ON/OFF"
+fonte_imposta:
+  alias: "Fonte – Imposta fonte in sicurezza"
+  icon: mdi:swap-horizontal-circle
+  mode: queued
+  fields:
+    fonte:
+      name: Fonte
+      description: "pompa oppure caldaia"
+      required: true
+      selector:
+        select:
+          options:
+            - pompa
+            - caldaia
+    accendi:
+      name: Accendi
+      description: "Accende la fonte scelta a fine sequenza"
+      default: true
+      selector:
+        boolean:
+    chi:
+      name: Chi comanda
+      description: "automatico, manuale (plance) o antigelo"
+      default: automatico
+      selector:
+        select:
+          options:
+            - automatico
+            - manuale
+            - antigelo
+  sequence:
+    - variables:
+        f: "{{ fonte | default('') }}"
+        acc: "{{ accendi | default(true) }}"
+        da: "{{ chi | default('automatico') }}"
+        valvola_ok: "{{ has_value('switch.shelly_box') }}"
+        valvola_su_pompa: "{{ is_state('switch.shelly_box', 'on') }}"
+        pompa_accesa: "{{ is_state('switch.panasonic_heat_pump_main_heatpump_state', 'on') }}"
+        sat_acceso: "{{ is_state('climate.smart_autotune_thermostat_living_room', 'heat') }}"
+        pompa_libera: "{{ is_state('input_boolean.pdc_manuale', 'off') or da == 'manuale' }}"
+        caldaia_libera: "{{ is_state('input_boolean.caldaia_manuale', 'off') or da == 'manuale' }}"
+        in_heat: >
+          {{ states('select.panasonic_heat_pump_main_operating_mode_state')
+             in ['Heat', 'Heat only'] }}
+        sposta: "{{ valvola_ok and (valvola_su_pompa != (f == 'pompa')) }}"
+        motivo: >-
+          {% if f not in ['pompa', 'caldaia'] %}fonte non valida ({{ f }})
+          {%- elif not valvola_ok %}valvola pompa/caldaia non disponibile
+          {%- elif f == 'caldaia' and pompa_accesa and not pompa_libera %}la pompa e' accesa in gestione manuale
+          {%- elif f == 'pompa' and sat_acceso and not caldaia_libera %}la caldaia e' accesa in gestione manuale
+          {%- elif acc and f == 'pompa' and not pompa_libera %}la pompa e' in gestione manuale
+          {%- elif acc and f == 'caldaia' and not caldaia_libera %}la caldaia e' in gestione manuale
+          {%- elif acc and f == 'caldaia' and not in_heat %}la pompa non e' in Heat: la caldaia non si accende in raffrescamento
+          {%- endif %}
+    # --- Richiesta non eseguibile: nessuna azione ---
+    - if:
+        - condition: template
+          value_template: "{{ motivo | length > 0 }}"
+      then:
+        - action: notify.mobile_app_cph2653
+          data:
+            title: "⛔ Fonte non cambiata"
+            message: >-
+              Richiesta {{ f }} ({{ da }}) non eseguita: {{ motivo }}.
+              Pompa {{ 'accesa' if pompa_accesa else 'spenta' }}, caldaia
+              {{ 'accesa' if sat_acceso else 'spenta' }}, valvola su
+              {{ 'Pompa' if valvola_su_pompa else 'Caldaia' }}.
+        - variables:
+            esito:
+              ok: false
+              motivo: "{{ motivo }}"
+        - stop: "Fonte non impostata"
+          response_variable: esito
+    # --- 1. Spegne la fonte opposta (anche se la valvola e' gia' a posto) ---
+    - if:
+        - condition: template
+          value_template: "{{ f == 'caldaia' and pompa_accesa }}"
+      then:
+        - action: switch.turn_off
+          target:
+            entity_id: switch.panasonic_heat_pump_main_heatpump_state
+    - if:
+        - condition: template
+          value_template: "{{ f == 'pompa' and sat_acceso }}"
+      then:
+        - action: climate.set_hvac_mode
+          target:
+            entity_id: climate.smart_autotune_thermostat_living_room
+          data:
+            hvac_mode: "off"
+    # --- 2. Valvola: 30 s dopo lo spegnimento, poi 120 s di manovra ---
+    - if:
+        - condition: template
+          value_template: "{{ sposta }}"
+      then:
+        - if:
+            - condition: template
+              value_template: "{{ (f == 'caldaia' and pompa_accesa) or (f == 'pompa' and sat_acceso) }}"
+          then:
+            - delay: "00:00:30"
+        - if:
+            - condition: template
+              value_template: "{{ f == 'pompa' }}"
+          then:
+            - action: switch.turn_on
+              target:
+                entity_id: switch.shelly_box
+          else:
+            - action: switch.turn_off
+              target:
+                entity_id: switch.shelly_box
+        - action: input_datetime.set_datetime
+          target:
+            entity_id: input_datetime.fonte_ultima_commutazione
+          data:
+            datetime: "{{ now().strftime('%Y-%m-%d %H:%M:%S') }}"
+        - delay: "00:02:00"
+        # Il rele' della valvola deve risultare nello stato richiesto (la
+        # valvola non ha feedback di posizione: si controlla solo il comando).
+        - if:
+            - condition: template
+              value_template: "{{ is_state('switch.shelly_box', 'on' if f == 'pompa' else 'off') }}"
+          else:
+            - action: notify.mobile_app_cph2653
+              data:
+                title: "⛔ Valvola non commutata"
+                message: >-
+                  Richiesta {{ f }}: dopo 120 s switch.shelly_box risulta
+                  {{ states('switch.shelly_box') }}. Nessuna fonte accesa.
+            - variables:
+                esito:
+                  ok: false
+                  motivo: "valvola non commutata"
+            - stop: "Valvola non commutata"
+              response_variable: esito
+    # --- 3. Accende la fonte scelta ---
+    - if:
+        - condition: template
+          value_template: "{{ acc and f == 'pompa' }}"
+      then:
+        - action: switch.turn_on
+          target:
+            entity_id: switch.panasonic_heat_pump_main_heatpump_state
+    - if:
+        - condition: template
+          value_template: "{{ acc and f == 'caldaia' }}"
+      then:
+        # Il target lo imposta clima_sync_sat_target all'accensione del SAT
+        # (salvo caldaia_manuale: in quel caso lo script manuale).
+        - action: climate.set_hvac_mode
+          target:
+            entity_id: climate.smart_autotune_thermostat_living_room
+          data:
+            hvac_mode: "heat"
+    - variables:
+        esito:
+          ok: true
+          motivo: ""
+    - stop: "Fonte impostata"
+      response_variable: esito
+
+#==================================================================================
+# SCRIPT: POMPA / CALDAIA – COMANDI DALLE PLANCE (scripts_58)
+# Usati dalle plance al posto dei comandi diretti (switch pompa, SAT, valvola).
+# Non cambiano i flag manuali (pdc_manuale, caldaia_manuale): il flag lo
+# alza e lo abbassa solo l'utente dal suo tile. Senza flag alzato le
+# automazioni restano libere di riportare l'apparecchio dove serve.
+# Le accensioni passano da fonte_imposta (chi = manuale: agisce anche con il
+# flag alzato, perche' e' l'utente a chiederlo), che sposta la valvola e spegne
+# l'altra fonte; gli spegnimenti sono sempre liberi.
+#==================================================================================
+pompa_accendi:
+  alias: "Pompa – Accendi"
+  icon: mdi:heat-pump
   mode: single
   sequence:
-    - action: mqtt.publish
+    - action: script.fonte_imposta
       data:
-        topic: "panasonic_heat_pump/commands/SetHeatpump"
-        payload: >
-          {% if states('switch.panasonic_heat_pump_main_heatpump_state') == 'on' %}
-            0
-          {% else %}
-            1
-          {% endif %}
+        fonte: pompa
+        accendi: true
+        chi: manuale
+
+pompa_spegni:
+  alias: "Pompa – Spegni"
+  icon: mdi:heat-pump-outline
+  mode: single
+  sequence:
+    - action: switch.turn_off
+      target:
+        entity_id: switch.panasonic_heat_pump_main_heatpump_state
+
+# Sostituisce panasonic_toggle (rimosso in scripts_57): pulsante unico in plancia.
+pompa_commuta:
+  alias: "Pompa – Accendi/Spegni"
+  icon: mdi:heat-pump
+  mode: single
+  sequence:
+    - if:
+        - condition: state
+          entity_id: switch.panasonic_heat_pump_main_heatpump_state
+          state: "on"
+      then:
+        - action: script.pompa_spegni
+      else:
+        - action: script.pompa_accendi
+
+caldaia_accendi:
+  alias: "Caldaia – Accendi riscaldamento"
+  icon: mdi:radiator
+  mode: single
+  sequence:
+    - action: script.fonte_imposta
+      data:
+        fonte: caldaia
+        accendi: true
+        chi: manuale
+      response_variable: esito
+    # Senza flag il target lo imposta clima_sync_sat_target all'accensione.
+    # Con caldaia_manuale alzato (sync ferma): preset "home" e minimo diurno
+    # della sala, modificabili poi dal SAT.
+    - if:
+        - condition: template
+          value_template: "{{ esito.ok and is_state('input_boolean.caldaia_manuale', 'on') }}"
+      then:
+        - action: climate.set_preset_mode
+          target:
+            entity_id: climate.smart_autotune_thermostat_living_room
+          data:
+            preset_mode: "home"
+        - action: climate.set_temperature
+          target:
+            entity_id: climate.smart_autotune_thermostat_living_room
+          data:
+            temperature: "{{ states('input_number.mintemp_giorno_inverno_sala') | float(22) }}"
+
+caldaia_spegni:
+  alias: "Caldaia – Spegni riscaldamento"
+  icon: mdi:radiator-off
+  mode: single
+  sequence:
+    - action: climate.set_hvac_mode
+      target:
+        entity_id: climate.smart_autotune_thermostat_living_room
+      data:
+        hvac_mode: "off"
 
 #==================================================================================
 # SCRIPT: HEISHAMON REBOOT VIA MQTT
@@ -668,40 +925,6 @@ caldaia_dhw_off:
     - action: input_boolean.turn_off
       target:
         entity_id: input_boolean.caldaia_dhw_override
-
-#==================================================================================
-# SCRIPT: PERGOLA – TOGGLE MANUALE ("Chiudere fino notte")
-# Richiamato dalla card in plancia Tende (tap sul tile del blocco manuale).
-#  - Blocco OFF → attiva input_boolean.pergola_blocco_manuale e chiude le
-#    lamelle (tilt 0); inseguimento solare e sicurezza meteo restano fermi.
-#  - Blocco ON  → disattiva il flag; l'inseguimento solare riprende al
-#    prossimo ciclo (max 10 minuti).
-# Il flag viene comunque rilasciato alle 07:00/23:00 dall'automazione
-# pergola_blocco_manuale_rilascio e alla partenza per vacanza.
-#==================================================================================
-pergola_toggle_manuale:
-  alias: "Pergola – Toggle Manuale"
-  mode: single
-  sequence:
-    - choose:
-        - conditions:
-            - condition: state
-              entity_id: input_boolean.pergola_blocco_manuale
-              state: "off"
-          sequence:
-            - action: input_boolean.turn_on
-              target:
-                entity_id: input_boolean.pergola_blocco_manuale
-            - action: cover.set_cover_tilt_position
-              target:
-                entity_id: cover.terrazzo_pergola_terrazza
-              data:
-                tilt_position: 0
-      default:
-        - action: input_boolean.turn_off
-          target:
-            entity_id: input_boolean.pergola_blocco_manuale
-
 
 #==================================================================================
 # SCRIPT: FONTE - RIPRISTINA PARAMETRI (NUOVO - scripts_41)
