@@ -1,4 +1,13 @@
-# automations_caldaia_2.yaml
+# automations_caldaia_3.yaml
+#
+# v3 (08/10/2026): pompa e caldaia con flag manuali e controllo di sicurezza.
+#   - fonte_controllo_periodico usa script.fonte_imposta (unico punto che
+#     sposta la valvola); rispetta caldaia_manuale; con pdc_manuale alzato e
+#     pompa spenta passa subito alla caldaia (audit A4).
+#   - nuova fonte_sicurezza: spegne la fonte sbagliata se pompa e caldaia sono
+#     accese insieme o con la valvola nella posizione sbagliata.
+#   - clima_sync_sat_target non agisce con caldaia_manuale alzato ne' in
+#     vacanza (il target lo decide l'antigelo).
 #
 # v2 (08/10/2026): audit clima A7. clima_sync_sat_target segue la stessa zona
 #   del PID heating della pompa: giorno sala, 21-23 la piu' fredda fra sala,
@@ -57,6 +66,14 @@
     - condition: state
       entity_id: climate.smart_autotune_thermostat_living_room
       state: "heat"
+    # v3: con la caldaia in gestione manuale il target lo decide l'utente.
+    - condition: state
+      entity_id: input_boolean.caldaia_manuale
+      state: "off"
+    # v3: in vacanza il target lo decide l'antigelo (soglia + 2).
+    - condition: state
+      entity_id: input_boolean.vacanza
+      state: "off"
   actions:
     - variables:
         mod: "{{ states('input_select.clima_modalita') }}"
@@ -394,6 +411,8 @@
 #
 # Valvola pompa-caldaia: switch.shelly_box (on = Pompa, off = Caldaia),
 # nessun feedback di posizione -> attesa fissa 120 s dopo la manovra.
+# v3: la manovra la fa script.fonte_imposta (scripts_57), unico punto che
+# sposta la valvola: spegne la fonte opposta, 30 s, valvola, 120 s, accende.
 #
 # Filtri anti-usura valvola:
 #   - isteresi economica: si commuta solo se l'alternativa costa almeno
@@ -402,14 +421,20 @@
 #     ore dall'ultima (input_datetime.fonte_ultima_commutazione)
 #   - controllo periodico ogni 5 minuti (stile freecooling), mode single
 #
-# Sequenza sicura: mai calore con valvola in transito.
-#   Pompa -> Caldaia: off PdC -> 30 s -> valvola -> 120 s -> SAT heat
-#   Caldaia -> Pompa: SAT off  -> 30 s -> valvola -> 120 s -> on PdC
+# v3 – flag manuali (li abbassa solo l'utente):
+#   - caldaia_manuale alzato: nessuna commutazione (il SAT non si tocca).
+#   - pdc_manuale alzato (a mano o dal distacco carichi) con la pompa SPENTA:
+#     la PdC non e' disponibile, si passa subito alla caldaia senza attendere
+#     ne' costi ne' ore minime, cosi' la casa non resta senza riscaldamento.
+#     La pompa non viene toccata. Con pdc_manuale alzato non si torna mai
+#     alla pompa.
+#   - pdc_manuale alzato con la pompa ACCESA (prova manuale): nessuna azione.
 - id: fonte_controllo_periodico
   alias: "Fonte – Controllo periodico caldaia/PdC"
   description: >-
     Ogni 5 minuti valuta i costi €/kWh termico e commuta la fonte di
-    riscaldamento se conviene, rispettando isteresi e ore minime.
+    riscaldamento se conviene, rispettando isteresi e ore minime. Con la pompa
+    bloccata in gestione manuale e spenta passa subito alla caldaia.
   mode: single
   triggers:
     - trigger: time_pattern
@@ -418,16 +443,13 @@
     - condition: state
       entity_id: input_boolean.fonte_auto_attiva
       state: "on"
-    # Lucchetto manuale pompa (automations_fonte_3): con il flag alzato la
-    # commutazione caldaia/PdC non tocca la pompa, che resta nello stato
-    # scelto a mano. Alzato anche dal distacco carichi su prelievo alto.
+    # v3: la commutazione accende o spegne sempre il SAT
     - condition: state
-      entity_id: input_boolean.pdc_manuale
+      entity_id: input_boolean.caldaia_manuale
       state: "off"
     # v4: stagione dal modo operativo della pompa (sorgente unica, vedi
-    # automations_clima_66). input_select.clima_stagione e' stato rimosso in
-    # config_clima_14. Con la pompa non in Heat la commutazione verso la PdC
-    # sarebbe comunque inutile.
+    # automations_clima_66). Con la pompa non in Heat la commutazione e'
+    # inutile.
     - condition: template
       value_template: >-
         {{ states('select.panasonic_heat_pump_main_operating_mode_state')
@@ -435,110 +457,169 @@
     - condition: state
       entity_id: input_boolean.vacanza
       state: "off"
-    # Sensori costo e valvola devono essere vivi
+    # Valvola e pompa devono essere vive
     - condition: template
       value_template: >-
-        {{ has_value('sensor.pdc_costo_kwh_termico')
-           and has_value('sensor.caldaia_costo_kwh_termico')
-           and has_value('switch.shelly_box')
+        {{ has_value('switch.shelly_box')
            and has_value('switch.panasonic_heat_pump_main_heatpump_state') }}
-    # Dwell time: ultima manovra piu' vecchia di fonte_ore_minime
-    - condition: template
-      value_template: >-
-        {% set ultima = states('input_datetime.fonte_ultima_commutazione') %}
-        {% set ore = states('input_number.fonte_ore_minime') | float(3) %}
-        {{ ultima in ['unknown', 'unavailable', '']
-           or (now().timestamp() - as_timestamp(ultima, 0)) > ore * 3600 }}
-    # Serve commutare? L'alternativa deve battere l'attuale di almeno isteresi%
-    - condition: template
-      value_template: >-
-        {% set pdc = states('sensor.pdc_costo_kwh_termico') | float(0) %}
-        {% set cal = states('sensor.caldaia_costo_kwh_termico') | float(0) %}
-        {% set ist = states('input_number.fonte_isteresi_pct') | float(15) / 100 %}
-        {% set pompa_attiva = is_state('switch.shelly_box', 'on') %}
-        {{ (pompa_attiva and cal > 0 and cal <= pdc * (1 - ist))
-           or (not pompa_attiva and pdc > 0 and pdc <= cal * (1 - ist)) }}
   actions:
+    - variables:
+        pompa_attiva: "{{ is_state('switch.shelly_box', 'on') }}"
+        pdc_bloccata: "{{ is_state('input_boolean.pdc_manuale', 'on') }}"
+        pompa_accesa: "{{ is_state('switch.panasonic_heat_pump_main_heatpump_state', 'on') }}"
+        costi_ok: >-
+          {{ has_value('sensor.pdc_costo_kwh_termico')
+             and has_value('sensor.caldaia_costo_kwh_termico') }}
+        pdc: "{{ states('sensor.pdc_costo_kwh_termico') | float(0) }}"
+        cal: "{{ states('sensor.caldaia_costo_kwh_termico') | float(0) }}"
+        ist: "{{ states('input_number.fonte_isteresi_pct') | float(15) / 100 }}"
+        dwell_ok: >-
+          {% set ultima = states('input_datetime.fonte_ultima_commutazione') %}
+          {% set ore = states('input_number.fonte_ore_minime') | float(3) %}
+          {{ ultima in ['unknown', 'unavailable', '']
+             or (now().timestamp() - as_timestamp(ultima, 0)) > ore * 3600 }}
+        # Pompa bloccata e spenta: caldaia subito (niente costi ne' ore minime)
+        caldaia_forzata: "{{ pompa_attiva and pdc_bloccata and not pompa_accesa }}"
+        conviene_caldaia: >-
+          {{ costi_ok and dwell_ok and not pdc_bloccata and pompa_attiva
+             and cal > 0 and cal <= pdc * (1 - ist) }}
+        conviene_pompa: >-
+          {{ costi_ok and dwell_ok and not pdc_bloccata and not pompa_attiva
+             and pdc > 0 and pdc <= cal * (1 - ist) }}
     - choose:
         # ---------- POMPA -> CALDAIA ----------
         - conditions:
-            - condition: state
-              entity_id: switch.shelly_box
-              state: "on"
+            - condition: template
+              value_template: "{{ caldaia_forzata or conviene_caldaia }}"
           sequence:
-            - action: switch.turn_off
-              target:
-                entity_id: switch.panasonic_heat_pump_main_heatpump_state
-            - delay: "00:00:30"
-            - action: switch.turn_off
-              target:
-                entity_id: switch.shelly_box
-            - delay: "00:02:00"
-            # Il target SAT lo imposta clima_sync_sat_target, che scatta
-            # sull'accensione del SAT (automations_clima_66).
-            - action: climate.set_hvac_mode
-              target:
-                entity_id: climate.smart_autotune_thermostat_living_room
+            - action: script.fonte_imposta
               data:
-                hvac_mode: "heat"
-            - action: input_datetime.set_datetime
-              target:
-                entity_id: input_datetime.fonte_ultima_commutazione
-              data:
-                datetime: "{{ now().strftime('%Y-%m-%d %H:%M:%S') }}"
+                fonte: caldaia
+                accendi: true
+                chi: automatico
+              response_variable: esito
+            - condition: template
+              value_template: "{{ esito.ok }}"
             - action: notify.mobile_app_cph2653
               data:
                 title: "🔥 Fonte → Caldaia"
                 message: >-
-                  Caldaia {{ states('sensor.caldaia_costo_kwh_termico') }} €/kWht
-                  vs PdC {{ states('sensor.pdc_costo_kwh_termico') }} €/kWht.
-                  Valvola commutata, SAT attivo.
+                  {% if caldaia_forzata %}Pompa di calore in gestione manuale e spenta
+                  (anche dopo un distacco carichi): riscaldamento passato alla caldaia.
+                  Torna alla pompa quando abbassi "Pompa manuale".
+                  {% else %}Caldaia {{ cal }} €/kWht vs PdC {{ pdc }} €/kWht.
+                  Valvola commutata, SAT attivo.{% endif %}
         # ---------- CALDAIA -> POMPA ----------
         - conditions:
-            - condition: state
-              entity_id: switch.shelly_box
-              state: "off"
+            - condition: template
+              value_template: "{{ conviene_pompa }}"
           sequence:
-            - action: climate.set_hvac_mode
-              target:
-                entity_id: climate.smart_autotune_thermostat_living_room
+            - action: script.fonte_imposta
               data:
-                hvac_mode: "off"
-            - delay: "00:00:30"
-            - action: switch.turn_on
-              target:
-                entity_id: switch.shelly_box
-            - delay: "00:02:00"
-            # La PdC parte solo se il modo operativo e' in riscaldamento
-            - if:
-                - condition: template
-                  value_template: >-
-                    {{ states('select.panasonic_heat_pump_main_operating_mode_state')
-                       in ['Heat', 'Heat only'] }}
-              then:
-                - action: switch.turn_on
-                  target:
-                    entity_id: switch.panasonic_heat_pump_main_heatpump_state
-              else:
-                - action: notify.mobile_app_cph2653
-                  data:
-                    title: "⚠️ Fonte – PdC non avviata"
-                    message: >-
-                      Valvola su Pompa ma modo operativo Panasonic =
-                      {{ states('select.panasonic_heat_pump_main_operating_mode_state') }}.
-                      Verificare il modo Heat.
-            - action: input_datetime.set_datetime
-              target:
-                entity_id: input_datetime.fonte_ultima_commutazione
-              data:
-                datetime: "{{ now().strftime('%Y-%m-%d %H:%M:%S') }}"
+                fonte: pompa
+                accendi: true
+                chi: automatico
+              response_variable: esito
+            - condition: template
+              value_template: "{{ esito.ok }}"
             - action: notify.mobile_app_cph2653
               data:
                 title: "♨️ Fonte → Pompa di calore"
                 message: >-
-                  PdC {{ states('sensor.pdc_costo_kwh_termico') }} €/kWht
-                  vs Caldaia {{ states('sensor.caldaia_costo_kwh_termico') }} €/kWht.
+                  PdC {{ pdc }} €/kWht vs Caldaia {{ cal }} €/kWht.
                   Valvola commutata.
+
+#==================================================================================
+# FONTE – CONTROLLO DI SICUREZZA POMPA / CALDAIA / VALVOLA (v3)
+#
+# Sempre attivo: nessun flag manuale, vacanza o interruttore lo disattiva.
+# Stati vietati per il riscaldamento (l'acqua calda sanitaria non e' toccata):
+#   1. pompa accesa e SAT acceso insieme -> si spegne quella che non
+#      corrisponde alla valvola (valvola sconosciuta: entrambe)
+#   2. pompa accesa con valvola su Caldaia -> pompa spenta
+#   3. SAT acceso con valvola su Pompa -> SAT spento
+#   4. SAT acceso con la pompa in raffrescamento -> SAT spento
+# Interviene se lo stato vietato dura 60 s: i comandi via HeishaMon e OTGW
+# arrivano con qualche secondo di ritardo e la sequenza di fonte_imposta non
+# passa mai da uno stato vietato. I flag manuali non vengono cambiati.
+#==================================================================================
+- id: fonte_sicurezza
+  alias: "Fonte – Controllo di sicurezza pompa/caldaia/valvola"
+  description: >
+    Spegne la fonte sbagliata e avvisa se pompa e caldaia risultano accese
+    insieme, se una fonte e' accesa con la valvola nella posizione sbagliata o
+    se la caldaia scalda con la pompa in raffrescamento.
+  mode: queued
+  triggers:
+    - trigger: template
+      value_template: >
+        {% set pompa = is_state('switch.panasonic_heat_pump_main_heatpump_state', 'on') %}
+        {% set sat = is_state('climate.smart_autotune_thermostat_living_room', 'heat') %}
+        {% set v_pompa = is_state('switch.shelly_box', 'on') %}
+        {% set v_caldaia = is_state('switch.shelly_box', 'off') %}
+        {% set cool = states('select.panasonic_heat_pump_main_operating_mode_state') in ['Cool', 'Cool only'] %}
+        {{ (pompa and sat) or (pompa and v_caldaia) or (sat and v_pompa) or (sat and cool) }}
+      for: "00:01:00"
+    # Rete di sicurezza: ricontrollo ogni 5 minuti e all'avvio
+    - trigger: time_pattern
+      minutes: "/5"
+    - trigger: homeassistant
+      event: start
+  actions:
+    - variables:
+        pompa: "{{ is_state('switch.panasonic_heat_pump_main_heatpump_state', 'on') }}"
+        sat: "{{ is_state('climate.smart_autotune_thermostat_living_room', 'heat') }}"
+        v_pompa: "{{ is_state('switch.shelly_box', 'on') }}"
+        v_caldaia: "{{ is_state('switch.shelly_box', 'off') }}"
+        cool: >
+          {{ states('select.panasonic_heat_pump_main_operating_mode_state')
+             in ['Cool', 'Cool only'] }}
+        spegni_pompa: "{{ pompa and (v_caldaia or (sat and not v_pompa)) }}"
+        spegni_sat: "{{ sat and (v_pompa or cool or (pompa and not v_caldaia)) }}"
+        valvola: "{{ 'Pompa' if v_pompa else ('Caldaia' if v_caldaia else 'sconosciuta') }}"
+    - condition: template
+      value_template: "{{ spegni_pompa or spegni_sat }}"
+    # Il ricontrollo periodico interviene solo se lo stato vietato dura gia'
+    # da almeno 60 s (stessa tolleranza del trigger principale).
+    - if:
+        - condition: template
+          value_template: "{{ trigger.platform != 'template' }}"
+      then:
+        - delay: "00:01:00"
+        - condition: template
+          value_template: >
+            {% set p = is_state('switch.panasonic_heat_pump_main_heatpump_state', 'on') %}
+            {% set s = is_state('climate.smart_autotune_thermostat_living_room', 'heat') %}
+            {{ (spegni_pompa and p) or (spegni_sat and s) }}
+    - if:
+        - condition: template
+          value_template: "{{ spegni_pompa }}"
+      then:
+        - action: switch.turn_off
+          target:
+            entity_id: switch.panasonic_heat_pump_main_heatpump_state
+    - if:
+        - condition: template
+          value_template: "{{ spegni_sat }}"
+      then:
+        - action: climate.set_hvac_mode
+          target:
+            entity_id: climate.smart_autotune_thermostat_living_room
+          data:
+            hvac_mode: "off"
+    - action: notify.mobile_app_cph2653
+      data:
+        title: "🛑 Sicurezza fonte: {{ 'pompa' if spegni_pompa else '' }}{{ ' e ' if spegni_pompa and spegni_sat else '' }}{{ 'caldaia' if spegni_sat else '' }} spenta"
+        message: >-
+          Stato vietato: pompa {{ 'accesa' if pompa else 'spenta' }}, caldaia
+          {{ 'accesa' if sat else 'spenta' }}, valvola su {{ valvola }}, modo pompa
+          {{ states('select.panasonic_heat_pump_main_operating_mode_state') }}.
+          {% if spegni_pompa %}Spenta la pompa. {% endif %}{% if spegni_sat %}Spenta la caldaia (SAT). {% endif %}
+          Per cambiare fonte usa i comandi della plancia, che spostano la valvola in sicurezza.
+        data:
+          priority: high
+          ttl: 0
+          channel: alarm_stream
 
 # ---------------------------------------------------------------------------
 # SENTINELLA PARAMETRI (NUOVO - automations_fonte_2)

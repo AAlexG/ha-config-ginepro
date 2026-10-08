@@ -1,4 +1,6 @@
-# config_elettricita_16.yaml
+# config_elettricita_17.yaml
+# v17 (08/10/2026): auto_manuale senza initial: false, che lo abbassava a ogni
+#   riavvio di HA. Come tutti i flag manuali lo abbassa solo l'utente.
 # Package Casa Ginepro - Elettricita: consumi, costi, prezzo kWh, bolletta
 # Estratto da configuration_186.yaml. Nome file = nome del package.
 
@@ -243,10 +245,11 @@ input_boolean:
   # quindi il flag non blocca nulla: serve a rendere esplicito che il contattore
   # e' nello stato scelto a mano ed e' il presidio per automatismi futuri.
   # Viene alzato in automatico dal distacco carichi (automations_elettricita) quando
-  # l'auto viene staccata per prelievo di rete oltre soglia.
+  # l'auto viene staccata per prelievo di rete oltre soglia. Lo abbassa solo
+  # l'utente; promemoria alle 10:00 e 22:00 (flag_manuali_promemoria).
+  # Nessuna chiave initial: al riavvio HA ripristina lo stato salvato.
   auto_manuale:
     name: "Auto Contattore - Gestione Manuale"
-    initial: false
     icon: mdi:hand-back-right
 
 input_number:

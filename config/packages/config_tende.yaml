@@ -1,4 +1,9 @@
-# config_tende_1.yaml
+# config_tende_3.yaml
+# v3 (08/10/2026): nuovo input_boolean.pergola_meteo_avviso_manuale (stato
+#   interno dell'avviso meteo con pergola in gestione manuale).
+# v2 (08/10/2026): pergola_blocco_manuale segue la regola di tutti i flag
+#   manuali: lo alza e lo abbassa solo l'utente, nessun rilascio automatico.
+#   Tolto initial: false (lo spegneva a ogni riavvio di HA).
 # Package Casa Ginepro - Tende: pergola terrazza e tenda giardino (helper delle
 # automazioni in automations_tende).
 # Creato il 30/09/2026 dalla riorganizzazione per argomento: parte "tende"
@@ -7,11 +12,14 @@
 input_boolean:
 
   # --- GESTIONE MANUALE PERGOLA ---
-  # Si attiva quando l'utente tocca il toggle manuale in plancia (script.pergola_toggle_manuale).
-  # Blocca l'inseguimento solare e la sicurezza meteo fino al prossimo cambio giorno/notte (07:00/23:00).
+  # Stessa regola di tutti i flag manuali: lo alza e lo abbassa SOLO l'utente
+  # dal suo tile in plancia Tende. Con il flag alzato nessuna automazione tocca
+  # la pergola: inseguimento solare, sicurezza meteo (vento/pioggia) e
+  # chiusura alla partenza per vacanza restano fermi. Promemoria alle 10:00 e
+  # alle 22:00 se resta alzato da oltre un'ora (flag_manuali_promemoria).
+  # Nessuna chiave initial: al riavvio HA ripristina lo stato salvato.
   pergola_blocco_manuale:
     name: "Pergola - Gestione Manuale"
-    initial: false
     icon: mdi:hand-back-left
 
   # Si attiva quando l'automazione pergola_meteo_chiusura chiude per vento/pioggia/scarsa radiazione.
@@ -20,6 +28,16 @@ input_boolean:
     name: "Pergola - Chiusura Sicurezza Meteo"
     initial: false
     icon: mdi:weather-windy
+
+  # Stato interno di pergola_meteo_chiusura (non e' un flag manuale): acceso
+  # quando, con pergola_blocco_manuale alzato, la sicurezza meteo avrebbe
+  # chiuso la pergola ed e' partita la notifica. Evita di ripeterla a ogni
+  # controllo (10 o 2 minuti); si spegne da solo appena l'allarme meteo
+  # rientra o il flag manuale viene abbassato.
+  pergola_meteo_avviso_manuale:
+    name: "Pergola - Avviso Meteo in Gestione Manuale"
+    initial: false
+    icon: mdi:bell-alert
 
   tenda_notifica_vento_oggi:
     name: "Tenda – Notifica Vento Oggi"

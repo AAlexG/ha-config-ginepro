@@ -1,4 +1,14 @@
-# automations_clima_76.yaml
+# automations_clima_78.yaml
+#
+# v78 (08/10/2026): pergola_blocco_manuale come tutti i flag manuali.
+#   - promemoria flag manuali: aggiunto pergola_blocco_manuale.
+#   - inizio vacanza non abbassa piu' il flag e non chiude la pergola se il
+#     flag e' alzato (la tenda giardino, senza flag, si chiude sempre).
+#
+# v77 (08/10/2026): nuovo flag input_boolean.caldaia_manuale (config_caldaia_7).
+#   - promemoria flag manuali: aggiunto caldaia_manuale.
+#   - commutazione stagionale bloccata anche con caldaia_manuale alzato.
+#   - rientro e inizio vacanza non toccano il SAT con caldaia_manuale alzato.
 #
 # v76 (08/10/2026): audit clima A6 e A7.
 #   A6: in Heat con la valvola su Caldaia (switch.shelly_box off) i fancoil
@@ -197,9 +207,8 @@
     # Nessun flag di gestione manuale viene abbassato qui: fancoil e
     # deumidificatori restano bloccati finche' e' l'utente ad abbassare il flag
     # dalla plancia. Il promemoria delle 10:00 / 22:00 serve a non dimenticarli.
-    # v66: pergola_blocco_manuale non viene piu' toccato qui. Il suo unico
-    # rilascio orario e' pergola_blocco_manuale_rilascio (07:00 e 23:00):
-    # prima d'estate il blocco cadeva gia' alle 21:00 con clima_modalita_notte.
+    # pergola_blocco_manuale non viene toccato qui: dalla v78 lo abbassa solo
+    # l'utente (rimossa pergola_blocco_manuale_rilascio).
     # clima_pompa_latch_notte e' stato interno del PID notturno: se non viene
     # azzerato al mattino la soglia di riaccensione resta a target + 2 C anche
     # di giorno.
@@ -261,9 +270,9 @@
         entity_id: input_select.clima_modalita
       data:
         option: "{{ nuova }}"
-    # v66: tolto l'azzeramento di pergola_blocco_manuale (lo rilascia solo
-    # pergola_blocco_manuale_rilascio alle 07:00 e 23:00) e di
-    # clima_pompa_latch_notte (si arma solo dopo le 23:00, qui era gia' spento).
+    # v66: tolto l'azzeramento di pergola_blocco_manuale (dalla v78 lo abbassa
+    # solo l'utente) e di clima_pompa_latch_notte (si arma solo dopo le 23:00,
+    # qui era gia' spento).
 
 #==================================================================================
 # GESTIONE MANUALE FANCOIL E DEUMIDIFICATORE
@@ -288,7 +297,7 @@
   alias: "Flag manuali – Promemoria (10:00 / 22:00)"
   description: >
     Segnala quali gestioni manuali (fancoil, deumidificatori, portone, cancello,
-    pompa di calore, auto) sono alzate da oltre un'ora e ancora attive, per
+    pompa di calore, caldaia, auto, pergola) sono alzate da oltre un'ora e ancora attive, per
     poterle abbassare se non servono piu'.
   mode: single
   triggers:
@@ -310,6 +319,10 @@
       # fonte si ferma).
       - input_boolean.pdc_manuale
       - input_boolean.auto_manuale
+      # v77: caldaia (riscaldamento via SAT)
+      - input_boolean.caldaia_manuale
+      # v78: pergola (prima rilasciata in automatico alle 07:00 e 23:00)
+      - input_boolean.pergola_blocco_manuale
     flag_attivi: >
       {% set ns = namespace(elenco=[]) %}
       {% for f in flag_elenco %}
@@ -885,8 +898,8 @@
 # falsa. Sono input_number, quindi sopravvivono ai riavvii di HA.
 # Sensore della zona non disponibile: contatori congelati (ne' avanti ne'
 # azzerati), come le guardie dati v58.
-# Lucchetto pdc_manuale, vacanza o modalita manuale: contatori azzerati e
-# nessun cambio.
+# Lucchetto pdc_manuale o caldaia_manuale (v77), vacanza o modalita manuale:
+# contatori azzerati e nessun cambio.
 #
 # Dopo il cambio fa tutto il resto del sistema, che segue il modo pompa
 # (PID, fancoil, SAT, gestione fonte, notte 21/23, free cooling/heating).
@@ -926,8 +939,12 @@
     t_zona: "{{ states(sensore) | float(0) }}"
     minimo: "{{ states(ent_min) | float(0) }}"
     massimo: "{{ states(ent_max) | float(0) }}"
+    # v77: anche caldaia_manuale. Il passaggio a Cool spegne il SAT, e una
+    # caldaia accesa a mano con la pompa in Cool sarebbe spenta dal controllo
+    # di sicurezza fonte_sicurezza.
     bloccato: >
       {{ is_state('input_boolean.pdc_manuale', 'on')
+         or is_state('input_boolean.caldaia_manuale', 'on')
          or is_state('input_boolean.vacanza', 'on')
          or is_state('input_select.clima_modalita', 'manuale') }}
     verso_heat: "{{ in_cool and t_zona < minimo }}"
@@ -1203,16 +1220,22 @@
             # v76: prima il preset "home" (in vacanza era "away"), poi
             # l'accensione: all'accensione del SAT clima_sync_sat_target
             # (automations_caldaia_2) imposta il target della zona comandante.
-            - action: climate.set_preset_mode
-              target:
-                entity_id: climate.smart_autotune_thermostat_living_room
-              data:
-                preset_mode: "home"
-            - action: climate.set_hvac_mode
-              target:
-                entity_id: climate.smart_autotune_thermostat_living_room
-              data:
-                hvac_mode: "heat"
+            # v77: solo se la caldaia non e' in gestione manuale.
+            - if:
+                - condition: state
+                  entity_id: input_boolean.caldaia_manuale
+                  state: "off"
+              then:
+                - action: climate.set_preset_mode
+                  target:
+                    entity_id: climate.smart_autotune_thermostat_living_room
+                  data:
+                    preset_mode: "home"
+                - action: climate.set_hvac_mode
+                  target:
+                    entity_id: climate.smart_autotune_thermostat_living_room
+                  data:
+                    hvac_mode: "heat"
     # Ramo raffrescamento (v66): la pompa non viene piu' accesa qui.
     # panasonic_cooling_riaccensione riparte da sola appena vacanza e' spento e
     # una zona e' oltre target + 0,5 C, e prima porta la valvola su Pompa se
@@ -1233,7 +1256,8 @@
   description: >
     Parte quando input_boolean.vacanza viene acceso a mano dalla plancia clima:
     spegne riscaldamento (away), acqua sanitaria, pompa di calore e fancoil;
-    chiude pergola e tenda giardino; ferma il canto degli uccelli.
+    chiude tenda giardino e pergola (la pergola solo se non in gestione
+    manuale, v78); ferma il canto degli uccelli.
     Dalla v55 il trigger da calendario e' stato eliminato: il riconoscimento
     della parola "vacanza" negli eventi non era affidabile e l'automazione
     scattava a vuoto. Il flag e' ora l'unica sorgente di verita' e si comanda
@@ -1244,16 +1268,22 @@
       from: "off"
       to: "on"
   action:
-    - action: climate.set_hvac_mode
-      target:
-        entity_id: climate.smart_autotune_thermostat_living_room
-      data:
-        hvac_mode: "off"
-    - action: climate.set_preset_mode
-      target:
-        entity_id: climate.smart_autotune_thermostat_living_room
-      data:
-        preset_mode: "away"
+    # v77: SAT spento e "away" solo se la caldaia non e' in gestione manuale.
+    - if:
+        - condition: state
+          entity_id: input_boolean.caldaia_manuale
+          state: "off"
+      then:
+        - action: climate.set_hvac_mode
+          target:
+            entity_id: climate.smart_autotune_thermostat_living_room
+          data:
+            hvac_mode: "off"
+        - action: climate.set_preset_mode
+          target:
+            entity_id: climate.smart_autotune_thermostat_living_room
+          data:
+            preset_mode: "away"
     - action: mqtt.publish
       data:
         topic: "OTGW/set/otgw-84CCA8ADE1AD/command"
@@ -1294,18 +1324,23 @@
         - action: switch.turn_off
           target:
             entity_id: switch.sala_fancoil_sala_shelly_1gen4
-    # Pulizia flag pergola (il blocco manuale non deve sopravvivere alla partenza)
+    # Pulizia del flag di chiusura meteo (automatico). v78: il flag manuale
+    # pergola_blocco_manuale NON viene toccato: lo abbassa solo l'utente.
     - action: input_boolean.turn_off
       target:
-        entity_id:
-          - input_boolean.pergola_blocco_manuale
-          - input_boolean.pergola_meteo_chiusura
-    # Chiusura pergola e tenda giardino
+        entity_id: input_boolean.pergola_meteo_chiusura
+    # Chiusura tenda giardino; pergola solo se non in gestione manuale.
     - action: cover.close_cover
       target:
-        entity_id:
-          - cover.terrazzo_pergola_terrazza
-          - cover.all_house_tenda_giardino_new
+        entity_id: cover.all_house_tenda_giardino_new
+    - if:
+        - condition: state
+          entity_id: input_boolean.pergola_blocco_manuale
+          state: "off"
+      then:
+        - action: cover.close_cover
+          target:
+            entity_id: cover.terrazzo_pergola_terrazza
     # Stop canto uccelli (la Yamaha andra' in auto-standby dopo 8h: voluto)
     - action: media_player.media_stop
       target:
@@ -1315,8 +1350,9 @@
         title: "✈️ Vacanza iniziata"
         message: >
           Riscaldamento away, acqua sanitaria spenta, pompa di calore spenta,
-          fancoil spenti (esclusi quelli in gestione manuale), pergola e tenda
-          giardino chiuse, canto uccelli fermato. Buona vacanza!
+          fancoil spenti (esclusi quelli in gestione manuale), tenda giardino
+          chiusa, {{ "pergola lasciata com'e' (gestione manuale)" if is_state('input_boolean.pergola_blocco_manuale', 'on') else 'pergola chiusa' }},
+          canto uccelli fermato. Buona vacanza!
 
 #==================================================================================
 # FANCOIL – SPEGNIMENTO IMMEDIATO ALL'ATTIVAZIONE VACANZA

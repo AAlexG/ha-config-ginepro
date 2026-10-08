@@ -1,4 +1,11 @@
-# automations_tende_1.yaml
+# automations_tende_3.yaml
+# v3 (08/10/2026): pergola_meteo_chiusura con pergola_blocco_manuale alzato non
+#   chiude ma avvisa: una notifica per ogni allarme meteo (vento, pioggia o
+#   previsione), ripetuta solo dopo che l'allarme e' rientrato. Avvisa anche
+#   in vacanza, se la pergola e' rimasta in gestione manuale.
+# v2 (08/10/2026): rimossa pergola_blocco_manuale_rilascio (07:00 / 23:00).
+#   pergola_blocco_manuale segue la regola dei flag manuali: lo abbassa solo
+#   l'utente; promemoria in flag_manuali_promemoria (automations_clima).
 #
 # Automazioni di pergola terrazza e tenda giardino (plancia Tende).
 # Rinominato il 30/09/2026 da automations_pergola.yaml (ultima versione
@@ -34,8 +41,9 @@
 #                 l'attraversamento, quando il trigger sull'azimut non puo'
 #                 piu' scattare (valuta solo il passaggio falso -> vero).
 #   15:00 : lamelle all'80% per aerare la zona sottostante.
-#   23:01 : chiusura per la notte (0%). Alle 23:01 e non 23:00 per evitare
-#           la corsa con il rilascio del blocco manuale delle 23:00.
+#   23:01 : chiusura per la notte (0%). Alle 23:01 e non 23:00: in origine
+#           per evitare la corsa con il rilascio del blocco manuale delle
+#           23:00, rimosso in v2 (orario lasciato invariato).
 # Trigger extra: al rilascio della sicurezza meteo la pergola si riposiziona
 # subito al valore dello slot corrente, altrimenti dopo un temporale
 # resterebbe chiusa fino allo slot successivo.
@@ -166,12 +174,12 @@
       minutes: "/2"
       id: fitto
   conditions:
-    - condition: state
-      entity_id: input_boolean.vacanza
-      state: "off"
-    - condition: state
-      entity_id: input_boolean.pergola_blocco_manuale
-      state: "off"
+    # v3: con il flag manuale alzato la valutazione gira comunque (anche in
+    # vacanza), ma solo per avvisare: la pergola non viene toccata.
+    - condition: template
+      value_template: >-
+        {{ is_state('input_boolean.vacanza', 'off')
+           or is_state('input_boolean.pergola_blocco_manuale', 'on') }}
     - condition: template
       value_template: >-
         {{ trigger.id != 'fitto'
@@ -230,8 +238,50 @@
                   ('previsione ' ~ (mm_previsti | round(1)) ~ ' mm/3h') if mm_previsti > 0 else none ]
                 | reject('none') | list | join(' + '))
              ~ ' · riapre non prima delle ' ~ ora_riapertura }}
+    # v3: avviso meteo con pergola in gestione manuale.
+    # Allarme rientrato o flag abbassato: l'avviso si riarma.
+    - if:
+        - condition: template
+          value_template: >-
+            {{ is_state('input_boolean.pergola_meteo_avviso_manuale', 'on')
+               and not (emergenza and is_state('input_boolean.pergola_blocco_manuale', 'on')) }}
+      then:
+        - action: input_boolean.turn_off
+          target:
+            entity_id: input_boolean.pergola_meteo_avviso_manuale
     - condition: template
       value_template: "{{ emergenza }}"
+    # Flag manuale alzato: nessun comando alla pergola, solo una notifica
+    # per ogni allarme.
+    - if:
+        - condition: state
+          entity_id: input_boolean.pergola_blocco_manuale
+          state: "on"
+      then:
+        - if:
+            - condition: state
+              entity_id: input_boolean.pergola_meteo_avviso_manuale
+              state: "off"
+          then:
+            - action: notify.mobile_app_cph2653
+              data:
+                title: "⚠️ Pergola in gestione manuale: andrebbe chiusa"
+                message: >-
+                  Allarme meteo: {{ ([ ('raffica ' ~ (v_raffica | round(1)) ~ ' km/h') if v_raffica > 40 else none,
+                      ('pioggia ' ~ (v_rate | round(1)) ~ ' mm/h') if v_rate > 0 else none,
+                      ('accumulo ' ~ (v_oraria | round(1)) ~ ' mm') if v_oraria > 0 else none,
+                      ('previsione ' ~ (mm_previsti | round(1)) ~ ' mm/3h') if mm_previsti > 0 else none ]
+                    | reject('none') | list | join(' + ')) }}.
+                  Con "Pergola manuale" alzato la sicurezza meteo non la chiude:
+                  chiudila dalla plancia Tende o abbassa il flag.
+                data:
+                  tag: pergola_meteo_manuale
+                  priority: high
+                  ttl: 0
+            - action: input_boolean.turn_on
+              target:
+                entity_id: input_boolean.pergola_meteo_avviso_manuale
+        - stop: "Pergola in gestione manuale: solo avviso"
     - action: cover.set_cover_tilt_position
       target:
         entity_id: cover.terrazzo_pergola_terrazza
@@ -598,27 +648,3 @@
               data:
                 position: "{{ bersaglio | int }}"
 
-#==================================================================================
-# PERGOLA – RILASCIO BLOCCO MANUALE (07:00 / 23:00)
-# Il blocco attivato da script.pergola_toggle_manuale dura fino alle 07:00 o
-# alle 23:00 successive. Dalla v24 (automations_clima_66) e' l'unico rilascio
-# orario: prima lo azzeravano anche clima_modalita_giorno e
-# clima_modalita_notte, e d'estate il blocco cadeva gia' alle 21:00.
-# (Alla partenza per vacanza il flag viene già azzerato dall'automazione clima.)
-#==================================================================================
-- id: pergola_blocco_manuale_rilascio
-  alias: "Pergola – Rilascio Blocco Manuale"
-  mode: single
-  triggers:
-    - platform: time
-      at: "07:00:00"
-    - platform: time
-      at: "23:00:00"
-  conditions:
-    - condition: state
-      entity_id: input_boolean.pergola_blocco_manuale
-      state: "on"
-  actions:
-    - action: input_boolean.turn_off
-      target:
-        entity_id: input_boolean.pergola_blocco_manuale

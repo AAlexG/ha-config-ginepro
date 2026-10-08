@@ -1,4 +1,6 @@
-# config_caldaia_6.yaml
+# config_caldaia_7.yaml
+# v7 (08/10/2026): nuovo input_boolean.caldaia_manuale (gestione manuale del
+#   riscaldamento a caldaia, stesso schema di pdc_manuale e dei fancoil).
 # Package Casa Ginepro - Caldaia Baxi / OTGW: DHW, costi termici, scelta fonte caldaia-PdC
 # Estratto da configuration_186.yaml. Nome file = nome del package.
 
@@ -249,5 +251,17 @@ input_boolean:
     name: "Caldaia – Fault Notificato"
     initial: false
     icon: mdi:bell-check
+
+  # --- GESTIONE MANUALE CALDAIA (riscaldamento via SAT) ---
+  # Stesso schema di pdc_manuale e dei fancoil. Lo alzano i comandi manuali
+  # della caldaia in plancia (script caldaia_manuale_accendi / _spegni) o il
+  # tile del flag; lo abbassa SOLO l'utente dalla plancia. Con il flag alzato
+  # nessuna automazione tocca il SAT (accensione, spegnimento, target, preset).
+  # Il controllo fonte_sicurezza resta comunque attivo. Promemoria alle 10:00 e
+  # alle 22:00 se resta alzato da oltre un'ora (flag_manuali_promemoria).
+  # Nessuna chiave initial: al riavvio HA ripristina lo stato salvato.
+  caldaia_manuale:
+    name: "Caldaia - Gestione Manuale"
+    icon: mdi:hand-back-right
 
 # generic_thermostat rimosso: sostituito da SAT (Smart Autotune Thermostat)
