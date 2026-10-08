@@ -26,20 +26,20 @@ config:
           action: none
         type: tile
         vertical: false
-      - entity: binary_sensor.opentherm_gateway_otgw_otgw_flame
+      - double_tap_action:
+          action: none
+        entity: climate.smart_autotune_thermostat_living_room
         features_position: bottom
         grid_options:
           columns: 6
           rows: 1
-        name: Fiamma
-        type: tile
-        vertical: false
-      - entity: input_boolean.pdc_manuale
-        features_position: bottom
-        grid_options:
-          columns: 6
-          rows: 1
-        name: Pompa manuale
+        hold_action:
+          action: none
+        icon_tap_action:
+          action: none
+        name: Caldaia ora
+        tap_action:
+          action: none
         type: tile
         vertical: false
       - entity: input_boolean.caldaia_manuale
@@ -50,12 +50,39 @@ config:
         name: Caldaia manuale
         type: tile
         vertical: false
+      - entity: switch.panasonic_heat_pump_main_heatpump_state
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        icon: mdi:heat-pump-outline
+        name: Pompa Ora
+        tap_action:
+          action: none
+        type: tile
+        vertical: false
+      - entity: input_boolean.pdc_manuale
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        name: Pompa manuale
+        type: tile
+        vertical: false
       - entity: input_boolean.vacanza
         features_position: bottom
         grid_options:
           columns: 6
           rows: 1
         name: Vacanza
+        type: tile
+        vertical: false
+      - entity: input_select.clima_modalita
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        name: "Modalit\xE0"
         type: tile
         vertical: false
       - entity: input_number.clima_minuti_verso_heat
@@ -72,14 +99,6 @@ config:
           columns: 12
           rows: 1
         name: Minuti verso Cool
-        type: tile
-        vertical: false
-      - entity: input_select.clima_modalita
-        features_position: bottom
-        grid_options:
-          columns: 12
-          rows: 1
-        name: "Modalit\xE0"
         type: tile
         vertical: false
       - entity: input_boolean.clima_freecooling_attivo

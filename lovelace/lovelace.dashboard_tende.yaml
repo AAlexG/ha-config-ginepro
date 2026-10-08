@@ -115,7 +115,7 @@ config:
           rows: auto
         icon_tap_action:
           action: toggle
-        name: Pergola manuale (si abbassa solo a mano)
+        name: Pergola in blocco manuale
         tap_action:
           action: toggle
         type: tile

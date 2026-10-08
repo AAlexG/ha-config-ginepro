@@ -1,0 +1,250 @@
+# config_ricarica_auto_2.yaml
+# v2 (08/10/2026): limite di carica del SC calcolato con la tensione che il SC
+#   raggiunge passo per passo nella simulazione, ricavata dalla curva misurata
+#   energia/tensione. Prima si usava la tensione di float (57 V) per tutta la
+#   carica, che sovrastimava il limite a inizio carica (circa 3,5 kW reali a
+#   44 V contro 4,6 kW).
+# v1 (08/10/2026): prima versione. Previsione del pieno del condensatore con
+#   l'auto in carica, base per lo stacco automatico della ricarica.
+# Package Casa Ginepro - Ricarica auto: previsione pieno condensatore SC.
+# Nome file = nome del package. File nuovo: riavvio RAPIDO (solo HA).
+#
+#==================================================================================
+# IDEA
+# Con l'auto in carica il fotovoltaico deve bastare sia all'auto sia al
+# condensatore (SC). Ogni 5 minuti si simula il resto della giornata e si
+# calcola T1, il tempo che serve al SC per arrivare al pieno. Se il pieno non
+# viene raggiunto prima che il surplus FV finisca, la ricarica dell'auto va
+# staccata (automations_ricarica_auto).
+#
+# MODELLO DI PRODUZIONE
+#   forma  = profilo orario di una giornata serena di questo periodo dell'anno
+#            (sensor.pv_profilo_sereno, calcolato ogni notte dalle statistiche)
+#   scala  = prodotto oggi finora / prodotto dal profilo sereno fino ad adesso
+#   produzione prevista nell'ora h = scala x profilo[h]
+# La scala misura il tempo di OGGI (foschia, velature, nuvole). Non prevede
+# nuvole in arrivo: assume che il resto della giornata somigli a quanto visto
+# finora. Sotto 1 kWh di produzione serena attesa il rapporto e' instabile e
+# la previsione resta "non valutabile" (soglia in input_number).
+#
+# ENERGIA MANCANTE AL SC
+#   (100 - SoC inverter) / 100 x energia utile x (1 + margine)
+# Energia utile 5,65 kWh: MISURATA il 01-08/10/2026 come energia netta entrata
+# nel SC da circa 44 V al float (56,7 V), 6 giorni su 6 fra 5,04 e 5,84 kWh.
+# I 7,6 kWh di targa non entrano tutti nella finestra di tensione impostata.
+# Il SoC dell'inverter e' risultato coerente con questa misura (mediane per
+# fascia di tensione entro circa 0,5 kWh).
+#
+# CARICO DELLA CASA
+# Media degli ultimi 15 minuti di sensor.inverter_uflex_load_power, auto
+# compresa, tenuta costante per il resto della giornata. Appena l'auto parte
+# la media impiega fino a 15 minuti per includerla: l'automazione aspetta
+# comunque 15 minuti di previsione negativa prima di agire.
+#
+# LIMITE DI CARICA DEL SC (v2)
+# Il SC non assorbe piu' di max_charging_current x tensione del SC: il surplus
+# oltre quel valore va in rete e non accorcia T1. La tensione cresce durante
+# la carica: a 80 A il limite va da circa 3,5 kW a 44 V a circa 4,6 kW a 57 V.
+# Ad ogni passo da 5 minuti la simulazione calcola la frazione di energia
+# ancora mancante e ne ricava la tensione dalla curva MISURATA il 01-08/10/2026
+# (6 cariche complete, mediana per fascia di 1 V, tensione sotto carica):
+#     V     43,5  44,5  45,5  46,5  47,5  48,5  49,5  50,5  51,5  52,5  53,5  54,5  55,5  56,5  57,0
+#     kWh   5,66  5,65  5,61  5,57  5,49  5,33  4,92  4,37  3,57  2,50  1,60  0,99  0,53  0,18  0
+# In tabella la frazione e' kWh mancanti / 5,66: resta valida anche se si
+# corregge input_number.condensatore_energia_utile.
+# Fra due punti la tensione e' interpolata linearmente.
+#==================================================================================
+
+sensor:
+  # Media mobile 15 minuti del carico casa (W). Integrazione statistics,
+  # caratteristica "mean". Il load_power si aggiorna ogni pochi secondi:
+  # 1000 campioni bastano per 15 minuti con margine.
+  - platform: statistics
+    name: "Carico Casa Media 15 min"
+    unique_id: carico_casa_media_15_min
+    entity_id: sensor.inverter_uflex_load_power
+    state_characteristic: mean
+    max_age:
+      minutes: 15
+    sampling_size: 1000
+
+command_line:
+  # Profilo orario sereno (kWh per ora, 24 valori, ora locale). Il JSON e'
+  # scritto dallo shell_command calcola_pv_profilo_sereno.
+  - sensor:
+      name: PV Profilo Sereno
+      unique_id: pv_profilo_sereno
+      command: "cat /config/pv_profilo_sereno.json 2>/dev/null"
+      scan_interval: 3600
+      value_template: "{{ value_json.totale_sereno | default(0) }}"
+      unit_of_measurement: "kWh"
+      json_attributes:
+        - profilo
+        - giorni_finestra
+        - giorni_sereni
+        - calcolato
+        - errore
+
+shell_command:
+  calcola_pv_profilo_sereno: "python3 /config/pv_profilo_sereno.py > /config/pv_profilo_sereno.json 2>/config/pv_profilo_sereno.log"
+
+input_number:
+  condensatore_energia_utile:
+    name: "Condensatore - Energia utile"
+    min: 1
+    max: 10
+    step: 0.05
+    unit_of_measurement: "kWh"
+    mode: box
+    icon: mdi:battery-high
+
+  ricarica_auto_margine:
+    name: "Ricarica auto - Margine previsione"
+    min: 0
+    max: 50
+    step: 5
+    unit_of_measurement: "%"
+    mode: box
+    icon: mdi:shield-half-full
+
+  ricarica_auto_soglia_sereno:
+    name: "Ricarica auto - Soglia valutabilita'"
+    min: 0.5
+    max: 10
+    step: 0.5
+    unit_of_measurement: "kWh"
+    mode: box
+    icon: mdi:weather-sunset-up
+
+template:
+  - triggers:
+      - trigger: time_pattern
+        minutes: "/5"
+      - trigger: state
+        entity_id: switch.solo_auto_contattore_interruttore
+      - trigger: homeassistant
+        event: start
+    sensor:
+      - name: "Condensatore Previsione Pieno"
+        unique_id: condensatore_previsione_pieno
+        icon: mdi:battery-clock
+        # Stati possibili:
+        #   pieno             SoC gia' al 100%
+        #   raggiungibile     T1 entro la fine del surplus
+        #   non raggiungibile il surplus finisce prima del pieno
+        #   non valutabile    notte, mattino presto o profilo mancante
+        state: >-
+          {%- set p = state_attr('sensor.pv_profilo_sereno', 'profilo') -%}
+          {%- set soc = states('sensor.inverter_uflex_battery') | float(-1) -%}
+          {%- set adesso = now() -%}
+          {%- set hf = adesso.hour + adesso.minute / 60 -%}
+          {%- set h = adesso.hour -%}
+          {%- if p is not iterable or p is string or p | count != 24 or soc < 0 -%}
+            non valutabile
+          {%- elif soc >= 100 -%}
+            pieno
+          {%- else -%}
+            {%- set sereno_fatto = (p[:h] | sum) + p[h] * (hf - h) -%}
+            {%- set prodotto = states('sensor.inverter_uflex_today_production') | float(0) -%}
+            {%- if sereno_fatto < states('input_number.ricarica_auto_soglia_sereno') | float(1) -%}
+              non valutabile
+            {%- else -%}
+              {%- set scala = prodotto / sereno_fatto -%}
+              {%- set carico = states('sensor.carico_casa_media_15_min') | float(states('sensor.inverter_uflex_load_power') | float(0)) / 1000 -%}
+              {%- set imax = states('number.inverter_uflex_battery_max_charging_current') | float(80) -%}
+              {%- set eu = states('input_number.condensatore_energia_utile') | float(5.65) -%}
+              {%- set curva = [[43.5,1.0],[44.5,0.998],[45.5,0.991],[46.5,0.984],[47.5,0.97],[48.5,0.942],[49.5,0.869],[50.5,0.772],[51.5,0.631],[52.5,0.442],[53.5,0.283],[54.5,0.175],[55.5,0.094],[56.5,0.032],[57.0,0.0]] -%}
+              {%- set serve = (100 - soc) / 100
+                             * states('input_number.condensatore_energia_utile') | float(5.65)
+                             * (1 + states('input_number.ricarica_auto_margine') | float(10) / 100) -%}
+              {%- set ns = namespace(e=0, t1=none) -%}
+              {%- for i in range(1, ((24 - hf) * 12) | int + 1) -%}
+                {%- set t = hf + i / 12 -%}
+                {%- set surplus = scala * p[[(t - 1 / 24) | int, 23] | min] - carico -%}
+                {%- if surplus > 0 -%}
+                  {%- set fm = [(100 - soc) / 100 - ns.e / eu, 0] | max -%}
+                  {%- set nv = namespace(v=curva[0][0]) -%}
+                  {%- for k in range(curva | count - 1) -%}
+                    {%- if fm <= curva[k][1] and fm >= curva[k + 1][1] -%}
+                      {%- set nv.v = curva[k][0] + (curva[k][1] - fm) / (curva[k][1] - curva[k + 1][1]) * (curva[k + 1][0] - curva[k][0]) -%}
+                    {%- endif -%}
+                  {%- endfor -%}
+                  {%- set pmax = imax * nv.v / 1000 -%}
+                  {%- set ns.e = ns.e + [surplus, pmax] | min / 12 -%}
+                {%- endif -%}
+                {%- if ns.t1 is none and ns.e >= serve -%}
+                  {%- set ns.t1 = i * 5 -%}
+                {%- endif -%}
+              {%- endfor -%}
+              {{- 'raggiungibile' if ns.t1 is not none else 'non raggiungibile' -}}
+            {%- endif -%}
+          {%- endif -%}
+        # Gli attributi ripetono il calcolo per renderlo verificabile in
+        # plancia e nella notifica. Stesse formule dello stato.
+        attributes:
+          calcolo: >-
+            {%- set p = state_attr('sensor.pv_profilo_sereno', 'profilo') -%}
+            {%- set soc = states('sensor.inverter_uflex_battery') | float(-1) -%}
+            {%- set adesso = now() -%}
+            {%- set hf = adesso.hour + adesso.minute / 60 -%}
+            {%- set h = adesso.hour -%}
+            {%- if p is not iterable or p is string or p | count != 24 or soc < 0 -%}
+              {{- {} -}}
+            {%- else -%}
+              {%- set sereno_fatto = (p[:h] | sum) + p[h] * (hf - h) -%}
+              {%- set prodotto = states('sensor.inverter_uflex_today_production') | float(0) -%}
+              {%- set scala = prodotto / sereno_fatto if sereno_fatto > 0 else 0 -%}
+              {%- set carico = states('sensor.carico_casa_media_15_min') | float(states('sensor.inverter_uflex_load_power') | float(0)) / 1000 -%}
+              {%- set imax = states('number.inverter_uflex_battery_max_charging_current') | float(80) -%}
+              {%- set eu = states('input_number.condensatore_energia_utile') | float(5.65) -%}
+              {%- set curva = [[43.5,1.0],[44.5,0.998],[45.5,0.991],[46.5,0.984],[47.5,0.97],[48.5,0.942],[49.5,0.869],[50.5,0.772],[51.5,0.631],[52.5,0.442],[53.5,0.283],[54.5,0.175],[55.5,0.094],[56.5,0.032],[57.0,0.0]] -%}
+              {%- set serve = (100 - soc) / 100
+                             * states('input_number.condensatore_energia_utile') | float(5.65)
+                             * (1 + states('input_number.ricarica_auto_margine') | float(10) / 100) -%}
+              {%- set ns = namespace(e=0, t1=none, ultimo=0, pv=0, pmax0=none, v0=none) -%}
+              {%- set f0 = [(100 - soc) / 100, 0] | max -%}
+              {%- for k in range(curva | count - 1) -%}
+                {%- if ns.v0 is none and f0 <= curva[k][1] and f0 >= curva[k + 1][1] -%}
+                  {%- set ns.v0 = curva[k][0] + (curva[k][1] - f0) / (curva[k][1] - curva[k + 1][1]) * (curva[k + 1][0] - curva[k][0]) -%}
+                {%- endif -%}
+              {%- endfor -%}
+              {%- set ns.v0 = ns.v0 if ns.v0 is not none else curva[0][0] -%}
+              {%- set ns.pmax0 = imax * ns.v0 / 1000 -%}
+              {%- for i in range(1, ((24 - hf) * 12) | int + 1) -%}
+                {%- set t = hf + i / 12 -%}
+                {%- set pv = scala * p[[(t - 1 / 24) | int, 23] | min] -%}
+                {%- set ns.pv = ns.pv + pv / 12 -%}
+                {%- set surplus = pv - carico -%}
+                {%- if surplus > 0 -%}
+                  {%- set fm = [(100 - soc) / 100 - ns.e / eu, 0] | max -%}
+                  {%- set nv = namespace(v=curva[0][0]) -%}
+                  {%- for k in range(curva | count - 1) -%}
+                    {%- if fm <= curva[k][1] and fm >= curva[k + 1][1] -%}
+                      {%- set nv.v = curva[k][0] + (curva[k][1] - fm) / (curva[k][1] - curva[k + 1][1]) * (curva[k + 1][0] - curva[k][0]) -%}
+                    {%- endif -%}
+                  {%- endfor -%}
+                  {%- set pmax = imax * nv.v / 1000 -%}
+                  {%- set ns.e = ns.e + [surplus, pmax] | min / 12 -%}
+                  {%- set ns.ultimo = i * 5 -%}
+                {%- endif -%}
+                {%- if ns.t1 is none and ns.e >= serve -%}
+                  {%- set ns.t1 = i * 5 -%}
+                {%- endif -%}
+              {%- endfor -%}
+              {{- {
+                   'soc_pct': soc,
+                   'energia_mancante_kwh': serve | round(2),
+                   'prodotto_oggi_kwh': prodotto | round(2),
+                   'sereno_fatto_kwh': sereno_fatto | round(2),
+                   'scala': scala | round(2),
+                   'produzione_residua_kwh': ns.pv | round(2),
+                   'carico_kw': carico | round(2),
+                   'carica_max_sc_iniziale_kw': ns.pmax0 | round(2),
+                   'tensione_iniziale_v': ns.v0 | round(1),
+                   'energia_sc_prevista_kwh': ns.e | round(2),
+                   't1_min': ns.t1,
+                   'disponibile_min': ns.ultimo,
+                   'ora_pieno': (adesso + timedelta(minutes=ns.t1)).strftime('%H:%M') if ns.t1 is not none else none,
+                   'fine_surplus': (adesso + timedelta(minutes=ns.ultimo)).strftime('%H:%M') if ns.ultimo > 0 else none
+                 } -}}
+            {%- endif -%}

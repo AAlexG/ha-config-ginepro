@@ -1,0 +1,95 @@
+# automations_ricarica_auto_1.yaml
+#
+# v1 (08/10/2026): prima versione. Stacco della ricarica auto quando il
+#   condensatore (SC) non arriverebbe al pieno prima della fine del surplus FV.
+# Sensori e parametri: config_ricarica_auto.
+#==================================================================================
+
+#==================================================================================
+# R1. STACCO RICARICA AUTO SE IL SC NON ARRIVA AL PIENO
+#
+# Ogni 5 minuti, se l'auto sta caricando (oltre 1 kW sul contattore) e la
+# previsione dice "non raggiungibile" da almeno 15 minuti, stacca il contattore.
+# I 15 minuti servono a: assorbire una nuvola di passaggio e dare tempo alla
+# media del carico casa di includere l'auto appena partita.
+#
+# Solo con il sole sopra l'orizzonte: di notte il SC non puo' riempirsi in
+# nessun caso e staccare l'auto non darebbe nulla al SC.
+#
+# Flag input_boolean.auto_manuale: se e' alzato l'automazione NON interviene.
+# E' il modo per dire "oggi carica comunque". Lo stacco NON alza il flag:
+# nessuna automazione riaccende l'auto, quindi non serve bloccarla, e cosi'
+# l'automazione resta attiva per i giorni successivi.
+#==================================================================================
+- id: ricarica_auto_stacco_sc_non_pieno
+  alias: "Ricarica auto - Stacco se il condensatore non arriva al pieno"
+  description: >
+    Con l'auto in carica e il sole alto, stacca il contattore auto se la
+    previsione dice da 15 minuti che il condensatore non raggiungera' il pieno
+    prima della fine del surplus FV. Non interviene con auto_manuale alzato.
+  mode: single
+  max_exceeded: silent
+  triggers:
+    - trigger: time_pattern
+      minutes: "/5"
+  conditions:
+    - condition: state
+      entity_id: sun.sun
+      state: above_horizon
+    - condition: state
+      entity_id: input_boolean.auto_manuale
+      state: "off"
+    - condition: state
+      entity_id: switch.solo_auto_contattore_interruttore
+      state: "on"
+    # Potenza del contattore auto in kW (vedi config_elettricita, UNITA').
+    - condition: numeric_state
+      entity_id: sensor.solo_auto_contattore_potenza_di_fase_a
+      above: 1
+    - condition: state
+      entity_id: sensor.condensatore_previsione_pieno
+      state: non raggiungibile
+      for: "00:15:00"
+  actions:
+    - variables:
+        c: "{{ state_attr('sensor.condensatore_previsione_pieno', 'calcolo') or {} }}"
+    - action: switch.turn_off
+      continue_on_error: true
+      target:
+        entity_id: switch.solo_auto_contattore_interruttore
+    - action: notify.mobile_app_cph2653
+      continue_on_error: true
+      data:
+        title: "Ricarica auto staccata"
+        message: >
+          Il condensatore non arriverebbe al pieno con l'auto in carica.
+          SoC {{ c.soc_pct | default('?') }}%, mancano {{ c.energia_mancante_kwh | default('?') }} kWh;
+          con l'auto ne entrerebbero {{ c.energia_sc_prevista_kwh | default('?') }} kWh
+          prima della fine del surplus ({{ c.fine_surplus or 'nessun surplus' }}).
+          Produzione di oggi al {{ ((c.scala | default(0)) * 100) | round(0) }}% del sereno,
+          residua prevista {{ c.produzione_residua_kwh | default('?') }} kWh, carico {{ c.carico_kw | default('?') }} kW.
+          Per caricare comunque: alza "Auto Contattore - Gestione Manuale" e riaccendi.
+        data:
+          tag: ricarica_auto_sc
+          priority: high
+          ttl: 0
+
+#==================================================================================
+# R2. PROFILO SERENO FV - ricalcolo notturno e all'avvio
+# Il profilo cambia lentamente con la stagione: una volta al giorno basta.
+#==================================================================================
+- id: ricarica_auto_calcola_profilo_sereno
+  alias: "Ricarica auto - Calcola profilo sereno FV"
+  mode: single
+  triggers:
+    - trigger: homeassistant
+      event: start
+    - trigger: time
+      at: "00:20:00"
+  actions:
+    - action: shell_command.calcola_pv_profilo_sereno
+    # Il command_line sensor ha scan_interval 3600: si forza la rilettura
+    # del JSON appena scritto, come per PV Tabella Mensile.
+    - action: homeassistant.update_entity
+      data:
+        entity_id: sensor.pv_profilo_sereno

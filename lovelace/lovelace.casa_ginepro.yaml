@@ -290,15 +290,6 @@ config:
         name: OUT pompa
         type: tile
         vertical: false
-      - entity: binary_sensor.panasonic_heat_pump_lwt
-        features_position: bottom
-        grid_options:
-          columns: 6
-          rows: 1
-        icon: mdi:heat-pump-outline
-        name: Pompa Online
-        type: tile
-        vertical: false
       - double_tap_action:
           action: none
         entity: switch.panasonic_heat_pump_main_heatpump_state
@@ -316,12 +307,29 @@ config:
           action: none
         type: tile
         vertical: false
-      - entity: input_boolean.clima_freecooling_attivo
+      - entity: binary_sensor.panasonic_heat_pump_lwt
         features_position: bottom
         grid_options:
           columns: 6
           rows: 1
-        name: Free cooling in corso
+        icon: mdi:heat-pump-outline
+        name: Pompa Online
+        type: tile
+        vertical: false
+      - double_tap_action:
+          action: none
+        entity: climate.smart_autotune_thermostat_living_room
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        hold_action:
+          action: none
+        icon_tap_action:
+          action: none
+        name: Caldaia
+        tap_action:
+          action: none
         type: tile
         vertical: false
       - entity: binary_sensor.opentherm_gateway_otgw_otgw_flame
@@ -332,7 +340,7 @@ config:
         icon_tap_action:
           action: navigate
           navigation_path: /otgw-caldaia/otgw
-        name: Caldaia Fiamma
+        name: Fiamma
         type: tile
         vertical: false
       - color: '#2196F3'
@@ -351,6 +359,22 @@ config:
         features_position: bottom
         icon: mdi:car
         name: Auto contattore
+        type: tile
+        vertical: false
+      - entity: input_boolean.clima_freecooling_attivo
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        name: Free cooling in corso
+        type: tile
+        vertical: false
+      - entity: input_boolean.clima_freeheating_attivo
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        name: Free heating in corso
         type: tile
         vertical: false
       - card:

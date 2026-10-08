@@ -1,4 +1,6 @@
-# scripts_58.yaml
+# scripts_59.yaml
+# v59 (08/10/2026): fonte_imposta, controllo del rele' valvola scritto come
+#   if/then (prima un if con solo else, rifiutato da Home Assistant).
 # v58 (08/10/2026): i comandi di pompa e caldaia (pompa_accendi/_spegni/_commuta,
 #   caldaia_accendi/_spegni, prima *_manuale_*) non toccano piu' i flag manuali:
 #   accendere o spegnere e' un comando, il flag dice solo alle automazioni di
@@ -738,8 +740,8 @@ fonte_imposta:
         # valvola non ha feedback di posizione: si controlla solo il comando).
         - if:
             - condition: template
-              value_template: "{{ is_state('switch.shelly_box', 'on' if f == 'pompa' else 'off') }}"
-          else:
+              value_template: "{{ not is_state('switch.shelly_box', 'on' if f == 'pompa' else 'off') }}"
+          then:
             - action: notify.mobile_app_cph2653
               data:
                 title: "⛔ Valvola non commutata"
