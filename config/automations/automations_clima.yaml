@@ -1,4 +1,15 @@
-# automations_clima_70.yaml
+# automations_clima_72.yaml
+#
+# v72 (08/10/2026): stagione decisa dalla temperatura interna. Riscritta
+#   clima_commutazione_stagionale (stesso id): Cool -> Heat se la zona
+#   comandante resta 5 ore sotto il minimo invernale, Heat -> Cool se resta
+#   5 ore sopra il massimo estivo, con blocco free cooling/heating. Rimosse
+#   clima_media_esterna_7gg, clima_passaggio_heat_temperatura_interna (v71) e
+#   il default di clima_soglia_inverno. Helper relativi tolti in config_clima.
+#
+# v71 (08/10/2026): nuova clima_passaggio_heat_temperatura_interna. La pompa
+#   passa da Cool a Heat da sola quando sala (giorno) o camera Georgi (notte)
+#   restano 30 minuti sotto il minimo invernale, a prescindere dall'esterno.
 #
 # v70 (04/10/2026): promemoria flag manuali esteso a portone box e cancello grande.
 #
@@ -44,7 +55,6 @@
           # --- Lotto 1: parametri storici del sistema clima ---
           - [1, input_number.clima_soglia_solare_boost, 2500]
           - [1, input_number.clima_boost_solare_delta, 2]
-          - [1, input_number.clima_soglia_inverno, 13]
           - [1, input_number.panasonic_pid_kp, 2.0]
           - [1, input_number.panasonic_pid_ki, 0.05]
           - [1, input_number.panasonic_pid_kd, 0.2]
@@ -105,28 +115,6 @@
                   Applicati {{ da_applicare | count }} valori di default
                   (lotti fino al {{ versione_attesa }}):
                   {{ da_applicare | map(attribute=1) | map('replace', 'input_number.', '') | join(', ') }}.
-
-#==================================================================================
-# CLIMA – MEDIA TEMPERATURA ESTERNA 7 GIORNI
-#==================================================================================
-- id: clima_media_esterna_7gg
-  alias: "Clima – Aggiorna Media Esterna 7gg"
-  description: "Calcola EMA temperatura esterna ogni ora per soglia inverno/estate"
-  # v66: alfa da 0,021 a 0,0118 = 2/(168+1), media esponenziale su 168 ore.
-  # Con 0,021 la costante di tempo era 1/0,021 = 48 h (dimezzamento 33 h):
-  # una media di circa 2 giorni, non di 7.
-  triggers:
-    - trigger: time_pattern
-      hours: "/1"
-  actions:
-    - action: input_number.set_value
-      target:
-        entity_id: input_number.clima_media_esterna_7gg
-      data:
-        value: >
-          {% set t = states('sensor.hp1000se_pro_pro_v1_6_4_outdoor_temperature') | float(15) %}
-          {% set media = states('input_number.clima_media_esterna_7gg') | float(15) %}
-          {{ (media * 0.9882 + t * 0.0118) | round(2) }}
 
 #==================================================================================
 # FANCOIL - CLIMA – COMMUTAZIONE MODALITÀ GIORNALIERA
@@ -214,12 +202,9 @@
     # Un solo orario e' valido per volta.
     # v66: SORGENTE UNICA DELLA STAGIONE = modo operativo della pompa. E' lo
     # stato fisico dell'impianto e lo leggono gia' PID, fancoil, free
-    # cooling/heating, riaccensione e antigelo. input_select.clima_stagione e'
-    # ora solo la stagione CONSIGLIATA dalla media esterna (vedi
-    # clima_commutazione_stagionale): prima notte, SAT e gestione fonte
-    # seguivano clima_stagione e il resto il modo pompa, e fra il cambio di
-    # clima_stagione e il cambio a mano del modo le due meta' del sistema
-    # lavoravano in stagioni diverse.
+    # cooling/heating, riaccensione e antigelo. Dalla v72 il modo lo cambia
+    # clima_commutazione_stagionale in base alla temperatura interna;
+    # input_select.clima_stagione non esiste piu'.
     - condition: template
       value_template: >
         {% set estate = states('select.panasonic_heat_pump_main_operating_mode_state')
@@ -793,88 +778,177 @@
 #==================================================================================
 
 #==================================================================================
-# PANASONIC - CLIMA – COMMUTAZIONE STAGIONALE (STAGIONE CONSIGLIATA)
+# CLIMA – COMMUTAZIONE STAGIONALE (TEMPERATURA INTERNA)
 #
-# v66: input_select.clima_stagione e' la stagione CONSIGLIATA dalla media
-# esterna. Tutte le automazioni seguono invece il modo operativo della pompa,
-# che si cambia a mano: questa automazione registra la stagione consigliata e
-# avvisa quando il modo va cambiato.
-# Soglie: inverno sotto input_number.clima_soglia_inverno, estate sopra la
-# stessa soglia + 3 C (v66: prima 16 fisso nel codice; con soglia 13 il
-# comportamento e' identico, ma ora segue lo slider).
-# Il ramo valvola aggiunto in v65 e' stato tolto: con il modo pompa come
-# sorgente unica la valvola la riporta su Pompa panasonic_cooling_riaccensione,
-# appena la pompa e' in Cool.
+# v72: la stagione e' il modo operativo della pompa e la decide la temperatura
+# interna, non piu' la media esterna. Sostituisce la vecchia commutazione
+# sulla media esterna 7gg (con notifica alle 06:00) e il passaggio a Heat
+# della v71: un solo concetto, nessuna stagione "consigliata".
+#
+# Zona comandante, come il PID (segue input_select.clima_modalita):
+#   giorno -> sala          sensor.hp1000se_pro_pro_v1_6_4_indoor_temperature
+#   notte  -> camera Georgi sensor.termometro_georgi_zigbee_temperature
+# Passaggi:
+#   Cool -> Heat: zona sotto il minimo invernale
+#                 (mintemp_giorno_inverno_sala / mintemp_notte_inverno_letto)
+#                 per 5 ore di fila, con free cooling SPENTO
+#   Heat -> Cool: zona sopra il massimo estivo
+#                 (maxtemp_giorno_estate_sala / maxtemp_notte_estate_letto)
+#                 per 5 ore di fila, con free heating SPENTO
+# Il blocco free cooling/heating evita il cambio quando la temperatura e'
+# voluta (finestre aperte d'estate, sole d'inverno con riscaldamento passivo).
+#
+# Durata: due contatori in minuti (input_number.clima_minuti_verso_heat e
+# _verso_cool), +5 a ogni ciclo con la condizione vera, azzerati appena e'
+# falsa. Sono input_number, quindi sopravvivono ai riavvii di HA.
+# Sensore della zona non disponibile: contatori congelati (ne' avanti ne'
+# azzerati), come le guardie dati v58.
+# Lucchetto pdc_manuale, vacanza o modalita manuale: contatori azzerati e
+# nessun cambio.
+#
+# Dopo il cambio fa tutto il resto del sistema, che segue il modo pompa
+# (PID, fancoil, SAT, gestione fonte, notte 21/23, free cooling/heating).
+# Passando a Cool spegne anche il SAT: se la fonte era la caldaia il
+# termostato resterebbe in heat. La valvola la riporta su Pompa
+# panasonic_cooling_riaccensione alla prima riaccensione in Cool.
 #==================================================================================
 - id: clima_commutazione_stagionale
-  alias: "Clima – Commutazione Stagionale"
-  description: "Registra la stagione consigliata dalla media esterna e avvisa di cambiare il modo pompa"
+  alias: "Clima – Commutazione Stagionale (temperatura interna)"
+  description: >
+    Ogni 5 minuti conta da quanto la zona comandante (sala di giorno, camera
+    Georgi di notte) e' sotto il minimo invernale o sopra il massimo estivo.
+    Dopo 5 ore di fila mette la pompa in Heat only o Cool only. Bloccato da
+    free cooling (verso Heat) e free heating (verso Cool).
+  mode: single
   triggers:
-    - trigger: time
-      at: "06:00:00"
+    - trigger: time_pattern
+      minutes: "/5"
   variables:
-    media: "{{ states('input_number.clima_media_esterna_7gg') | float(15) }}"
-    soglia_inverno: "{{ states('input_number.clima_soglia_inverno') | float(13) }}"
-    soglia_estate: "{{ soglia_inverno + 3 }}"
+    durata_min: 300
     modo: "{{ states('select.panasonic_heat_pump_main_operating_mode_state') }}"
+    in_cool: "{{ modo in ['Cool', 'Cool only'] }}"
+    in_heat: "{{ modo in ['Heat', 'Heat only'] }}"
+    notte: "{{ is_state('input_select.clima_modalita', 'notte') }}"
+    zona: "{{ 'camera Georgi' if notte else 'sala' }}"
+    sensore: >
+      {{ 'sensor.termometro_georgi_zigbee_temperature' if notte
+         else 'sensor.hp1000se_pro_pro_v1_6_4_indoor_temperature' }}
+    ent_min: >
+      {{ 'input_number.mintemp_notte_inverno_letto' if notte
+         else 'input_number.mintemp_giorno_inverno_sala' }}
+    ent_max: >
+      {{ 'input_number.maxtemp_notte_estate_letto' if notte
+         else 'input_number.maxtemp_giorno_estate_sala' }}
+    dati_ok: >
+      {{ (in_cool or in_heat) and has_value(sensore)
+         and has_value(ent_min) and has_value(ent_max) }}
+    t_zona: "{{ states(sensore) | float(0) }}"
+    minimo: "{{ states(ent_min) | float(0) }}"
+    massimo: "{{ states(ent_max) | float(0) }}"
+    bloccato: >
+      {{ is_state('input_boolean.pdc_manuale', 'on')
+         or is_state('input_boolean.vacanza', 'on')
+         or is_state('input_select.clima_modalita', 'manuale') }}
+    verso_heat: >
+      {{ in_cool and t_zona < minimo
+         and is_state('input_boolean.clima_freecooling_attivo', 'off') }}
+    verso_cool: >
+      {{ in_heat and t_zona > massimo
+         and is_state('input_boolean.clima_freeheating_attivo', 'off') }}
+    min_heat: >
+      {{ (states('input_number.clima_minuti_verso_heat') | int(0) + 5)
+         if (verso_heat and not bloccato) else 0 }}
+    min_cool: >
+      {{ (states('input_number.clima_minuti_verso_cool') | int(0) + 5)
+         if (verso_cool and not bloccato) else 0 }}
+  conditions:
+    # Guardia dati: modo pompa sconosciuto o sensore/soglie della zona non
+    # disponibili -> contatori congelati.
+    - condition: template
+      value_template: "{{ dati_ok }}"
   actions:
     - choose:
+        # ---------- COOL -> HEAT ----------
         - conditions:
             - condition: template
-              value_template: "{{ media < soglia_inverno }}"
-            # v63: si confronta la stagione registrata, cosi' notifica e
-            # spegnimento avvengono una volta sola.
-            - condition: state
-              entity_id: input_select.clima_stagione
-              state: "estate"
+              value_template: "{{ min_heat >= durata_min }}"
           sequence:
-            - action: input_select.select_option
+            # Opzione "Heat only" = SetOperationMode 0 (integrazione HeishaMon,
+            # custom_components/aquarea/definitions.py). Il cambio da Cool fa
+            # scattare clima_reset_pid; il PID heating accende la pompa.
+            - action: select.select_option
               target:
-                entity_id: input_select.clima_stagione
+                entity_id: select.panasonic_heat_pump_main_operating_mode_state
               data:
-                option: "inverno"
+                option: "Heat only"
+            - action: input_number.set_value
+              target:
+                entity_id:
+                  - input_number.clima_minuti_verso_heat
+                  - input_number.clima_minuti_verso_cool
+              data:
+                value: 0
             - action: notify.mobile_app_cph2653
               data:
-                title: "🌡️ Stagione consigliata: INVERNO"
+                title: "🔥 Pompa passata in Heat"
                 message: >
-                  Media 7gg: {{ media | round(1) }}°C, sotto {{ soglia_inverno }}°C.
-                  {% if modo in ['Heat', 'Heat only'] %}La pompa e' gia' in Heat.
-                  {% else %}Modo pompa attuale: {{ modo }}. Cambialo in Heat:
-                  riscaldamento, SAT e gestione fonte seguono il modo della pompa.
-                  {% if modo in ['Cool', 'Cool only'] %}Raffrescamento fermato.{% endif %}{% endif %}
-            # Lucchetto manuale pompa (automations_clima_59): la pompa non viene
-            # toccata con il flag alzato.
-            - if:
-                - condition: state
-                  entity_id: input_boolean.pdc_manuale
-                  state: "off"
-                - condition: template
-                  value_template: "{{ modo in ['Cool', 'Cool only'] }}"
-              then:
-                - action: switch.turn_off
-                  target:
-                    entity_id: switch.panasonic_heat_pump_main_heatpump_state
+                  {{ zona | capitalize }} a {{ t_zona }}°C, sotto il minimo
+                  invernale di {{ minimo }}°C da 5 ore. Riscaldamento attivo.
+        # ---------- HEAT -> COOL ----------
         - conditions:
             - condition: template
-              value_template: "{{ media > soglia_estate }}"
-            - condition: state
-              entity_id: input_select.clima_stagione
-              state: "inverno"
+              value_template: "{{ min_cool >= durata_min }}"
           sequence:
-            - action: input_select.select_option
+            # SAT spento prima del cambio: con la fonte su caldaia resterebbe
+            # in heat (clima_sync_sat_target lavora solo in Heat).
+            - action: climate.set_hvac_mode
               target:
-                entity_id: input_select.clima_stagione
+                entity_id: climate.smart_autotune_thermostat_living_room
               data:
-                option: "estate"
+                hvac_mode: "off"
+            # Opzione "Cool only" = SetOperationMode 1. Il cambio da Heat fa
+            # scattare clima_reset_pid; la pompa la riaccende
+            # panasonic_cooling_riaccensione (valvola compresa).
+            - action: select.select_option
+              target:
+                entity_id: select.panasonic_heat_pump_main_operating_mode_state
+              data:
+                option: "Cool only"
+            - action: input_number.set_value
+              target:
+                entity_id:
+                  - input_number.clima_minuti_verso_heat
+                  - input_number.clima_minuti_verso_cool
+              data:
+                value: 0
             - action: notify.mobile_app_cph2653
               data:
-                title: "☀️ Stagione consigliata: ESTATE"
+                title: "❄️ Pompa passata in Cool"
                 message: >
-                  Media 7gg: {{ media | round(1) }}°C, sopra {{ soglia_estate }}°C.
-                  {% if modo in ['Cool', 'Cool only'] %}La pompa e' gia' in Cool.
-                  {% else %}Modo pompa attuale: {{ modo }}. Cambialo in Cool per il
-                  raffrescamento: finche' resta in Heat valgono le regole invernali
-                  (notte alle 23:00, SAT, gestione fonte).{% endif %}
+                  {{ zona | capitalize }} a {{ t_zona }}°C, sopra il massimo
+                  estivo di {{ massimo }}°C da 5 ore. Raffrescamento attivo.
+      # Nessun cambio: aggiorna i contatori (scrive solo se cambiano).
+      default:
+        - if:
+            - condition: template
+              value_template: >
+                {{ states('input_number.clima_minuti_verso_heat') | int(-1) != min_heat }}
+          then:
+            - action: input_number.set_value
+              target:
+                entity_id: input_number.clima_minuti_verso_heat
+              data:
+                value: "{{ min_heat }}"
+        - if:
+            - condition: template
+              value_template: >
+                {{ states('input_number.clima_minuti_verso_cool') | int(-1) != min_cool }}
+          then:
+            - action: input_number.set_value
+              target:
+                entity_id: input_number.clima_minuti_verso_cool
+              data:
+                value: "{{ min_cool }}"
 
 #==================================================================================
 # CLIMA – FREE HEATING NATURALE – CONTROLLO PERIODICO (ogni 5 minuti)

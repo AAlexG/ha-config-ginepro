@@ -1,11 +1,12 @@
-# config_clima_13.yaml
+# config_clima_14.yaml
+# v14 (08/10/2026): stagione decisa dalla temperatura interna
+#   (automations_clima clima_commutazione_stagionale). Rimossi input_select
+#   clima_stagione, input_number clima_soglia_inverno e clima_media_esterna_7gg.
+#   Aggiunti i contatori clima_minuti_verso_heat e clima_minuti_verso_cool.
 # Package Casa Ginepro - Clima: fancoil, free cooling/heating, target temperatura, consumi
 # Estratto da configuration_186.yaml. Nome file = nome del package.
 
 template:
-# v11: rimosso il sensore template "Clima Media Esterna 7gg": ripeteva il
-# calcolo della media mobile che l'automazione clima_media_esterna_7gg scrive
-# ogni ora in input_number.clima_media_esterna_7gg, e non era letto da nessuno.
   - sensor:
 
 #--- CONSUMO STIMATO FANCOIL A VELOCITA' MINIMA ---
@@ -315,24 +316,28 @@ input_number:
     mode: box
     icon: mdi:delta
 
-  clima_soglia_inverno:
-    name: "Soglia Temperatura Inverno"
-    min: 5
-    max: 20
-    step: 0.5
-    unit_of_measurement: "°C"
+  # --- CAMBIO STAGIONE DA TEMPERATURA INTERNA ---
+  # Minuti consecutivi con la zona comandante oltre la soglia della stagione
+  # opposta. Li scrive solo clima_commutazione_stagionale (+5 ogni 5 minuti,
+  # 0 quando la condizione cade); a 300 cambia il modo pompa e li azzera.
+  # Nessuna chiave initial: al riavvio HA ripristina il valore salvato.
+  clima_minuti_verso_heat:
+    name: "Clima – Minuti verso Heat"
+    min: 0
+    max: 600
+    step: 5
+    unit_of_measurement: "min"
     mode: box
-    icon: mdi:snowflake
+    icon: mdi:timer-sand
 
-  clima_media_esterna_7gg:
-    # Media esponenziale oraria su 168 h (alfa 0,0118 da automations_clima_66).
-    name: "Media Temperatura Esterna 7gg"
-    min: -20
-    max: 45
-    step: 0.01
-    unit_of_measurement: "°C"
+  clima_minuti_verso_cool:
+    name: "Clima – Minuti verso Cool"
+    min: 0
+    max: 600
+    step: 5
+    unit_of_measurement: "min"
     mode: box
-    icon: mdi:thermometer
+    icon: mdi:timer-sand
 
   # --- FREE COOLING / FREE HEATING NATURALE ---
   clima_delta_naturale_base:
@@ -399,12 +404,8 @@ input_select:
       - "manuale"
     icon: mdi:home-thermometer
 
-  clima_stagione:
-    name: "Clima Stagione"
-    options:
-      - "estate"
-      - "inverno"
-    icon: mdi:weather-sunny
+  # clima_stagione rimosso in v14: la stagione e' il modo operativo della
+  # pompa, cambiato da clima_commutazione_stagionale.
 
 utility_meter:
 

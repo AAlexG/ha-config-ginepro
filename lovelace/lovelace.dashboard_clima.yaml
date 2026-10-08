@@ -1,6 +1,6 @@
 config:
   path: clima
-  title: Clima v.19
+  title: Clima v.20
   views:
   - cards: []
     max_columns: 2
@@ -26,12 +26,12 @@ config:
         name: "Modalit\xE0 Attiva"
         type: tile
         vertical: false
-      - entity: input_select.clima_stagione
+      - entity: input_number.clima_minuti_verso_heat
         features_position: bottom
         grid_options:
           columns: 6
           rows: 1
-        name: StagioneConsigliata
+        name: Minuti verso Heat
         type: tile
         vertical: false
       - entity: input_boolean.clima_pid_attivo
@@ -50,12 +50,12 @@ config:
         name: Vacanza
         type: tile
         vertical: false
-      - entity: input_number.clima_media_esterna_7gg
+      - entity: input_number.clima_minuti_verso_cool
         features_position: bottom
         grid_options:
           columns: 6
           rows: 1
-        name: Media 7gg esterna
+        name: Minuti verso Cool
         type: tile
         vertical: false
       - entity: input_boolean.clima_freecooling_attivo
@@ -350,25 +350,6 @@ config:
           columns: 12
           rows: 1
         name: Soglia Antigelo Sala
-        type: tile
-        vertical: false
-      - heading: Cambio stagione
-        heading_style: subtitle
-        type: heading
-      - entity: input_number.clima_soglia_inverno
-        features_position: bottom
-        grid_options:
-          columns: 6
-          rows: 1
-        name: Soglia Inverno
-        type: tile
-        vertical: false
-      - entity: input_number.clima_media_esterna_7gg
-        features_position: bottom
-        grid_options:
-          columns: 6
-          rows: 1
-        name: Media 7gg OUT
         type: tile
         vertical: false
       - heading: Boost solare
