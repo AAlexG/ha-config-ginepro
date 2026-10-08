@@ -1,4 +1,27 @@
-# automations_clima_73.yaml
+# automations_clima_76.yaml
+#
+# v76 (08/10/2026): audit clima A6 e A7.
+#   A6: in Heat con la valvola su Caldaia (switch.shelly_box off) i fancoil
+#       valutano l'acqua sulla mandata caldaia OTGW invece che sulla mandata
+#       della PdC ferma: prima con la caldaia l'aiuto dei fancoil non partiva
+#       mai. In Cool e in Heat su Pompa resta la mandata Panasonic.
+#   A7: rientro vacanza non imposta piu' il target del SAT (lo calcola
+#       clima_sync_sat_target, automations_caldaia_2). Tolto il default di
+#       mintemp_notte_inverno_sala, helper rimosso in config_clima_15.
+#
+# v75 (08/10/2026): free heating nella fascia 21-23 usa come riferimento il
+#   minimo piu' alto fra sala, camera Georgi e camera Tania, come il PID
+#   heating (automations_pompa_calore_3). In inverno le due camere seguono le
+#   stesse regole anche fra le 21 e le 23.
+#
+# v74 (08/10/2026): correzioni audit clima 08/10.
+#   A3: clima_modalita_notte scatta anche al cambio del modo pompa e ricalcola
+#       giorno/notte con l'orario della nuova stagione (21 in Cool, 23 in Heat).
+#   A4: promemoria flag manuali esteso a pdc_manuale e auto_manuale.
+#   A2: in Heat il fancoil camera Tania lavora tutta la notte (21-07) e si
+#       spegne alle 07:00; in Cool resta solo 21-23 come prima.
+#   A5: tolto input_boolean.clima_pid_attivo (PID sempre attivo): il free
+#       cooling spegne la pompa senza piu' controllarlo.
 #
 # v73 (08/10/2026): clima_commutazione_stagionale senza blocco free
 #   cooling/heating. I due flag restano accesi per stagioni intere (free
@@ -70,7 +93,6 @@
           - [1, input_number.maxtemp_notte_estate_tania, 25]
           - [1, input_number.mintemp_giorno_inverno_sala, 22]
           - [1, input_number.mintemp_giorno_inverno_letto, 20]
-          - [1, input_number.mintemp_notte_inverno_sala, 20]
           - [1, input_number.mintemp_notte_inverno_letto, 22]
           - [1, input_number.mintemp_notte_inverno_tania, 22]
           - [1, input_number.clima_target_emergenza_antigelo, 15]
@@ -151,9 +173,11 @@
     # Mappatura reale degli switch (i nomi entita' sono storici):
     #   switch.camerageorgi_shelly_fancoil_georgi    -> fancoil CAMERA TANIA
     #   switch.camerageorgi_shelly_fancoil_georgi_2  -> fancoil CAMERA GEORGI
-    # Alle 07:00 spegni il fancoil camera Georgi (quello notturno), ma solo se
-    # non e' in gestione manuale: quel flag lo abbassa soltanto l'utente.
-    # Il fancoil camera Tania era gia' spento alle 23:00.
+    # Alle 07:00 spegni i fancoil delle camere, ma solo quelli non in gestione
+    # manuale: quel flag lo abbassa soltanto l'utente.
+    # v74: anche camera Tania. In Heat lavora tutta la notte e il controllo
+    # periodico delle camere si ferma alle 07:00; in Cool era gia' spento
+    # alle 23:00 e il comando non cambia nulla.
     - if:
         - condition: state
           entity_id: input_boolean.fancoil_georgi2_manuale
@@ -162,6 +186,14 @@
         - action: switch.turn_off
           target:
             entity_id: switch.camerageorgi_shelly_fancoil_georgi_2
+    - if:
+        - condition: state
+          entity_id: input_boolean.fancoil_georgi_manuale
+          state: "off"
+      then:
+        - action: switch.turn_off
+          target:
+            entity_id: switch.camerageorgi_shelly_fancoil_georgi
     # Nessun flag di gestione manuale viene abbassato qui: fancoil e
     # deumidificatori restano bloccati finche' e' l'utente ad abbassare il flag
     # dalla plancia. Il promemoria delle 10:00 / 22:00 serve a non dimenticarli.
@@ -178,22 +210,27 @@
 - id: clima_modalita_notte
   alias: "Clima – Modalità Notte (21:00 estate / 23:00 inverno)"
   description: >
-    In raffrescamento (modo pompa Cool) la notte inizia alle 21:00: dalle 21 la zona comandante diventano
-    le camere (PID, riaccensione pompa e free cooling leggono tutti
-    clima_modalita) e la sala viene abbandonata. D'inverno resta alle 23:00,
-    perche' fino a quell'ora la sala e' occupata e deve continuare a essere
-    servita dal PID heating e dal setpoint SAT. La stagione e' quella del modo
-    operativo della pompa (v66).
-    Il fancoil camera Tania NON viene piu' spento qui: nella fascia 21-23 e'
-    parte del ciclo serale e lo spegne fancoil_tania_spegnimento_notte alle
-    23:00.
+    In raffrescamento (modo pompa Cool) la notte inizia alle 21:00: dalle 21 la
+    zona comandante diventano le camere (PID, riaccensione pompa e free cooling
+    leggono tutti clima_modalita) e la sala viene abbandonata. D'inverno resta
+    alle 23:00, perche' fino a quell'ora la sala e' occupata e deve continuare
+    a essere servita dal PID heating e dal setpoint SAT.
+    v74: scatta anche al cambio del modo pompa e ricalcola la modalita con
+    l'orario della nuova stagione. Prima un passaggio Heat -> Cool fra le 21
+    e le 23 lasciava "giorno" tutta la notte (alle 21 la pompa era ancora in
+    Heat, alle 23 era gia' in Cool).
+  mode: queued
   triggers:
     - trigger: time
       at: "21:00:00"
-      id: "estate"
     - trigger: time
       at: "23:00:00"
-      id: "inverno"
+    # v74: cambio stagione (clima_commutazione_stagionale o a mano)
+    - trigger: state
+      entity_id: select.panasonic_heat_pump_main_operating_mode_state
+      not_to:
+        - unavailable
+        - unknown
   conditions:
     # Casa vuota: flag unico input_boolean.vacanza (v48)
     - condition: state
@@ -204,24 +241,26 @@
         - condition: state
           entity_id: input_select.clima_modalita
           state: "manuale"
-    # Un solo orario e' valido per volta.
-    # v66: SORGENTE UNICA DELLA STAGIONE = modo operativo della pompa. E' lo
-    # stato fisico dell'impianto e lo leggono gia' PID, fancoil, free
-    # cooling/heating, riaccensione e antigelo. Dalla v72 il modo lo cambia
-    # clima_commutazione_stagionale in base alla temperatura interna;
-    # input_select.clima_stagione non esiste piu'.
-    - condition: template
-      value_template: >
-        {% set estate = states('select.panasonic_heat_pump_main_operating_mode_state')
-                        in ['Cool', 'Cool only'] %}
-        {{ (trigger.id == 'estate' and estate)
-           or (trigger.id == 'inverno' and not estate) }}
   actions:
+    # La stagione e' il modo operativo della pompa (v66). Modo non noto: vale
+    # l'orario invernale delle 23:00, come prima della v74.
+    # Fra le 07:00 e l'inizio notte si torna a giorno solo con il cambio modo
+    # (es. Cool -> Heat alle 22: la sala torna servita fino alle 23); il
+    # passaggio a giorno delle 07:00 resta a clima_modalita_giorno.
+    - variables:
+        cool: >
+          {{ states('select.panasonic_heat_pump_main_operating_mode_state')
+             in ['Cool', 'Cool only'] }}
+        inizio_notte: "{{ 21 if cool else 23 }}"
+        ora: "{{ now().hour }}"
+        nuova: "{{ 'notte' if (ora >= inizio_notte or ora < 7) else 'giorno' }}"
+    - condition: template
+      value_template: "{{ not is_state('input_select.clima_modalita', nuova) }}"
     - action: input_select.select_option
       target:
         entity_id: input_select.clima_modalita
       data:
-        option: "notte"
+        option: "{{ nuova }}"
     # v66: tolto l'azzeramento di pergola_blocco_manuale (lo rilascia solo
     # pergola_blocco_manuale_rilascio alle 07:00 e 23:00) e di
     # clima_pompa_latch_notte (si arma solo dopo le 23:00, qui era gia' spento).
@@ -248,8 +287,9 @@
 - id: flag_manuali_promemoria
   alias: "Flag manuali – Promemoria (10:00 / 22:00)"
   description: >
-    Segnala quali gestioni manuali di fancoil e deumidificatori sono alzate da
-    oltre un'ora e ancora attive, per poterle abbassare se non servono piu'.
+    Segnala quali gestioni manuali (fancoil, deumidificatori, portone, cancello,
+    pompa di calore, auto) sono alzate da oltre un'ora e ancora attive, per
+    poterle abbassare se non servono piu'.
   mode: single
   triggers:
     - trigger: time
@@ -265,6 +305,11 @@
       - input_boolean.deumidificatore_armadio_manuale
       - input_boolean.portone_box_manuale
       - input_boolean.cancello_grande_manuale
+      # v74: pompa e auto, alzati anche dal distacco carichi. Con pdc_manuale
+      # alzato in inverno la casa resta senza riscaldamento (anche la gestione
+      # fonte si ferma).
+      - input_boolean.pdc_manuale
+      - input_boolean.auto_manuale
     flag_attivi: >
       {% set ns = namespace(elenco=[]) %}
       {% for f in flag_elenco %}
@@ -317,8 +362,9 @@
     Ogni 5 minuti decide lo stato dei fancoil delle camere Tania e Georgi.
     Ogni camera decide in autonomia sul proprio termometro e sui propri target.
     Prelavoro 21-23: controlla entrambi (camera Tania e camera Georgi).
-    Notte 23-07: controlla solo il fancoil camera Georgi; quello camera Tania
-    resta sempre spento.
+    Notte 23-07: in Cool controlla solo il fancoil camera Georgi (Tania
+    spento); in Heat controlla entrambi (v74), come il PID heating che di
+    notte segue la camera piu' fredda fra le due.
     Decisione per camera: T_camera vs target camera E outlet_temp vs soglia
     di efficacia dell'acqua calcolata sul target di quella camera.
   mode: single
@@ -338,14 +384,26 @@
     - condition: time
       after: "21:00:00"
       before: "07:00:00"
-    # Guardia dati (v58): outlet vale per entrambe le camere, senza di esso
+    # Guardia dati (v58): l'acqua vale per entrambe le camere, senza di essa
     # nessuna delle due decisioni ha senso. Il controllo si astiene.
+    # v76 (A6): in Heat con valvola su Caldaia l'acqua e' la mandata caldaia.
     - condition: template
-      value_template: "{{ has_value('sensor.panasonic_heat_pump_main_main_outlet_temp') }}"
+      value_template: >
+        {% set caldaia = is_state('switch.shelly_box', 'off')
+           and states('select.panasonic_heat_pump_main_operating_mode_state') in ['Heat', 'Heat only'] %}
+        {{ has_value('sensor.opentherm_gateway_otgw_otgw_boiler_flow_water_temperature') if caldaia
+           else has_value('sensor.panasonic_heat_pump_main_main_outlet_temp') }}
   actions:
     - variables:
         mode: "{{ states('select.panasonic_heat_pump_main_operating_mode_state') }}"
-        outlet: "{{ states('sensor.panasonic_heat_pump_main_main_outlet_temp') | float(20) }}"
+        # v76 (A6): mandata della fonte che scalda il circuito. Con la valvola
+        # su Caldaia (switch.shelly_box off) in Heat la PdC e' ferma e la sua
+        # mandata non dice nulla: si usa la mandata caldaia letta dall'OTGW.
+        fonte_caldaia: "{{ is_state('switch.shelly_box', 'off') and mode in ['Heat', 'Heat only'] }}"
+        outlet: >
+          {{ states('sensor.opentherm_gateway_otgw_otgw_boiler_flow_water_temperature') | float(20)
+             if fonte_caldaia
+             else states('sensor.panasonic_heat_pump_main_main_outlet_temp') | float(20) }}
         ora: "{{ now().hour }}"
         # Prelavoro: 21:00-22:59 — entrambi i fancoil attivi (Tania + Georgi)
         # Notte: 23:00-06:59 — solo il fancoil camera Georgi
@@ -433,11 +491,12 @@
               target:
                 entity_id: switch.camerageorgi_shelly_fancoil_georgi_2
     # --- CAMERA TANIA (switch ..._fancoil_georgi) ---
-    # Attivo solo nel prelavoro 21-23: di notte resta spento, e alle 23:00 lo
-    # spegne fancoil_tania_spegnimento_notte.
+    # Cool: attivo solo nel prelavoro 21-23, alle 23:00 lo spegne
+    # fancoil_tania_spegnimento_notte. Heat (v74): attivo tutta la notte,
+    # lo spegne clima_modalita_giorno alle 07:00.
     - if:
         - condition: template
-          value_template: "{{ periodo_prelavoro }}"
+          value_template: "{{ periodo_prelavoro or mode in ['Heat', 'Heat only'] }}"
         - condition: state
           entity_id: input_boolean.fancoil_georgi_manuale
           state: "off"
@@ -492,12 +551,23 @@
     # fancoil verrebbe acceso o spento a caso. Qui il controllo si astiene e
     # lascia l'attuatore com'e': meglio uno stato fermo che uno stato sbagliato.
     - condition: template
-      value_template: "{{ has_value('sensor.hp1000se_pro_pro_v1_6_4_indoor_temperature') and has_value('sensor.panasonic_heat_pump_main_main_outlet_temp') }}"
+      # v76 (A6): in Heat con valvola su Caldaia l'acqua e' la mandata caldaia.
+      value_template: >
+        {% set caldaia = is_state('switch.shelly_box', 'off')
+           and states('select.panasonic_heat_pump_main_operating_mode_state') in ['Heat', 'Heat only'] %}
+        {{ has_value('sensor.hp1000se_pro_pro_v1_6_4_indoor_temperature')
+           and (has_value('sensor.opentherm_gateway_otgw_otgw_boiler_flow_water_temperature') if caldaia
+                else has_value('sensor.panasonic_heat_pump_main_main_outlet_temp')) }}
   actions:
     - variables:
         mode: "{{ states('select.panasonic_heat_pump_main_operating_mode_state') }}"
         t_sala: "{{ states('sensor.hp1000se_pro_pro_v1_6_4_indoor_temperature') | float(25) }}"
-        outlet: "{{ states('sensor.panasonic_heat_pump_main_main_outlet_temp') | float(20) }}"
+        # v76 (A6): mandata della fonte che scalda il circuito (vedi camere).
+        fonte_caldaia: "{{ is_state('switch.shelly_box', 'off') and mode in ['Heat', 'Heat only'] }}"
+        outlet: >
+          {{ states('sensor.opentherm_gateway_otgw_otgw_boiler_flow_water_temperature') | float(20)
+             if fonte_caldaia
+             else states('sensor.panasonic_heat_pump_main_main_outlet_temp') | float(20) }}
         target_sala_estate: "{{ states('input_number.maxtemp_giorno_estate_sala') | float(25) }}"
         soglia_acqua_estate: "{{ states('input_number.maxtemp_giorno_estate_sala') | float(25) - 4 }}"
         target_sala_inverno: "{{ states('input_number.mintemp_giorno_inverno_sala') | float(22) }}"
@@ -568,9 +638,10 @@
 
 #==================================================================================
 # FANCOIL CAMERA TANIA – SPEGNIMENTO ALLE 23:00
-# Camera Tania partecipa solo al ciclo serale 21-23. Alle 23:00 il suo fancoil
-# si spegne e resta spento per tutta la notte: da quell'ora il controllo
-# periodico gestisce la sola camera Georgi.
+# In Cool camera Tania partecipa solo al ciclo serale 21-23: alle 23:00 il suo
+# fancoil si spegne e resta spento per tutta la notte, da quell'ora il
+# controllo periodico gestisce la sola camera Georgi. In Heat (v74) non scatta:
+# Tania resta servita fino alle 07:00.
 # Mappatura switch: ..._fancoil_georgi -> camera TANIA (nome entita' storico).
 #==================================================================================
 - id: fancoil_tania_spegnimento_notte
@@ -579,6 +650,12 @@
     - trigger: time
       at: "23:00:00"
   conditions:
+    # v74: solo fuori dal riscaldamento. In Heat la camera Tania resta servita
+    # tutta la notte (fancoil_georgi_controllo) e conta nel PID heating.
+    - condition: template
+      value_template: >
+        {{ states('select.panasonic_heat_pump_main_operating_mode_state')
+           not in ['Heat', 'Heat only'] }}
     # Gestione manuale: il fancoil resta come l'ha lasciato l'utente.
     - condition: state
       entity_id: input_boolean.fancoil_georgi_manuale
@@ -674,12 +751,9 @@
             # I fancoil sono gli unici emettitori del circuito Panasonic in
             # raffrescamento: con tutti i fancoil fermi tenere la pompa accesa
             # "ammorbidita" significa produrre acqua fredda a carico nullo.
-            # In free cooling la pompa si spegne. Solo se il PID ha il controllo
-            # (interruttore generale ON e modalita' non manuale).
+            # In free cooling la pompa si spegne, salvo lucchetto manuale o
+            # modalita' manuale (v74: tolto input_boolean.clima_pid_attivo).
             - if:
-                - condition: state
-                  entity_id: input_boolean.clima_pid_attivo
-                  state: "on"
                 # Lucchetto manuale pompa (automations_clima_59)
                 - condition: state
                   entity_id: input_boolean.pdc_manuale
@@ -978,9 +1052,15 @@
         # Di notte il target di riferimento e' il PIU' ALTO fra le due camere:
         # e' quello piu' difficile da ottenere con il solo apporto passivo,
         # quindi il criterio piu' prudente.
+        # v75: fra le 21 e le 23 (in Heat ancora "giorno") contano anche le
+        # camere, come nel PID heating.
         target: >
           {% if states('input_select.clima_modalita') == 'notte' %}
             {{ [ states('input_number.mintemp_notte_inverno_letto') | float(22),
+                 states('input_number.mintemp_notte_inverno_tania') | float(22) ] | max }}
+          {% elif now().hour >= 21 and now().hour < 23 %}
+            {{ [ states('input_number.mintemp_giorno_inverno_sala') | float(22),
+                 states('input_number.mintemp_notte_inverno_letto') | float(22),
                  states('input_number.mintemp_notte_inverno_tania') | float(22) ] | max }}
           {% else %}
             {{ states('input_number.mintemp_giorno_inverno_sala') | float(22) }}
@@ -1120,28 +1200,19 @@
                   target:
                     entity_id: switch.panasonic_heat_pump_main_heatpump_state
           else:
-            - action: climate.set_hvac_mode
-              target:
-                entity_id: climate.smart_autotune_thermostat_living_room
-              data:
-                hvac_mode: "heat"
+            # v76: prima il preset "home" (in vacanza era "away"), poi
+            # l'accensione: all'accensione del SAT clima_sync_sat_target
+            # (automations_caldaia_2) imposta il target della zona comandante.
             - action: climate.set_preset_mode
               target:
                 entity_id: climate.smart_autotune_thermostat_living_room
               data:
                 preset_mode: "home"
-            # v66: target come clima_sync_sat_target (giorno o notte), non 22
-            # fisso. Impostato dopo il preset, che puo' cambiare il target.
-            - action: climate.set_temperature
+            - action: climate.set_hvac_mode
               target:
                 entity_id: climate.smart_autotune_thermostat_living_room
               data:
-                temperature: >
-                  {% if states('input_select.clima_modalita') == 'notte' %}
-                    {{ states('input_number.mintemp_notte_inverno_sala') | float(20) }}
-                  {% else %}
-                    {{ states('input_number.mintemp_giorno_inverno_sala') | float(22) }}
-                  {% endif %}
+                hvac_mode: "heat"
     # Ramo raffrescamento (v66): la pompa non viene piu' accesa qui.
     # panasonic_cooling_riaccensione riparte da sola appena vacanza e' spento e
     # una zona e' oltre target + 0,5 C, e prima porta la valvola su Pompa se

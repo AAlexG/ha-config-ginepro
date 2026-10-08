@@ -1,4 +1,11 @@
-# automations_caldaia_1.yaml
+# automations_caldaia_2.yaml
+#
+# v2 (08/10/2026): audit clima A7. clima_sync_sat_target segue la stessa zona
+#   del PID heating della pompa: giorno sala, 21-23 la piu' fredda fra sala,
+#   Georgi e Tania, notte la piu' fredda fra Georgi e Tania. Il SAT legge solo
+#   la sala, quindi riceve un target "spostato" = T sala + errore della zona.
+#   Tolto il riferimento a input_number.mintemp_notte_inverno_sala (rimosso in
+#   config_clima_15). Commenti su clima_stagione aggiornati.
 #
 # Caldaia Baxi / OTGW / SAT e gestione della fonte di riscaldamento (caldaia o PdC).
 # File creato il 30/09/2026 dalla riorganizzazione "un argomento = automations_X + config_X".
@@ -10,20 +17,30 @@
 - id: clima_sync_sat_target
   alias: "Clima – Sincronizza SAT con Target Sala Inverno"
   description: >
-    Aggiorna il setpoint SAT ogni volta che cambia il target sala inverno,
-    la modalita giorno/notte, il modo della pompa o quando il SAT viene
-    acceso. Solo con la pompa in Heat.
-  # v66: aggiunto il trigger sull'accensione del SAT. La gestione fonte
-  # (Pompa -> Caldaia) e il rientro vacanza accendevano il SAT senza target,
-  # che restava l'ultimo usato (o 22 fisso nel rientro, anche di notte).
-  # Stagione dal modo operativo della pompa (v66), non da clima_stagione.
+    Con la pompa in Heat e il SAT acceso, imposta il target del SAT in modo che
+    la caldaia segua la stessa zona del PID heating della pompa. Il SAT misura
+    solo la sala: riceve target = T sala + errore della zona comandante, cosi'
+    il suo errore interno coincide con quello della zona.
+    Giorno: sala vs mintemp_giorno_inverno_sala (target = minimo sala).
+    21-23: la zona piu' fredda fra sala, camera Georgi e camera Tania, ognuna
+    col proprio minimo. Notte 23-07: la piu' fredda fra Georgi e Tania.
+  # v2 (A7): prima di notte il SAT seguiva la sala a mintemp_notte_inverno_sala,
+  # mentre la pompa seguiva le camere: il comfort notturno cambiava con la
+  # fonte. Ora ricalcolo ogni 5 minuti (la temperatura delle camere cambia
+  # senza che cambi nessun target).
+  # v66: trigger sull'accensione del SAT, cosi' gestione fonte e rientro
+  # vacanza non lo lasciano con il target vecchio.
+  # Stagione dal modo operativo della pompa (v66).
+  mode: single
   triggers:
+    - trigger: time_pattern
+      minutes: "/5"
     - trigger: state
-      entity_id: input_number.mintemp_giorno_inverno_sala
-    - trigger: state
-      entity_id: input_number.mintemp_notte_inverno_sala
-    - trigger: state
-      entity_id: input_select.clima_modalita
+      entity_id:
+        - input_number.mintemp_giorno_inverno_sala
+        - input_number.mintemp_notte_inverno_letto
+        - input_number.mintemp_notte_inverno_tania
+        - input_select.clima_modalita
     - trigger: state
       entity_id: select.panasonic_heat_pump_main_operating_mode_state
       to:
@@ -42,17 +59,60 @@
       state: "heat"
   actions:
     - variables:
-        target_sala: >
-          {% if states('input_select.clima_modalita') == 'notte' %}
-            {{ states('input_number.mintemp_notte_inverno_sala') | float(20) }}
+        mod: "{{ states('input_select.clima_modalita') }}"
+        serale: "{{ now().hour >= 21 and now().hour < 23 }}"
+        sala_ok: "{{ has_value('sensor.hp1000se_pro_pro_v1_6_4_indoor_temperature') }}"
+        t_sala: "{{ states('sensor.hp1000se_pro_pro_v1_6_4_indoor_temperature') | float(20) }}"
+        min_sala: "{{ states('input_number.mintemp_giorno_inverno_sala') | float(22) }}"
+        # Errori = minimo - temperatura (positivo = zona fredda), come nel PID
+        # heating. Camera con termometro non disponibile esclusa (-99).
+        delta_sala: "{{ min_sala - t_sala }}"
+        delta_georgi: >
+          {{ (states('input_number.mintemp_notte_inverno_letto') | float(22)
+              - states('sensor.termometro_georgi_zigbee_temperature') | float(20))
+             if has_value('sensor.termometro_georgi_zigbee_temperature') else -99 }}
+        delta_tania: >
+          {{ (states('input_number.mintemp_notte_inverno_tania') | float(22)
+              - states('sensor.termometro_tania_zigbee_temperature') | float(20))
+             if has_value('sensor.termometro_tania_zigbee_temperature') else -99 }}
+        errore: >
+          {% if mod == 'notte' %}
+            {% set e = [delta_georgi, delta_tania] | max %}
+            {{ delta_sala if e < -50 else e }}
+          {% elif serale %}
+            {{ [delta_sala, delta_georgi, delta_tania] | max }}
           {% else %}
-            {{ states('input_number.mintemp_giorno_inverno_sala') | float(22) }}
+            {{ delta_sala }}
           {% endif %}
+        # Senza temperatura sala il SAT non regola comunque: si lascia il
+        # minimo della sala, come prima della v2. Passo 0,5 e limiti 7-35 C
+        # del SAT (attributi target_temp_step, min_temp, max_temp).
+        target: >
+          {% set t = (t_sala + errore) if sala_ok else min_sala %}
+          {{ [[(t * 2) | round(0) / 2, 7] | max, 35] | min }}
+        target_attuale: >
+          {{ state_attr('climate.smart_autotune_thermostat_living_room', 'temperature') | float(0) }}
+        preset_away: >
+          {{ is_state_attr('climate.smart_autotune_thermostat_living_room', 'preset_mode', 'away') }}
+    # Preset "away" rimasto dall'ultima vacanza (spegnimento_inizio_vacanza):
+    # si torna a "home" prima di impostare il target, come nel rientro.
+    - if:
+        - condition: template
+          value_template: "{{ preset_away }}"
+      then:
+        - action: climate.set_preset_mode
+          target:
+            entity_id: climate.smart_autotune_thermostat_living_room
+          data:
+            preset_mode: "home"
+    # Scrive solo se il target cambia (o se il preset e' appena cambiato).
+    - condition: template
+      value_template: "{{ preset_away or (target - target_attuale) | abs >= 0.5 }}"
     - action: climate.set_temperature
       target:
         entity_id: climate.smart_autotune_thermostat_living_room
       data:
-        temperature: "{{ target_sala }}"
+        temperature: "{{ target }}"
 
 #==================================================================================
 # CALDAIA - OTGW – NOTIFICA FAULT CALDAIA
@@ -365,9 +425,9 @@
       entity_id: input_boolean.pdc_manuale
       state: "off"
     # v4: stagione dal modo operativo della pompa (sorgente unica, vedi
-    # automations_clima_66), non piu' da input_select.clima_stagione, che e'
-    # ora solo la stagione consigliata. Con la pompa non in Heat la
-    # commutazione verso la PdC sarebbe comunque inutile.
+    # automations_clima_66). input_select.clima_stagione e' stato rimosso in
+    # config_clima_14. Con la pompa non in Heat la commutazione verso la PdC
+    # sarebbe comunque inutile.
     - condition: template
       value_template: >-
         {{ states('select.panasonic_heat_pump_main_operating_mode_state')

@@ -1,6 +1,6 @@
 config:
   path: clima
-  title: Clima v.21
+  title: Clima v.23
   views:
   - cards: []
     max_columns: 2
@@ -26,6 +26,14 @@ config:
         name: Fiamma
         type: tile
         vertical: false
+      - entity: input_boolean.pdc_manuale
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        name: Pompa manuale
+        type: tile
+        vertical: false
       - entity: input_number.clima_minuti_verso_heat
         features_position: bottom
         grid_options:
@@ -42,6 +50,22 @@ config:
         name: Minuti verso Cool
         type: tile
         vertical: false
+      - entity: input_boolean.vacanza
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        name: Vacanza
+        type: tile
+        vertical: false
+      - entity: input_select.clima_modalita
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        name: "Modalit\xE0"
+        type: tile
+        vertical: false
       - entity: input_boolean.clima_freecooling_attivo
         features_position: bottom
         grid_options:
@@ -56,30 +80,6 @@ config:
           columns: 6
           rows: 1
         name: FreeHeating
-        type: tile
-        vertical: false
-      - entity: input_select.clima_modalita
-        features_position: bottom
-        grid_options:
-          columns: 6
-          rows: 1
-        name: "Modalit\xE0"
-        type: tile
-        vertical: false
-      - entity: input_boolean.vacanza
-        features_position: bottom
-        grid_options:
-          columns: 6
-          rows: 1
-        name: Vacanza
-        type: tile
-        vertical: false
-      - entity: input_boolean.clima_pid_attivo
-        features_position: bottom
-        grid_options:
-          columns: 6
-          rows: 1
-        name: PID Attivo
         type: tile
         vertical: false
       - entities:
@@ -298,14 +298,6 @@ config:
           columns: 6
           rows: 1
         name: Tania
-        type: tile
-        vertical: false
-      - entity: input_number.mintemp_notte_inverno_sala
-        features_position: bottom
-        grid_options:
-          columns: 6
-          rows: 1
-        name: Sala
         type: tile
         vertical: false
       type: grid

@@ -1,4 +1,8 @@
-# config_clima_14.yaml
+# config_clima_15.yaml
+# v15 (08/10/2026): rimosso input_number.mintemp_notte_inverno_sala. Era letto
+#   solo dal target notturno del SAT, che ora segue le camere come la pompa
+#   (automations_caldaia_2, clima_sync_sat_target): la sala di notte non e'
+#   piu' una zona servita in nessuna delle due fonti.
 # v14 (08/10/2026): stagione decisa dalla temperatura interna
 #   (automations_clima clima_commutazione_stagionale). Rimossi input_select
 #   clima_stagione, input_number clima_soglia_inverno e clima_media_esterna_7gg.
@@ -241,15 +245,6 @@ input_number:
     unit_of_measurement: "°C"
     mode: slider
     icon: mdi:bed-outline
-
-  mintemp_notte_inverno_sala:
-    name: "Min Temp Notte Inverno Sala"
-    min: 14
-    max: 26
-    step: 0.5
-    unit_of_measurement: "°C"
-    mode: slider
-    icon: mdi:thermometer
 
   mintemp_notte_inverno_letto:
     name: "Min Temp Notte Inverno Letto"

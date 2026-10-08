@@ -1,5 +1,5 @@
 config:
-  title: Casa Ginepro v.52
+  title: Casa Ginepro v.53
   views:
   - cards: []
     max_columns: 2
@@ -523,8 +523,8 @@ config:
           C\n    **Georgi max disiderata:** {{ states('input_number.maxtemp_notte_estate_letto')\
           \ }}\xB0C\n  {% else %}\n    **Sala max disiderata:** {{ states('input_number.maxtemp_giorno_estate_sala')\
           \ }}\xB0C\n    **Georgi max disiderata:** {{ states('input_number.maxtemp_giorno_estate_letto')\
-          \ }}\xB0C\n  {% endif %}\n{% else %}\n  {% if mod == 'notte' %}\n    **Sala\
-          \ min disiderata:** {{ states('input_number.mintemp_notte_inverno_sala')\
+          \ }}\xB0C\n  {% endif %}\n{% else %}\n  {% if mod == 'notte' %}\n    **Tania\
+          \ min disiderata:** {{ states('input_number.mintemp_notte_inverno_tania')\
           \ }}\xB0C\n    **Georgi min disiderata:** {{ states('input_number.mintemp_notte_inverno_letto')\
           \ }}\xB0C\n  {% else %}\n    **Sala min disiderata:** {{ states('input_number.mintemp_giorno_inverno_sala')\
           \ }}\xB0C\n    **Georgi min disiderata:** {{ states('input_number.mintemp_giorno_inverno_letto')\
