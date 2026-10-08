@@ -1,4 +1,9 @@
-# automations_clima_72.yaml
+# automations_clima_73.yaml
+#
+# v73 (08/10/2026): clima_commutazione_stagionale senza blocco free
+#   cooling/heating. I due flag restano accesi per stagioni intere (free
+#   cooling tutto l'autunno, free heating da maggio) e bloccavano il cambio
+#   proprio quando serviva. Restano solo le 5 ore di fila.
 #
 # v72 (08/10/2026): stagione decisa dalla temperatura interna. Riscritta
 #   clima_commutazione_stagionale (stesso id): Cool -> Heat se la zona
@@ -791,12 +796,15 @@
 # Passaggi:
 #   Cool -> Heat: zona sotto il minimo invernale
 #                 (mintemp_giorno_inverno_sala / mintemp_notte_inverno_letto)
-#                 per 5 ore di fila, con free cooling SPENTO
+#                 per 5 ore di fila
 #   Heat -> Cool: zona sopra il massimo estivo
 #                 (maxtemp_giorno_estate_sala / maxtemp_notte_estate_letto)
-#                 per 5 ore di fila, con free heating SPENTO
-# Il blocco free cooling/heating evita il cambio quando la temperatura e'
-# voluta (finestre aperte d'estate, sole d'inverno con riscaldamento passivo).
+#                 per 5 ore di fila
+# v73: nessun blocco su free cooling/heating. Quei flag confrontano solo la
+# temperatura esterna con le soglie e restano accesi per stagioni intere: il
+# free cooling si spegne solo con esterno oltre max estivo sala + 3,5 C, il
+# free heating solo con esterno sotto min invernale - 3,5 C. Il filtro contro
+# finestre aperte o sole d'inverno sono le 5 ore di fila.
 #
 # Durata: due contatori in minuti (input_number.clima_minuti_verso_heat e
 # _verso_cool), +5 a ogni ciclo con la condizione vera, azzerati appena e'
@@ -817,8 +825,7 @@
   description: >
     Ogni 5 minuti conta da quanto la zona comandante (sala di giorno, camera
     Georgi di notte) e' sotto il minimo invernale o sopra il massimo estivo.
-    Dopo 5 ore di fila mette la pompa in Heat only o Cool only. Bloccato da
-    free cooling (verso Heat) e free heating (verso Cool).
+    Dopo 5 ore di fila mette la pompa in Heat only o Cool only.
   mode: single
   triggers:
     - trigger: time_pattern
@@ -849,12 +856,8 @@
       {{ is_state('input_boolean.pdc_manuale', 'on')
          or is_state('input_boolean.vacanza', 'on')
          or is_state('input_select.clima_modalita', 'manuale') }}
-    verso_heat: >
-      {{ in_cool and t_zona < minimo
-         and is_state('input_boolean.clima_freecooling_attivo', 'off') }}
-    verso_cool: >
-      {{ in_heat and t_zona > massimo
-         and is_state('input_boolean.clima_freeheating_attivo', 'off') }}
+    verso_heat: "{{ in_cool and t_zona < minimo }}"
+    verso_cool: "{{ in_heat and t_zona > massimo }}"
     min_heat: >
       {{ (states('input_number.clima_minuti_verso_heat') | int(0) + 5)
          if (verso_heat and not bloccato) else 0 }}

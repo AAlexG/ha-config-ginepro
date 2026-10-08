@@ -1,6 +1,6 @@
 config:
   path: clima
-  title: Clima v.20
+  title: Clima v.21
   views:
   - cards: []
     max_columns: 2
@@ -18,42 +18,26 @@ config:
         name: Acceso>Pompa/Spento>Caldaia
         type: tile
         vertical: false
-      - entity: input_select.clima_modalita
+      - entity: binary_sensor.opentherm_gateway_otgw_otgw_flame
         features_position: bottom
         grid_options:
           columns: 6
           rows: 1
-        name: "Modalit\xE0 Attiva"
+        name: Fiamma
         type: tile
         vertical: false
       - entity: input_number.clima_minuti_verso_heat
         features_position: bottom
         grid_options:
-          columns: 6
+          columns: 12
           rows: 1
         name: Minuti verso Heat
-        type: tile
-        vertical: false
-      - entity: input_boolean.clima_pid_attivo
-        features_position: bottom
-        grid_options:
-          columns: 6
-          rows: 1
-        name: PID Attivo
-        type: tile
-        vertical: false
-      - entity: input_boolean.vacanza
-        features_position: bottom
-        grid_options:
-          columns: 6
-          rows: 1
-        name: Vacanza
         type: tile
         vertical: false
       - entity: input_number.clima_minuti_verso_cool
         features_position: bottom
         grid_options:
-          columns: 6
+          columns: 12
           rows: 1
         name: Minuti verso Cool
         type: tile
@@ -64,6 +48,38 @@ config:
           columns: 6
           rows: 1
         name: FreeCooling
+        type: tile
+        vertical: false
+      - entity: input_boolean.clima_freeheating_attivo
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        name: FreeHeating
+        type: tile
+        vertical: false
+      - entity: input_select.clima_modalita
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        name: "Modalit\xE0"
+        type: tile
+        vertical: false
+      - entity: input_boolean.vacanza
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        name: Vacanza
+        type: tile
+        vertical: false
+      - entity: input_boolean.clima_pid_attivo
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        name: PID Attivo
         type: tile
         vertical: false
       - entities:
@@ -322,7 +338,7 @@ config:
         grid_options:
           columns: 12
           rows: 1
-        name: Delta Base
+        name: Delta Base (free cooling e heating)
         type: tile
         vertical: false
       - entity: input_number.clima_delta_naturale_vento_bonus
@@ -339,6 +355,33 @@ config:
           columns: 6
           rows: 1
         name: Soglia Vento
+        type: tile
+        vertical: false
+      - heading: Free heating naturale
+        heading_style: subtitle
+        type: heading
+      - entity: input_boolean.clima_freeheating_attivo
+        features_position: bottom
+        grid_options:
+          columns: 12
+          rows: 1
+        name: Free heating in corso
+        type: tile
+        vertical: false
+      - entity: input_number.clima_freeheating_setpoint_offset
+        features_position: bottom
+        grid_options:
+          columns: 12
+          rows: 1
+        name: Riduzione mandata
+        type: tile
+        vertical: false
+      - entity: input_number.clima_freeheating_setpoint_min
+        features_position: bottom
+        grid_options:
+          columns: 12
+          rows: 1
+        name: Mandata minima
         type: tile
         vertical: false
       - heading: "Vacanze \u2013 Antigelo"
