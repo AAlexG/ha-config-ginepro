@@ -1,6 +1,6 @@
 config:
   path: fotovoltaico
-  title: Fotovoltaico v.23
+  title: Fotovoltaico v.24
   views:
   - cards: []
     max_columns: 2
@@ -205,6 +205,47 @@ config:
           decimals: 0
           id: conteggio
           min: 0
+      - graph_span: 60d
+        grid_options:
+          columns: 12
+          rows: auto
+        header:
+          show: true
+          title: Energia condensatore al pieno /gg (targa 7,6 kWh)
+        series:
+        - color: '#009E73'
+          entity: sensor.condensatore_energia_al_pieno
+          name: energia netta al pieno
+          statistics:
+            period: day
+            type: max
+          type: column
+          yaxis_id: kwh
+        - color: '#0072B2'
+          entity: sensor.inverter_uflex_battery_voltage
+          name: tensione max
+          statistics:
+            period: day
+            type: max
+          type: line
+          yaxis_id: volt
+        type: custom:apexcharts-card
+        yaxis:
+        - apex_config:
+            title:
+              text: kWh
+          decimals: 2
+          id: kwh
+          max: 8
+          min: 0
+        - apex_config:
+            title:
+              text: V max
+          decimals: 1
+          id: volt
+          max: 60
+          min: 50
+          opposite: true
       type: grid
     - cards:
       - heading: PANELLI FOTOVOLTAICI

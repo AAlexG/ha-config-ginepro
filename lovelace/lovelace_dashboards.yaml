@@ -89,3 +89,10 @@ items:
   show_in_sidebar: true
   title: Wi-Fi & Zigbee
   url_path: wi-fi
+- icon: mdi:car
+  id: dashboard_auto
+  mode: storage
+  require_admin: false
+  show_in_sidebar: true
+  title: Auto
+  url_path: dashboard-auto

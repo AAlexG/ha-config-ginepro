@@ -1,4 +1,7 @@
-# config_fotovoltaico_9.yaml
+# config_fotovoltaico_10.yaml
+# v10 (08/10/2026): aggiunto Condensatore Energia al Pieno, energia netta
+#   entrata nel condensatore dal minimo del mattino al momento in cui
+#   l'inverter smette di caricarlo e manda il surplus in rete.
 # v9 (30/09/2026): aggiunti FV CO2 evitata e FV Alberi equivalenti (coefficienti Solarman).
 # v8 (30/09/2026): aggiunto shell_command calcola_pv_tabella, spostato da config_sistema.
 # Package Casa Ginepro - Fotovoltaico: inverter UFLEX, pannelli Tigo, surplus, GSE
@@ -483,6 +486,110 @@ template:
           # da soli senza alcuna modifica alla configurazione.
           soglia: >-
             {{ states('number.inverter_uflex_battery_absorption') }}
+
+  #--------------------------------------------------------------------------
+  # ENERGIA ACCUMULATA AL PIENO (v10)
+  #
+  # Misura giornaliera della capacita' utile reale del condensatore: energia
+  # NETTA entrata dal minimo di tensione del mattino fino al momento in cui
+  # l'inverter considera il condensatore pieno.
+  #
+  # "Pieno" = per 5 minuti il condensatore assorbe meno di 300 W MENTRE si
+  # immettono in rete piu' di 300 W. Non basta l'inizio dell'immissione: con
+  # surplus superiore al limite di carica (80 A x tensione, 3,5-4,6 kW) si
+  # immette anche a condensatore ancora in carica.
+  # Segni verificati sui dati 01-08/10/2026: battery_power NEGATIVO = carica;
+  # external_ct1_power NEGATIVO = immissione.
+  #
+  # Energia netta = (carica - scarica) fra il minimo e il pieno, dai contatori
+  # giornalieri dell'inverter (risoluzione 0,1 kWh). Se la tensione scende
+  # sotto il minimo gia' registrato prima del pieno (mattino nuvoloso), la
+  # base riparte da li'. Dopo il pieno il valore resta fermo fino a mezzanotte.
+  # Nei giorni senza pieno il valore e' l'energia accumulata fino a sera e
+  # l'attributo ora_pieno resta vuoto: nel grafico appaiono come colonne basse,
+  # da leggere insieme alla tensione massima del giorno.
+  #
+  # Riferimento misurato a posteriori: 01-08/10/2026 fra 5,04 e 5,84 kWh,
+  # contro 7,6 kWh di targa.
+  #--------------------------------------------------------------------------
+  - triggers:
+      - trigger: time
+        at: "00:00:00"
+        id: azzera
+      - trigger: state
+        entity_id:
+          - sensor.inverter_uflex_battery_voltage
+          - sensor.inverter_uflex_today_battery_charge
+          - sensor.inverter_uflex_today_battery_discharge
+        id: misura
+      - trigger: template
+        value_template: >-
+          {{ states('sensor.inverter_uflex_battery_power') | float(-9999) > -300
+             and states('sensor.inverter_uflex_external_ct1_power') | float(0) < -300 }}
+        for: "00:05:00"
+        id: pieno
+    sensor:
+      - name: "Condensatore Energia al Pieno"
+        unique_id: condensatore_energia_al_pieno
+        unit_of_measurement: "kWh"
+        state_class: measurement
+        icon: mdi:battery-arrow-up
+        state: >-
+          {%- set a = this.attributes -%}
+          {%- set v = states('sensor.inverter_uflex_battery_voltage') | float(0) -%}
+          {%- set c = states('sensor.inverter_uflex_today_battery_charge') | float(0) -%}
+          {%- set d = states('sensor.inverter_uflex_today_battery_discharge') | float(0) -%}
+          {%- if trigger.id == 'azzera' -%}
+            0
+          {%- elif a.get('ora_pieno') -%}
+            {{ this.state }}
+          {%- elif a.get('v_min') is none or (v > 0 and v < a.get('v_min') | float(999)) -%}
+            0
+          {%- else -%}
+            {{ [(c - a.get('c0') | float(c)) - (d - a.get('d0') | float(d)), 0] | max | round(2) }}
+          {%- endif -%}
+        attributes:
+          # Minimo di tensione del giorno prima del pieno e contatori in quel momento.
+          v_min: >-
+            {%- set a = this.attributes -%}
+            {%- set v = states('sensor.inverter_uflex_battery_voltage') | float(0) -%}
+            {%- if trigger.id == 'azzera' -%}{{ none }}
+            {%- elif not a.get('ora_pieno') and v > 0 and v < a.get('v_min') | float(999) -%}{{ v }}
+            {%- else -%}{{ a.get('v_min') }}{%- endif -%}
+          ora_min: >-
+            {%- set a = this.attributes -%}
+            {%- set v = states('sensor.inverter_uflex_battery_voltage') | float(0) -%}
+            {%- if trigger.id == 'azzera' -%}{{ none }}
+            {%- elif not a.get('ora_pieno') and v > 0 and v < a.get('v_min') | float(999) -%}{{ now().strftime('%H:%M') }}
+            {%- else -%}{{ a.get('ora_min') }}{%- endif -%}
+          c0: >-
+            {%- set a = this.attributes -%}
+            {%- set v = states('sensor.inverter_uflex_battery_voltage') | float(0) -%}
+            {%- if trigger.id == 'azzera' -%}{{ none }}
+            {%- elif not a.get('ora_pieno') and v > 0 and v < a.get('v_min') | float(999) -%}{{ states('sensor.inverter_uflex_today_battery_charge') | float(0) }}
+            {%- else -%}{{ a.get('c0') }}{%- endif -%}
+          d0: >-
+            {%- set a = this.attributes -%}
+            {%- set v = states('sensor.inverter_uflex_battery_voltage') | float(0) -%}
+            {%- if trigger.id == 'azzera' -%}{{ none }}
+            {%- elif not a.get('ora_pieno') and v > 0 and v < a.get('v_min') | float(999) -%}{{ states('sensor.inverter_uflex_today_battery_discharge') | float(0) }}
+            {%- else -%}{{ a.get('d0') }}{%- endif -%}
+          # Istante del pieno: solo il primo della giornata.
+          ora_pieno: >-
+            {%- set a = this.attributes -%}
+            {%- if trigger.id == 'azzera' -%}{{ none }}
+            {%- elif trigger.id == 'pieno' and not a.get('ora_pieno') and a.get('v_min') is not none -%}{{ now().strftime('%H:%M') }}
+            {%- else -%}{{ a.get('ora_pieno') }}{%- endif -%}
+          v_pieno: >-
+            {%- set a = this.attributes -%}
+            {%- if trigger.id == 'azzera' -%}{{ none }}
+            {%- elif trigger.id == 'pieno' and not a.get('ora_pieno') and a.get('v_min') is not none -%}{{ states('sensor.inverter_uflex_battery_voltage') | float(0) }}
+            {%- else -%}{{ a.get('v_pieno') }}{%- endif -%}
+          soc_pieno: >-
+            {%- set a = this.attributes -%}
+            {%- if trigger.id == 'azzera' -%}{{ none }}
+            {%- elif trigger.id == 'pieno' and not a.get('ora_pieno') and a.get('v_min') is not none -%}{{ states('sensor.inverter_uflex_battery') | float(0) }}
+            {%- else -%}{{ a.get('soc_pieno') }}{%- endif -%}
 
 command_line:
 

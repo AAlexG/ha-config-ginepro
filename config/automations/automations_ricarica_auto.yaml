@@ -1,5 +1,7 @@
-# automations_ricarica_auto_1.yaml
+# automations_ricarica_auto_2.yaml
 #
+# v2 (08/10/2026): notifica con il livello reale del SC (kWh) al posto del SoC
+#   dell'inverter, allineata a config_ricarica_auto v3.
 # v1 (08/10/2026): prima versione. Stacco della ricarica auto quando il
 #   condensatore (SC) non arriverebbe al pieno prima della fine del surplus FV.
 # Sensori e parametri: config_ricarica_auto.
@@ -63,7 +65,7 @@
         title: "Ricarica auto staccata"
         message: >
           Il condensatore non arriverebbe al pieno con l'auto in carica.
-          SoC {{ c.soc_pct | default('?') }}%, mancano {{ c.energia_mancante_kwh | default('?') }} kWh;
+          Nel SC {{ c.livello_kwh | default('?') }} kWh, ne mancano {{ c.energia_mancante_kwh | default('?') }} (margine compreso);
           con l'auto ne entrerebbero {{ c.energia_sc_prevista_kwh | default('?') }} kWh
           prima della fine del surplus ({{ c.fine_surplus or 'nessun surplus' }}).
           Produzione di oggi al {{ ((c.scala | default(0)) * 100) | round(0) }}% del sereno,
