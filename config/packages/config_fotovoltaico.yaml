@@ -1,4 +1,14 @@
-# config_fotovoltaico_10.yaml
+# config_fotovoltaico_13.yaml
+# v13 (09/10/2026): input_boolean Condensatore Staccato (gestito da
+#   automations_fotovoltaico) e sensore Condensatore Tensione Collegato, che vale
+#   la tensione solo a modulo collegato. Tensione Max Oggi, Ultimi Picchi,
+#   Superamenti Oggi ed Energia al Pieno usano ora questo sensore: le letture a
+#   morsetti aperti durante un blocco del modulo non vengono piu' contate.
+# v12 (09/10/2026): anche Condensatore Energia al Pieno azzerato alle 23:59:59,
+#   stesso motivo della v11 (grafico statistico giornaliero max).
+# v11 (09/10/2026): Condensatore Superamenti Oggi azzerato alle 23:59:59 invece
+#   che alle 00:00:00, per non far comparire il conteggio anche il giorno dopo
+#   nel grafico statistico giornaliero (max).
 # v10 (08/10/2026): aggiunto Condensatore Energia al Pieno, energia netta
 #   entrata nel condensatore dal minimo del mattino al momento in cui
 #   l'inverter smette di caricarlo e manda il surplus in rete.
@@ -355,6 +365,30 @@ template:
              < -(states('input_number.pv_surplus_soglia') | float(0)) }}
 
   #--------------------------------------------------------------------------
+  # TENSIONE CONDENSATORE A MODULO COLLEGATO (v13)
+  #
+  # Quando il BMS del modulo UFSC48-7.6 apre l'uscita (blocchi del 18/08,
+  # 25/08, 08/10/2026) l'inverter misura i propri morsetti a vuoto: tensioni
+  # che saltano fra 44 e 60 V in pochi secondi con potenza zero, e SoC che
+  # salta fra 0 e 100%. Questi valori finivano nei superamenti, nella tensione
+  # massima e nell'energia al pieno.
+  # Questo sensore riporta la tensione solo se input_boolean.condensatore_staccato
+  # e' spento; durante un blocco e' non disponibile. Il rilevamento del blocco
+  # e' in automations_fotovoltaico (F3/F4).
+  #--------------------------------------------------------------------------
+  - sensor:
+      - name: "Condensatore Tensione Collegato"
+        unique_id: condensatore_tensione_collegato
+        unit_of_measurement: "V"
+        device_class: voltage
+        state_class: measurement
+        icon: mdi:battery-check
+        availability: >-
+          {{ is_state('input_boolean.condensatore_staccato', 'off')
+             and has_value('sensor.inverter_uflex_battery_voltage') }}
+        state: "{{ states('sensor.inverter_uflex_battery_voltage') }}"
+
+  #--------------------------------------------------------------------------
   # SORVEGLIANZA SOVRATENSIONE CONDENSATORE UFSC48-7,6
   #
   # Il datasheet UFLEX indica 58 V di tensione di carica massima e 57 V di
@@ -371,7 +405,7 @@ template:
   #--------------------------------------------------------------------------
   - trigger:
       - platform: state
-        entity_id: sensor.inverter_uflex_battery_voltage
+        entity_id: sensor.condensatore_tensione_collegato
         id: misura
       - platform: time
         at: "00:00:00"
@@ -387,7 +421,7 @@ template:
           {% if trigger.id == 'azzera' %}
             0
           {% else %}
-            {% set v = states('sensor.inverter_uflex_battery_voltage') | float(0) %}
+            {% set v = states('sensor.condensatore_tensione_collegato') | float(0) %}
             {{ [v, this.state | float(0)] | max | round(2) }}
           {% endif %}
 
@@ -412,7 +446,7 @@ template:
   #--------------------------------------------------------------------------
   - trigger:
       - platform: numeric_state
-        entity_id: sensor.inverter_uflex_battery_voltage
+        entity_id: sensor.condensatore_tensione_collegato
         above: 58.7
     sensor:
       - name: "Condensatore Ultimi Picchi"
@@ -423,7 +457,7 @@ template:
           picchi: >-
             {% set nuovo = {
                  'ora': now().strftime('%d/%m %H:%M:%S'),
-                 'v': states('sensor.inverter_uflex_battery_voltage') | float(0),
+                 'v': states('sensor.condensatore_tensione_collegato') | float(0),
                  'w_batt': states('sensor.inverter_uflex_battery_power') | float(0),
                  'w_pv': states('sensor.inverter_uflex_pv_power') | float(0),
                  'w_carico': states('sensor.inverter_uflex_load_power') | float(0),
@@ -463,11 +497,15 @@ template:
   #--------------------------------------------------------------------------
   - trigger:
       - platform: numeric_state
-        entity_id: sensor.inverter_uflex_battery_voltage
+        entity_id: sensor.condensatore_tensione_collegato
         above: number.inverter_uflex_battery_absorption
         id: superamento
+      # Azzeramento alle 23:59:59 e non a mezzanotte: le statistiche orarie
+      # includono il valore in vigore all'inizio dell'ora, quindi un azzeramento
+      # alle 00:00:00 faceva entrare il conteggio del giorno prima nel massimo
+      # dell'ora 00-01 del giorno dopo, raddoppiando le colonne nel grafico.
       - platform: time
-        at: "00:00:00"
+        at: "23:59:59"
         id: azzera
     sensor:
       - name: "Condensatore Superamenti Oggi"
@@ -504,7 +542,7 @@ template:
   # Energia netta = (carica - scarica) fra il minimo e il pieno, dai contatori
   # giornalieri dell'inverter (risoluzione 0,1 kWh). Se la tensione scende
   # sotto il minimo gia' registrato prima del pieno (mattino nuvoloso), la
-  # base riparte da li'. Dopo il pieno il valore resta fermo fino a mezzanotte.
+  # base riparte da li'. Dopo il pieno il valore resta fermo fino alle 23:59:59.
   # Nei giorni senza pieno il valore e' l'energia accumulata fino a sera e
   # l'attributo ora_pieno resta vuoto: nel grafico appaiono come colonne basse,
   # da leggere insieme alla tensione massima del giorno.
@@ -513,18 +551,22 @@ template:
   # contro 7,6 kWh di targa.
   #--------------------------------------------------------------------------
   - triggers:
+      # Azzeramento alle 23:59:59 e non a mezzanotte: vedere il commento sul
+      # contatore Condensatore Superamenti Oggi (statistiche orarie che partono
+      # dal valore in vigore all'inizio dell'ora).
       - trigger: time
-        at: "00:00:00"
+        at: "23:59:59"
         id: azzera
       - trigger: state
         entity_id:
-          - sensor.inverter_uflex_battery_voltage
+          - sensor.condensatore_tensione_collegato
           - sensor.inverter_uflex_today_battery_charge
           - sensor.inverter_uflex_today_battery_discharge
         id: misura
       - trigger: template
         value_template: >-
-          {{ states('sensor.inverter_uflex_battery_power') | float(-9999) > -300
+          {{ is_state('input_boolean.condensatore_staccato', 'off')
+             and states('sensor.inverter_uflex_battery_power') | float(-9999) > -300
              and states('sensor.inverter_uflex_external_ct1_power') | float(0) < -300 }}
         for: "00:05:00"
         id: pieno
@@ -536,7 +578,7 @@ template:
         icon: mdi:battery-arrow-up
         state: >-
           {%- set a = this.attributes -%}
-          {%- set v = states('sensor.inverter_uflex_battery_voltage') | float(0) -%}
+          {%- set v = states('sensor.condensatore_tensione_collegato') | float(0) -%}
           {%- set c = states('sensor.inverter_uflex_today_battery_charge') | float(0) -%}
           {%- set d = states('sensor.inverter_uflex_today_battery_discharge') | float(0) -%}
           {%- if trigger.id == 'azzera' -%}
@@ -552,25 +594,25 @@ template:
           # Minimo di tensione del giorno prima del pieno e contatori in quel momento.
           v_min: >-
             {%- set a = this.attributes -%}
-            {%- set v = states('sensor.inverter_uflex_battery_voltage') | float(0) -%}
+            {%- set v = states('sensor.condensatore_tensione_collegato') | float(0) -%}
             {%- if trigger.id == 'azzera' -%}{{ none }}
             {%- elif not a.get('ora_pieno') and v > 0 and v < a.get('v_min') | float(999) -%}{{ v }}
             {%- else -%}{{ a.get('v_min') }}{%- endif -%}
           ora_min: >-
             {%- set a = this.attributes -%}
-            {%- set v = states('sensor.inverter_uflex_battery_voltage') | float(0) -%}
+            {%- set v = states('sensor.condensatore_tensione_collegato') | float(0) -%}
             {%- if trigger.id == 'azzera' -%}{{ none }}
             {%- elif not a.get('ora_pieno') and v > 0 and v < a.get('v_min') | float(999) -%}{{ now().strftime('%H:%M') }}
             {%- else -%}{{ a.get('ora_min') }}{%- endif -%}
           c0: >-
             {%- set a = this.attributes -%}
-            {%- set v = states('sensor.inverter_uflex_battery_voltage') | float(0) -%}
+            {%- set v = states('sensor.condensatore_tensione_collegato') | float(0) -%}
             {%- if trigger.id == 'azzera' -%}{{ none }}
             {%- elif not a.get('ora_pieno') and v > 0 and v < a.get('v_min') | float(999) -%}{{ states('sensor.inverter_uflex_today_battery_charge') | float(0) }}
             {%- else -%}{{ a.get('c0') }}{%- endif -%}
           d0: >-
             {%- set a = this.attributes -%}
-            {%- set v = states('sensor.inverter_uflex_battery_voltage') | float(0) -%}
+            {%- set v = states('sensor.condensatore_tensione_collegato') | float(0) -%}
             {%- if trigger.id == 'azzera' -%}{{ none }}
             {%- elif not a.get('ora_pieno') and v > 0 and v < a.get('v_min') | float(999) -%}{{ states('sensor.inverter_uflex_today_battery_discharge') | float(0) }}
             {%- else -%}{{ a.get('d0') }}{%- endif -%}
@@ -583,13 +625,22 @@ template:
           v_pieno: >-
             {%- set a = this.attributes -%}
             {%- if trigger.id == 'azzera' -%}{{ none }}
-            {%- elif trigger.id == 'pieno' and not a.get('ora_pieno') and a.get('v_min') is not none -%}{{ states('sensor.inverter_uflex_battery_voltage') | float(0) }}
+            {%- elif trigger.id == 'pieno' and not a.get('ora_pieno') and a.get('v_min') is not none -%}{{ states('sensor.condensatore_tensione_collegato') | float(0) }}
             {%- else -%}{{ a.get('v_pieno') }}{%- endif -%}
           soc_pieno: >-
             {%- set a = this.attributes -%}
             {%- if trigger.id == 'azzera' -%}{{ none }}
             {%- elif trigger.id == 'pieno' and not a.get('ora_pieno') and a.get('v_min') is not none -%}{{ states('sensor.inverter_uflex_battery') | float(0) }}
             {%- else -%}{{ a.get('soc_pieno') }}{%- endif -%}
+
+input_boolean:
+  # Acceso dall'automazione F3 quando il modulo UFSC48-7.6 si stacca (salto di
+  # tensione di almeno 2 V seguito da potenza zero), spento da F4 quando torna a
+  # scorrere corrente. Senza initial: lo stato sopravvive ai riavvii. Si puo'
+  # spegnere a mano in caso di falso allarme.
+  condensatore_staccato:
+    name: "Condensatore Staccato"
+    icon: mdi:battery-off
 
 command_line:
 

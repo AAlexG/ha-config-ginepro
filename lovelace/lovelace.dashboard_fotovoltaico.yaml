@@ -1,6 +1,6 @@
 config:
   path: fotovoltaico
-  title: Fotovoltaico v.24
+  title: Fotovoltaico v.25
   views:
   - cards: []
     max_columns: 2
@@ -10,6 +10,14 @@ config:
       - heading: PARAMETRI DEL SISTEMA ORA
         heading_style: title
         type: heading
+      - entity: input_boolean.condensatore_staccato
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        name: Condensatore staccato
+        type: tile
+        vertical: false
       - cards:
         - entity: sensor.inverter_uflex_temperature
           features_position: bottom
@@ -42,6 +50,14 @@ config:
       - entity: sensor.inverter_uflex_battery_current
         features_position: bottom
         name: Condens.Cor
+        type: tile
+        vertical: false
+      - entity: number.inverter_uflex_battery_max_discharging_current
+        features_position: bottom
+        grid_options:
+          columns: 12
+          rows: 1
+        name: Limite scarica (max 100 A)
         type: tile
         vertical: false
       - entity: number.inverter_uflex_battery_absorption
@@ -98,7 +114,7 @@ config:
           title: Tens. max cond. oggi (ok se < 58,0 V)
         series:
         - color: '#0072B2'
-          entity: sensor.inverter_uflex_battery_voltage
+          entity: sensor.condensatore_tensione_collegato
           name: massima oraria
           statistics:
             period: hour

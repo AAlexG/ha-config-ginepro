@@ -1,5 +1,9 @@
-# automations_fotovoltaico_4.yaml
+# automations_fotovoltaico_5.yaml
 #
+# v5 (09/10/2026): F3/F4 rilevano lo stacco del modulo UFSC48-7.6 e il suo
+# ricollegamento (input_boolean.condensatore_staccato, config_fotovoltaico).
+# F1 usa sensor.condensatore_tensione_collegato: niente allarmi di
+# sovratensione per letture a morsetti aperti durante un blocco.
 # v4 (30/09/2026): aggiunte da automations.yaml, con id invariati, l'allerta
 # pannello Tigo a 0 per 1 ora e il calcolo della tabella mensile FV.
 #==================================================================================
@@ -45,7 +49,7 @@
   max_exceeded: silent
   triggers:
     - platform: numeric_state
-      entity_id: sensor.inverter_uflex_battery_voltage
+      entity_id: sensor.condensatore_tensione_collegato
       above: 59.5
   condition:
     # Antispam: non rinotifica se l'ultimo invio e' entro 6 ore. Serve perche' in
@@ -183,3 +187,125 @@
     - action: homeassistant.update_entity
       data:
         entity_id: sensor.pv_tabella_mensile
+
+#==================================================================================
+# F3. CONDENSATORE STACCATO
+#
+# Quando il BMS del modulo UFSC48-7.6 apre l'uscita (LED ALM acceso), l'inverter
+# misura i propri morsetti a vuoto: la tensione salta di alcuni volt in pochi
+# secondi mentre la potenza resta a zero. Un modulo collegato non puo' farlo:
+# fermando la corrente la tensione cambia al massimo di circa 0,8 V
+# (8 mOhm x 100 A).
+#
+# Regola: salto di almeno 2 V fra due letture consecutive (entro 30 s) e,
+# 10 secondi dopo, potenza del condensatore sotto 50 W in valore assoluto.
+# I 10 secondi servono perche' tensione e potenza arrivano in letture separate:
+# l'8/10 alle 15:49:20 la tensione e' crollata con la potenza ancora a 1086 W,
+# arrivata a 0 W subito dopo.
+#
+# Verifica sui dati 02-09/10/2026 (stati a 5 s): la regola scatta solo nei due
+# giorni di blocco, la prima volta l'8/10 alle 15:49:20, all'inizio esatto del
+# blocco. Nessun falso allarme negli altri giorni; a fine scarica mattutina la
+# tensione risale al massimo di 1,13 V in 2 minuti, non in un'unica lettura.
+#==================================================================================
+- id: fotovoltaico_condensatore_staccato
+  alias: "Fotovoltaico - Condensatore staccato"
+  mode: single
+  max_exceeded: silent
+  triggers:
+    - trigger: state
+      entity_id: sensor.inverter_uflex_battery_voltage
+      to: ~
+  conditions:
+    - condition: state
+      entity_id: input_boolean.condensatore_staccato
+      state: "off"
+    - condition: template
+      value_template: >-
+        {%- set a = trigger.from_state.state | float(none) if trigger.from_state else none -%}
+        {%- set b = trigger.to_state.state | float(none) if trigger.to_state else none -%}
+        {{ a is not none and b is not none and (b - a) | abs >= 2
+           and (trigger.to_state.last_updated - trigger.from_state.last_updated).total_seconds() <= 30 }}
+  actions:
+    - variables:
+        v_da: "{{ trigger.from_state.state }}"
+        v_a: "{{ trigger.to_state.state }}"
+    - delay: "00:00:10"
+    - condition: template
+      value_template: >-
+        {{ states('sensor.inverter_uflex_battery_power') | float(9999) | abs < 50 }}
+    - action: input_boolean.turn_on
+      target:
+        entity_id: input_boolean.condensatore_staccato
+    - action: notify.mobile_app_cph2653
+      continue_on_error: true
+      data:
+        title: "🔌 Condensatore staccato"
+        message: >
+          Alle {{ now().strftime('%H:%M:%S') }} la tensione del condensatore e'
+          passata da {{ v_da }} a {{ v_a }} V con potenza
+          {{ states('sensor.inverter_uflex_battery_power') }} W: il modulo
+          UFSC48-7.6 non scambia piu' energia. Controlla il LED ALM sul modulo;
+          se e' acceso, spegni e riaccendi il modulo.
+          FV {{ states('sensor.inverter_uflex_pv_power') }} W, casa
+          {{ states('sensor.inverter_uflex_load_power') }} W.
+        data:
+          tag: condensatore_staccato
+          priority: high
+          ttl: 0
+          persistent: "true"
+          channel: alarm_stream
+    - action: persistent_notification.create
+      continue_on_error: true
+      data:
+        title: "🔌 Condensatore staccato"
+        notification_id: condensatore_staccato
+        message: >
+          {{ now().strftime('%d/%m/%Y %H:%M:%S') }}: tensione da {{ v_da }} a
+          {{ v_a }} V con potenza zero. Modulo UFSC48-7.6 probabilmente in blocco
+          (LED ALM). Ripristino: spegnere e riaccendere il modulo.
+
+#==================================================================================
+# F4. CONDENSATORE RICOLLEGATO
+#
+# Il modulo e' di nuovo in circuito quando scorre corrente: potenza oltre 300 W
+# in valore assoluto per 2 minuti. Durante i blocchi dell'8-9/10 la potenza
+# letta e' rimasta fra -6 e +16 W.
+#==================================================================================
+- id: fotovoltaico_condensatore_ricollegato
+  alias: "Fotovoltaico - Condensatore ricollegato"
+  mode: single
+  max_exceeded: silent
+  triggers:
+    - trigger: template
+      value_template: >-
+        {{ states('sensor.inverter_uflex_battery_power') | float(0) | abs > 300 }}
+      for: "00:02:00"
+  conditions:
+    - condition: state
+      entity_id: input_boolean.condensatore_staccato
+      state: "on"
+  actions:
+    - variables:
+        dal: "{{ states.input_boolean.condensatore_staccato.last_changed }}"
+    - action: input_boolean.turn_off
+      target:
+        entity_id: input_boolean.condensatore_staccato
+    - action: persistent_notification.dismiss
+      continue_on_error: true
+      data:
+        notification_id: condensatore_staccato
+    - action: notify.mobile_app_cph2653
+      continue_on_error: true
+      data:
+        title: "🔋 Condensatore ricollegato"
+        message: >
+          Il condensatore scambia di nuovo energia
+          ({{ states('sensor.inverter_uflex_battery_power') }} W a
+          {{ states('sensor.inverter_uflex_battery_voltage') }} V).
+          Era staccato dalle {{ as_local(as_datetime(dal)).strftime('%d/%m %H:%M') }}
+          ({{ ((now() - as_datetime(dal)).total_seconds() / 3600) | round(1) }} ore).
+        data:
+          tag: condensatore_staccato
+          priority: normal
+          ttl: 0

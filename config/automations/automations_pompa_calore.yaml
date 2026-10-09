@@ -1,4 +1,10 @@
-# automations_pompa_calore_3.yaml
+# automations_pompa_calore_4.yaml
+#
+# v4 (08/10/2026): pompa e caldaia con flag manuali e controllo di sicurezza.
+#   - panasonic_cooling_riaccensione: la valvola la sposta script.fonte_imposta
+#     (unico punto che la muove), non piu' una sequenza propria.
+#   - panasonic_antigelo_vacanze: rispetta pdc_manuale e caldaia_manuale; con
+#     la pompa bloccata usa la caldaia, con entrambe bloccate avvisa soltanto.
 #
 # v3 (08/10/2026): PID heating nella fascia 21-23 (in Heat clima_modalita e'
 #   ancora "giorno") segue la zona piu' fredda fra sala, camera Georgi e
@@ -573,31 +579,14 @@
     - action: input_boolean.turn_off
       target:
         entity_id: input_boolean.clima_pompa_latch_notte
-    # v65: valvola su Caldaia -> SAT spento, valvola su Pompa, 120 s di
-    # manovra (come gestione fonte e antigelo), poi pompa.
-    - if:
-        - condition: state
-          entity_id: switch.shelly_box
-          state: "off"
-      then:
-        - action: climate.set_hvac_mode
-          target:
-            entity_id: climate.smart_autotune_thermostat_living_room
-          data:
-            hvac_mode: "off"
-        - delay: "00:00:30"
-        - action: switch.turn_on
-          target:
-            entity_id: switch.shelly_box
-        - action: input_datetime.set_datetime
-          target:
-            entity_id: input_datetime.fonte_ultima_commutazione
-          data:
-            datetime: "{{ now().strftime('%Y-%m-%d %H:%M:%S') }}"
-        - delay: "00:02:00"
-    - action: switch.turn_on
-      target:
-        entity_id: switch.panasonic_heat_pump_main_heatpump_state
+    # v4: valvola e accensione tramite script.fonte_imposta: se la valvola e'
+    # su Caldaia spegne il SAT, 30 s, valvola su Pompa, 120 s, poi pompa.
+    # Con la caldaia in gestione manuale e accesa non fa nulla e avvisa.
+    - action: script.fonte_imposta
+      data:
+        fonte: pompa
+        accendi: true
+        chi: automatico
 
 # AUTOTUNING PID RIMOSSO (v64): durante le 2 ore di prova il PID cooling
 # continuava a pubblicare il proprio setpoint ogni 5 minuti e invalidava il
@@ -639,6 +628,14 @@
 # Heat, per non spegnere una pompa lasciata accesa a mano d'estate.
 - id: panasonic_antigelo_vacanze
   alias: "Panasonic - Antigelo Vacanze Inverno"
+  description: >
+    In vacanza tiene la sala sopra la soglia antigelo. Usa la pompa se non e'
+    in gestione manuale, altrimenti la caldaia se non e' in gestione manuale;
+    con entrambe in gestione manuale avvisa soltanto. Le manovre di valvola
+    passano da script.fonte_imposta.
+  # v4: rispetta i flag manuali (prima ignorava pdc_manuale per accendere la
+  # pompa). Se la pompa e' bloccata usa la caldaia; il SAT riceve come target
+  # soglia + 2 (clima_sync_sat_target non agisce in vacanza).
   triggers:
     - trigger: time_pattern
       minutes: "/30"
@@ -655,8 +652,12 @@
         t_sala: "{{ states('sensor.hp1000se_pro_pro_v1_6_4_indoor_temperature') | float(20) }}"
         soglia: "{{ states('input_number.clima_target_emergenza_antigelo') | float(15) }}"
         pompa_accesa: "{{ is_state('switch.panasonic_heat_pump_main_heatpump_state', 'on') }}"
+        sat_acceso: "{{ is_state('climate.smart_autotune_thermostat_living_room', 'heat') }}"
+        pompa_libera: "{{ is_state('input_boolean.pdc_manuale', 'off') }}"
+        caldaia_libera: "{{ is_state('input_boolean.caldaia_manuale', 'off') }}"
         modo_iniziale: "{{ states('select.panasonic_heat_pump_main_operating_mode_state') }}"
         in_heat: "{{ modo_iniziale in ['Heat', 'Heat only'] }}"
+        fonte: "{{ 'pompa' if pompa_libera else ('caldaia' if caldaia_libera else 'nessuna') }}"
     # Sensore tornato: chiude l'eventuale avviso (nessun effetto se non c'e').
     - if:
         - condition: template
@@ -666,9 +667,7 @@
           data:
             notification_id: antigelo_sensore_sala
     - choose:
-        # Sensore sala assente: nessuna decisione sulla pompa, solo avviso.
-        # Notifica persistente con id fisso (sovrascritta ogni 30 min, non
-        # duplicata); push una sola volta, quando la notifica non esiste ancora.
+        # Sensore sala assente: nessuna decisione, solo avviso.
         - conditions:
             - condition: template
               value_template: "{{ not sala_ok }}"
@@ -684,7 +683,7 @@
                   data:
                     title: "Antigelo senza sensore"
                     message: >-
-                      Vacanza in inverno: la temperatura sala non e' disponibile,
+                      Vacanza: la temperatura sala non e' disponibile,
                       l'antigelo non puo' intervenire. Controllare la stazione interna.
                     data:
                       priority: high
@@ -696,11 +695,28 @@
                 message: >-
                   Temperatura sala non disponibile alle {{ now().strftime('%d/%m %H:%M') }}:
                   antigelo sospeso finche' il sensore non torna.
+        # --- Sala sotto soglia, nessuna fonte gia' accesa ---
         - conditions:
             - condition: template
-              value_template: "{{ t_sala < soglia and not pompa_accesa }}"
+              value_template: "{{ t_sala < soglia and not pompa_accesa and not sat_acceso }}"
           sequence:
-            # v2: pompa in Cool (o altro modo) -> Heat only prima di tutto.
+            - if:
+                - condition: template
+                  value_template: "{{ fonte == 'nessuna' }}"
+              then:
+                - action: notify.mobile_app_cph2653
+                  data:
+                    title: "❄️ Antigelo bloccato"
+                    message: >-
+                      Sala a {{ t_sala | round(1) }}C, sotto soglia {{ soglia }}C, ma pompa e
+                      caldaia sono entrambe in gestione manuale: nessuna accensione.
+                    data:
+                      priority: high
+                      ttl: 0
+                      channel: alarm_stream
+                - stop: "Pompa e caldaia in gestione manuale"
+            # Pompa in Cool (o altro modo) -> Heat only prima di tutto:
+            # serve anche alla caldaia, che non si accende in raffrescamento.
             # "Heat only" = SetOperationMode 0 (integrazione HeishaMon).
             - if:
                 - condition: template
@@ -712,51 +728,68 @@
                   data:
                     option: "Heat only"
                 - delay: "00:00:30"
-            # Valvola (v63): la PdC scalda la casa solo con switch.shelly_box su
-            # Pompa. In vacanza il SAT e' gia' spento (spegnimento_inizio_vacanza):
-            # basta portare la valvola su Pompa e attendere la manovra, con gli
-            # stessi 120 s della gestione fonte.
-            - if:
-                - condition: state
-                  entity_id: switch.shelly_box
-                  state: "off"
-              then:
-                - action: switch.turn_on
-                  target:
-                    entity_id: switch.shelly_box
-                # v65: registra la manovra, come la gestione fonte, per
-                # rispettare le ore minime fra due commutazioni della valvola.
-                - action: input_datetime.set_datetime
-                  target:
-                    entity_id: input_datetime.fonte_ultima_commutazione
-                  data:
-                    datetime: "{{ now().strftime('%Y-%m-%d %H:%M:%S') }}"
-                - delay: "00:02:00"
-            - action: switch.turn_on
-              target:
-                entity_id: switch.panasonic_heat_pump_main_heatpump_state
-            - delay: "00:00:30"
-            - action: mqtt.publish
+            - action: script.fonte_imposta
               data:
-                topic: "panasonic_heat_pump/commands/SetZ1HeatRequestTemperature"
-                payload: "35"
+                fonte: "{{ fonte }}"
+                accendi: true
+                chi: antigelo
+              response_variable: esito
+            - condition: template
+              value_template: "{{ esito.ok }}"
+            - if:
+                - condition: template
+                  value_template: "{{ fonte == 'pompa' }}"
+              then:
+                - delay: "00:00:30"
+                - action: mqtt.publish
+                  data:
+                    topic: "panasonic_heat_pump/commands/SetZ1HeatRequestTemperature"
+                    payload: "35"
+              else:
+                - action: climate.set_preset_mode
+                  target:
+                    entity_id: climate.smart_autotune_thermostat_living_room
+                  data:
+                    preset_mode: "home"
+                - action: climate.set_temperature
+                  target:
+                    entity_id: climate.smart_autotune_thermostat_living_room
+                  data:
+                    temperature: "{{ soglia + 2 }}"
             - action: notify.mobile_app_cph2653
               data:
                 title: "Antigelo attivato"
                 message: >-
-                  Sala a {{ t_sala | round(1) }}C, sotto soglia {{ soglia }}C. Pompa accesa.
+                  Sala a {{ t_sala | round(1) }}C, sotto soglia {{ soglia }}C.
+                  {{ 'Pompa accesa' if fonte == 'pompa' else 'Caldaia accesa (pompa in gestione manuale)' }}.
                   {% if not in_heat %}Modo pompa portato da {{ modo_iniziale }} a Heat only.{% endif %}
+        # --- Sala risalita: spegne la fonte libera che sta scaldando ---
         - conditions:
             - condition: template
-              value_template: "{{ t_sala >= (soglia + 2) and pompa_accesa and in_heat }}"
+              value_template: >-
+                {{ t_sala >= (soglia + 2) and in_heat
+                   and ((pompa_accesa and pompa_libera) or (sat_acceso and caldaia_libera)) }}
           sequence:
-            - action: switch.turn_off
-              target:
-                entity_id: switch.panasonic_heat_pump_main_heatpump_state
+            - if:
+                - condition: template
+                  value_template: "{{ pompa_accesa and pompa_libera }}"
+              then:
+                - action: switch.turn_off
+                  target:
+                    entity_id: switch.panasonic_heat_pump_main_heatpump_state
+            - if:
+                - condition: template
+                  value_template: "{{ sat_acceso and caldaia_libera }}"
+              then:
+                - action: climate.set_hvac_mode
+                  target:
+                    entity_id: climate.smart_autotune_thermostat_living_room
+                  data:
+                    hvac_mode: "off"
             - action: notify.mobile_app_cph2653
               data:
                 title: "Antigelo disattivato"
-                message: "Sala risalita a {{ t_sala | round(1) }}C. Pompa spenta."
+                message: "Sala risalita a {{ t_sala | round(1) }}C. Riscaldamento spento."
 
 #==================================================================================
 #==================================================================================
