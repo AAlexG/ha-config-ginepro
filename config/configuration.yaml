@@ -1,4 +1,4 @@
-# configuration_188.yaml
+# configuration_189.yaml
 #==================================================================================
 # INDICE. Tutta la configurazione dei sottosistemi vive in /config/packages/.
 # Un file per sottosistema, il nome del file e' il nome del package.
@@ -31,7 +31,12 @@ recorder:
     entity_globs:
       - sensor.panasonic_heat_pump_stats_*
       - sensor.inverter_uflex_*_l1_*
-      - sensor.inverter_uflex_*_current
+      # Correnti dei pannelli PV1/PV2. La corrente del condensatore
+      # (sensor.inverter_uflex_battery_current) e' registrata: serve a
+      # verificare il limite di scarica di 90 A (blocco UFSC48-7.6 dell'8/10/2026
+      # dopo un minuto a 100 A). Le altre correnti sono gia' escluse dalle
+      # regole *_l1_* ed external_ct1_*.
+      - sensor.inverter_uflex_pv*_current
       - sensor.inverter_uflex_external_ct1_*
 
 frontend:

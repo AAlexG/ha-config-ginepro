@@ -24,8 +24,8 @@
     "0xa4c138e6a0d06219": {
         "voltage": 2500,
         "battery": 49,
-        "temperature": 22.24,
-        "humidity": 57.05,
+        "temperature": 22.15,
+        "humidity": 53.69,
         "linkquality": 136
     },
     "0xa4c1385040d042fb": {
@@ -35,22 +35,22 @@
         "power_outage_memory": "restore",
         "indicator_mode": "off/on",
         "child_lock": "UNLOCK",
-        "voltage": 225.9,
+        "voltage": 223.6,
         "power": 0,
         "current": 0,
         "linkquality": 144
     },
     "0xa4c1383e0fd87686": {
-        "state": "ON",
-        "energy": 39.85,
+        "state": "OFF",
+        "energy": 39.92,
         "countdown": 0,
         "power_outage_memory": "restore",
         "indicator_mode": "off/on",
         "child_lock": "UNLOCK",
-        "voltage": 226.2,
+        "voltage": 223.3,
         "linkquality": 72,
-        "power": 19,
-        "current": 0.08
+        "power": 0,
+        "current": 0
     },
     "0xa4c1384b868fa6bd": {
         "state": "OFF",
@@ -76,18 +76,18 @@
         "countdown": 0,
         "power_outage_memory": "on",
         "indicator_mode": "off/on",
-        "power": 2,
+        "power": 3,
         "current": 0.03,
-        "voltage": 230,
-        "energy": 0.69,
+        "voltage": 227,
+        "energy": 0.72,
         "linkquality": 104,
         "child_lock": "UNLOCK"
     },
     "0xa4c1380eff54ffff": {
         "battery": 100,
-        "temperature": 22.5,
+        "temperature": 21.5,
         "voltage": 2900,
-        "humidity": 61.4,
+        "humidity": 58.8,
         "temperature_sensor_select": "internal",
         "comfort_temperature_min": 19,
         "comfort_temperature_max": 35.2,
@@ -108,8 +108,8 @@
     "0xa4c1380f0678ffff": {
         "battery": 100,
         "voltage": 3000,
-        "temperature": 23.3,
-        "humidity": 59.7,
+        "temperature": 23.1,
+        "humidity": 61.3,
         "temperature_sensor_select": "internal",
         "comfort_temperature_min": 19,
         "comfort_temperature_max": 43.7,
@@ -136,8 +136,8 @@
         "linkquality": 68
     },
     "0xa4c138013ef60318": {
-        "voltage": 2600,
-        "battery": 93,
+        "voltage": 2500,
+        "battery": 87,
         "contact": true,
         "tamper": false,
         "battery_low": false,

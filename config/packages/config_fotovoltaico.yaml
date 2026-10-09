@@ -1,4 +1,6 @@
-# config_fotovoltaico_13.yaml
+# config_fotovoltaico_14.yaml
+# v14 (09/10/2026): aggiunto Condensatore Corrente Scarica Max Oggi, massimo
+#   giornaliero della corrente di scarica con ora, tensione e carica massima.
 # v13 (09/10/2026): input_boolean Condensatore Staccato (gestito da
 #   automations_fotovoltaico) e sensore Condensatore Tensione Collegato, che vale
 #   la tensione solo a modulo collegato. Tensione Max Oggi, Ultimi Picchi,
@@ -424,6 +426,65 @@ template:
             {% set v = states('sensor.condensatore_tensione_collegato') | float(0) %}
             {{ [v, this.state | float(0)] | max | round(2) }}
           {% endif %}
+
+  #--------------------------------------------------------------------------
+  # CORRENTE MASSIMA GIORNALIERA DEL CONDENSATORE (v14)
+  #
+  # Datasheet UFSC48-7.6: corrente massima continua 100 A in carica e in
+  # scarica. L'8/10/2026 alle 15:46-15:47 il modulo ha erogato 100,0 A per
+  # circa un minuto (limite di scarica dell'inverter allora a 100 A) ed e'
+  # andato in blocco alle 15:49. Dal 9/10 il limite di scarica e' 90 A, quello
+  # di carica 80 A: questo sensore permette di verificare ogni giorno che
+  # vengano rispettati.
+  #
+  # Stato = massima corrente di SCARICA del giorno (A, positiva).
+  # Segno di sensor.inverter_uflex_battery_current verificato il 9/10:
+  # -79,96 A durante la carica al limite di 80 A, quindi positivo = scarica.
+  # Attributi: ora e tensione del massimo, massima corrente di carica (A,
+  # positiva) con la sua ora.
+  # Azzeramento alle 23:59:59, come gli altri contatori giornalieri, per non
+  # trascinare il valore nel giorno dopo nelle statistiche giornaliere.
+  # Durante un blocco del modulo la corrente letta e' circa 0 A: non altera
+  # il massimo.
+  #--------------------------------------------------------------------------
+  - triggers:
+      - trigger: state
+        entity_id: sensor.inverter_uflex_battery_current
+        id: misura
+      - trigger: time
+        at: "23:59:59"
+        id: azzera
+    sensor:
+      - name: "Condensatore Corrente Scarica Max Oggi"
+        unique_id: condensatore_corrente_scarica_max_oggi
+        unit_of_measurement: "A"
+        device_class: current
+        state_class: measurement
+        icon: mdi:current-dc
+        state: >-
+          {%- set i = states('sensor.inverter_uflex_battery_current') | float(0) -%}
+          {%- if trigger.id == 'azzera' -%}0
+          {%- else -%}{{ [i, this.state | float(0)] | max | round(1) }}{%- endif -%}
+        attributes:
+          ora: >-
+            {%- set i = states('sensor.inverter_uflex_battery_current') | float(0) -%}
+            {%- if trigger.id == 'azzera' -%}{{ none }}
+            {%- elif i > this.state | float(0) -%}{{ now().strftime('%H:%M:%S') }}
+            {%- else -%}{{ this.attributes.get('ora') }}{%- endif -%}
+          tensione: >-
+            {%- set i = states('sensor.inverter_uflex_battery_current') | float(0) -%}
+            {%- if trigger.id == 'azzera' -%}{{ none }}
+            {%- elif i > this.state | float(0) -%}{{ states('sensor.inverter_uflex_battery_voltage') | float(0) }}
+            {%- else -%}{{ this.attributes.get('tensione') }}{%- endif -%}
+          carica_max: >-
+            {%- set i = states('sensor.inverter_uflex_battery_current') | float(0) -%}
+            {%- if trigger.id == 'azzera' -%}0
+            {%- else -%}{{ [-i, this.attributes.get('carica_max', 0) | float(0)] | max | round(1) }}{%- endif -%}
+          carica_ora: >-
+            {%- set i = states('sensor.inverter_uflex_battery_current') | float(0) -%}
+            {%- if trigger.id == 'azzera' -%}{{ none }}
+            {%- elif -i > this.attributes.get('carica_max', 0) | float(0) -%}{{ now().strftime('%H:%M:%S') }}
+            {%- else -%}{{ this.attributes.get('carica_ora') }}{%- endif -%}
 
   #--------------------------------------------------------------------------
   # FOTOGRAFIA DEL SISTEMA AL MOMENTO DEL PICCO DI TENSIONE
