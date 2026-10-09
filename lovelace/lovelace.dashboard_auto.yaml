@@ -1,8 +1,278 @@
 config:
+  title: Auto v.1
   views:
-  - sections:
+  - max_columns: 2
+    path: auto
+    sections:
     - cards:
-      - heading: Nuova sezione
+      - heading: COMANDI RICARICA
+        heading_style: title
         type: heading
+      - entity: switch.solo_auto_contattore_interruttore
+        features:
+        - type: toggle
+        features_position: bottom
+        grid_options:
+          columns: 6
+        name: Contattore auto
+        type: tile
+        vertical: false
+      - entity: input_boolean.auto_manuale
+        features:
+        - type: toggle
+        features_position: bottom
+        grid_options:
+          columns: 6
+        name: Gestione manuale (blocca lo stacco automatico)
+        type: tile
+        vertical: false
+      - entity: sensor.solo_auto_contattore_potenza_di_fase_a
+        grid_options:
+          columns: 4
+        name: Potenza auto
+        type: tile
+        vertical: false
+      - entity: sensor.auto_energia_oggi
+        grid_options:
+          columns: 4
+        name: Energia oggi
+        type: tile
+        vertical: false
+      - entity: sensor.auto_energia_mese
+        grid_options:
+          columns: 4
+        name: Energia mese
+        type: tile
+        vertical: false
+      - content: '**Gestione manuale alzata**: l''automazione non stacca mai la ricarica,
+          anche se il condensatore non arriverebbe al pieno. **Abbassata**: con il
+          sole alto e l''auto oltre 1 kW, se la previsione resta "non raggiungibile"
+          per 15 minuti il contattore viene staccato. Nessuna automazione lo riaccende.'
+        type: markdown
       type: grid
+    - cards:
+      - heading: PREVISIONE PIENO CONDENSATORE
+        heading_style: title
+        type: heading
+      - entity: sensor.condensatore_previsione_pieno
+        grid_options:
+          columns: 6
+        name: Previsione
+        type: tile
+        vertical: false
+      - entity: sensor.condensatore_energia_al_pieno
+        grid_options:
+          columns: 6
+        name: Entrata dal minimo
+        type: tile
+        vertical: false
+      - content: "{% set c = state_attr('sensor.condensatore_previsione_pieno', 'calcolo')\
+          \ or {} %}\n{% set s = states('sensor.condensatore_previsione_pieno') %}\n\
+          **Stato: {{ s }}** \u2014 calcolato alle {{ as_local(states.sensor.condensatore_previsione_pieno.last_updated).strftime('%H:%M')\
+          \ if states.sensor.condensatore_previsione_pieno is not none else '-' }}\n\
+          \n{% if c | count == 0 %}\nNessun calcolo disponibile (notte, profilo sereno\
+          \ mancante o sensore energia al pieno senza minimo del giorno).\n{% else\
+          \ %}\n| | Valore | Significato |\n|---|---:|---|\n| **T1** | **{{ c.t1_min\
+          \ ~ ' min' if c.t1_min is not none else 'oltre il sole' }}** | tempo per\
+          \ arrivare al pieno |\n| **Tempo disponibile** | **{{ c.disponibile_min\
+          \ }} min** | fino alla fine del surplus |\n| Ora pieno prevista | {{ c.ora_pieno\
+          \ or '-' }} | |\n| Fine surplus prevista | {{ c.fine_surplus or '-' }} |\
+          \ |\n| Tensione minima oggi | {{ c.v_min }} V | punto di partenza del SC\
+          \ |\n| Energia al minimo | {{ c.energia_al_minimo_kwh }} kWh | dalla curva\
+          \ tensione/energia |\n| Entrata dal minimo | {{ c.entrata_dal_minimo_kwh\
+          \ }} kWh | contatori inverter |\n| **Livello SC** | **{{ c.livello_kwh }}\
+          \ kWh** | su {{ states('input_number.condensatore_energia_utile') }} kWh\
+          \ |\n| **Energia mancante** | **{{ c.energia_mancante_kwh }} kWh** | margine\
+          \ {{ states('input_number.ricarica_auto_margine') | int }}% compreso |\n\
+          | Prodotto oggi | {{ c.prodotto_oggi_kwh }} kWh | reale |\n| Sereno fino\
+          \ ad ora | {{ c.sereno_fatto_kwh }} kWh | dal profilo |\n| **Scala** | **{{\
+          \ (c.scala * 100) | round(0) | int }}%** | oggi rispetto al sereno |\n|\
+          \ Produzione residua | {{ c.produzione_residua_kwh }} kWh | prevista fino\
+          \ a sera |\n| Carico casa | {{ c.carico_kw }} kW | media 15 min, auto compresa\
+          \ |\n| Energia assorbibile dal SC | {{ c.energia_sc_prevista_kwh }} kWh\
+          \ | surplus fino a sera, entro il limite di carica |\n{% endif %}\n"
+        type: markdown
+      type: grid
+    - cards:
+      - heading: PRODUZIONE OGGI E MODELLO
+        heading_style: title
+        type: heading
+      - graph_span: 24h
+        grid_options:
+          columns: 12
+          rows: auto
+        header:
+          show: true
+          title: Produzione reale, profilo sereno e previsione (W)
+        series:
+        - color: '#E69F00'
+          entity: sensor.inverter_uflex_pv_power
+          group_by:
+            duration: 10min
+            func: avg
+          name: produzione reale
+          stroke_width: 2
+          type: line
+        - color: '#999999'
+          curve: stepline
+          data_generator: 'const p = entity.attributes.profilo || [];
+
+            const d = new Date(); d.setHours(0, 0, 0, 0);
+
+            return p.map((v, h) => [d.getTime() + h * 3600000, v * 1000]);
+
+            '
+          entity: sensor.pv_profilo_sereno
+          name: profilo sereno
+          stroke_width: 1
+          type: line
+        - color: '#0072B2'
+          curve: stepline
+          data_generator: 'const p = entity.attributes.profilo || [];
+
+            const s = hass.states[''sensor.condensatore_previsione_pieno''];
+
+            const c = (s && s.attributes.calcolo) || {};
+
+            const k = c.scala || 0;
+
+            const d = new Date(); d.setHours(0, 0, 0, 0);
+
+            return p.map((v, h) => [d.getTime() + h * 3600000, v * 1000 * k]);
+
+            '
+          entity: sensor.pv_profilo_sereno
+          name: previsione (sereno x scala)
+          stroke_width: 2
+          type: line
+        span:
+          start: day
+        type: custom:apexcharts-card
+        yaxis:
+        - apex_config:
+            title:
+              text: W
+          decimals: 0
+          min: 0
+      - graph_span: 24h
+        grid_options:
+          columns: 12
+          rows: auto
+        header:
+          show: true
+          title: Flussi di oggi (W)
+        series:
+        - color: '#E69F00'
+          entity: sensor.inverter_uflex_pv_power
+          group_by:
+            duration: 5min
+            func: avg
+          name: FV
+          type: line
+        - color: '#009E73'
+          entity: sensor.solo_auto_contattore_potenza_di_fase_a
+          group_by:
+            duration: 5min
+            func: avg
+          name: auto
+          transform: return x * 1000;
+          type: line
+        - color: '#CC79A7'
+          entity: sensor.inverter_uflex_battery_power
+          group_by:
+            duration: 5min
+            func: avg
+          name: condensatore (carica in alto)
+          transform: return -x;
+          type: line
+        - color: '#D55E00'
+          entity: sensor.inverter_uflex_external_ct1_power
+          group_by:
+            duration: 5min
+            func: avg
+          name: rete (prelievo in alto)
+          type: line
+        span:
+          start: day
+        type: custom:apexcharts-card
+        yaxis:
+        - apex_config:
+            title:
+              text: W
+          decimals: 0
+      type: grid
+    - cards:
+      - heading: PARAMETRI DEL CALCOLO
+        heading_style: title
+        type: heading
+      - entity: input_number.condensatore_energia_utile
+        features:
+        - style: buttons
+          type: numeric-input
+        features_position: bottom
+        grid_options:
+          columns: 6
+        name: Energia SC dal vuoto al pieno
+        type: tile
+        vertical: false
+      - entity: input_number.ricarica_auto_margine
+        features:
+        - style: buttons
+          type: numeric-input
+        features_position: bottom
+        grid_options:
+          columns: 6
+        name: Margine previsione
+        type: tile
+        vertical: false
+      - entity: input_number.ricarica_auto_soglia_sereno
+        features:
+        - style: buttons
+          type: numeric-input
+        features_position: bottom
+        grid_options:
+          columns: 6
+        name: Soglia valutabilita'
+        type: tile
+        vertical: false
+      - entity: sensor.carico_casa_media_15_min
+        grid_options:
+          columns: 6
+        name: Carico casa media 15 min
+        type: tile
+        vertical: false
+      - entity: sensor.pv_profilo_sereno
+        grid_options:
+          columns: 6
+        name: Giornata serena (totale)
+        type: tile
+        vertical: false
+      - entity: sensor.inverter_uflex_battery_voltage
+        grid_options:
+          columns: 6
+        name: Tensione SC
+        type: tile
+        vertical: false
+      - content: '{% set g = state_attr(''sensor.pv_profilo_sereno'', ''giorni_sereni'')
+          %}
+
+          **Profilo sereno** calcolato il {{ state_attr(''sensor.pv_profilo_sereno'',
+          ''calcolato'') or ''-'' }}
+
+          su {{ state_attr(''sensor.pv_profilo_sereno'', ''giorni_finestra'') or 0
+          }} giorni della finestra +/-15 gg.
+
+          Giorni sereni usati: {{ g | join('', '') if g else ''-'' }}.
+
+          {% if state_attr(''sensor.pv_profilo_sereno'', ''errore'') %}
+
+          **Errore script:** {{ state_attr(''sensor.pv_profilo_sereno'', ''errore'')
+          }}
+
+          {% endif %}
+
+          '
+        type: markdown
+      type: grid
+    title: Auto
     type: sections
