@@ -15,7 +15,7 @@ config:
         grid_options:
           columns: full
           rows: auto
-        name: Condensatore staccato
+        name: Condensatore in avaria
         type: tile
         vertical: false
       - entity: sensor.inverter_uflex_device_state
