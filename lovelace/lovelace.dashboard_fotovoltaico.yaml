@@ -20,12 +20,12 @@ config:
         vertical: false
       - entity: sensor.inverter_uflex_device_state
         features_position: bottom
-        name: Cond.Stato
+        name: InverterStato
         type: tile
         vertical: false
       - entity: sensor.inverter_uflex_device_state
         features_position: bottom
-        name: InverterStato
+        name: Cond.Stato
         type: tile
         vertical: false
       - entity: sensor.inverter_uflex_battery_voltage
@@ -225,7 +225,7 @@ config:
           statistics:
             period: hour
             type: max
-          type: column
+          type: line
           yaxis_id: amp
         - color: '#0072B2'
           entity: sensor.inverter_uflex_battery_current
@@ -233,7 +233,7 @@ config:
           statistics:
             period: hour
             type: min
-          type: column
+          type: line
           yaxis_id: amp
         type: custom:apexcharts-card
         yaxis:
@@ -295,6 +295,29 @@ config:
           rows: auto
         header:
           show: true
+          title: Carica cond.al pieno 60g, kWh
+        series:
+        - color: '#009E73'
+          entity: sensor.condensatore_energia_al_pieno
+          name: energia netta al pieno
+          statistics:
+            period: day
+            type: max
+          type: line
+          yaxis_id: kwh
+        type: custom:apexcharts-card
+        yaxis:
+        - apex_config:
+            title:
+              text: carica kWh
+          decimals: 2
+          id: kwh
+      - graph_span: 60d
+        grid_options:
+          columns: 12
+          rows: auto
+        header:
+          show: true
           title: Temp max inventer DC 60gg
         series:
         - entity: sensor.inverter_uflex_dc_temperature
@@ -335,47 +358,6 @@ config:
           decimals: 0
           id: conteggio
           min: 0
-      - graph_span: 60d
-        grid_options:
-          columns: 12
-          rows: auto
-        header:
-          show: true
-          title: Carica cond.al pieno gg(target 7,6kWh)
-        series:
-        - color: '#009E73'
-          entity: sensor.condensatore_energia_al_pieno
-          name: energia netta al pieno
-          statistics:
-            period: day
-            type: max
-          type: column
-          yaxis_id: kwh
-        - color: '#0072B2'
-          entity: sensor.inverter_uflex_battery_voltage
-          name: tensione max
-          statistics:
-            period: day
-            type: max
-          type: line
-          yaxis_id: volt
-        type: custom:apexcharts-card
-        yaxis:
-        - apex_config:
-            title:
-              text: kWh
-          decimals: 2
-          id: kwh
-          max: 8
-          min: 0
-        - apex_config:
-            title:
-              text: V max
-          decimals: 1
-          id: volt
-          max: 60
-          min: 50
-          opposite: true
       type: grid
     - cards:
       - heading: PANELLI FOTOVOLTAICI

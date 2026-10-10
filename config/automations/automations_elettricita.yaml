@@ -1,6 +1,7 @@
-# automations_elettricita_1.yaml
+# automations_elettricita_2.yaml
 #
-# Elettricita': distacco carichi su prelievo alto e prezzo kWh da PUN.
+# Elettricita': distacco carichi su prelievo alto, prezzo kWh da PUN,
+# avviso di scatto del DG CASA.
 # File creato il 30/09/2026 dalla riorganizzazione "un argomento = automations_X + config_X".
 # Automazioni spostate da: automations_carichi, automations_prezzo. Id e alias invariati.
 
@@ -347,3 +348,67 @@
         entity_id: input_number.elettricita_prezzo_kwh
       data:
         value: "{{ states('sensor.elettricita_prezzo_kwh_variabile') | float(0) | round(4) }}"
+
+#==================================================================================
+# DG CASA SCATTATO
+#
+# Il DG CASA (AEG C32 30 mA) e' l'unica utenza sull'uscita backup dell'inverter
+# UFLEX: quando scatta, sensor.inverter_uflex_load_power crolla a pochi watt.
+# In condizioni normali il carico casa non scende mai sotto 50 W (verificato
+# sugli ultimi 7 giorni: l'unico caso e' lo scatto del 10/10/2026 alle 09:27).
+# L'UPS Eaton NON e' sotto il DG CASA (nessun cambio di stato alle 09:27),
+# quindi non serve per questo avviso.
+#
+# Sotto 50 W per 30 secondi: notifica persistente sul canale allarme.
+# Poi l'automazione aspetta il ritorno sopra 50 W per 30 secondi (max 24 ore)
+# e manda la notifica di ripristino con la durata del distacco.
+# Se HA si riavvia durante l'attesa, la notifica di ripristino non parte.
+#==================================================================================
+- id: elettricita_dg_casa_scattato
+  alias: "Elettricità - DG CASA scattato"
+  description: >
+    Avvisa quando il carico casa sull'uscita backup dell'inverter crolla
+    sotto 50 W (DG CASA aperto) e quando torna.
+  mode: single
+  max_exceeded: silent
+  triggers:
+    - trigger: numeric_state
+      entity_id: sensor.inverter_uflex_load_power
+      below: 50
+      for: "00:00:30"
+  actions:
+    - variables:
+        inizio: "{{ now().strftime('%H:%M') }}"
+    - action: notify.mobile_app_cph2653
+      continue_on_error: true
+      data:
+        title: "DG CASA scattato"
+        message: >
+          Alle {{ inizio }} il carico casa e' sceso a
+          {{ states('sensor.inverter_uflex_load_power') | float(0) | round(0) }} W:
+          il DG CASA nel quadro ha staccato la casa. Riarmarlo a mano.
+        data:
+          tag: dg_casa_scattato
+          priority: high
+          ttl: 0
+          persistent: true
+          sticky: "true"
+          channel: alarm_stream
+    - wait_for_trigger:
+        - trigger: numeric_state
+          entity_id: sensor.inverter_uflex_load_power
+          above: 50
+          for: "00:00:30"
+      timeout: "24:00:00"
+      continue_on_timeout: false
+    - action: notify.mobile_app_cph2653
+      continue_on_error: true
+      data:
+        title: "DG CASA riarmato"
+        message: >
+          Corrente in casa tornata alle {{ now().strftime('%H:%M') }}
+          (staccata dalle {{ inizio }}).
+        data:
+          tag: dg_casa_scattato
+          priority: high
+          ttl: 0

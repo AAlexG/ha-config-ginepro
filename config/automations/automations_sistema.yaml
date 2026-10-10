@@ -1,4 +1,4 @@
-# automations_sistema_1.yaml
+# automations_sistema_3.yaml
 #
 # Sistema: UPS, ventola Raspberry, aggiornamenti, backup GitHub, Vivino proxy.
 # File creato il 30/09/2026 dalla riorganizzazione "un argomento = automations_X + config_X".
@@ -7,18 +7,32 @@
 #==================================================================================
 # UPS - BLACKOUT RILEVATO
 #==================================================================================
+#
+# I trigger usano i codici NUT di sensor.ups_eaton_camera_georgii_dati_di_stato
+# (OL = rete presente, OB = su batteria) invece del testo di _stato: il testo
+# cambia con le combinazioni di flag ("Online, Battery Charging" ecc.) e il
+# confronto esatto con "On Battery" / "On Line" poteva non scattare mai.
+# Il passaggio da/verso unavailable (riavvio HA o NUT) non genera notifiche.
 - id: ups_blackout_rilevato
   alias: "UPS - Blackout rilevato"
   mode: single
   triggers:
-    - platform: state
-      entity_id: sensor.ups_eaton_camera_georgii_stato
-      to: "On Battery"
+    - trigger: state
+      entity_id: sensor.ups_eaton_camera_georgii_dati_di_stato
+  conditions:
+    - condition: template
+      value_template: >
+        {{ 'OB' in trigger.to_state.state.split()
+           and 'OB' not in trigger.from_state.state.split()
+           and trigger.from_state.state not in ['unavailable', 'unknown'] }}
   action:
     - action: notify.mobile_app_cph2653
       data:
-        title: "🔴 BLACKOUT!"
-        message: "Mancanza di corrente! UPS Eaton in funzione su batteria."
+        title: "🔴 UPS su batteria"
+        message: >
+          Manca corrente in casa alle {{ now().strftime('%H:%M') }}: DG CASA
+          scattato o blackout. UPS Eaton su batteria
+          ({{ states('sensor.ups_eaton_camera_georgii_carica_batterie') }}%).
         data:
           priority: high
           ttl: 0
@@ -31,15 +45,50 @@
   alias: "UPS - Corrente ripristinata"
   mode: single
   triggers:
-    - platform: state
-      entity_id: sensor.ups_eaton_camera_georgii_stato
-      to: "On Line"
+    - trigger: state
+      entity_id: sensor.ups_eaton_camera_georgii_dati_di_stato
+  conditions:
+    - condition: template
+      value_template: >
+        {{ 'OL' in trigger.to_state.state.split()
+           and 'OB' in trigger.from_state.state.split() }}
   action:
     - action: notify.mobile_app_cph2653
       data:
         title: "✅ Corrente ripristinata"
-        message: "La rete elettrica è tornata online. UPS Eaton di nuovo in carica."
+        message: "Corrente in casa tornata alle {{ now().strftime('%H:%M') }}. UPS Eaton di nuovo in carica."
         data:
+          priority: high
+          ttl: 0
+
+#==================================================================================
+# UPS - SENSORE NON DISPONIBILE
+#
+# Il 10/10/2026 il driver NUT ha perso la comunicazione con l'Eaton (errore
+# ERR DATA-STALE nel log) e i sensori UPS sono rimasti unavailable dalle 08:54.
+# Alle 09:27 e' scattato il DG CASA, l'UPS e' passato a batteria ma HA non
+# l'ha visto e la notifica di blackout non e' partita. Questa automazione
+# avvisa se lo stato UPS resta non disponibile per 10 minuti.
+#==================================================================================
+- id: ups_sensore_non_disponibile
+  alias: "UPS - Sensore non disponibile"
+  mode: single
+  triggers:
+    - trigger: state
+      entity_id: sensor.ups_eaton_camera_georgii_dati_di_stato
+      to:
+        - "unavailable"
+        - "unknown"
+      for: "00:10:00"
+  actions:
+    - action: notify.mobile_app_cph2653
+      data:
+        title: "UPS non monitorato"
+        message: >
+          Da 10 minuti HA non legge lo stato dell'UPS Eaton: l'avviso di
+          blackout non funziona. Riavviare l'applicazione Network UPS Tools.
+        data:
+          tag: ups_non_disponibile
           priority: high
           ttl: 0
 
