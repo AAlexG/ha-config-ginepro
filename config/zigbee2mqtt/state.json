@@ -24,8 +24,8 @@
     "0xa4c138e6a0d06219": {
         "voltage": 2500,
         "battery": 49,
-        "temperature": 22.25,
-        "humidity": 54.65,
+        "temperature": 21.95,
+        "humidity": 55.24,
         "linkquality": 136
     },
     "0xa4c1385040d042fb": {
@@ -35,22 +35,22 @@
         "power_outage_memory": "restore",
         "indicator_mode": "off/on",
         "child_lock": "UNLOCK",
-        "voltage": 225.3,
+        "voltage": 222.8,
         "power": 0,
         "current": 0,
         "linkquality": 144
     },
     "0xa4c1383e0fd87686": {
-        "state": "OFF",
-        "energy": 39.92,
+        "state": "ON",
+        "energy": 39.93,
         "countdown": 0,
         "power_outage_memory": "restore",
         "indicator_mode": "off/on",
         "child_lock": "UNLOCK",
-        "voltage": 225.7,
+        "voltage": 224,
         "linkquality": 72,
-        "power": 0,
-        "current": 0
+        "power": 19,
+        "current": 0.08
     },
     "0xa4c1384b868fa6bd": {
         "state": "OFF",
@@ -76,18 +76,18 @@
         "countdown": 0,
         "power_outage_memory": "on",
         "indicator_mode": "off/on",
-        "power": 2,
+        "power": 3,
         "current": 0.03,
-        "voltage": 229,
-        "energy": 0.73,
+        "voltage": 227,
+        "energy": 0.74,
         "linkquality": 104,
         "child_lock": "UNLOCK"
     },
     "0xa4c1380eff54ffff": {
         "battery": 100,
-        "temperature": 22.6,
+        "temperature": 21.9,
         "voltage": 2900,
-        "humidity": 61.2,
+        "humidity": 62.5,
         "temperature_sensor_select": "internal",
         "comfort_temperature_min": 19,
         "comfort_temperature_max": 35.2,
@@ -108,8 +108,8 @@
     "0xa4c1380f0678ffff": {
         "battery": 100,
         "voltage": 3000,
-        "temperature": 23.1,
-        "humidity": 61.8,
+        "temperature": 23,
+        "humidity": 59.3,
         "temperature_sensor_select": "internal",
         "comfort_temperature_min": 19,
         "comfort_temperature_max": 43.7,
