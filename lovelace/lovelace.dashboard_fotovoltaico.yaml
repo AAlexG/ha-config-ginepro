@@ -1,6 +1,6 @@
 config:
   path: fotovoltaico
-  title: Fotovoltaico v.27
+  title: Fotovoltaico v.30
   views:
   - cards: []
     max_columns: 2
@@ -13,11 +13,24 @@ config:
       - entity: input_boolean.condensatore_staccato
         features_position: bottom
         grid_options:
-          columns: full
+          columns: 9
           rows: auto
         name: Condensatore in avaria
         type: tile
         vertical: false
+      - grid_options:
+          columns: 3
+          rows: auto
+        icon: mdi:tune-vertical
+        icon_height: 20px
+        name: Dettagli inverter
+        show_icon: true
+        show_name: true
+        show_state: false
+        tap_action:
+          action: navigate
+          navigation_path: /dettagli-inverter/inverter
+        type: button
       - entity: sensor.inverter_uflex_device_state
         features_position: bottom
         name: InverterStato
@@ -208,7 +221,7 @@ config:
         series:
         - color: '#0072B2'
           entity: sensor.condensatore_tensione_collegato
-          name: massima oraria
+          name: massima oraria ora
           statistics:
             period: hour
             type: max

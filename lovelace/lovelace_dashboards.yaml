@@ -96,3 +96,17 @@ items:
   show_in_sidebar: true
   title: Auto
   url_path: dashboard-auto
+- icon: mdi:devices
+  id: dettagli_inverter
+  mode: storage
+  require_admin: true
+  show_in_sidebar: true
+  title: 'Dettagli inverter '
+  url_path: dettagli-inverter
+- icon: mdi:face-man-outline
+  id: dashboard_tania
+  mode: storage
+  require_admin: false
+  show_in_sidebar: true
+  title: Tania
+  url_path: dashboard-tania

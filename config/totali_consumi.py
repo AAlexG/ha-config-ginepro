@@ -1,5 +1,4 @@
-#!/usr/bin/env python3
-# totali_consumi_12.py
+# totali_consumi_14.py
 # Calcola totali storici rilevato/bollette dalla tabella statistics del DB HA.
 # Stampa un JSON su stdout con i valori, letto dall'automazione
 # calcola_totali_consumi che aggiorna gli helper input_number della plancia.
@@ -25,7 +24,22 @@
 #  * sensori energia total_increasing dell'inverter -> colonne 'state'/'sum';
 #    per il fotovoltaico si usa MAX(sum)-MIN(sum) (reset-safe).
 
-import sqlite3, json
+# NUOVO v13 (statistiche CUMULATE per i grafici annuali):
+#  * Le card statistics-graph con period: year mostravano il MAX del mese
+#    piu' alto, non la somma: le serie mensili (utility_meter a reset mensile
+#    e input_number.bolletta_* iniettati da salva_bolletta) non hanno la
+#    colonna 'sum', quindi HA non puo' calcolare 'change' sull'anno.
+#  * Ora, a ogni esecuzione (avvio, ogni ora, subito dopo Salva bolletta),
+#    per ogni serie in CUMULATI si ricostruisce da zero una statistica
+#    ESTERNA totali_consumi:<nome> con has_sum=1: una riga al 1 di ogni mese,
+#    state = valore del mese, sum = cumulato fino a quel mese incluso, piu'
+#    una riga a zero nel mese precedente al primo dato.
+#  * Le card annuali usano stat_types: change su queste statistiche:
+#    change(anno) = sum fine anno - sum fine anno precedente = somma dei mesi.
+#  * Le serie mensili originali NON vengono toccate.
+
+import sqlite3, json, time
+from datetime import datetime, timezone
 
 DB = "/config/home-assistant_v2.db"
 
@@ -98,6 +112,86 @@ def calc_pv_risparmio(cur, prezzo):
     return round(autoconsumo * prezzo, 2)
 
 
+# ── Statistiche cumulate per i grafici annuali (v13) ────────────────────────
+# (nome, serie mensile sorgente, unita', unit_class, nome leggibile)
+CUMULATI = [
+    ("gas_mc_rilevato",     "sensor.gas_mese_mc",                "m³",  "volume", "Gas m³ rilevato cumulato"),
+    ("gas_mc_bolletta",     "input_number.bolletta_gas_mc",      "m³",  "volume", "Gas m³ bolletta cumulato"),
+    ("elec_kwh_rilevato",   "sensor.elettricita_mese_kwh",       "kWh", "energy", "Elettricità kWh rilevato cumulato"),
+    ("elec_kwh_bolletta",   "input_number.bolletta_elec_kwh",    "kWh", "energy", "Elettricità kWh bolletta cumulato"),
+    ("acqua_mc_rilevato",   "sensor.acqua_mese_mc",              "m³",  "volume", "Acqua m³ rilevato cumulato"),
+    ("acqua_mc_bolletta",   "input_number.bolletta_acqua_mc",    "m³",  "volume", "Acqua m³ bolletta cumulato"),
+    ("acqua_euro_rilevato", "sensor.acqua_mese_euro",            "€",   None,     "Acqua € rilevato cumulato"),
+    ("acqua_euro_bolletta", "input_number.bolletta_acqua_euro",  "€",   None,     "Acqua € bolletta cumulato"),
+]
+CUMULATI_SOURCE = "totali_consumi"
+
+
+def meta_cumulato(cur, sid, unit, unit_class, nome):
+    """id di statistics_meta per una statistica esterna con somma.
+    Se esiste gia' ne riallinea unita'/flag, altrimenti la crea."""
+    r = cur.execute("SELECT id FROM statistics_meta WHERE statistic_id=?",
+                    (sid,)).fetchone()
+    if r:
+        cur.execute("""UPDATE statistics_meta
+                       SET source=?, unit_of_measurement=?, unit_class=?,
+                           has_mean=0, has_sum=1, name=?, mean_type=0
+                       WHERE id=?""",
+                    (CUMULATI_SOURCE, unit, unit_class, nome, r[0]))
+        return r[0]
+    cur.execute("""INSERT INTO statistics_meta
+        (statistic_id, source, unit_of_measurement, unit_class,
+         has_mean, has_sum, name, mean_type)
+        VALUES (?, ?, ?, ?, 0, 1, ?, 0)""",
+        (sid, CUMULATI_SOURCE, unit, unit_class, nome))
+    return cur.lastrowid
+
+
+def inizio_mese(ym):
+    """(start_ts, start) al 1 del mese 00:00 UTC (stessa convenzione di
+    salva_bolletta: in ora locale cade sempre nello stesso mese e anno)."""
+    y, m = map(int, ym.split("-"))
+    d = datetime(y, m, 1, tzinfo=timezone.utc)
+    return d.timestamp(), d.strftime("%Y-%m-%dT%H:%M:%S.000000")
+
+
+def mese_precedente(ym):
+    y, m = map(int, ym.split("-"))
+    return f"{y - 1}-12" if m == 1 else f"{y}-{m - 1:02d}"
+
+
+def aggiorna_cumulati(cur):
+    """Ricostruisce tutte le statistiche cumulate. Ritorna {nome: n_mesi}."""
+    now_ts = time.time()
+    now_s = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000000")
+    esito = {}
+    for nome, sorgente, unit, uc, nome_lungo in CUMULATI:
+        sid = f"{CUMULATI_SOURCE}:{nome}"
+        mid = meta_cumulato(cur, sid, unit, uc, nome_lungo)
+        cur.execute("DELETE FROM statistics WHERE metadata_id=?", (mid,))
+        cur.execute("DELETE FROM statistics_short_term WHERE metadata_id=?", (mid,))
+        serie = serie_mensile(cur, sorgente)
+        if not serie:
+            esito[nome] = 0
+            continue
+        mesi = sorted(serie)
+        righe = [(mese_precedente(mesi[0]), 0.0, 0.0)]
+        cumulato = 0.0
+        for ym in mesi:
+            cumulato += serie[ym]
+            righe.append((ym, serie[ym], cumulato))
+        for ym, valore, somma in righe:
+            ts, s = inizio_mese(ym)
+            cur.execute("""INSERT INTO statistics
+                (created, created_ts, metadata_id, start, start_ts,
+                 mean, mean_weight, min, max, last_reset, last_reset_ts,
+                 state, sum)
+                VALUES (?,?,?,?,?,NULL,NULL,NULL,NULL,NULL,NULL,?,?)""",
+                (now_s, now_ts, mid, s, ts, round(valore, 4), round(somma, 4)))
+        esito[nome] = len(mesi)
+    return esito
+
+
 def main():
     conn = None
     try:
@@ -134,6 +228,15 @@ def main():
         out["pv_gse"]          = pv_gse
         out["pv_totale"]       = round(pv_risparmio + pv_gse, 2)
         out["pv_recupero_pct"] = round((out["pv_totale"] / COSTO_IMPIANTO) * 100, 2)
+
+        # ── v13: statistiche cumulate per i grafici annuali ──
+        # Errore qui non deve bloccare i totali gia' calcolati.
+        try:
+            aggiorna_cumulati(cur)
+            conn.commit()
+        except Exception as e:
+            conn.rollback()
+            out["cumulati_error"] = str(e)
 
         print(json.dumps(out))
 

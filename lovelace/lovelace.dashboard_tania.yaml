@@ -1,0 +1,133 @@
+config:
+  views:
+  - sections:
+    - cards:
+      - heading: Apertura e chiusura cancelli e portone
+        heading_style: title
+        type: heading
+      - grid_options:
+          columns: 4
+          rows: auto
+        icon: mdi:gate-arrow-right
+        icon_height: 15px
+        name: Cancello piccolo
+        show_icon: true
+        show_name: true
+        show_state: false
+        tap_action:
+          action: perform-action
+          perform_action: script.apri_cancello_casa
+        type: button
+      - grid_options:
+          columns: 6
+          rows: auto
+        icon: mdi:garage-open
+        icon_height: 15px
+        name: Portone e cancellone
+        show_icon: true
+        show_name: true
+        show_state: false
+        tap_action:
+          action: perform-action
+          perform_action: script.apri_box_combo
+        type: button
+      - grid_options:
+          columns: 2
+          rows: auto
+        icon: mdi:boom-gate-up
+        name: Moto
+        show_icon: true
+        show_name: true
+        show_state: false
+        tap_action:
+          action: perform-action
+          perform_action: button.press
+          target:
+            entity_id: button.10007c3b31_0
+        type: button
+      - heading: ___________________________________________
+        heading_style: title
+        type: heading
+      - heading: Apertura e chiusura Pergola terrazza
+        heading_style: title
+        type: heading
+      - entity: cover.terrazzo_pergola_terrazza
+        features:
+        - type: cover-open-close
+        - type: cover-position
+        - type: cover-tilt-favorite
+        features_position: bottom
+        grid_options:
+          columns: 12
+          rows: auto
+        name: Attuale apertura lamelle %
+        state_content:
+        - state
+        - current_tilt_position
+        type: tile
+        vertical: false
+      - heading: ___________________________________________
+        heading_style: title
+        type: heading
+      - heading: Accensione contattore auto
+        heading_style: title
+        type: heading
+      - entity: switch.solo_auto_contattore_interruttore
+        features:
+        - type: toggle
+        features_position: bottom
+        grid_options:
+          columns: 12
+          rows: auto
+        name: Contattore auto
+        type: tile
+        vertical: false
+      - heading: ___________________________________________
+        heading_style: title
+        type: heading
+      - heading: Accendi o spegni irrigazione
+        heading_style: title
+        type: heading
+      - color: '#0072B2'
+        grid_options:
+          columns: 6
+          rows: auto
+        icon: mdi:play-circle
+        icon_height: 24px
+        name: Esegui ciclo ora
+        show_icon: true
+        show_name: true
+        show_state: false
+        tap_action:
+          action: perform-action
+          perform_action: script.irrigazione_cicla_ora
+        type: button
+      - color: '#D55E00'
+        grid_options:
+          columns: 6
+          rows: auto
+        icon: mdi:stop-circle
+        icon_height: 24px
+        name: Stop
+        show_icon: true
+        show_name: true
+        show_state: false
+        tap_action:
+          action: perform-action
+          perform_action: script.irrigazione_stop
+        type: button
+      - grid_options:
+          columns: 12
+          rows: auto
+        icon: mdi:water
+        icon_height: 10px
+        name: 'Dettagli di Irrigazione '
+        show_icon: true
+        show_name: true
+        show_state: false
+        tap_action:
+          action: navigate
+          navigation_path: /dashboard-irrigazione
+        type: button
+      type: grid
+    type: sections
