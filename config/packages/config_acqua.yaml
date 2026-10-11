@@ -1,4 +1,7 @@
-# config_acqua_3.yaml
+# config_acqua_4.yaml
+# v4 (10/10/2026): tre totalizzatori per modo di utilizzo (lavatrice,
+#   irrigazione, sanitaria) con state_class total_increasing, per i grafici
+#   mensili e annuali della plancia Consumi > Acqua.
 # Package Casa Ginepro - Acqua: sanitaria, consumi, costi e bolletta IRETI
 # Estratto da configuration_186.yaml. Nome file = nome del package.
 #
@@ -127,6 +130,107 @@ template:
         unit_of_measurement: "€"
         state_class: measurement
         icon: mdi:currency-eur
+
+  # ============================================================
+  # TOTALIZZATORI PER MODO DI UTILIZZO (v4)
+  # I sensori giornalieri (Acqua Lavatrice Oggi, Acqua Irrigazione Oggi,
+  # Acqua Sanitaria Totale) sono measurement: le statistiche conservano solo
+  # minimo/medio/massimo, che non si sommano per mese o anno.
+  # Questi totalizzatori non si azzerano mai e sono total_increasing: il
+  # grafico statistico con "change" su mese/anno da' il consumo esatto.
+  #   - ogni aumento del sensore giornaliero viene sommato;
+  #   - le diminuzioni (azzeramento di mezzanotte) vengono ignorate;
+  #   - alle 00:01 si somma il valore iniziale del nuovo giorno: serve alla
+  #     sanitaria, che parte dalla quota fissa C4 e non da 0. I cambiamenti
+  #     fra 00:00 e 00:01 sono esclusi per non contarli due volte.
+  # Limiti: una riduzione di C4 a giornata in corso non viene sottratta;
+  # se HA e' spento alle 00:01 la quota iniziale di quel giorno si perde.
+  # Lo storico parte dall'installazione (v4), non e' ricostruito.
+  # ============================================================
+  - triggers:
+      - trigger: state
+        entity_id: sensor.acqua_lavatrice_oggi
+        id: delta
+      - trigger: time
+        at: "00:01:00"
+        id: base
+    sensor:
+      - name: "Acqua Lavatrice Totalizzatore"
+        unique_id: acqua_lavatrice_totalizzatore
+        unit_of_measurement: "m³"
+        device_class: water
+        state_class: total_increasing
+        icon: mdi:washing-machine
+        state: >-
+          {%- set t = this.state | float(0) -%}
+          {%- if trigger.id == 'base' -%}
+            {{ (t + states('sensor.acqua_lavatrice_oggi') | float(0)) | round(4) }}
+          {%- else -%}
+            {%- set a = trigger.from_state.state | float(none) if trigger.from_state else none -%}
+            {%- set b = trigger.to_state.state | float(none) if trigger.to_state else none -%}
+            {%- if a is not none and b is not none and b > a
+                  and (now() - today_at('00:00')).total_seconds() > 60 -%}
+              {{ (t + b - a) | round(4) }}
+            {%- else -%}
+              {{ t | round(4) }}
+            {%- endif -%}
+          {%- endif -%}
+  - triggers:
+      - trigger: state
+        entity_id: sensor.acqua_irrigazione_oggi
+        id: delta
+      - trigger: time
+        at: "00:01:00"
+        id: base
+    sensor:
+      - name: "Acqua Irrigazione Totalizzatore"
+        unique_id: acqua_irrigazione_totalizzatore
+        unit_of_measurement: "m³"
+        device_class: water
+        state_class: total_increasing
+        icon: mdi:sprinkler
+        state: >-
+          {%- set t = this.state | float(0) -%}
+          {%- if trigger.id == 'base' -%}
+            {{ (t + states('sensor.acqua_irrigazione_oggi') | float(0)) | round(4) }}
+          {%- else -%}
+            {%- set a = trigger.from_state.state | float(none) if trigger.from_state else none -%}
+            {%- set b = trigger.to_state.state | float(none) if trigger.to_state else none -%}
+            {%- if a is not none and b is not none and b > a
+                  and (now() - today_at('00:00')).total_seconds() > 60 -%}
+              {{ (t + b - a) | round(4) }}
+            {%- else -%}
+              {{ t | round(4) }}
+            {%- endif -%}
+          {%- endif -%}
+  - triggers:
+      - trigger: state
+        entity_id: sensor.acqua_sanitaria_totale
+        id: delta
+      - trigger: time
+        at: "00:01:00"
+        id: base
+    sensor:
+      - name: "Acqua Sanitaria Totalizzatore"
+        unique_id: acqua_sanitaria_totalizzatore
+        unit_of_measurement: "m³"
+        device_class: water
+        state_class: total_increasing
+        icon: mdi:water
+        state: >-
+          {%- set t = this.state | float(0) -%}
+          {%- if trigger.id == 'base' -%}
+            {{ (t + states('sensor.acqua_sanitaria_totale') | float(0)) | round(4) }}
+          {%- else -%}
+            {%- set a = trigger.from_state.state | float(none) if trigger.from_state else none -%}
+            {%- set b = trigger.to_state.state | float(none) if trigger.to_state else none -%}
+            {%- if a is not none and b is not none and b > a
+                  and (now() - today_at('00:00')).total_seconds() > 60 -%}
+              {{ (t + b - a) | round(4) }}
+            {%- else -%}
+              {{ t | round(4) }}
+            {%- endif -%}
+          {%- endif -%}
 
 input_number:
 

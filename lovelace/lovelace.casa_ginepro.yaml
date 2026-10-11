@@ -722,7 +722,7 @@ config:
         icon: mdi:home-lightning-bolt-outline
         icon_tap_action:
           action: navigate
-          navigation_path: /dashboard-consumi/elettricita
+          navigation_path: ''
         name: Altri apparecchi incluso lavatrice
         type: tile
         vertical: false
@@ -740,6 +740,9 @@ config:
           action: navigate
           navigation_path: /dashboard-panasonic/panasonic
         name: Pompa
+        tap_action:
+          action: navigate
+          navigation_path: /dashboard-panasonic
         type: tile
         vertical: false
       - entity: sensor.auto_energia_oggi
@@ -762,6 +765,9 @@ config:
           navigation_path: /dashboard-fancoil/fancoil
         name: Fancoil
         show_entity_picture: false
+        tap_action:
+          action: navigate
+          navigation_path: /dashboard-fancoil
         type: tile
         vertical: false
       - entity: sensor.consumo_deumidificatori_oggi
@@ -773,6 +779,9 @@ config:
           action: navigate
           navigation_path: /dashboard-fancoil/fancoil
         name: Deumidif.
+        tap_action:
+          action: navigate
+          navigation_path: /dashboard-fancoil
         type: tile
         vertical: false
       - entity: sensor.lavatrice_oggi
@@ -787,6 +796,9 @@ config:
           navigation_path: /dashboard-fancoil
         name: Lavatrice
         show_entity_picture: false
+        tap_action:
+          action: navigate
+          navigation_path: /dashboard-fancoil
         type: tile
         vertical: false
       - entity: sensor.sauna_energia_oggi
@@ -799,6 +811,9 @@ config:
           action: navigate
           navigation_path: /dashboard-fancoil
         name: Sauna
+        tap_action:
+          action: navigate
+          navigation_path: /dashboard-fancoil
         type: tile
         vertical: false
       - entity: sensor.presa_luci_cucina_energia_totale
@@ -811,6 +826,9 @@ config:
           action: navigate
           navigation_path: /dashboard-fancoil/fancoil
         name: Cucina
+        tap_action:
+          action: navigate
+          navigation_path: /dashboard-fancoil
         type: tile
         vertical: false
       - color: '#7E57C2'
@@ -826,6 +844,9 @@ config:
           navigation_path: /dashboard-consumi/elettricita
         name: Altri apparecchi
         show_entity_picture: false
+        tap_action:
+          action: navigate
+          navigation_path: /dashboard-fancoil
         type: tile
         vertical: false
       - heading: Risparmio

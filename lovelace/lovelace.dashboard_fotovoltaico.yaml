@@ -1,6 +1,6 @@
 config:
   path: fotovoltaico
-  title: Fotovoltaico v.25
+  title: Fotovoltaico v.27
   views:
   - cards: []
     max_columns: 2
@@ -72,39 +72,49 @@ config:
         columns: 2
         square: false
         type: grid
-      - heading: Settings di condensatore
+      - heading: 'Limite max corrente per condensatore per:'
         heading_style: subtitle
         type: heading
+      - entity: number.inverter_uflex_battery_max_charging_current
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: auto
+        name: Carica <100A
+        type: tile
+        vertical: false
       - entity: number.inverter_uflex_battery_max_discharging_current
         features_position: bottom
         grid_options:
-          columns: 12
-          rows: 1
-        name: Limite scarica di cond.(max 100 A)
+          rows: auto
+        name: Scarica<100A
         type: tile
         vertical: false
+      - heading: 'Limite max tensione x condensatore x fasi di:'
+        heading_style: subtitle
+        type: heading
       - entity: number.inverter_uflex_battery_absorption
         features_position: bottom
         grid_options:
-          columns: 12
-          rows: 1
-        name: Battery/condensatore absorbtion
+          columns: 6
+          rows: auto
+        name: Absorbtion
         type: tile
         vertical: false
       - entity: number.inverter_uflex_battery_float
         features_position: bottom
         grid_options:
-          columns: 12
+          columns: 6
           rows: 1
-        name: Battery/condensatore float
+        name: Float
         type: tile
         vertical: false
       - entity: number.inverter_uflex_battery_equalization
         features_position: bottom
         grid_options:
-          columns: 12
-          rows: 1
-        name: Battery/Condensatore Equalization
+          columns: 6
+          rows: auto
+        name: Equalization
         type: tile
         vertical: false
       - battery:
@@ -204,6 +214,19 @@ config:
             type: max
           type: line
           yaxis_id: volt
+        - color: '#0072B2'
+          entity: sensor.inverter_uflex_battery_voltage
+          name: Absorption limit
+          show:
+            in_legend: false
+          statistics:
+            period: day
+            type: max
+          stroke_dash: 6
+          stroke_width: 2
+          transform: return parseFloat(hass.states['number.inverter_uflex_battery_absorption'].state);
+          type: line
+          yaxis_id: volt
         type: custom:apexcharts-card
         yaxis:
         - apex_config:
@@ -217,22 +240,50 @@ config:
           rows: auto
         header:
           show: true
-          title: Corrente conde.oggi(scarica max 90 A, carica max 80 A)
+          title: Corrente di Carica&Scarica cond.oggi
         series:
         - color: '#D55E00'
           entity: sensor.inverter_uflex_battery_current
-          name: scarica max oraria
+          name: Corrente Carica max oraria ora
+          statistics:
+            period: hour
+            type: min
+          transform: return Math.max(-x, 0);
+          type: column
+          yaxis_id: amp
+        - color: '#0072B2'
+          entity: sensor.inverter_uflex_battery_current
+          name: Corrente Scarica max oraria ora
           statistics:
             period: hour
             type: max
+          transform: return -Math.max(x, 0);
+          type: column
+          yaxis_id: amp
+        - color: '#D55E00'
+          entity: sensor.inverter_uflex_battery_current
+          name: limite carica
+          show:
+            in_legend: false
+          statistics:
+            period: hour
+            type: min
+          stroke_dash: 6
+          stroke_width: 2
+          transform: return parseFloat(hass.states['number.inverter_uflex_battery_max_charging_current'].state);
           type: line
           yaxis_id: amp
         - color: '#0072B2'
           entity: sensor.inverter_uflex_battery_current
-          name: carica max oraria
+          name: limite scarica
+          show:
+            in_legend: false
           statistics:
             period: hour
-            type: min
+            type: max
+          stroke_dash: 6
+          stroke_width: 2
+          transform: return -parseFloat(hass.states['number.inverter_uflex_battery_max_discharging_current'].state);
           type: line
           yaxis_id: amp
         type: custom:apexcharts-card
@@ -254,10 +305,23 @@ config:
         series:
         - color: '#0072B2'
           entity: sensor.inverter_uflex_battery_voltage
-          name: massima giornaliera
+          name: Tensione max oggi
           statistics:
             period: day
             type: max
+          type: column
+          yaxis_id: volt
+        - color: '#D55E00'
+          entity: sensor.inverter_uflex_battery_voltage
+          name: Absorption limit
+          show:
+            in_legend: false
+          statistics:
+            period: day
+            type: max
+          stroke_dash: 6
+          stroke_width: 2
+          transform: return parseFloat(hass.states['number.inverter_uflex_battery_absorption'].state);
           type: line
           yaxis_id: volt
         type: custom:apexcharts-card
@@ -275,11 +339,25 @@ config:
           show: true
           title: Corrente di scarica max di cond.60gg
         series:
-        - entity: sensor.condensatore_corrente_scarica_max_oggi
-          name: Corrente max, A
+        - color: '#0072B2'
+          entity: sensor.condensatore_corrente_scarica_max_oggi
+          name: Corrente di Scarica max oggi
           statistics:
             period: day
             type: max
+          type: column
+          yaxis_id: A
+        - color: '#0072B2'
+          entity: sensor.condensatore_corrente_scarica_max_oggi
+          name: limite scarica
+          show:
+            in_legend: false
+          statistics:
+            period: day
+            type: max
+          stroke_dash: 6
+          stroke_width: 2
+          transform: return parseFloat(hass.states['number.inverter_uflex_battery_max_discharging_current'].state);
           type: line
           yaxis_id: A
         type: custom:apexcharts-card
@@ -289,20 +367,34 @@ config:
               text: Corrente max al giorno, A
           decimals: 2
           id: A
+          min: 0
       - graph_span: 60d
         grid_options:
           columns: 12
           rows: auto
         header:
           show: true
-          title: Carica cond.al pieno 60g, kWh
+          title: Energia max cond.60g (goal 7,6kWh)
         series:
         - color: '#009E73'
           entity: sensor.condensatore_energia_al_pieno
-          name: energia netta al pieno
+          name: Energia max cond. oggi
           statistics:
             period: day
             type: max
+          type: column
+          yaxis_id: kwh
+        - color: '#D55E00'
+          entity: sensor.condensatore_energia_al_pieno
+          name: targa 7,6 kWh
+          show:
+            in_legend: false
+          statistics:
+            period: day
+            type: max
+          stroke_dash: 6
+          stroke_width: 2
+          transform: return 7.6;
           type: line
           yaxis_id: kwh
         type: custom:apexcharts-card
@@ -312,6 +404,8 @@ config:
               text: carica kWh
           decimals: 2
           id: kwh
+          max: 8
+          min: 0
       - graph_span: 60d
         grid_options:
           columns: 12
@@ -325,7 +419,7 @@ config:
           statistics:
             period: day
             type: max
-          type: line
+          type: column
           yaxis_id: C
         type: custom:apexcharts-card
         yaxis:

@@ -1,5 +1,5 @@
 config:
-  title: consumi v.51
+  title: consumi v.54
   views:
   - cards: []
     header: {}
@@ -931,6 +931,131 @@ config:
         name: Fredda
         type: tile
         vertical: false
+      - heading: "Acqua x modo di utilizzo, m\xB3/gg"
+        heading_style: title
+        type: heading
+      - apex_config:
+          xaxis:
+            labels:
+              format: dd/MM
+            type: datetime
+          yaxis:
+            decimalsInFloat: 3
+            forceNiceScale: true
+            min: 0
+            title:
+              text: "m\xB3"
+        graph_span: 30d
+        grid_options:
+          columns: 12
+          rows: auto
+        header:
+          show: false
+        series:
+        - color: '#0072B2'
+          data_generator: "// Totale del giorno = massimo orario delle ore 01-23 (l'ora\
+            \ 00\n// contiene ancora il valore del giorno prima, azzerato a mezzanotte).\n\
+            const inizio = new Date(); inizio.setDate(inizio.getDate() - 31); inizio.setHours(0,\
+            \ 0, 0, 0);\nconst r = await hass.callWS({ type: 'recorder/statistics_during_period',\
+            \ start_time: inizio.toISOString(), statistic_ids: [entity.entity_id],\
+            \ period: 'hour', types: ['max'] });\nconst giorni = {};\nfor (const x\
+            \ of (r[entity.entity_id] || [])) {\n  const d = new Date(x.start);\n\
+            \  if (d.getHours() === 0 || x.max == null) continue;\n  const t = new\
+            \ Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();\n  giorni[t]\
+            \ = Math.max(giorni[t] || 0, x.max);\n}\nreturn Object.keys(giorni).map(Number).sort((a,\
+            \ b) => a - b).map(t => [t, Math.round(giorni[t] * 10000) / 10000]);\n"
+          entity: sensor.acqua_lavatrice_oggi
+          name: Ultimo giorno - Lavatrice
+          type: column
+        - color: '#009E73'
+          data_generator: "// Totale del giorno = massimo orario delle ore 01-23 (l'ora\
+            \ 00\n// contiene ancora il valore del giorno prima, azzerato a mezzanotte).\n\
+            const inizio = new Date(); inizio.setDate(inizio.getDate() - 31); inizio.setHours(0,\
+            \ 0, 0, 0);\nconst r = await hass.callWS({ type: 'recorder/statistics_during_period',\
+            \ start_time: inizio.toISOString(), statistic_ids: [entity.entity_id],\
+            \ period: 'hour', types: ['max'] });\nconst giorni = {};\nfor (const x\
+            \ of (r[entity.entity_id] || [])) {\n  const d = new Date(x.start);\n\
+            \  if (d.getHours() === 0 || x.max == null) continue;\n  const t = new\
+            \ Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();\n  giorni[t]\
+            \ = Math.max(giorni[t] || 0, x.max);\n}\nreturn Object.keys(giorni).map(Number).sort((a,\
+            \ b) => a - b).map(t => [t, Math.round(giorni[t] * 10000) / 10000]);\n"
+          entity: sensor.acqua_irrigazione_oggi
+          name: Irrigazione
+          type: column
+        - color: '#D55E00'
+          data_generator: "// Totale del giorno = massimo orario delle ore 01-23 (l'ora\
+            \ 00\n// contiene ancora il valore del giorno prima, azzerato a mezzanotte).\n\
+            const inizio = new Date(); inizio.setDate(inizio.getDate() - 31); inizio.setHours(0,\
+            \ 0, 0, 0);\nconst r = await hass.callWS({ type: 'recorder/statistics_during_period',\
+            \ start_time: inizio.toISOString(), statistic_ids: [entity.entity_id],\
+            \ period: 'hour', types: ['max'] });\nconst giorni = {};\nfor (const x\
+            \ of (r[entity.entity_id] || [])) {\n  const d = new Date(x.start);\n\
+            \  if (d.getHours() === 0 || x.max == null) continue;\n  const t = new\
+            \ Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();\n  giorni[t]\
+            \ = Math.max(giorni[t] || 0, x.max);\n}\nreturn Object.keys(giorni).map(Number).sort((a,\
+            \ b) => a - b).map(t => [t, Math.round(giorni[t] * 10000) / 10000]);\n"
+          entity: sensor.acqua_sanitaria_totale
+          name: Sanitaria
+          type: column
+        span:
+          end: day
+        type: custom:apexcharts-card
+      - heading: "Acqua totale, m\xB3 e Euro/gg"
+        heading_style: title
+        type: heading
+      - graph_span: 30d
+        grid_options:
+          columns: 12
+          rows: auto
+        header:
+          show: false
+          title: "Acqua, m\xB3 e Euro/gg"
+        series:
+        - data_generator: "// Totale del giorno = massimo orario delle ore 01-23 (l'ora\
+            \ 00\n// contiene ancora il valore del giorno prima, azzerato a mezzanotte).\n\
+            const inizio = new Date(); inizio.setDate(inizio.getDate() - 31); inizio.setHours(0,\
+            \ 0, 0, 0);\nconst r = await hass.callWS({ type: 'recorder/statistics_during_period',\
+            \ start_time: inizio.toISOString(), statistic_ids: [entity.entity_id],\
+            \ period: 'hour', types: ['max'] });\nconst giorni = {};\nfor (const x\
+            \ of (r[entity.entity_id] || [])) {\n  const d = new Date(x.start);\n\
+            \  if (d.getHours() === 0 || x.max == null) continue;\n  const t = new\
+            \ Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();\n  giorni[t]\
+            \ = Math.max(giorni[t] || 0, x.max);\n}\nreturn Object.keys(giorni).map(Number).sort((a,\
+            \ b) => a - b).map(t => [t, Math.round(giorni[t] * 10000) / 10000]);\n"
+          entity: sensor.acqua_oggi_mc
+          name: "m\xB3 oggi"
+          type: column
+          yaxis_id: mc
+        - data_generator: "// Totale del giorno = massimo orario delle ore 01-23 (l'ora\
+            \ 00\n// contiene ancora il valore del giorno prima, azzerato a mezzanotte).\n\
+            const inizio = new Date(); inizio.setDate(inizio.getDate() - 31); inizio.setHours(0,\
+            \ 0, 0, 0);\nconst r = await hass.callWS({ type: 'recorder/statistics_during_period',\
+            \ start_time: inizio.toISOString(), statistic_ids: [entity.entity_id],\
+            \ period: 'hour', types: ['max'] });\nconst giorni = {};\nfor (const x\
+            \ of (r[entity.entity_id] || [])) {\n  const d = new Date(x.start);\n\
+            \  if (d.getHours() === 0 || x.max == null) continue;\n  const t = new\
+            \ Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();\n  giorni[t]\
+            \ = Math.max(giorni[t] || 0, x.max);\n}\nreturn Object.keys(giorni).map(Number).sort((a,\
+            \ b) => a - b).map(t => [t, Math.round(giorni[t] * 100) / 100]);\n"
+          entity: sensor.acqua_oggi_euro
+          name: Euro oggi
+          type: column
+          yaxis_id: euro
+        span:
+          end: day
+        type: custom:apexcharts-card
+        yaxis:
+        - apex_config:
+            title:
+              text: "m\xB3"
+          decimals: 3
+          id: mc
+        - apex_config:
+            title:
+              text: Euro
+          decimals: 2
+          id: euro
+          opposite: true
       - entity: sensor.acqua_sanitaria_calda_stimata
         features_position: bottom
         grid_options:
@@ -956,41 +1081,6 @@ config:
         name: Lavatrice oggi
         type: tile
         vertical: false
-      - graph_span: 30d
-        grid_options:
-          columns: 12
-          rows: auto
-        header:
-          show: true
-          title: "Acqua, m\xB3 e Euro/gg"
-        series:
-        - entity: sensor.acqua_oggi_mc
-          name: "m\xB3 oggi"
-          statistics:
-            period: day
-            type: max
-          type: column
-          yaxis_id: mc
-        - entity: sensor.acqua_oggi_euro
-          name: Euro oggi
-          statistics:
-            period: day
-            type: max
-          type: column
-          yaxis_id: euro
-        type: custom:apexcharts-card
-        yaxis:
-        - apex_config:
-            title:
-              text: "m\xB3"
-          decimals: 3
-          id: mc
-        - apex_config:
-            title:
-              text: Euro
-          decimals: 2
-          id: euro
-          opposite: true
       - heading: Solo Irrigazione oggi
         heading_style: subtitle
         type: heading
@@ -1086,6 +1176,85 @@ config:
         stat_types:
         - max
         type: statistics-graph
+      - apex_config:
+          xaxis:
+            labels:
+              format: MM/yy
+            type: datetime
+          yaxis:
+            decimalsInFloat: 2
+            forceNiceScale: true
+            min: 0
+            title:
+              text: "m\xB3"
+        graph_span: 365d
+        grid_options:
+          columns: 12
+          rows: auto
+        header:
+          show: true
+          title: "Acqua x modo di utilizzo, m\xB3/mese"
+        series:
+        - color: '#0072B2'
+          data_generator: "// Ricostruzione dalle statistiche orarie (max) del sensore\
+            \ giornaliero.\n// Totale del giorno = massimo delle ore 01-23: l'ora\
+            \ 00 contiene\n// ancora il valore del giorno prima, azzerato a mezzanotte.\n\
+            const inizio = new Date(); inizio.setFullYear(inizio.getFullYear() - 1);\
+            \ inizio.setMonth(0, 1); inizio.setHours(0, 0, 0, 0);\nconst r = await\
+            \ hass.callWS({ type: 'recorder/statistics_during_period', start_time:\
+            \ inizio.toISOString(), statistic_ids: [entity.entity_id], period: 'hour',\
+            \ types: ['max'] });\nconst giorni = {};\nfor (const x of (r[entity.entity_id]\
+            \ || [])) {\n  const d = new Date(x.start);\n  if (d.getHours() === 0\
+            \ || x.max == null) continue;\n  const k = d.getFullYear() + '-' + d.getMonth()\
+            \ + '-' + d.getDate();\n  giorni[k] = Math.max(giorni[k] || 0, x.max);\n\
+            }\nconst per = {};\nfor (const k in giorni) {\n  const [y, m] = k.split('-').map(Number);\n\
+            \  const t = new Date(y, m, 1).getTime();\n  per[t] = (per[t] || 0) +\
+            \ giorni[k];\n}\nreturn Object.keys(per).map(Number).sort((a, b) => a\
+            \ - b).map(t => [t, Math.round(per[t] * 1000) / 1000]);\n"
+          entity: sensor.acqua_lavatrice_oggi
+          name: Ultimo mese - Lavatrice
+          type: column
+        - color: '#009E73'
+          data_generator: "// Ricostruzione dalle statistiche orarie (max) del sensore\
+            \ giornaliero.\n// Totale del giorno = massimo delle ore 01-23: l'ora\
+            \ 00 contiene\n// ancora il valore del giorno prima, azzerato a mezzanotte.\n\
+            const inizio = new Date(); inizio.setFullYear(inizio.getFullYear() - 1);\
+            \ inizio.setMonth(0, 1); inizio.setHours(0, 0, 0, 0);\nconst r = await\
+            \ hass.callWS({ type: 'recorder/statistics_during_period', start_time:\
+            \ inizio.toISOString(), statistic_ids: [entity.entity_id], period: 'hour',\
+            \ types: ['max'] });\nconst giorni = {};\nfor (const x of (r[entity.entity_id]\
+            \ || [])) {\n  const d = new Date(x.start);\n  if (d.getHours() === 0\
+            \ || x.max == null) continue;\n  const k = d.getFullYear() + '-' + d.getMonth()\
+            \ + '-' + d.getDate();\n  giorni[k] = Math.max(giorni[k] || 0, x.max);\n\
+            }\nconst per = {};\nfor (const k in giorni) {\n  const [y, m] = k.split('-').map(Number);\n\
+            \  const t = new Date(y, m, 1).getTime();\n  per[t] = (per[t] || 0) +\
+            \ giorni[k];\n}\nreturn Object.keys(per).map(Number).sort((a, b) => a\
+            \ - b).map(t => [t, Math.round(per[t] * 1000) / 1000]);\n"
+          entity: sensor.acqua_irrigazione_oggi
+          name: Irrigazione
+          type: column
+        - color: '#D55E00'
+          data_generator: "// Ricostruzione dalle statistiche orarie (max) del sensore\
+            \ giornaliero.\n// Totale del giorno = massimo delle ore 01-23: l'ora\
+            \ 00 contiene\n// ancora il valore del giorno prima, azzerato a mezzanotte.\n\
+            const inizio = new Date(); inizio.setFullYear(inizio.getFullYear() - 1);\
+            \ inizio.setMonth(0, 1); inizio.setHours(0, 0, 0, 0);\nconst r = await\
+            \ hass.callWS({ type: 'recorder/statistics_during_period', start_time:\
+            \ inizio.toISOString(), statistic_ids: [entity.entity_id], period: 'hour',\
+            \ types: ['max'] });\nconst giorni = {};\nfor (const x of (r[entity.entity_id]\
+            \ || [])) {\n  const d = new Date(x.start);\n  if (d.getHours() === 0\
+            \ || x.max == null) continue;\n  const k = d.getFullYear() + '-' + d.getMonth()\
+            \ + '-' + d.getDate();\n  giorni[k] = Math.max(giorni[k] || 0, x.max);\n\
+            }\nconst per = {};\nfor (const k in giorni) {\n  const [y, m] = k.split('-').map(Number);\n\
+            \  const t = new Date(y, m, 1).getTime();\n  per[t] = (per[t] || 0) +\
+            \ giorni[k];\n}\nreturn Object.keys(per).map(Number).sort((a, b) => a\
+            \ - b).map(t => [t, Math.round(per[t] * 1000) / 1000]);\n"
+          entity: sensor.acqua_sanitaria_totale
+          name: Sanitaria
+          type: column
+        span:
+          end: month
+        type: custom:apexcharts-card
       type: grid
     - cards:
       - heading: Anno
@@ -1121,6 +1290,85 @@ config:
         - max
         title: Acqua, Euro/anno
         type: statistics-graph
+      - apex_config:
+          xaxis:
+            labels:
+              format: yyyy
+            type: datetime
+          yaxis:
+            decimalsInFloat: 2
+            forceNiceScale: true
+            min: 0
+            title:
+              text: "m\xB3"
+        graph_span: 1095d
+        grid_options:
+          columns: 12
+          rows: auto
+        header:
+          show: true
+          title: "Acqua x modo di utilizzo, m\xB3/anno"
+        series:
+        - color: '#0072B2'
+          data_generator: "// Ricostruzione dalle statistiche orarie (max) del sensore\
+            \ giornaliero.\n// Totale del giorno = massimo delle ore 01-23: l'ora\
+            \ 00 contiene\n// ancora il valore del giorno prima, azzerato a mezzanotte.\n\
+            const inizio = new Date(); inizio.setFullYear(inizio.getFullYear() - 3);\
+            \ inizio.setMonth(0, 1); inizio.setHours(0, 0, 0, 0);\nconst r = await\
+            \ hass.callWS({ type: 'recorder/statistics_during_period', start_time:\
+            \ inizio.toISOString(), statistic_ids: [entity.entity_id], period: 'hour',\
+            \ types: ['max'] });\nconst giorni = {};\nfor (const x of (r[entity.entity_id]\
+            \ || [])) {\n  const d = new Date(x.start);\n  if (d.getHours() === 0\
+            \ || x.max == null) continue;\n  const k = d.getFullYear() + '-' + d.getMonth()\
+            \ + '-' + d.getDate();\n  giorni[k] = Math.max(giorni[k] || 0, x.max);\n\
+            }\nconst per = {};\nfor (const k in giorni) {\n  const [y, m] = k.split('-').map(Number);\n\
+            \  const t = new Date(y, 0, 1).getTime();\n  per[t] = (per[t] || 0) +\
+            \ giorni[k];\n}\nreturn Object.keys(per).map(Number).sort((a, b) => a\
+            \ - b).map(t => [t, Math.round(per[t] * 1000) / 1000]);\n"
+          entity: sensor.acqua_lavatrice_oggi
+          name: Ultimo anno - Lavatrice
+          type: column
+        - color: '#009E73'
+          data_generator: "// Ricostruzione dalle statistiche orarie (max) del sensore\
+            \ giornaliero.\n// Totale del giorno = massimo delle ore 01-23: l'ora\
+            \ 00 contiene\n// ancora il valore del giorno prima, azzerato a mezzanotte.\n\
+            const inizio = new Date(); inizio.setFullYear(inizio.getFullYear() - 3);\
+            \ inizio.setMonth(0, 1); inizio.setHours(0, 0, 0, 0);\nconst r = await\
+            \ hass.callWS({ type: 'recorder/statistics_during_period', start_time:\
+            \ inizio.toISOString(), statistic_ids: [entity.entity_id], period: 'hour',\
+            \ types: ['max'] });\nconst giorni = {};\nfor (const x of (r[entity.entity_id]\
+            \ || [])) {\n  const d = new Date(x.start);\n  if (d.getHours() === 0\
+            \ || x.max == null) continue;\n  const k = d.getFullYear() + '-' + d.getMonth()\
+            \ + '-' + d.getDate();\n  giorni[k] = Math.max(giorni[k] || 0, x.max);\n\
+            }\nconst per = {};\nfor (const k in giorni) {\n  const [y, m] = k.split('-').map(Number);\n\
+            \  const t = new Date(y, 0, 1).getTime();\n  per[t] = (per[t] || 0) +\
+            \ giorni[k];\n}\nreturn Object.keys(per).map(Number).sort((a, b) => a\
+            \ - b).map(t => [t, Math.round(per[t] * 1000) / 1000]);\n"
+          entity: sensor.acqua_irrigazione_oggi
+          name: Irrigazione
+          type: column
+        - color: '#D55E00'
+          data_generator: "// Ricostruzione dalle statistiche orarie (max) del sensore\
+            \ giornaliero.\n// Totale del giorno = massimo delle ore 01-23: l'ora\
+            \ 00 contiene\n// ancora il valore del giorno prima, azzerato a mezzanotte.\n\
+            const inizio = new Date(); inizio.setFullYear(inizio.getFullYear() - 3);\
+            \ inizio.setMonth(0, 1); inizio.setHours(0, 0, 0, 0);\nconst r = await\
+            \ hass.callWS({ type: 'recorder/statistics_during_period', start_time:\
+            \ inizio.toISOString(), statistic_ids: [entity.entity_id], period: 'hour',\
+            \ types: ['max'] });\nconst giorni = {};\nfor (const x of (r[entity.entity_id]\
+            \ || [])) {\n  const d = new Date(x.start);\n  if (d.getHours() === 0\
+            \ || x.max == null) continue;\n  const k = d.getFullYear() + '-' + d.getMonth()\
+            \ + '-' + d.getDate();\n  giorni[k] = Math.max(giorni[k] || 0, x.max);\n\
+            }\nconst per = {};\nfor (const k in giorni) {\n  const [y, m] = k.split('-').map(Number);\n\
+            \  const t = new Date(y, 0, 1).getTime();\n  per[t] = (per[t] || 0) +\
+            \ giorni[k];\n}\nreturn Object.keys(per).map(Number).sort((a, b) => a\
+            \ - b).map(t => [t, Math.round(per[t] * 1000) / 1000]);\n"
+          entity: sensor.acqua_sanitaria_totale
+          name: Sanitaria
+          type: column
+        span:
+          end: year
+        type: custom:apexcharts-card
       type: grid
     - cards:
       - heading: Parametri di Configurazione
