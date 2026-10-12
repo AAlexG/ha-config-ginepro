@@ -285,6 +285,70 @@ config:
           perform_action: script.irrigazione_salta_toggle
         type: tile
         vertical: false
+      - entity: light.luce_sopra
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        name: LuceSopra
+        type: tile
+        vertical: false
+      - heading: Altri devices
+        heading_style: subtitle
+        icon: mdi:devices
+        type: heading
+      - entity: media_player.googlehome8851
+        features:
+        - step: 5
+          type: media-player-volume-buttons
+        features_position: bottom
+        grid_options:
+          rows: auto
+        name: Yamaha Volume
+        type: tile
+        vertical: false
+      type: grid
+    - cards:
+      - heading: Irrigazione Sonoff switch 4CHPROR3
+        heading_style: subtitle
+        icon: mdi:sprinkler-variant
+        type: heading
+      - entity: switch.irrigazione_sonoff_switch_4chpror3_sonoff_10028b1d36_1
+        features:
+        - type: toggle
+        type: tile
+      - entity: switch.irrigazione_sonoff_switch_4chpror3_sonoff_10028b1d36_2
+        features:
+        - type: toggle
+        type: tile
+      - entity: switch.irrigazione_sonoff_switch_4chpror3_sonoff_10028b1d36_3
+        features:
+        - type: toggle
+        type: tile
+      - entity: switch.irrigazione_sonoff_switch_4chpror3_sonoff_10028b1d36_4
+        features:
+        - type: toggle
+        type: tile
+      - color: '#2196F3'
+        entity: sensor.irrigazione_attiva
+        features_position: bottom
+        grid_options:
+          columns: full
+          rows: 1
+        name: ON/OFF Irrigazione
+        tap_action:
+          action: perform-action
+          perform_action: script.irrigazione_salta_toggle
+        type: tile
+        vertical: false
+      - entity: light.luce_sopra
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        name: LuceSopra
+        type: tile
+        vertical: false
       - heading: Altri devices
         heading_style: subtitle
         icon: mdi:devices
@@ -361,6 +425,52 @@ config:
       - entity: sensor.persiana_tania_sensore_zigbee_battery
         features_position: bottom
         name: 'PersTania '
+        type: tile
+        vertical: false
+      type: grid
+    - cards:
+      - heading: Sensore pioggia Tuya
+        heading_style: title
+        icon: mdi:home-thermometer-outline
+        type: heading
+      - entity: binary_sensor.sensore_pioggia_tuya_cleaning_reminder
+        features_position: bottom
+        name: Pulire?
+        type: tile
+        vertical: false
+      - entity: binary_sensor.sensore_pioggia_tuya_rain
+        features_position: bottom
+        name: PioggiaOra
+        type: tile
+        vertical: false
+      - entity: sensor.sensore_pioggia_tuya_battery
+        features_position: bottom
+        name: Batteria
+        type: tile
+        vertical: false
+      - entity: sensor.sensore_pioggia_tuya_rain_intensity
+        features_position: bottom
+        name: "Intensit\xE0Pioggia"
+        type: tile
+        vertical: false
+      - entity: sensor.sensore_pioggia_tuya_illuminance_raw
+        features_position: bottom
+        name: IllumOra
+        type: tile
+        vertical: false
+      - entity: sensor.sensore_pioggia_tuya_illuminance_average_20min
+        features_position: bottom
+        name: IllumMedia
+        type: tile
+        vertical: false
+      - entity: sensor.sensore_pioggia_tuya_illuminance_maximum_today
+        features_position: bottom
+        name: IllumMaxOggi
+        type: tile
+        vertical: false
+      - entity: sensor.0xa4c13844184e6395_linkquality
+        features_position: bottom
+        name: Linkquality
         type: tile
         vertical: false
       type: grid

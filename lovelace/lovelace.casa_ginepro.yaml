@@ -1742,6 +1742,11 @@ config:
         name: Canc.Entrata
         type: tile
         vertical: false
+      - entity: sensor.sensore_pioggia_tuya_battery
+        features_position: bottom
+        name: SensPioggiaTuya
+        type: tile
+        vertical: false
       - heading: UPS
         heading_style: subtitle
         type: heading

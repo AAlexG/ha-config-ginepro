@@ -1,4 +1,18 @@
-# automations_tende_3.yaml
+# automations_tende_4.yaml
+# v4 (12/10/2026): aggiunto il sensore pioggia Tuya Zigbee
+#   (binary_sensor.sensore_pioggia_tuya_rain). L'11/10 la stazione ha
+#   visto la pioggia solo alle 12:45:26, 2-3 minuti dopo l'inizio: il
+#   pluviometro a vaschetta segnala solo dopo aver raccolto 0,1-0,2 mm e con
+#   pioggia leggera (1,2 mm/h) servono minuti. La terrazza si e' allagata.
+#   Il Tuya rileva l'acqua sulla piastra alla prima goccia.
+#   REGOLA: il Tuya serve SOLO a proteggere (chiudere la pergola, aprire la
+#   tenda all'85%, bloccare la ritrazione della tenda), MAI a rilasciare: la
+#   piastra resta bagnata a lungo dopo la pioggia. Conta come pioggia solo
+#   nei 30 minuti successivi al passaggio a "on" (variabile v_tuya); dopo,
+#   decide la stazione. Il rilascio della pergola resta sulla sola stazione.
+#   Nota: dopo un riavvio di HA last_changed riparte, quindi un sensore
+#   ancora bagnato conta come pioggia per altri 30 minuti (effetto solo
+#   protettivo).
 # v3 (08/10/2026): pergola_meteo_chiusura con pergola_blocco_manuale alzato non
 #   chiude ma avvisa: una notifica per ogni allarme meteo (vento, pioggia o
 #   previsione), ripetuta solo dopo che l'allarme e' rientrato. Avvisa anche
@@ -165,6 +179,11 @@
     - trigger: numeric_state
       entity_id: sensor.hp1000se_pro_pro_v1_6_4_hourly_rain
       above: 0
+    # v4: sensore pioggia Tuya, scatta alla prima goccia.
+    - trigger: state
+      entity_id: binary_sensor.sensore_pioggia_tuya_rain
+      to: "on"
+      not_from: ["unavailable", "unknown"]
     - trigger: time_pattern
       minutes: "/10"
     # v21: dopo che nella giornata e' stata vista o prevista pioggia
@@ -195,6 +214,11 @@
         v_raffica: "{{ states('sensor.hp1000se_pro_pro_v1_6_4_wind_gust') | float(0) }}"
         v_rate: "{{ states('sensor.hp1000se_pro_pro_v1_6_4_rain_rate') | float(0) }}"
         v_oraria: "{{ states('sensor.hp1000se_pro_pro_v1_6_4_hourly_rain') | float(0) }}"
+        # v4: sensore Tuya bagnato da meno di 30 minuti (vedi intestazione).
+        v_tuya: >-
+          {{ is_state('binary_sensor.sensore_pioggia_tuya_rain', 'on')
+             and (now() - states.binary_sensor.sensore_pioggia_tuya_rain.last_changed)
+                 .total_seconds() < 1800 }}
         mm_previsti: >-
           {{ (previsione['weather.casa'].forecast[0:3]
              | map(attribute='precipitation')
@@ -202,7 +226,7 @@
     # v21: pioggia vista o prevista -> ciclo fitto per il resto della giornata
     - if:
         - condition: template
-          value_template: "{{ v_rate > 0 or v_oraria > 0 or mm_previsti > 0 }}"
+          value_template: "{{ v_tuya or v_rate > 0 or v_oraria > 0 or mm_previsti > 0 }}"
       then:
         - action: input_boolean.turn_on
           target:
@@ -212,7 +236,7 @@
     # adesso se sta per essere alzato ora), non ora dell'ultimo controllo.
     - variables:
         emergenza: >-
-          {{ v_raffica > 40 or v_rate > 0
+          {{ v_raffica > 40 or v_tuya or v_rate > 0
              or v_oraria > 0 or mm_previsti > 0 }}
         ora_inizio: >-
           {% if is_state('input_boolean.pergola_meteo_chiusura','on') %}
@@ -233,6 +257,7 @@
         causa: >-
           {{ 'Chiusa dalle ' ~ ora_inizio ~ ' · ultimo allarme ' ~ now().strftime('%H:%M') ~ ': '
              ~ ([ ('raffica ' ~ (v_raffica | round(1)) ~ ' km/h') if v_raffica > 40 else none,
+                  'gocce sul sensore pioggia' if v_tuya else none,
                   ('pioggia ' ~ (v_rate | round(1)) ~ ' mm/h') if v_rate > 0 else none,
                   ('accumulo ' ~ (v_oraria | round(1)) ~ ' mm') if v_oraria > 0 else none,
                   ('previsione ' ~ (mm_previsti | round(1)) ~ ' mm/3h') if mm_previsti > 0 else none ]
@@ -268,6 +293,7 @@
                 title: "⚠️ Pergola in gestione manuale: andrebbe chiusa"
                 message: >-
                   Allarme meteo: {{ ([ ('raffica ' ~ (v_raffica | round(1)) ~ ' km/h') if v_raffica > 40 else none,
+                      'gocce sul sensore pioggia' if v_tuya else none,
                       ('pioggia ' ~ (v_rate | round(1)) ~ ' mm/h') if v_rate > 0 else none,
                       ('accumulo ' ~ (v_oraria | round(1)) ~ ' mm') if v_oraria > 0 else none,
                       ('previsione ' ~ (mm_previsti | round(1)) ~ ' mm/3h') if mm_previsti > 0 else none ]
@@ -321,6 +347,12 @@
 #
 # Sfasato di 30 secondi rispetto al ciclo della chiusura per non correre
 # con essa sullo stesso minuto.
+#
+# v4: il sensore Tuya NON e' usato qui di proposito (resta bagnato dopo la
+# pioggia). Agisce lo stesso in modo indiretto: per 30 minuti dal suo
+# passaggio a "on" la chiusura rinnova ultimo_allarme, quindi la pergola resta
+# chiusa almeno 30 + 20 minuti, tempo in cui la stazione, se piove davvero,
+# ha gia' misurato la pioggia.
 #
 # Il controllo istantaneo di vento/raffica/pioggia resta come seconda rete:
 # copre il caso in cui la chiusura non giri (flag vacanza o blocco manuale)
@@ -451,6 +483,7 @@
 #   - previsione   : massimo delle precipitazioni nelle prime 3 ore di
 #                    weather.casa (hourly)
 #   event_rain volutamente NON usato: resta > 0 per ore dopo la pioggia.
+#   - sensore Tuya (v4): solo nei 30 minuti dal passaggio a "on" (v_tuya).
 #
 # PRIORITA' AL VENTO: se la raffica supera i 40 km/h l'apertura non parte.
 # E' la stessa soglia con cui tenda_chiusura_vento chiude la tenda, quindi le
@@ -476,6 +509,11 @@
     - trigger: numeric_state
       entity_id: sensor.hp1000se_pro_pro_v1_6_4_hourly_rain
       above: 0
+    # v4: sensore pioggia Tuya, scatta alla prima goccia.
+    - trigger: state
+      entity_id: binary_sensor.sensore_pioggia_tuya_rain
+      to: "on"
+      not_from: ["unavailable", "unknown"]
     - trigger: time_pattern
       minutes: "/10"
       seconds: 15
@@ -510,6 +548,11 @@
     - variables:
         v_rate: "{{ states('sensor.hp1000se_pro_pro_v1_6_4_rain_rate') | float(0) }}"
         v_oraria: "{{ states('sensor.hp1000se_pro_pro_v1_6_4_hourly_rain') | float(0) }}"
+        # v4: sensore Tuya bagnato da meno di 30 minuti (vedi intestazione).
+        v_tuya: >-
+          {{ is_state('binary_sensor.sensore_pioggia_tuya_rain', 'on')
+             and (now() - states.binary_sensor.sensore_pioggia_tuya_rain.last_changed)
+                 .total_seconds() < 1800 }}
         mm_previsti: >-
           {{ (previsione['weather.casa'].forecast[0:3]
              | map(attribute='precipitation')
@@ -517,7 +560,7 @@
         # v25: posizione prima dell'apertura, riportata nella notifica.
         pos_prima: "{{ state_attr('cover.all_house_tenda_giardino_new', 'current_position') | int(-1) }}"
     - condition: template
-      value_template: "{{ v_rate > 0 or v_oraria > 0 or mm_previsti > 0 }}"
+      value_template: "{{ v_tuya or v_rate > 0 or v_oraria > 0 or mm_previsti > 0 }}"
     - action: cover.set_cover_position
       target:
         entity_id: cover.all_house_tenda_giardino_new
@@ -534,7 +577,8 @@
             # senza dire perche' ne da dove venisse il dato.
             title: "🌧️ Pioggia: tenda giardino aperta"
             message: >-
-              {{ ([ ('sta piovendo (' ~ (v_rate | round(1)) ~ ' mm/h)') if v_rate > 0 else none,
+              {{ ([ 'il sensore pioggia ha rilevato gocce' if v_tuya else none,
+                    ('sta piovendo (' ~ (v_rate | round(1)) ~ ' mm/h)') if v_rate > 0 else none,
                     ("la stazione meteo ha misurato " ~ (v_oraria | round(1)) ~ " mm di pioggia nell'ora in corso") if v_oraria > 0 else none,
                     ('la previsione indica ' ~ (mm_previsti | round(1)) ~ ' mm di pioggia nelle prossime 3 ore') if mm_previsti > 0 else none ]
                   | reject('none') | list | join(', ')) | capitalize }}.
@@ -617,8 +661,14 @@
         rad: "{{ states('sensor.hp1000se_pro_pro_v1_6_4_solar_radiation') | float(0) }}"
         pos: "{{ state_attr('cover.all_house_tenda_giardino_new','current_position') | int(-1) }}"
         notte: "{{ is_state('sun.sun','below_horizon') }}"
+        # v4: anche il Tuya bagnato da meno di 30 minuti blocca la ritrazione,
+        # altrimenti la tenda appena aperta all'85% potrebbe essere riportata
+        # al 40% prima che la stazione misuri la pioggia.
         pioggia: >-
-          {{ (states('sensor.hp1000se_pro_pro_v1_6_4_rain_rate') | float(0) > 0)
+          {{ (is_state('binary_sensor.sensore_pioggia_tuya_rain', 'on')
+              and (now() - states.binary_sensor.sensore_pioggia_tuya_rain.last_changed)
+                  .total_seconds() < 1800)
+             or (states('sensor.hp1000se_pro_pro_v1_6_4_rain_rate') | float(0) > 0)
              or (states('sensor.hp1000se_pro_pro_v1_6_4_hourly_rain') | float(0) > 0)
              or ((previsione['weather.casa'].forecast[0:3]
                  | map(attribute='precipitation')

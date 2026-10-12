@@ -1,4 +1,13 @@
-# automations_irrigazione_9.yaml
+# automations_irrigazione_10.yaml
+# Modifiche versione 10 (12/10/2026):
+#   - Aggiunto il sensore pioggia Tuya Zigbee
+#     (binary_sensor.sensore_pioggia_tuya_rain), che rileva la prima goccia
+#     mentre la stazione segnala solo dopo 0,1-0,2 mm (minuti con pioggia
+#     leggera). Usato SOLO per bloccare o fermare, mai per permettere: conta
+#     come pioggia solo nei 30 minuti dal passaggio a "on", perche' la
+#     piastra resta bagnata a lungo dopo la pioggia (e con la rugiada).
+#   - Gate del ciclo programmato: nuovo motivo di blocco "Sensore pioggia".
+#   - irrigazione_stop_pioggia: nuovo trigger sul passaggio a "on".
 #==================================================================================
 # WATCHDOG IRRIGAZIONE - Casa Ginepro
 #
@@ -163,6 +172,11 @@
         vento: "{{ states('sensor.wind_speed_media_1h') | float(0) }}"
         v_rate: "{{ states('sensor.hp1000se_pro_pro_v1_6_4_rain_rate') | float(0) }}"
         v_oraria: "{{ states('sensor.hp1000se_pro_pro_v1_6_4_hourly_rain') | float(0) }}"
+        # v10: sensore Tuya bagnato da meno di 30 minuti (vedi intestazione).
+        v_tuya: >-
+          {{ is_state('binary_sensor.sensore_pioggia_tuya_rain', 'on')
+             and (now() - states.binary_sensor.sensore_pioggia_tuya_rain.last_changed)
+                 .total_seconds() < 1800 }}
         # v9: pioggia gia' caduta oggi (stazione) e soglia di blocco in mm.
         v_giorno: "{{ states('sensor.hp1000se_pro_pro_v1_6_4_daily_rain') | float(0) }}"
         soglia_pioggia_giorno: 2
@@ -179,6 +193,9 @@
     - variables:
         motivi: >
           {% set ns = namespace(lista=[]) %}
+          {% if v_tuya %}
+            {% set ns.lista = ns.lista + ['🌧️ Sensore pioggia bagnato'] %}
+          {% endif %}
           {% if v_rate > 0 %}
             {% set ns.lista = ns.lista + ['🌧️ Pioggia ' ~ (v_rate | round(1) | string) ~ ' mm/h'] %}
           {% endif %}
@@ -203,7 +220,8 @@
           {% endif %}
           {{ ns.lista | join('\n') }}
         blocco: >
-          {{ v_rate > 0
+          {{ v_tuya
+             or v_rate > 0
              or v_oraria > 0
              or v_giorno >= soglia_pioggia_giorno
              or mm_previsti > 0
@@ -250,7 +268,7 @@
 # Solo sul ciclo programmato: con "Cicla ora" (script.irrigazione_cicla_ora
 # in esecuzione) l'utente ha scelto di irrigare a prescindere dal meteo.
 # Trigger sulle stesse grandezze del gate: intensita' istantanea e accumulo
-# orario della stazione.
+# orario della stazione, e (v10) passaggio a "on" del sensore pioggia Tuya.
 #==================================================================================
 - id: irrigazione_stop_pioggia
   alias: "Irrigazione – Stop per pioggia durante il ciclo"
@@ -263,6 +281,11 @@
     - trigger: numeric_state
       entity_id: sensor.hp1000se_pro_pro_v1_6_4_hourly_rain
       above: 0
+    # v10: sensore pioggia Tuya, scatta alla prima goccia.
+    - trigger: state
+      entity_id: binary_sensor.sensore_pioggia_tuya_rain
+      to: "on"
+      not_from: ["unavailable", "unknown"]
   conditions:
     - condition: state
       entity_id: script.irrigazione_esegui_sequenza
@@ -278,6 +301,7 @@
       data:
         value: >-
           {{ ('🌧️ Fermata per pioggia ' ~ now().strftime('%d/%m/%Y %H:%M')
+              ~ (' · sensore pioggia bagnato' if is_state('binary_sensor.sensore_pioggia_tuya_rain', 'on') else '')
               ~ ' · pioggia ' ~ (states('sensor.hp1000se_pro_pro_v1_6_4_rain_rate') | float(0) | round(1)) ~ ' mm/h'
               ~ ' · accumulo ' ~ (states('sensor.hp1000se_pro_pro_v1_6_4_hourly_rain') | float(0) | round(1)) ~ ' mm')
              | truncate(250, True, '') }}
