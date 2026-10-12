@@ -904,7 +904,7 @@ config:
         name: Totale bollette
         type: tile
         vertical: false
-      - heading: 'Oggi:'
+      - heading: Oggi e mese
         heading_style: title
         type: heading
       - entity: sensor.acqua_oggi_mc
@@ -912,7 +912,7 @@ config:
         grid_options:
           columns: 3
           rows: 1
-        name: Totale
+        name: AcquaOggi
         type: tile
         vertical: false
       - entity: sensor.acqua_oggi_euro
@@ -920,15 +920,23 @@ config:
         grid_options:
           columns: 3
           rows: 1
-        name: Totale
+        name: AcquaOggi
         type: tile
         vertical: false
-      - entity: sensor.acqua_sanitaria_totale
+      - entity: sensor.acqua_mese_mc
         features_position: bottom
         grid_options:
-          columns: 6
+          columns: 3
           rows: 1
-        name: Fredda
+        name: AcquaMese
+        type: tile
+        vertical: false
+      - entity: sensor.acqua_mese_euro
+        features_position: bottom
+        grid_options:
+          columns: 3
+          rows: 1
+        name: AcquaMese
         type: tile
         vertical: false
       - heading: "Acqua x modo di utilizzo, m\xB3/gg"
@@ -1132,22 +1140,6 @@ config:
       - heading: Ultimi 12 mesi
         heading_style: title
         type: heading
-      - entity: sensor.acqua_mese_mc
-        features_position: bottom
-        grid_options:
-          columns: 3
-          rows: 1
-        name: Acqua mese
-        type: tile
-        vertical: false
-      - entity: sensor.acqua_mese_euro
-        features_position: bottom
-        grid_options:
-          columns: 3
-          rows: 1
-        name: Acqua mese
-        type: tile
-        vertical: false
       - chart_type: bar
         days_to_show: 730
         entities:
@@ -1196,9 +1188,9 @@ config:
           title: "Acqua x modo di utilizzo, m\xB3/mese"
         series:
         - color: '#0072B2'
-          data_generator: "// Ricostruzione dalle statistiche orarie (max) del sensore\
-            \ giornaliero.\n// Totale del giorno = massimo delle ore 01-23: l'ora\
-            \ 00 contiene\n// ancora il valore del giorno prima, azzerato a mezzanotte.\n\
+          data_generator: "// Totale del giorno = massimo delle ore 01-23 (l'ora 00\
+            \ contiene\n// ancora il valore del giorno prima, azzerato a mezzanotte).\n\
+            // Tutti i mesi presenti, 0 se vuoti: serie allineate per il tooltip.\n\
             const inizio = new Date(); inizio.setFullYear(inizio.getFullYear() - 1);\
             \ inizio.setMonth(0, 1); inizio.setHours(0, 0, 0, 0);\nconst r = await\
             \ hass.callWS({ type: 'recorder/statistics_during_period', start_time:\
@@ -1209,15 +1201,17 @@ config:
             \ + '-' + d.getDate();\n  giorni[k] = Math.max(giorni[k] || 0, x.max);\n\
             }\nconst per = {};\nfor (const k in giorni) {\n  const [y, m] = k.split('-').map(Number);\n\
             \  const t = new Date(y, m, 1).getTime();\n  per[t] = (per[t] || 0) +\
-            \ giorni[k];\n}\nreturn Object.keys(per).map(Number).sort((a, b) => a\
-            \ - b).map(t => [t, Math.round(per[t] * 1000) / 1000]);\n"
+            \ giorni[k];\n}\nconst out = [];\nconst oggi = new Date();\nfor (let d\
+            \ = new Date(inizio); d <= oggi; d.setMonth(d.getMonth() + 1)) {\n  const\
+            \ t = new Date(d.getFullYear(), d.getMonth(), 1).getTime();\n  out.push([t,\
+            \ Math.round((per[t] || 0) * 1000) / 1000]);\n}\nreturn out;\n"
           entity: sensor.acqua_lavatrice_oggi
-          name: Ultimo mese - Lavatrice
+          name: Lavatrice
           type: column
         - color: '#009E73'
-          data_generator: "// Ricostruzione dalle statistiche orarie (max) del sensore\
-            \ giornaliero.\n// Totale del giorno = massimo delle ore 01-23: l'ora\
-            \ 00 contiene\n// ancora il valore del giorno prima, azzerato a mezzanotte.\n\
+          data_generator: "// Totale del giorno = massimo delle ore 01-23 (l'ora 00\
+            \ contiene\n// ancora il valore del giorno prima, azzerato a mezzanotte).\n\
+            // Tutti i mesi presenti, 0 se vuoti: serie allineate per il tooltip.\n\
             const inizio = new Date(); inizio.setFullYear(inizio.getFullYear() - 1);\
             \ inizio.setMonth(0, 1); inizio.setHours(0, 0, 0, 0);\nconst r = await\
             \ hass.callWS({ type: 'recorder/statistics_during_period', start_time:\
@@ -1228,15 +1222,17 @@ config:
             \ + '-' + d.getDate();\n  giorni[k] = Math.max(giorni[k] || 0, x.max);\n\
             }\nconst per = {};\nfor (const k in giorni) {\n  const [y, m] = k.split('-').map(Number);\n\
             \  const t = new Date(y, m, 1).getTime();\n  per[t] = (per[t] || 0) +\
-            \ giorni[k];\n}\nreturn Object.keys(per).map(Number).sort((a, b) => a\
-            \ - b).map(t => [t, Math.round(per[t] * 1000) / 1000]);\n"
+            \ giorni[k];\n}\nconst out = [];\nconst oggi = new Date();\nfor (let d\
+            \ = new Date(inizio); d <= oggi; d.setMonth(d.getMonth() + 1)) {\n  const\
+            \ t = new Date(d.getFullYear(), d.getMonth(), 1).getTime();\n  out.push([t,\
+            \ Math.round((per[t] || 0) * 1000) / 1000]);\n}\nreturn out;\n"
           entity: sensor.acqua_irrigazione_oggi
           name: Irrigazione
           type: column
         - color: '#D55E00'
-          data_generator: "// Ricostruzione dalle statistiche orarie (max) del sensore\
-            \ giornaliero.\n// Totale del giorno = massimo delle ore 01-23: l'ora\
-            \ 00 contiene\n// ancora il valore del giorno prima, azzerato a mezzanotte.\n\
+          data_generator: "// Totale del giorno = massimo delle ore 01-23 (l'ora 00\
+            \ contiene\n// ancora il valore del giorno prima, azzerato a mezzanotte).\n\
+            // Tutti i mesi presenti, 0 se vuoti: serie allineate per il tooltip.\n\
             const inizio = new Date(); inizio.setFullYear(inizio.getFullYear() - 1);\
             \ inizio.setMonth(0, 1); inizio.setHours(0, 0, 0, 0);\nconst r = await\
             \ hass.callWS({ type: 'recorder/statistics_during_period', start_time:\
@@ -1247,8 +1243,10 @@ config:
             \ + '-' + d.getDate();\n  giorni[k] = Math.max(giorni[k] || 0, x.max);\n\
             }\nconst per = {};\nfor (const k in giorni) {\n  const [y, m] = k.split('-').map(Number);\n\
             \  const t = new Date(y, m, 1).getTime();\n  per[t] = (per[t] || 0) +\
-            \ giorni[k];\n}\nreturn Object.keys(per).map(Number).sort((a, b) => a\
-            \ - b).map(t => [t, Math.round(per[t] * 1000) / 1000]);\n"
+            \ giorni[k];\n}\nconst out = [];\nconst oggi = new Date();\nfor (let d\
+            \ = new Date(inizio); d <= oggi; d.setMonth(d.getMonth() + 1)) {\n  const\
+            \ t = new Date(d.getFullYear(), d.getMonth(), 1).getTime();\n  out.push([t,\
+            \ Math.round((per[t] || 0) * 1000) / 1000]);\n}\nreturn out;\n"
           entity: sensor.acqua_sanitaria_totale
           name: Sanitaria
           type: column
@@ -1293,7 +1291,10 @@ config:
       - apex_config:
           xaxis:
             labels:
-              format: yyyy
+              formatter: "EVAL:function(value, timestamp) {\n  const d = new Date(timestamp\
+                \ ?? value);\n  const m = d.getMonth();\n  return (m >= 5 && m <=\
+                \ 7) ? String(d.getFullYear()) : '';\n}\n"
+            tickAmount: 6
             type: datetime
           yaxis:
             decimalsInFloat: 2
@@ -1301,7 +1302,7 @@ config:
             min: 0
             title:
               text: "m\xB3"
-        graph_span: 1095d
+        graph_span: 1096d
         grid_options:
           columns: 12
           rows: auto
@@ -1322,11 +1323,11 @@ config:
             \ || x.max == null) continue;\n  const k = d.getFullYear() + '-' + d.getMonth()\
             \ + '-' + d.getDate();\n  giorni[k] = Math.max(giorni[k] || 0, x.max);\n\
             }\nconst per = {};\nfor (const k in giorni) {\n  const [y, m] = k.split('-').map(Number);\n\
-            \  const t = new Date(y, 0, 1).getTime();\n  per[t] = (per[t] || 0) +\
+            \  const t = new Date(y, 6, 1).getTime();\n  per[t] = (per[t] || 0) +\
             \ giorni[k];\n}\nreturn Object.keys(per).map(Number).sort((a, b) => a\
             \ - b).map(t => [t, Math.round(per[t] * 1000) / 1000]);\n"
           entity: sensor.acqua_lavatrice_oggi
-          name: Ultimo anno - Lavatrice
+          name: Lavatrice
           type: column
         - color: '#009E73'
           data_generator: "// Ricostruzione dalle statistiche orarie (max) del sensore\
@@ -1341,7 +1342,7 @@ config:
             \ || x.max == null) continue;\n  const k = d.getFullYear() + '-' + d.getMonth()\
             \ + '-' + d.getDate();\n  giorni[k] = Math.max(giorni[k] || 0, x.max);\n\
             }\nconst per = {};\nfor (const k in giorni) {\n  const [y, m] = k.split('-').map(Number);\n\
-            \  const t = new Date(y, 0, 1).getTime();\n  per[t] = (per[t] || 0) +\
+            \  const t = new Date(y, 6, 1).getTime();\n  per[t] = (per[t] || 0) +\
             \ giorni[k];\n}\nreturn Object.keys(per).map(Number).sort((a, b) => a\
             \ - b).map(t => [t, Math.round(per[t] * 1000) / 1000]);\n"
           entity: sensor.acqua_irrigazione_oggi
@@ -1360,7 +1361,7 @@ config:
             \ || x.max == null) continue;\n  const k = d.getFullYear() + '-' + d.getMonth()\
             \ + '-' + d.getDate();\n  giorni[k] = Math.max(giorni[k] || 0, x.max);\n\
             }\nconst per = {};\nfor (const k in giorni) {\n  const [y, m] = k.split('-').map(Number);\n\
-            \  const t = new Date(y, 0, 1).getTime();\n  per[t] = (per[t] || 0) +\
+            \  const t = new Date(y, 6, 1).getTime();\n  per[t] = (per[t] || 0) +\
             \ giorni[k];\n}\nreturn Object.keys(per).map(Number).sort((a, b) => a\
             \ - b).map(t => [t, Math.round(per[t] * 1000) / 1000]);\n"
           entity: sensor.acqua_sanitaria_totale
@@ -1424,9 +1425,25 @@ config:
         name: Totale bollette
         type: tile
         vertical: false
-      - heading: 'Mese:'
+      - heading: Oggi e mese
         heading_style: subtitle
         type: heading
+      - entity: sensor.gas_oggi_mc
+        features_position: bottom
+        grid_options:
+          columns: 3
+          rows: 1
+        name: Gas oggi
+        type: tile
+        vertical: false
+      - entity: sensor.gas_oggi_euro
+        features_position: bottom
+        grid_options:
+          columns: 3
+          rows: 1
+        name: "Gas oggi \u20AC"
+        type: tile
+        vertical: false
       - entity: sensor.gas_mese_mc
         features_position: bottom
         grid_options:
@@ -1441,27 +1458,6 @@ config:
           columns: 3
           rows: 1
         name: "Gas mese \u20AC"
-        type: tile
-        vertical: false
-      - heading: 'Oggi:'
-        heading_style: subtitle
-        type: heading
-      - entity: sensor.gas_oggi_mc
-        features:
-        - type: trend-graph
-        features_position: bottom
-        grid_options:
-          columns: 3
-          rows: 1
-        name: Gas oggi
-        type: tile
-        vertical: false
-      - entity: sensor.gas_oggi_euro
-        features_position: bottom
-        grid_options:
-          columns: 3
-          rows: 1
-        name: "Gas oggi \u20AC"
         type: tile
         vertical: false
       - graph_span: 30d
