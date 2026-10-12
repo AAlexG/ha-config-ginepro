@@ -330,29 +330,12 @@ config:
         type: tile
         vertical: false
       - battery:
-          energy: 5120
+          energy: 6990
           show_daily: true
-          shutdown_soc: 1
-        battery2:
-          animate: true
-          auto_scale: true
-          colour: '#ffc0cb'
-          dynamic_colour: true
-          energy: 0
-          hide_soc: false
-          invert_flow: false
-          invert_power: false
-          linear_gradient: true
-          navigate: ''
-          path_threshold: 100
-          remaining_energy_to_shutdown: false
-          show_absolute: false
-          show_remaining_energy: true
-          shutdown_soc: 20
-          soc_end_of_charge: 100
+          shutdown_soc: number.inverter_uflex_battery_low_soc
         card_height: 100%
         card_width: 100%
-        cardstyle: compact
+        cardstyle: lite
         center_no_grid: false
         decimal_places: 2
         decimal_places_energy: 1
@@ -361,6 +344,7 @@ config:
           battery_current_191: sensor.inverter_uflex_battery_current
           battery_power_190: sensor.inverter_uflex_battery_power
           battery_soc_184: sensor.inverter_uflex_battery
+          battery_temp_182: sensor.inverter_uflex_battery_temperature
           battery_voltage_183: sensor.inverter_uflex_battery_voltage
           day_battery_charge_70: sensor.inverter_uflex_today_battery_charge
           day_battery_discharge_71: sensor.inverter_uflex_today_battery_discharge

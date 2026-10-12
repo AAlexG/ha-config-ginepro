@@ -69,15 +69,11 @@ config:
         vertical: false
       - cards:
         - entity: sensor.inverter_uflex_temperature
-          features:
-          - type: trend-graph
           features_position: bottom
           name: Temp inverter
           type: tile
           vertical: false
         - entity: sensor.inverter_uflex_dc_temperature
-          features:
-          - type: trend-graph
           features_position: bottom
           name: Temp DC Inverter
           type: tile
@@ -85,55 +81,10 @@ config:
         columns: 2
         square: false
         type: grid
-      - heading: 'Limite max corrente per condensatore per:'
-        heading_style: subtitle
-        type: heading
-      - entity: number.inverter_uflex_battery_max_charging_current
-        features_position: bottom
-        grid_options:
-          columns: 6
-          rows: auto
-        name: Carica <100A
-        type: tile
-        vertical: false
-      - entity: number.inverter_uflex_battery_max_discharging_current
-        features_position: bottom
-        grid_options:
-          rows: auto
-        name: Scarica<100A
-        type: tile
-        vertical: false
-      - heading: 'Limite max tensione x condensatore x fasi di:'
-        heading_style: subtitle
-        type: heading
-      - entity: number.inverter_uflex_battery_absorption
-        features_position: bottom
-        grid_options:
-          columns: 6
-          rows: auto
-        name: Absorbtion
-        type: tile
-        vertical: false
-      - entity: number.inverter_uflex_battery_float
-        features_position: bottom
-        grid_options:
-          columns: 6
-          rows: 1
-        name: Float
-        type: tile
-        vertical: false
-      - entity: number.inverter_uflex_battery_equalization
-        features_position: bottom
-        grid_options:
-          columns: 6
-          rows: auto
-        name: Equalization
-        type: tile
-        vertical: false
       - battery:
-          energy: 5120
+          energy: 6990
           show_daily: true
-          shutdown_soc: 1
+          shutdown_soc: number.inverter_uflex_battery_low_soc
         battery2:
           animate: true
           auto_scale: true
@@ -153,7 +104,7 @@ config:
           soc_end_of_charge: 100
         card_height: 100%
         card_width: 100%
-        cardstyle: full
+        cardstyle: lite
         center_no_grid: false
         decimal_places: 2
         decimal_places_energy: 1
@@ -162,6 +113,7 @@ config:
           battery_current_191: sensor.inverter_uflex_battery_current
           battery_power_190: sensor.inverter_uflex_battery_power
           battery_soc_184: sensor.inverter_uflex_battery
+          battery_temp_182: sensor.inverter_uflex_battery_temperature
           battery_voltage_183: sensor.inverter_uflex_battery_voltage
           day_battery_charge_70: sensor.inverter_uflex_today_battery_charge
           day_battery_discharge_71: sensor.inverter_uflex_today_battery_discharge
@@ -193,7 +145,7 @@ config:
           model: sunsynk
           modern: true
           three_phase: false
-        large_font: false
+        large_font: true
         load:
           show_daily: true
         max_line_width: 4
@@ -206,9 +158,81 @@ config:
           show_daily: true
         type: custom:sunsynk-power-flow-card
         wide: false
+      - heading: 'Limite max corrente per condensatore per:'
+        heading_style: subtitle
+        type: heading
+      - entity: number.inverter_uflex_battery_max_charging_current
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: auto
+        name: 'Carica '
+        type: tile
+        vertical: false
+      - entity: number.inverter_uflex_battery_max_discharging_current
+        features_position: bottom
+        grid_options:
+          rows: auto
+        name: Scarica
+        type: tile
+        vertical: false
+      - heading: 'Soglie di carica residua x condensatore '
+        heading_style: subtitle
+        type: heading
+      - entity: number.inverter_uflex_battery_shutdown_soc
+        features_position: bottom
+        grid_options:
+          columns: full
+          rows: auto
+        icon_tap_action:
+          action: more-info
+        name: Fa Shutdown al
+        tap_action:
+          action: more-info
+        type: tile
+        vertical: false
+      - entity: number.inverter_uflex_battery_low_soc
+        features_position: bottom
+        grid_options:
+          columns: full
+          rows: auto
+        icon_tap_action:
+          action: more-info
+        name: "Non scarica pi\xF9 al"
+        tap_action:
+          action: more-info
+        type: tile
+        vertical: false
+      - entity: number.inverter_uflex_battery_restart_soc
+        features_position: bottom
+        grid_options:
+          columns: full
+          rows: auto
+        icon_tap_action:
+          action: more-info
+        name: Inizia  scarica dopo shutdown al
+        tap_action:
+          action: more-info
+        type: tile
+        vertical: false
+      - heading: 'Altri parametri '
+        heading_style: subtitle
+        type: heading
+      - entity: number.inverter_uflex_pv_power
+        features_position: bottom
+        grid_options:
+          columns: full
+          rows: auto
+        icon_tap_action:
+          action: more-info
+        name: Limite potenza accettato da panelli
+        tap_action:
+          action: more-info
+        type: tile
+        vertical: false
       type: grid
     - cards:
-      - heading: CONDENSATORE E INVERTER
+      - heading: Super CONDENSATORE
         heading_style: title
         type: heading
       - graph_span: 24hour
@@ -217,7 +241,7 @@ config:
           rows: auto
         header:
           show: true
-          title: Tensione cond. oggi (ok se < 58,0 V)
+          title: Tensione cond. oggi
         series:
         - color: '#0072B2'
           entity: sensor.condensatore_tensione_collegato
@@ -322,7 +346,7 @@ config:
           statistics:
             period: day
             type: max
-          type: column
+          type: line
           yaxis_id: volt
         - color: '#D55E00'
           entity: sensor.inverter_uflex_battery_voltage
@@ -342,6 +366,29 @@ config:
         - apex_config:
             title:
               text: max tens.V
+          decimals: 2
+          id: volt
+      - graph_span: 60d
+        grid_options:
+          columns: 12
+          rows: auto
+        header:
+          show: true
+          title: Tensione min condens.60gg
+        series:
+        - color: '#0072B2'
+          entity: sensor.inverter_uflex_battery_voltage
+          name: Tensione min oggi
+          statistics:
+            period: day
+            type: min
+          type: line
+          yaxis_id: volt
+        type: custom:apexcharts-card
+        yaxis:
+        - apex_config:
+            title:
+              text: min tens.V
           decimals: 2
           id: volt
       - graph_span: 60d
@@ -425,28 +472,6 @@ config:
           rows: auto
         header:
           show: true
-          title: Temp max inventer DC 60gg
-        series:
-        - entity: sensor.inverter_uflex_dc_temperature
-          name: inverter DC
-          statistics:
-            period: day
-            type: max
-          type: column
-          yaxis_id: C
-        type: custom:apexcharts-card
-        yaxis:
-        - apex_config:
-            title:
-              text: "\xB0C"
-          decimals: 2
-          id: C
-      - graph_span: 60d
-        grid_options:
-          columns: 12
-          rows: auto
-        header:
-          show: true
           title: Superamenti soglia Absorption al giorno
         series:
         - color: '#D55E00'
@@ -465,6 +490,64 @@ config:
           decimals: 0
           id: conteggio
           min: 0
+      - graph_span: 60d
+        grid_options:
+          columns: 12
+          rows: auto
+        header:
+          show: true
+          title: Temp max condens.&inventer DC 60gg
+        series:
+        - entity: sensor.inverter_uflex_battery_temperature
+          name: condensatore
+          statistics:
+            period: day
+            type: max
+          type: line
+          yaxis_id: C
+        - entity: sensor.inverter_uflex_dc_temperature
+          name: inverter DC
+          statistics:
+            period: day
+            type: max
+          type: line
+          yaxis_id: C
+        type: custom:apexcharts-card
+        yaxis:
+        - apex_config:
+            title:
+              text: "\xB0C"
+          decimals: 2
+          id: C
+      - graph_span: 30d
+        grid_options:
+          columns: 12
+          rows: auto
+        header:
+          show: true
+          title: Energia di condens. 30gg
+        series:
+        - entity: sensor.inverter_uflex_today_battery_charge
+          name: carica
+          statistics:
+            period: day
+            type: state
+          type: column
+          yaxis_id: kwh
+        - entity: sensor.inverter_uflex_today_battery_discharge
+          name: scarica
+          statistics:
+            period: day
+            type: state
+          type: column
+          yaxis_id: C
+        type: custom:apexcharts-card
+        yaxis:
+        - apex_config:
+            title:
+              text: kWh
+          decimals: 2
+          id: kwh
       type: grid
     - cards:
       - heading: PANELLI FOTOVOLTAICI
@@ -826,7 +909,7 @@ config:
           title: Ultimi 12 mesi, kWh
         series:
         - entity: sensor.inverter_uflex_today_production
-          name: production oggi
+          name: production mese
           statistics:
             period: month
             type: change

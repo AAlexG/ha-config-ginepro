@@ -127,7 +127,7 @@ config:
         grid_options:
           columns: full
           rows: auto
-        hours_to_show: 4380
+        hours_to_show: 8760
         refresh_interval: 60
         type: history-graph
       - heading: Pioggia in dettaglio
@@ -154,25 +154,52 @@ config:
         name: Anno
         type: tile
         vertical: false
-      - entities:
-        - entity: sensor.hp1000se_pro_pro_v1_6_4_hourly_rain
-          name: Pioggia ora
+      - graph_span: 30days
         grid_options:
-          columns: full
+          columns: 12
           rows: auto
-        hours_to_show: 24
-        refresh_interval: 60
-        type: history-graph
-      - entities:
+        header:
+          show: true
+          title: Pioggia 30gg, mm/gg
+        series:
         - entity: sensor.hp1000se_pro_pro_v1_6_4_monthly_rain
-          name: Pioggia mese
-        expand_legend: false
+          name: pioggia giorno
+          statistics:
+            period: day
+            type: change
+          type: column
+          yaxis_id: mm
+        type: custom:apexcharts-card
+        yaxis:
+        - apex_config:
+            title:
+              text: mm
+          decimals: 0
+          id: mm
+          min: 0
+      - graph_span: 730days
         grid_options:
-          columns: full
+          columns: 12
           rows: auto
-        hours_to_show: 8640
-        refresh_interval: 60
-        type: history-graph
+        header:
+          show: true
+          title: Pioggia 24 mesi, mm/mese
+        series:
+        - entity: sensor.hp1000se_pro_pro_v1_6_4_monthly_rain
+          name: pioggia mese
+          statistics:
+            period: month
+            type: state
+          type: column
+          yaxis_id: mm
+        type: custom:apexcharts-card
+        yaxis:
+        - apex_config:
+            title:
+              text: mm
+          decimals: 0
+          id: mm
+          min: 0
       - heading: Previsioni in dettaglio
         heading_style: subtitle
         icon: mdi:weather-cloudy-clock
@@ -205,15 +232,15 @@ config:
         - entity: sensor.hp1000se_pro_pro_v1_6_4_solar_radiation
           name: stazione meteo
           statistics:
-            period: day
+            period: hour
             type: max
           type: line
           yaxis_id: Wm2
         - entity: sensor.sensore_pioggia_tuya_illuminance_raw
           name: sensore pioggia Tuya
           statistics:
-            period: day
-            type: max
+            period: hour
+            type: min
           type: line
           yaxis_id: mV
         type: custom:apexcharts-card
@@ -221,13 +248,13 @@ config:
         - apex_config:
             title:
               text: W/m2
-          decimals: 1
+          decimals: 0
           id: Wm2
           min: 0
         - apex_config:
             title:
               text: mV
-          decimals: 2
+          decimals: 0
           id: mV
           min: 0
           opposite: true

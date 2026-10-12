@@ -1,4 +1,11 @@
-# config_ricarica_auto_3.yaml
+# config_ricarica_auto_4.yaml
+# v4 (12/10/2026): CORRETTO il blocco su "pieno". Fino alla v3, una volta
+#   registrata l'ora del pieno, la previsione restava "pieno" fino a mezzanotte
+#   anche con il SC che si scaricava: il 12/10 pieno alle 12:04, poi l'auto lo
+#   ha svuotato al 35% e l'automazione non poteva intervenire. Ora il livello
+#   segue i contatori anche dopo il pieno:
+#     livello = energia utile - energia netta uscita dal momento del pieno
+#   e lo stato "pieno" vale solo finche' manca meno di 0,05 kWh.
 # v3 (08/10/2026): energia gia' presente nel SC non piu' dal SoC dell'inverter
 #   ma dal conteggio reale di sensor.condensatore_energia_al_pieno
 #   (config_fotovoltaico). Curva tensione/energia corretta con la coda finale
@@ -34,6 +41,8 @@
 # Si usa invece:
 #   livello = energia gia' presente al minimo del mattino
 #             + energia netta entrata da quel minimo (contatori inverter)
+#   dopo il pieno (v4):
+#   livello = energia utile - energia netta uscita dal momento del pieno
 # Il secondo termine e' lo stato di sensor.condensatore_energia_al_pieno;
 # il primo si ricava dalla tensione minima (attributo v_min) con la curva
 # sotto. Quasi tutti i giorni il minimo e' 43,98 V, cioe' SC vuoto, e il
@@ -150,6 +159,8 @@ template:
         state: >-
           {%- set p = state_attr('sensor.pv_profilo_sereno', 'profilo') -%}
           {%- set cap = states('sensor.condensatore_energia_al_pieno') | float(-1) -%}
+          {%- set c0 = state_attr('sensor.condensatore_energia_al_pieno', 'c0') -%}
+          {%- set d0 = state_attr('sensor.condensatore_energia_al_pieno', 'd0') -%}
           {%- set vmin = state_attr('sensor.condensatore_energia_al_pieno', 'v_min') -%}
           {%- set gia_pieno = state_attr('sensor.condensatore_energia_al_pieno', 'ora_pieno') -%}
           {%- set curva = [[43.5,0.0],[44.5,0.002],[45.5,0.008],[46.5,0.014],[47.5,0.026],[48.5,0.051],[49.5,0.114],[50.5,0.198],[51.5,0.322],[52.5,0.486],[53.5,0.625],[54.5,0.718],[55.5,0.789],[56.5,0.843],[56.7,0.871],[57.5,1.0]] -%}
@@ -166,7 +177,11 @@ template:
               {%- endif -%}
             {%- endfor -%}
             {%- set f0 = 1.0 if vmin | float > curva[-1][0] else nv.f0 -%}
-            {%- set livello = [f0 * eu + cap, eu] | min -%}
+            {%- set netto = (states('sensor.inverter_uflex_today_battery_charge') | float(0) - c0 | float(0))
+            - (states('sensor.inverter_uflex_today_battery_discharge') | float(0) - d0 | float(0))
+            if c0 is not none and d0 is not none else cap -%}
+            {%- set livello = (eu + netto - cap) if gia_pieno else (f0 * eu + netto) -%}
+            {%- set livello = [[livello, eu] | min, 0] | max -%}
             {%- set mancante = eu - livello -%}
             {%- set serve = mancante * (1 + states('input_number.ricarica_auto_margine') | float(10) / 100) -%}
             {%- set sereno_fatto = (p[:h] | sum) + p[h] * (hf - h) -%}
@@ -195,7 +210,7 @@ template:
                 {%- set ns.t1 = i * 5 -%}
               {%- endif -%}
             {%- endfor -%}
-            {%- if gia_pieno or mancante <= 0 -%}
+            {%- if mancante <= 0.05 -%}
               {%- set r.stato = 'pieno' -%}
             {%- elif sereno_fatto < states('input_number.ricarica_auto_soglia_sereno') | float(1) -%}
               {%- set r.stato = 'non valutabile' -%}
@@ -207,7 +222,8 @@ template:
             {%- set r.d = {
                  'v_min': vmin | float,
                  'energia_al_minimo_kwh': (f0 * eu) | round(2),
-                 'entrata_dal_minimo_kwh': cap | round(2),
+                 'entrata_dal_minimo_kwh': netto | round(2),
+                 'pieno_raggiunto_alle': gia_pieno,
                  'livello_kwh': livello | round(2),
                  'energia_mancante_kwh': serve | round(2),
                  'prodotto_oggi_kwh': prodotto | round(2),
@@ -227,6 +243,8 @@ template:
           calcolo: >-
             {%- set p = state_attr('sensor.pv_profilo_sereno', 'profilo') -%}
             {%- set cap = states('sensor.condensatore_energia_al_pieno') | float(-1) -%}
+            {%- set c0 = state_attr('sensor.condensatore_energia_al_pieno', 'c0') -%}
+            {%- set d0 = state_attr('sensor.condensatore_energia_al_pieno', 'd0') -%}
             {%- set vmin = state_attr('sensor.condensatore_energia_al_pieno', 'v_min') -%}
             {%- set gia_pieno = state_attr('sensor.condensatore_energia_al_pieno', 'ora_pieno') -%}
             {%- set curva = [[43.5,0.0],[44.5,0.002],[45.5,0.008],[46.5,0.014],[47.5,0.026],[48.5,0.051],[49.5,0.114],[50.5,0.198],[51.5,0.322],[52.5,0.486],[53.5,0.625],[54.5,0.718],[55.5,0.789],[56.5,0.843],[56.7,0.871],[57.5,1.0]] -%}
@@ -243,7 +261,11 @@ template:
                 {%- endif -%}
               {%- endfor -%}
               {%- set f0 = 1.0 if vmin | float > curva[-1][0] else nv.f0 -%}
-              {%- set livello = [f0 * eu + cap, eu] | min -%}
+              {%- set netto = (states('sensor.inverter_uflex_today_battery_charge') | float(0) - c0 | float(0))
+              - (states('sensor.inverter_uflex_today_battery_discharge') | float(0) - d0 | float(0))
+              if c0 is not none and d0 is not none else cap -%}
+              {%- set livello = (eu + netto - cap) if gia_pieno else (f0 * eu + netto) -%}
+              {%- set livello = [[livello, eu] | min, 0] | max -%}
               {%- set mancante = eu - livello -%}
               {%- set serve = mancante * (1 + states('input_number.ricarica_auto_margine') | float(10) / 100) -%}
               {%- set sereno_fatto = (p[:h] | sum) + p[h] * (hf - h) -%}
@@ -272,7 +294,7 @@ template:
                   {%- set ns.t1 = i * 5 -%}
                 {%- endif -%}
               {%- endfor -%}
-              {%- if gia_pieno or mancante <= 0 -%}
+              {%- if mancante <= 0.05 -%}
                 {%- set r.stato = 'pieno' -%}
               {%- elif sereno_fatto < states('input_number.ricarica_auto_soglia_sereno') | float(1) -%}
                 {%- set r.stato = 'non valutabile' -%}
@@ -284,7 +306,8 @@ template:
               {%- set r.d = {
                    'v_min': vmin | float,
                    'energia_al_minimo_kwh': (f0 * eu) | round(2),
-                   'entrata_dal_minimo_kwh': cap | round(2),
+                   'entrata_dal_minimo_kwh': netto | round(2),
+                   'pieno_raggiunto_alle': gia_pieno,
                    'livello_kwh': livello | round(2),
                    'energia_mancante_kwh': serve | round(2),
                    'prodotto_oggi_kwh': prodotto | round(2),

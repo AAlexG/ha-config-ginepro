@@ -524,68 +524,31 @@ config:
         type: button
       type: grid
     - cards:
-      - heading: TEMPERATURE ATTUALI E DESIDERATE
-        heading_style: title
-        type: heading
-      - entities:
-        - entity: sensor.hp1000se_pro_pro_v1_6_4_indoor_temperature
-          name: Sala
-        - entity: sensor.termometro_georgi_zigbee_temperature
-          name: Georgi
-        - entity: sensor.termometro_tania_zigbee_temperature
-          name: Tania
-        - entity: sensor.termometro_cantina_zigbee_temperature
-          name: Cantina
-        - entity: sensor.panasonic_heat_pump_main_outside_temp
-          name: Esterna
-        grid_options:
-          columns: full
-          rows: auto
-        hours_to_show: 24
-        refresh_interval: 60
-        type: history-graph
-      - content: "{% set mod = states('input_select.clima_modalita') %} {% set cool\
-          \ = states('select.panasonic_heat_pump_main_operating_mode_state') in ['Cool',\
-          \ 'Cool only'] %}{% set stagione = 'estate' if cool else 'inverno' %} {%\
-          \ if stagione == 'estate' %}\n  {% if mod == 'notte' %}\n    **Sala max\
-          \ disiderata:** {{ states('input_number.maxtemp_notte_estate_sala') }}\xB0\
-          C\n    **Georgi max disiderata:** {{ states('input_number.maxtemp_notte_estate_letto')\
-          \ }}\xB0C\n  {% else %}\n    **Sala max disiderata:** {{ states('input_number.maxtemp_giorno_estate_sala')\
-          \ }}\xB0C\n    **Georgi max disiderata:** {{ states('input_number.maxtemp_giorno_estate_letto')\
-          \ }}\xB0C\n  {% endif %}\n{% else %}\n  {% if mod == 'notte' %}\n    **Tania\
-          \ min disiderata:** {{ states('input_number.mintemp_notte_inverno_tania')\
-          \ }}\xB0C\n    **Georgi min disiderata:** {{ states('input_number.mintemp_notte_inverno_letto')\
-          \ }}\xB0C\n  {% else %}\n    **Sala min disiderata:** {{ states('input_number.mintemp_giorno_inverno_sala')\
-          \ }}\xB0C\n    **Georgi min disiderata:** {{ states('input_number.mintemp_giorno_inverno_letto')\
-          \ }}\xB0C\n  {% endif %}\n{% endif %} &nbsp;&nbsp; *({{ stagione }} / {{\
-          \ mod }})*\n"
-        grid_options:
-          columns: 9
-          rows: auto
-        type: markdown
-      - grid_options:
-          columns: 3
-          rows: auto
-        icon: mdi:heat-pump
-        icon_height: 20px
-        name: Clima
-        show_icon: true
-        show_name: true
-        show_state: false
-        tap_action:
-          action: navigate
-          navigation_path: /dashboard-clima/clima
-        type: button
-      type: grid
-    - cards:
       - heading: ELETTRICITA'
         heading_style: title
         icon: mdi:electron-framework
         type: heading
       - battery:
-          energy: 5120
+          energy: 6990
           show_daily: true
-          shutdown_soc: 1
+          shutdown_soc: number.inverter_uflex_battery_low_soc
+        battery2:
+          animate: true
+          auto_scale: true
+          colour: '#ffc0cb'
+          dynamic_colour: true
+          energy: 0
+          hide_soc: false
+          invert_flow: false
+          invert_power: false
+          linear_gradient: true
+          navigate: ''
+          path_threshold: 100
+          remaining_energy_to_shutdown: false
+          show_absolute: false
+          show_remaining_energy: true
+          shutdown_soc: 20
+          soc_end_of_charge: 100
         card_height: 100%
         card_width: 100%
         cardstyle: lite
@@ -597,6 +560,7 @@ config:
           battery_current_191: sensor.inverter_uflex_battery_current
           battery_power_190: sensor.inverter_uflex_battery_power
           battery_soc_184: sensor.inverter_uflex_battery
+          battery_temp_182: sensor.inverter_uflex_battery_temperature
           battery_voltage_183: sensor.inverter_uflex_battery_voltage
           day_battery_charge_70: sensor.inverter_uflex_today_battery_charge
           day_battery_discharge_71: sensor.inverter_uflex_today_battery_discharge
@@ -628,7 +592,7 @@ config:
           model: sunsynk
           modern: true
           three_phase: false
-        large_font: false
+        large_font: true
         load:
           show_daily: true
         max_line_width: 4
@@ -971,6 +935,60 @@ config:
               package_name: appinventor.ai_aagorine.PanelAnalytics
             message: command_launch_app
           perform_action: notify.mobile_app_cph2653
+        type: button
+      type: grid
+    - cards:
+      - heading: TEMPERATURE ATTUALI E DESIDERATE
+        heading_style: title
+        type: heading
+      - entities:
+        - entity: sensor.hp1000se_pro_pro_v1_6_4_indoor_temperature
+          name: Sala
+        - entity: sensor.termometro_georgi_zigbee_temperature
+          name: Georgi
+        - entity: sensor.termometro_tania_zigbee_temperature
+          name: Tania
+        - entity: sensor.termometro_cantina_zigbee_temperature
+          name: Cantina
+        - entity: sensor.panasonic_heat_pump_main_outside_temp
+          name: Esterna
+        grid_options:
+          columns: full
+          rows: auto
+        hours_to_show: 24
+        refresh_interval: 60
+        type: history-graph
+      - content: "{% set mod = states('input_select.clima_modalita') %} {% set cool\
+          \ = states('select.panasonic_heat_pump_main_operating_mode_state') in ['Cool',\
+          \ 'Cool only'] %}{% set stagione = 'estate' if cool else 'inverno' %} {%\
+          \ if stagione == 'estate' %}\n  {% if mod == 'notte' %}\n    **Sala max\
+          \ disiderata:** {{ states('input_number.maxtemp_notte_estate_sala') }}\xB0\
+          C\n    **Georgi max disiderata:** {{ states('input_number.maxtemp_notte_estate_letto')\
+          \ }}\xB0C\n  {% else %}\n    **Sala max disiderata:** {{ states('input_number.maxtemp_giorno_estate_sala')\
+          \ }}\xB0C\n    **Georgi max disiderata:** {{ states('input_number.maxtemp_giorno_estate_letto')\
+          \ }}\xB0C\n  {% endif %}\n{% else %}\n  {% if mod == 'notte' %}\n    **Tania\
+          \ min disiderata:** {{ states('input_number.mintemp_notte_inverno_tania')\
+          \ }}\xB0C\n    **Georgi min disiderata:** {{ states('input_number.mintemp_notte_inverno_letto')\
+          \ }}\xB0C\n  {% else %}\n    **Sala min disiderata:** {{ states('input_number.mintemp_giorno_inverno_sala')\
+          \ }}\xB0C\n    **Georgi min disiderata:** {{ states('input_number.mintemp_giorno_inverno_letto')\
+          \ }}\xB0C\n  {% endif %}\n{% endif %} &nbsp;&nbsp; *({{ stagione }} / {{\
+          \ mod }})*\n"
+        grid_options:
+          columns: 9
+          rows: auto
+        type: markdown
+      - grid_options:
+          columns: 3
+          rows: auto
+        icon: mdi:heat-pump
+        icon_height: 20px
+        name: Clima
+        show_icon: true
+        show_name: true
+        show_state: false
+        tap_action:
+          action: navigate
+          navigation_path: /dashboard-clima/clima
         type: button
       type: grid
     - cards:

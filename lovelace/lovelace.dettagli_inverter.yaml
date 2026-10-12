@@ -170,18 +170,14 @@ config:
         type: heading
       - content: "**Tipo di accumulo** \u2013 *Lead-Battery*: l'inverter carica a\
           \ tensione, in 4 fasi come una batteria al piombo. *Lithium*: le soglie\
-          \ le decide il BMS dell'accumulo attraverso il cavo di comunicazione. Qui\
-          \ non c'\xE8 cavo BMS, quindi \xE8 impostato *Lead-Battery*. \u2753 UFLEX\
-          \ non dice quale modalit\xE0 usare senza cavo; la brochure descrive inverter\
-          \ e modulo con comunicazione BMS (CAN/RS485).\n\n**Soglie in volt o in %**\
-          \ \u2013 *Voltage*: valgono le soglie in volt. *Capacity*: valgono quelle\
-          \ in %. *No Battery*: l'inverter lavora senza accumulo. Con *Voltage* le\
-          \ soglie in % della sezione successiva vengono ignorate.\n\n**Protocollo\
-          \ BMS** \u2013 \xC8 il protocollo di comunicazione con il BMS. Conta solo\
-          \ in modalit\xE0 *Lithium* con il cavo collegato, quindi ora non ha effetto.\
-          \ \u2753 Nell'elenco non c'\xE8 nessuna voce UFLEX.\n\n**Capacit\xE0** \u2013\
-          \ \u2705 147 Ah, come da scheda UFSC48-7.6.\n\n**Corrente max carica** \u2013\
-          \ \u2705 80 A, sotto i 100 A del modulo e i 135 A dell'inverter.\n\n**Corrente\
+          \ le decide il BMS dell'accumulo attraverso il cavo di comunicazione. \n\
+          \n**Soglie in volt o in %** \u2013 *Voltage*: valgono le soglie in volt.\
+          \ *Capacity*: valgono quelle in %. *No Battery*: l'inverter lavora senza\
+          \ accumulo. Per noi seve capacity\n\n**Protocollo BMS** \u2013 \xC8 il protocollo\
+          \ di comunicazione con il BMS. Conta solo in modalit\xE0 *Lithium* con il\
+          \ cavo collegato, quindi \xE8 nostro\n\n**Capacit\xE0** \u2013 \u2705 147\
+          \ Ah, come da scheda UFSC48-7.6.\n\n**Corrente max carica** \u2013 \u2705\
+          \ 80 A, sotto i 100 A del modulo e i 135 A dell'inverter.\n\n**Corrente\
           \ max scarica** \u2013 \u2705 90 A, abbassata da 100 A il 9/10 dopo il blocco\
           \ dell'8/10. \xC8 sotto i 100 A del modulo, con margine.\n\n**Tensione Absorption**\
           \ \u2013 \xC8 la tensione di fine carica. \u2705 58 V, cio\xE8 la tensione\
@@ -380,72 +376,20 @@ config:
         heading_style: title
         type: heading
       - content: "**Spegnimento** \u2013 Sotto questa tensione l'inverter smette di\
-          \ scaricare l'accumulo. \u26A0\uFE0F 42 V coincide con la tensione minima\
-          \ di scarica della scheda, quindi non c'\xE8 margine. In pratica non ci\
-          \ si arriva, perch\xE9 la mattina l'accumulo si ferma a circa 44 V.\n\n\
-          **Batteria bassa** \u2013 \xC8 la soglia di allarme di batteria scarica.\
-          \ \xC8 la stessa tensione usata come limite dai programmi orari, tranne\
-          \ la fascia delle 09:00. \u2753\n\n**Ripartenza** \u2013 Dopo uno spegnimento\
-          \ per batteria scarica, l'inverter ricomincia a scaricare solo quando la\
-          \ tensione torna sopra questo valore. \u2753\n\n**Vuoto** \u2013 \u2753\
-          \ Il manuale Deye non lo descrive. Dal nome \xE8 la tensione considerata\
-          \ \"accumulo vuoto\" per il calcolo della % mostrata. Non verificato.\n\n\
-          **Soglie in %** \u2013 Sono le stesse funzioni espresse in percentuale;\
-          \ i valori di fabbrica Deye per il piombo sono 20 / 35 / 50 %. Con *Soglie\
-          \ in volt o in %* su *Voltage* non vengono usate. La brochure UFLEX raccomanda\
-          \ una profondit\xE0 di scarica non oltre il 90 %."
+          \ scaricare l'accumulo. 10% coincide con la tensione minima di scarica della\
+          \ scheda, quindi non c'\xE8 margine. In pratica non ci si arriva, perch\xE9\
+          \ la mattina l'accumulo si ferma a circa 10%.\n\n**Batteria bassa** \u2013\
+          \ \xC8 la soglia di allarme di batteria scarica. \xC8 la stessa tensione\
+          \ usata come limite dai programmi orari, tranne la fascia delle 09:00. \u2753\
+          \n\n**Ripartenza** \u2013 Dopo uno spegnimento per batteria scarica, l'inverter\
+          \ ricomincia a scaricare solo quando la tensione torna sopra questo valore.\
+          \ \u2753\n\n La brochure UFLEX raccomanda una profondit\xE0 di scarica non\
+          \ oltre il 90 %."
         grid_options:
           columns: full
           rows: auto
         type: markdown
-      - heading: "Soglie in volt (usate in modalit\xE0 Voltage)"
-        heading_style: subtitle
-        type: heading
-      - entity: number.inverter_uflex_battery_shutdown_voltage
-        features_position: bottom
-        grid_options:
-          columns: 6
-        icon_tap_action:
-          action: more-info
-        name: Spegnimento
-        tap_action:
-          action: more-info
-        type: tile
-        vertical: false
-      - entity: number.inverter_uflex_battery_low_voltage
-        features_position: bottom
-        grid_options:
-          columns: 6
-        icon_tap_action:
-          action: more-info
-        name: BatteriaBassa
-        tap_action:
-          action: more-info
-        type: tile
-        vertical: false
-      - entity: number.inverter_uflex_battery_restart_voltage
-        features_position: bottom
-        grid_options:
-          columns: 6
-        icon_tap_action:
-          action: more-info
-        name: Ripartenza
-        tap_action:
-          action: more-info
-        type: tile
-        vertical: false
-      - entity: number.inverter_uflex_battery_empty
-        features_position: bottom
-        grid_options:
-          columns: 6
-        icon_tap_action:
-          action: more-info
-        name: Vuoto
-        tap_action:
-          action: more-info
-        type: tile
-        vertical: false
-      - heading: "Soglie in % (ignorate in modalit\xE0 Voltage)"
+      - heading: 'Soglie in % '
         heading_style: subtitle
         type: heading
       - entity: number.inverter_uflex_battery_shutdown_soc
@@ -489,17 +433,13 @@ config:
       - content: "**Carica da rete** \u2013 Se attiva, l'inverter carica l'accumulo\
           \ dalla rete quando scende sotto la soglia di partenza (in V o in %, secondo\
           \ la modalit\xE0), con la corrente impostata. \xC8 **disattiva**, quindi\
-          \ i tre valori sotto non hanno effetto. L'accumulo si carica solo dal FV.\n\
-          \n**Segnale di carica** \u2013 \u2753 Il manuale Deye non lo descrive.\n\
-          \n**Carica da generatore** \u2013 Funziona come la carica da rete, ma dalla\
-          \ porta GEN. \xC8 disattiva."
+          \ l'accumulo si carica solo dal FV.\n\n**Carica da generatore** \u2013 Funziona\
+          \ come la carica da rete, ma dalla porta GEN. \xC8 disattiva."
         grid_options:
           columns: full
           rows: auto
+        text_only: true
         type: markdown
-      - heading: Rete
-        heading_style: subtitle
-        type: heading
       - entity: switch.inverter_uflex_battery_grid_charging
         features_position: bottom
         grid_options:
@@ -511,53 +451,6 @@ config:
           action: more-info
         type: tile
         vertical: false
-      - entity: number.inverter_uflex_battery_grid_charging_start_voltage
-        features_position: bottom
-        grid_options:
-          columns: 6
-        icon_tap_action:
-          action: more-info
-        name: ParteSotto
-        tap_action:
-          action: more-info
-        type: tile
-        vertical: false
-      - entity: number.inverter_uflex_battery_grid_charging_start
-        features_position: bottom
-        grid_options:
-          columns: 6
-        icon_tap_action:
-          action: more-info
-        name: ParteSotto
-        tap_action:
-          action: more-info
-        type: tile
-        vertical: false
-      - entity: number.inverter_uflex_battery_grid_charging_current
-        features_position: bottom
-        grid_options:
-          columns: 6
-        icon_tap_action:
-          action: more-info
-        name: Corrente
-        tap_action:
-          action: more-info
-        type: tile
-        vertical: false
-      - entity: select.inverter_uflex_charging_signal
-        features_position: bottom
-        grid_options:
-          columns: 6
-        icon_tap_action:
-          action: more-info
-        name: SegnaleCarica
-        tap_action:
-          action: more-info
-        type: tile
-        vertical: false
-      - heading: Generatore
-        heading_style: subtitle
-        type: heading
       - entity: switch.inverter_uflex_battery_generator_charging
         features_position: bottom
         grid_options:
@@ -565,39 +458,6 @@ config:
         icon_tap_action:
           action: more-info
         name: Carica da generatore
-        tap_action:
-          action: more-info
-        type: tile
-        vertical: false
-      - entity: number.inverter_uflex_battery_generator_charging_start_voltage
-        features_position: bottom
-        grid_options:
-          columns: 6
-        icon_tap_action:
-          action: more-info
-        name: ParteSotto
-        tap_action:
-          action: more-info
-        type: tile
-        vertical: false
-      - entity: number.inverter_uflex_battery_generator_charging_start
-        features_position: bottom
-        grid_options:
-          columns: 6
-        icon_tap_action:
-          action: more-info
-        name: ParteSotto
-        tap_action:
-          action: more-info
-        type: tile
-        vertical: false
-      - entity: number.inverter_uflex_battery_generator_charging_current
-        features_position: bottom
-        grid_options:
-          columns: 6
-        icon_tap_action:
-          action: more-info
-        name: Corrente
         tap_action:
           action: more-info
         type: tile
@@ -668,17 +528,6 @@ config:
         icon_tap_action:
           action: more-info
         name: PotenzMax
-        tap_action:
-          action: more-info
-        type: tile
-        vertical: false
-      - entity: number.inverter_uflex_program_1_voltage
-        features_position: bottom
-        grid_options:
-          columns: 6
-        icon_tap_action:
-          action: more-info
-        name: SogliaAccumulo
         tap_action:
           action: more-info
         type: tile
@@ -990,16 +839,7 @@ config:
           \ uscita che alimenta un carico solo quando accumulo e FV superano le soglie.\n\
           - *Microinverter*: ingresso per un microinverter (AC coupling).\n\n\xC8\
           \ impostato *Generator*. Se alla porta GEN non \xE8 collegato nulla, i parametri\
-          \ di questa sezione non hanno effetto.\n\n**Smart load ON / OFF** \u2013\
-          \ In modalit\xE0 SmartLoad la porta si accende sopra la soglia ON (in V\
-          \ o in %), purch\xE9 il FV superi il **FV minimo**, e si spegne sotto la\
-          \ soglia OFF.\n\n**Sempre ON con rete** (\"On Grid always on\") \u2013 In\
-          \ modalit\xE0 SmartLoad la porta resta accesa finch\xE9 c'\xE8 la rete.\n\
-          \n**Gen.: peak shaving** \u2013 Se il generatore supera la sua potenza,\
-          \ l'inverter copre la parte in eccesso.\n\n**Microinv.: stop cessione**\
-          \ \u2013 Blocca l'immissione in rete dell'energia prodotta da un microinverter\
-          \ collegato alla porta GEN.\n\n**Gen. lato rete** \u2013 \u2753 Il manuale\
-          \ Deye non lo descrive."
+          \ di questa sezione non hanno effetto.\n"
         grid_options:
           columns: full
           rows: auto
@@ -1022,144 +862,6 @@ config:
         icon_tap_action:
           action: more-info
         name: Generatore
-        tap_action:
-          action: more-info
-        type: tile
-        vertical: false
-      - entity: number.inverter_uflex_generator_operating_time
-        features_position: bottom
-        grid_options:
-          columns: full
-        icon_tap_action:
-          action: more-info
-        name: 'Gen.: oreLavoro'
-        tap_action:
-          action: more-info
-        type: tile
-        vertical: false
-      - entity: number.inverter_uflex_generator_cooling_time
-        features_position: bottom
-        grid_options:
-          columns: full
-        icon_tap_action:
-          action: more-info
-        name: 'Gen.: orePausa'
-        tap_action:
-          action: more-info
-        type: tile
-        vertical: false
-      - entity: number.inverter_uflex_generator_min_pv_power
-        features_position: bottom
-        grid_options:
-          columns: 12
-          rows: 1
-        icon_tap_action:
-          action: more-info
-        name: 'Smart load: FV minimo'
-        tap_action:
-          action: more-info
-        type: tile
-        vertical: false
-      - entity: number.inverter_uflex_smartload_on_voltage
-        features_position: bottom
-        grid_options:
-          columns: 12
-          rows: 1
-        icon_tap_action:
-          action: more-info
-        name: Smart load ON (V)
-        tap_action:
-          action: more-info
-        type: tile
-        vertical: false
-      - entity: number.inverter_uflex_smartload_on
-        features_position: bottom
-        grid_options:
-          columns: 12
-          rows: 1
-        icon_tap_action:
-          action: more-info
-        name: Smart load ON (%)
-        tap_action:
-          action: more-info
-        type: tile
-        vertical: false
-      - entity: number.inverter_uflex_smartload_off_voltage
-        features_position: bottom
-        grid_options:
-          columns: 12
-          rows: 1
-        icon_tap_action:
-          action: more-info
-        name: Smart Load OFF
-        tap_action:
-          action: more-info
-        type: tile
-        vertical: false
-      - entity: number.inverter_uflex_smartload_off
-        features_position: bottom
-        grid_options:
-          columns: 12
-          rows: 1
-        icon_tap_action:
-          action: more-info
-        name: Smart load OFF (%)
-        tap_action:
-          action: more-info
-        type: tile
-        vertical: false
-      - entity: switch.inverter_uflex_generator_on_grid
-        features_position: bottom
-        grid_options:
-          columns: full
-          rows: auto
-        icon_tap_action:
-          action: more-info
-        name: Sempre ON con rete
-        tap_action:
-          action: more-info
-        type: tile
-        vertical: false
-      - entity: switch.inverter_uflex_generator_grid_side
-        features_position: bottom
-        grid_options:
-          columns: full
-        icon_tap_action:
-          action: more-info
-        name: Gen. lato rete
-        tap_action:
-          action: more-info
-        type: tile
-        vertical: false
-      - entity: switch.inverter_uflex_generator_peak_shaving
-        features_position: bottom
-        grid_options:
-          columns: full
-        icon_tap_action:
-          action: more-info
-        name: 'Gen.: peak shaving'
-        tap_action:
-          action: more-info
-        type: tile
-        vertical: false
-      - entity: number.inverter_uflex_generator_peak_shaving
-        features_position: bottom
-        grid_options:
-          columns: full
-        icon_tap_action:
-          action: more-info
-        name: 'Gen.: soglia peak shaving'
-        tap_action:
-          action: more-info
-        type: tile
-        vertical: false
-      - entity: switch.inverter_uflex_microinverter_export_cut_off
-        features_position: bottom
-        grid_options:
-          columns: full
-        icon_tap_action:
-          action: more-info
-        name: 'Microinv.: stop cessione'
         tap_action:
           action: more-info
         type: tile
