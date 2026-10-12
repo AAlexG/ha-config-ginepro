@@ -4,29 +4,29 @@
         "voltage": 3000,
         "contact": false,
         "battery_low": false,
-        "linkquality": 72
+        "linkquality": 68
     },
     "0xa4c1380697d6ffff": {
         "battery": 100,
         "voltage": 3100,
         "contact": true,
         "battery_low": false,
-        "linkquality": 104
+        "linkquality": 92
     },
     "0xa4c138f820e17e6e": {
-        "voltage": 2700,
-        "battery": 98,
+        "voltage": 2600,
+        "battery": 93,
         "contact": false,
         "tamper": false,
         "battery_low": false,
-        "linkquality": 140
+        "linkquality": 144
     },
     "0xa4c138e6a0d06219": {
         "voltage": 2500,
         "battery": 49,
-        "temperature": 22.08,
-        "humidity": 56.73,
-        "linkquality": 136
+        "temperature": 22.33,
+        "humidity": 52.54,
+        "linkquality": 140
     },
     "0xa4c1385040d042fb": {
         "energy": 1.91,
@@ -35,22 +35,22 @@
         "power_outage_memory": "restore",
         "indicator_mode": "off/on",
         "child_lock": "UNLOCK",
-        "voltage": 227.5,
+        "voltage": 229,
         "power": 0,
         "current": 0,
-        "linkquality": 144
+        "linkquality": 136
     },
     "0xa4c1383e0fd87686": {
-        "state": "OFF",
-        "energy": 40.17,
+        "state": "ON",
+        "energy": 40.26,
         "countdown": 0,
         "power_outage_memory": "restore",
         "indicator_mode": "off/on",
         "child_lock": "UNLOCK",
-        "voltage": 227.2,
-        "linkquality": 72,
-        "power": 0,
-        "current": 0
+        "voltage": 228.6,
+        "linkquality": 68,
+        "power": 19,
+        "current": 0.08
     },
     "0xa4c1384b868fa6bd": {
         "state": "OFF",
@@ -78,16 +78,16 @@
         "indicator_mode": "off/on",
         "power": 3,
         "current": 0.03,
-        "voltage": 230,
-        "energy": 0.1,
-        "linkquality": 104,
+        "voltage": 235,
+        "energy": 0.13,
+        "linkquality": 92,
         "child_lock": "UNLOCK"
     },
     "0xa4c1380eff54ffff": {
         "battery": 100,
-        "temperature": 22.6,
+        "temperature": 22.5,
         "voltage": 2900,
-        "humidity": 62.8,
+        "humidity": 56.9,
         "temperature_sensor_select": "internal",
         "comfort_temperature_min": 19,
         "comfort_temperature_max": 35.2,
@@ -109,7 +109,7 @@
         "battery": 100,
         "voltage": 3000,
         "temperature": 23,
-        "humidity": 61.4,
+        "humidity": 58.1,
         "temperature_sensor_select": "internal",
         "comfort_temperature_min": 19,
         "comfort_temperature_max": 43.7,
@@ -125,7 +125,7 @@
             "latest_source": "https://raw.githubusercontent.com/Koenkk/zigbee-OTA/master/images/Sonoff/SN-TLSR8656-02DR2-01-v1.0.5.ota",
             "latest_release_notes": "Home Assistant and eWeLink ecosystem gateways now support two remote temperature and humidity data sources.\n\nFixed several known issues to improve system stability."
         },
-        "linkquality": 148
+        "linkquality": 136
     },
     "0xa4c1389b51ea7546": {
         "contact": false,
@@ -133,14 +133,23 @@
         "battery_low": false,
         "voltage": 2800,
         "battery": 100,
-        "linkquality": 68
+        "linkquality": 76
     },
     "0xa4c138013ef60318": {
-        "voltage": 2500,
-        "battery": 87,
-        "contact": true,
+        "voltage": 2600,
+        "battery": 93,
+        "contact": false,
         "tamper": false,
         "battery_low": false,
-        "linkquality": 52
+        "linkquality": 60
+    },
+    "0xa4c13844184e6395": {
+        "rain": false,
+        "battery": 38,
+        "illuminance_raw": 5936,
+        "illuminance_average_20min": 4178,
+        "illuminance_maximum_today": 6177,
+        "cleaning_reminder": false,
+        "rain_intensity": 6
     }
 }

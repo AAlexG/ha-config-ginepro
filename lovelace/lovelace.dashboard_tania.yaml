@@ -1,4 +1,5 @@
 config:
+  title: plancia_Tania_1
   views:
   - sections:
     - cards:
@@ -10,7 +11,7 @@ config:
           rows: auto
         icon: mdi:gate-arrow-right
         icon_height: 15px
-        name: Cancello piccolo
+        name: Cancello giardino
         show_icon: true
         show_name: true
         show_state: false
@@ -19,11 +20,11 @@ config:
           perform_action: script.apri_cancello_casa
         type: button
       - grid_options:
-          columns: 6
+          columns: 5
           rows: auto
         icon: mdi:garage-open
         icon_height: 15px
-        name: Portone e cancellone
+        name: Box:Portone e cancellone
         show_icon: true
         show_name: true
         show_state: false
@@ -32,10 +33,11 @@ config:
           perform_action: script.apri_box_combo
         type: button
       - grid_options:
-          columns: 2
+          columns: 3
           rows: auto
         icon: mdi:boom-gate-up
-        name: Moto
+        icon_height: 15px
+        name: Canc. Moto
         show_icon: true
         show_name: true
         show_state: false
@@ -48,7 +50,7 @@ config:
       - heading: ___________________________________________
         heading_style: title
         type: heading
-      - heading: Apertura e chiusura Pergola terrazza
+      - heading: Apertura/chiusura Pergola e Tenda
         heading_style: title
         type: heading
       - entity: cover.terrazzo_pergola_terrazza
@@ -60,10 +62,36 @@ config:
         grid_options:
           columns: 12
           rows: auto
-        name: Attuale apertura lamelle %
+        name: 'Pergola: per chiudere - clicca 0%'
         state_content:
         - state
         - current_tilt_position
+        type: tile
+        vertical: false
+      - entity: script.tenda_giardino_chiudi
+        features_position: bottom
+        grid_options:
+          columns: 12
+          rows: 1
+        hide_state: true
+        icon: mdi:arrow-expand
+        name: Chiudi Tenda Giardino
+        tap_action:
+          action: perform-action
+          perform_action: script.tenda_giardino_apri
+        type: tile
+        vertical: false
+      - entity: script.tenda_giardino_apri
+        features_position: bottom
+        grid_options:
+          columns: 12
+          rows: 1
+        hide_state: true
+        icon: mdi:arrow-expand
+        name: Apri Tenda Giardino
+        tap_action:
+          action: perform-action
+          perform_action: script.tenda_giardino_apri
         type: tile
         vertical: false
       - heading: ___________________________________________
@@ -80,6 +108,52 @@ config:
           columns: 12
           rows: auto
         name: Contattore auto
+        type: tile
+        vertical: false
+      - heading: ___________________________________________
+        heading_style: title
+        type: heading
+      - heading: Luci
+        heading_style: title
+        type: heading
+      - entity: switch.presa_luci_cucina_socket_1
+        features:
+        - type: toggle
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        name: Cucina
+        type: tile
+        vertical: false
+      - entity: light.luce_divano
+        features:
+        - type: toggle
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        name: Divano
+        type: tile
+        vertical: false
+      - entity: light.luce_terrazza
+        features:
+        - type: toggle
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        name: Terrazza
+        type: tile
+        vertical: false
+      - entity: light.luce_sopra
+        features:
+        - type: toggle
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        name: LuceSopra
         type: tile
         vertical: false
       - heading: ___________________________________________

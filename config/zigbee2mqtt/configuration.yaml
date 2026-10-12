@@ -78,3 +78,5 @@ devices:
     friendly_name: Cancello grande zigbee
   '0xa4c138013ef60318':
     friendly_name: Cancello entrata zigbee
+  '0xa4c13844184e6395':
+    friendly_name: Sensore pioggia Tuya

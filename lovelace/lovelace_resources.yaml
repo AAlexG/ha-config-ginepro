@@ -16,7 +16,7 @@ items:
   url: /hacsfiles/apexcharts-card/apexcharts-card.js?hacstag=331701152223
 - id: e8705e82d12d4e069840fd2100d2a52e
   type: module
-  url: /hacsfiles/lovelace-plotly-graph-card/plotly-graph-card.js?hacstag=413812496400
+  url: /hacsfiles/lovelace-plotly-graph-card/plotly-graph-card.js?hacstag=413812496401
 - id: 7cc6627d038d4760a817de48a8a148e9
   type: module
   url: /hacsfiles/lovelace-plotly-graph-card/plotly-graph-card.js
