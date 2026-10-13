@@ -1,4 +1,7 @@
-# automations_pompa_calore_4.yaml
+# automations_pompa_calore_5.yaml
+#
+# v5 (14/10/2026): nuova pdc_risparmio_accumulo, bilancio economico della
+#   pompa di calore minuto per minuto con i prezzi di quel momento.
 #
 # v4 (08/10/2026): pompa e caldaia con flag manuali e controllo di sicurezza.
 #   - panasonic_cooling_riaccensione: la valvola la sposta script.fonte_imposta
@@ -65,6 +68,68 @@
               {{ (states('input_number.panasonic_energia_consumata_acc') | float(0) +
                   states('sensor.panasonic_potenza_consumata_calcolata') | float(0) / 1000 / 60)
                  | round(4) }}
+
+#==================================================================================
+# POMPA DI CALORE – RISPARMIO OGNI MINUTO
+# Heat: calore prodotto x costo kWh termico caldaia (gas / 11,0078 x rendimento)
+#       meno elettricita' consumata x prezzo luce.
+# Cool: freddo prodotto / EER del vecchio Mini Fryo x prezzo luce
+#       meno elettricita' consumata x prezzo luce.
+# Prezzo luce sempre pieno (elettricita_prezzo_kwh) anche con surplus FV: il
+# risparmio FV conta gia' l'autoconsumo a prezzo pieno, usare il prezzo GSE
+# qui conterebbe due volte la differenza.
+# Consumo elettrico: il maggiore fra la stima da corrente compressore (esclude
+# ventilatore e circolatore) e, in Heat, il valore della pompa (HeishaMon
+# heat_power_consumption). In Cool solo la stima: il sensore HeishaMon di
+# raffrescamento e' disabilitato.
+# Conta solo con la valvola su Pompa (switch.shelly_box on).
+#==================================================================================
+- id: pdc_risparmio_accumulo
+  alias: "PdC – Risparmio Ogni Minuto"
+  description: "Accumula il risparmio della pompa di calore rispetto a caldaia (Heat) e vecchio refrigeratore (Cool)"
+  mode: single
+  triggers:
+    - trigger: time_pattern
+      minutes: "/1"
+  variables:
+    modo: "{{ states('select.panasonic_heat_pump_main_operating_mode_state') }}"
+    cool: "{{ 'Cool' in modo }}"
+    heat: "{{ 'Heat' in modo and 'Cool' not in modo }}"
+    p1: "{{ states('input_number.elettricita_prezzo_kwh') | float(0) }}"
+    kwh_th: "{{ states('sensor.panasonic_potenza_prodotta_calcolata') | float(0) / 60000 }}"
+    kwh_el: >-
+      {% set stima = states('sensor.panasonic_potenza_consumata_calcolata') | float(0) %}
+      {% set pompa = states('sensor.panasonic_heat_pump_main_heat_power_consumption') | float(0) if heat else 0 %}
+      {{ ([stima, pompa] | max) / 60000 }}
+  conditions:
+    - condition: state
+      entity_id: switch.shelly_box
+      state: "on"
+    - "{{ p1 > 0 and (kwh_th > 0 or kwh_el > 0) }}"
+  actions:
+    - choose:
+        - conditions:
+            - "{{ heat and has_value('sensor.caldaia_costo_kwh_termico') }}"
+          sequence:
+            - action: input_number.set_value
+              target:
+                entity_id: input_number.pdc_risparmio_inverno_euro
+              data:
+                value: >-
+                  {% set gas = states('sensor.caldaia_costo_kwh_termico') | float(0) %}
+                  {{ (states('input_number.pdc_risparmio_inverno_euro') | float(0)
+                      + kwh_th * gas - kwh_el * p1) | round(4) }}
+        - conditions:
+            - "{{ cool and has_value('sensor.pdc_eer_vecchio_refrigeratore') }}"
+          sequence:
+            - action: input_number.set_value
+              target:
+                entity_id: input_number.pdc_risparmio_estate_euro
+              data:
+                value: >-
+                  {% set eer = states('sensor.pdc_eer_vecchio_refrigeratore') | float(3) %}
+                  {{ (states('input_number.pdc_risparmio_estate_euro') | float(0)
+                      + (kwh_th / eer - kwh_el) * p1) | round(4) }}
 
 #==================================================================================
 # PANSONIC - PID – RAFFRESCAMENTO COMPLETO (PID con D)

@@ -221,7 +221,7 @@ config:
         show_current: false
         show_forecast: true
         type: weather-forecast
-      - graph_span: 24h
+      - graph_span: 72h
         grid_options:
           columns: 12
           rows: auto

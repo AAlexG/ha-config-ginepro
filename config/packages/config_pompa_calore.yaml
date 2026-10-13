@@ -1,4 +1,15 @@
-# config_pompa_calore_2.yaml
+# config_pompa_calore_4.yaml
+# v4 (14/10/2026): bilancio economico della pompa di calore (plancia Casa
+#   Ginepro, sezione "Risparmio pompa"). Nuovi helper pdc_costo_impianto,
+#   pdc_incentivi_euro, pdc_risparmio_estate/inverno/storico_euro; nuovi
+#   sensori PdC EER Vecchio Refrigeratore, PdC Risparmio Totale, PdC
+#   Recupero Investimento. Gli accumulatori li aggiorna
+#   pdc_risparmio_accumulo (automations_pompa_calore).
+# v3 (08/10/2026): tolto input_boolean.clima_pid_attivo (PID sempre attivo,
+#   lucchetto manuale = pdc_manuale). panasonic_pid_setpoint_heat con minimo
+#   10 invece di 25: con il free heating il PID puo' scendere fino a
+#   clima_freeheating_setpoint_min (slider 10-55) e un valore sotto il minimo
+#   dell'helper fermava l'automazione prima dell'invio alla pompa.
 # Package Casa Ginepro - Pompa di calore Panasonic Aquarea: PID, COP, energia
 # Estratto da configuration_186.yaml. Nome file = nome del package.
 
@@ -82,6 +93,49 @@ template:
           {% set cons = current * 220 * 0.85 %}
           {{ (prod / cons) | round(2) }}
 
+  - sensor:
+      # ============================================================
+      # BILANCIO ECONOMICO POMPA DI CALORE
+      # ============================================================
+      # EER del vecchio refrigeratore Cosmogas Mini Fryo 7 (solo freddo,
+      # compressore rotativo on/off), dalla scheda tecnica a aria esterna
+      # 35 C: 2,95 con acqua 7/12 C, 3,83 con acqua 18/23 C. Interpolato
+      # linearmente sulla mandata reale della PdC, limitato ai due estremi.
+      # Limiti noti: con aria esterna sotto 35 C il vecchio avrebbe reso di
+      # piu' (risparmio sovrastimato); gli on/off del compressore non
+      # inverter non sono nella scheda (risparmio sottostimato).
+      - name: "PdC EER Vecchio Refrigeratore"
+        unique_id: "pdc_eer_vecchio_refrigeratore"
+        state_class: measurement
+        icon: mdi:snowflake-thermometer
+        availability: "{{ has_value('sensor.panasonic_heat_pump_main_main_outlet_temp') }}"
+        state: >-
+          {% set t = states('sensor.panasonic_heat_pump_main_main_outlet_temp') | float(0) %}
+          {% set t = [[t, 7] | max, 18] | min %}
+          {{ (2.95 + (t - 7) * (3.83 - 2.95) / 11) | round(3) }}
+
+      - name: "PdC Risparmio Totale"
+        unique_id: "pdc_risparmio_totale"
+        unit_of_measurement: "€"
+        icon: mdi:piggy-bank
+        state: >-
+          {{ (states('input_number.pdc_risparmio_estate_euro') | float(0)
+              + states('input_number.pdc_risparmio_inverno_euro') | float(0)
+              + states('input_number.pdc_risparmio_storico_euro') | float(0))
+             | round(2) }}
+
+      # (risparmio + incentivi incassati) / costo impianto
+      - name: "PdC Recupero Investimento"
+        unique_id: "pdc_recupero_investimento"
+        unit_of_measurement: "%"
+        icon: mdi:percent
+        availability: "{{ states('input_number.pdc_costo_impianto') | float(0) > 0 }}"
+        state: >-
+          {% set r = states('sensor.pdc_risparmio_totale') | float(0) %}
+          {% set i = states('input_number.pdc_incentivi_euro') | float(0) %}
+          {% set c = states('input_number.pdc_costo_impianto') | float(0) %}
+          {{ ((r + i) / c * 100) | round(2) }}
+
 input_number:
 
   # PID HEAT - stato interno separato da cooling
@@ -103,7 +157,7 @@ input_number:
 
   panasonic_pid_setpoint_heat:
     name: "Panasonic Setpoint Mandata Riscaldamento"
-    min: 25
+    min: 10
     max: 55
     step: 0.5
     unit_of_measurement: "°C"
@@ -215,6 +269,63 @@ input_number:
     mode: box
     icon: mdi:lightning-bolt
 
+  # ============================================================
+  # POMPA DI CALORE – bilancio economico
+  # ============================================================
+  # Costo totale della sostituzione, IVA compresa (5.500 €, indicato da
+  # Alex). Solo la macchina esterna: fancoil e impianto erano gia' presenti.
+  pdc_costo_impianto:
+    name: "PdC – Costo impianto (€)"
+    min: 0
+    max: 99999
+    step: 0.01
+    unit_of_measurement: "€"
+    mode: box
+    icon: mdi:cash
+
+  # Detrazioni/incentivi gia' incassati (rate ricevute), da aggiornare a mano.
+  pdc_incentivi_euro:
+    name: "PdC – Incentivi incassati (€)"
+    min: 0
+    max: 99999
+    step: 0.01
+    unit_of_measurement: "€"
+    mode: box
+    icon: mdi:cash-refund
+
+  # Accumulatori aggiornati ogni minuto da pdc_risparmio_accumulo.
+  # Possono diventare negativi: in Heat con COP basso la pompa puo' costare
+  # piu' della caldaia.
+  pdc_risparmio_estate_euro:
+    name: "PdC – Risparmio raffrescamento (€)"
+    min: -99999
+    max: 99999
+    step: 0.0001
+    unit_of_measurement: "€"
+    mode: box
+    icon: mdi:snowflake
+
+  pdc_risparmio_inverno_euro:
+    name: "PdC – Risparmio riscaldamento (€)"
+    min: -99999
+    max: 99999
+    step: 0.0001
+    unit_of_measurement: "€"
+    mode: box
+    icon: mdi:fire
+
+  # Risparmio del periodo prima di questi accumulatori (installazione PdC →
+  # creazione degli accumulatori qui sopra), ricalcolato una tantum dalle
+  # statistiche orarie.
+  pdc_risparmio_storico_euro:
+    name: "PdC – Risparmio storico (€)"
+    min: -99999
+    max: 99999
+    step: 0.01
+    unit_of_measurement: "€"
+    mode: box
+    icon: mdi:history
+
 utility_meter:
 
   panasonic_prodotta_oggi:
@@ -238,9 +349,4 @@ utility_meter:
     source: sensor.panasonic_energia_consumata_acc_sensor
     cycle: monthly
 
-input_boolean:
-
-  # --- SISTEMA CLIMA ---
-  clima_pid_attivo:
-    name: "Clima PID Attivo"
-    icon: mdi:thermostat-auto
+# input_boolean.clima_pid_attivo rimosso in v3: il PID e' sempre attivo.

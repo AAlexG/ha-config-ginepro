@@ -41,6 +41,11 @@ config:
         name: Cond.Stato
         type: tile
         vertical: false
+      - entity: sensor.inverter_uflex_battery
+        features_position: bottom
+        name: BatteryCharge
+        type: tile
+        vertical: false
       - entity: sensor.inverter_uflex_battery_voltage
         features_position: bottom
         name: Cond.Tensione
@@ -235,13 +240,13 @@ config:
       - heading: Super CONDENSATORE
         heading_style: title
         type: heading
-      - graph_span: 24hour
+      - graph_span: 48hour
         grid_options:
           columns: 12
           rows: auto
         header:
           show: true
-          title: Tensione cond. oggi
+          title: Tensione cond. 48h
         series:
         - color: '#0072B2'
           entity: sensor.condensatore_tensione_collegato
@@ -271,13 +276,13 @@ config:
               text: max tens.V
           decimals: 2
           id: volt
-      - graph_span: 24hour
+      - graph_span: 48hour
         grid_options:
           columns: 12
           rows: auto
         header:
           show: true
-          title: Corrente di Carica&Scarica cond.oggi
+          title: Corrente di Carica&Scarica cond.48h
         series:
         - color: '#D55E00'
           entity: sensor.inverter_uflex_battery_current
@@ -296,32 +301,6 @@ config:
             type: max
           transform: return -Math.max(x, 0);
           type: column
-          yaxis_id: amp
-        - color: '#D55E00'
-          entity: sensor.inverter_uflex_battery_current
-          name: limite carica
-          show:
-            in_legend: false
-          statistics:
-            period: hour
-            type: min
-          stroke_dash: 6
-          stroke_width: 2
-          transform: return parseFloat(hass.states['number.inverter_uflex_battery_max_charging_current'].state);
-          type: line
-          yaxis_id: amp
-        - color: '#0072B2'
-          entity: sensor.inverter_uflex_battery_current
-          name: limite scarica
-          show:
-            in_legend: false
-          statistics:
-            period: hour
-            type: max
-          stroke_dash: 6
-          stroke_width: 2
-          transform: return -parseFloat(hass.states['number.inverter_uflex_battery_max_discharging_current'].state);
-          type: line
           yaxis_id: amp
         type: custom:apexcharts-card
         yaxis:
@@ -391,13 +370,13 @@ config:
               text: min tens.V
           decimals: 2
           id: volt
-      - graph_span: 60d
+      - graph_span: 30d
         grid_options:
           columns: 12
           rows: auto
         header:
           show: true
-          title: Corrente di scarica max di cond.60gg
+          title: Corrente di scarica max di cond.30gg
         series:
         - color: '#0072B2'
           entity: sensor.condensatore_corrente_scarica_max_oggi
@@ -428,13 +407,13 @@ config:
           decimals: 2
           id: A
           min: 0
-      - graph_span: 60d
+      - graph_span: 30d
         grid_options:
           columns: 12
           rows: auto
         header:
           show: true
-          title: Energia max cond.60g (goal 7,6kWh)
+          title: Energia max cond.30g (goal 7,6kWh)
         series:
         - color: '#009E73'
           entity: sensor.condensatore_energia_al_pieno
@@ -490,13 +469,13 @@ config:
           decimals: 0
           id: conteggio
           min: 0
-      - graph_span: 60d
+      - graph_span: 30d
         grid_options:
           columns: 12
           rows: auto
         header:
           show: true
-          title: Temp max condens.&inventer DC 60gg
+          title: Temp max condens.&inventer DC 30gg
         series:
         - entity: sensor.inverter_uflex_battery_temperature
           name: condensatore

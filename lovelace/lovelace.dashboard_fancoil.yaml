@@ -409,6 +409,15 @@ config:
         name: Linkquality
         type: tile
         vertical: false
+      - chart_type: line
+        days_to_show: 365
+        entities:
+        - entity: sensor.sensore_pioggia_tuya_battery
+          name: Carica batteria sensore
+        period: hour
+        stat_types:
+        - max
+        type: statistics-graph
       type: grid
     - cards:
       - heading: "Temperature & Umidit\xE0"

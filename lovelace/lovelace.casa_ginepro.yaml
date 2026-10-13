@@ -1,5 +1,5 @@
 config:
-  title: Casa Ginepro v.55
+  title: Casa Ginepro v.56
   views:
   - cards: []
     max_columns: 2
@@ -865,6 +865,48 @@ config:
           rows: 1
         icon: mdi:forest
         name: Alberi equivalenti
+        type: tile
+        vertical: false
+      - heading: Risparmio pompa di calore
+        heading_style: subtitle
+        icon: ''
+        type: heading
+      - entity: sensor.pdc_recupero_investimento
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        icon: mdi:percent
+        name: '% recupero'
+        type: tile
+        vertical: false
+      - entity: sensor.pdc_risparmio_totale
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        icon: mdi:piggy-bank
+        name: Risparmiato
+        type: tile
+        vertical: false
+      - color: '#0072B2'
+        entity: input_number.pdc_risparmio_estate_euro
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        icon: mdi:snowflake
+        name: Estate vs Mini Fryo
+        type: tile
+        vertical: false
+      - color: '#D55E00'
+        entity: input_number.pdc_risparmio_inverno_euro
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        icon: mdi:fire
+        name: Inverno vs gas
         type: tile
         vertical: false
       - grid_options:
