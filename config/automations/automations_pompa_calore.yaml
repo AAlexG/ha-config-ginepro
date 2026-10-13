@@ -1,4 +1,8 @@
-# automations_pompa_calore_5.yaml
+# automations_pompa_calore_6.yaml
+#
+# v6 (14/10/2026): pdc_risparmio_accumulo usa in Cool il consumo misurato
+#   dalla pompa (HeishaMon cool_power_consumption, ora abilitato), come gia'
+#   in Heat.
 #
 # v5 (14/10/2026): nuova pdc_risparmio_accumulo, bilancio economico della
 #   pompa di calore minuto per minuto con i prezzi di quel momento.
@@ -79,9 +83,8 @@
 # risparmio FV conta gia' l'autoconsumo a prezzo pieno, usare il prezzo GSE
 # qui conterebbe due volte la differenza.
 # Consumo elettrico: il maggiore fra la stima da corrente compressore (esclude
-# ventilatore e circolatore) e, in Heat, il valore della pompa (HeishaMon
-# heat_power_consumption). In Cool solo la stima: il sensore HeishaMon di
-# raffrescamento e' disabilitato.
+# ventilatore e circolatore) e il valore misurato dalla pompa (HeishaMon
+# heat_power_consumption in Heat, cool_power_consumption in Cool).
 # Conta solo con la valvola su Pompa (switch.shelly_box on).
 #==================================================================================
 - id: pdc_risparmio_accumulo
@@ -99,7 +102,13 @@
     kwh_th: "{{ states('sensor.panasonic_potenza_prodotta_calcolata') | float(0) / 60000 }}"
     kwh_el: >-
       {% set stima = states('sensor.panasonic_potenza_consumata_calcolata') | float(0) %}
-      {% set pompa = states('sensor.panasonic_heat_pump_main_heat_power_consumption') | float(0) if heat else 0 %}
+      {% if heat %}
+        {% set pompa = states('sensor.panasonic_heat_pump_main_heat_power_consumption') | float(0) %}
+      {% elif cool %}
+        {% set pompa = states('sensor.panasonic_heat_pump_main_cool_power_consumption') | float(0) %}
+      {% else %}
+        {% set pompa = 0 %}
+      {% endif %}
       {{ ([stima, pompa] | max) / 60000 }}
   conditions:
     - condition: state

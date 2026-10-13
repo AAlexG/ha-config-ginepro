@@ -813,7 +813,7 @@ config:
           navigation_path: /dashboard-fancoil
         type: tile
         vertical: false
-      - heading: Risparmio
+      - heading: Risparmio Fotovoltaico
         heading_style: subtitle
         icon: ''
         type: heading
@@ -896,7 +896,7 @@ config:
           columns: 6
           rows: 1
         icon: mdi:snowflake
-        name: Estate vs Mini Fryo
+        name: EstateVsFryo
         type: tile
         vertical: false
       - color: '#D55E00'
@@ -906,7 +906,7 @@ config:
           columns: 6
           rows: 1
         icon: mdi:fire
-        name: Inverno vs gas
+        name: InvernoVsGas
         type: tile
         vertical: false
       - grid_options:
