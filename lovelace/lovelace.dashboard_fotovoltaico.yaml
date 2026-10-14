@@ -856,6 +856,29 @@ config:
           type: history-graph
         conditions: []
         type: conditional
+      - graph_span: 7d
+        grid_options:
+          columns: 12
+          rows: auto
+        header:
+          show: true
+          title: Max production 7d, W
+        series:
+        - entity: sensor.inverter_uflex_pv_power
+          name: production
+          statistics:
+            period: day
+            type: max
+          type: line
+          yaxis_id: W
+        type: custom:apexcharts-card
+        yaxis:
+        - apex_config:
+            title:
+              text: W
+          decimals: 0
+          id: W
+          min: 0
       - graph_span: 30d
         grid_options:
           columns: 12

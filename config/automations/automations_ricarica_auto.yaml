@@ -1,5 +1,10 @@
-# automations_ricarica_auto_3.yaml
+# automations_ricarica_auto_4.yaml
 #
+# v4 (14/10/2026): riaccensione automatica (R3). Lo stacco R1 alza il flag
+#   input_boolean.auto_staccata_da_previsione; quando la previsione torna
+#   "raggiungibile" o "pieno" con l'auto spenta (la simulazione v6 include gia'
+#   l'auto accesa per 15 minuti) il contattore viene riacceso. R4 abbassa il
+#   flag ogni volta che il contattore si riaccende, anche a mano.
 # v3 (14/10/2026): tenuta ridotta da 15 a 5 minuti. Con config_ricarica_auto v5
 #   "non raggiungibile" significa gia' "staccando fra 15 minuti e' troppo tardi":
 #   aspettarne altri 15 farebbe perdere sole al SC. La scala si basa sulla
@@ -64,6 +69,10 @@
       continue_on_error: true
       target:
         entity_id: switch.solo_auto_contattore_interruttore
+    # v4: memoria dello stacco per la riaccensione automatica (R3).
+    - action: input_boolean.turn_on
+      target:
+        entity_id: input_boolean.auto_staccata_da_previsione
     - action: notify.mobile_app_cph2653
       continue_on_error: true
       data:
@@ -75,7 +84,8 @@
           prima della fine del surplus ({{ c.fine_surplus or 'nessun surplus' }}).
           Produzione di oggi al {{ ((c.scala | default(0)) * 100) | round(0) }}% del sereno,
           residua prevista {{ c.produzione_residua_kwh | default('?') }} kWh, casa senza auto {{ c.carico_kw | default('?') }} kW, auto {{ c.auto_kw | default('?') }} kW.
-          Per caricare comunque: alza "Auto Contattore - Gestione Manuale" e riaccendi.
+          Si riaccende da sola quando il SC torna in grado di riempirsi.
+          Per caricare subito: alza "Auto Contattore - Gestione Manuale" e riaccendi.
         data:
           tag: ricarica_auto_sc
           priority: high
@@ -100,3 +110,86 @@
     - action: homeassistant.update_entity
       data:
         entity_id: sensor.pv_profilo_sereno
+
+#==================================================================================
+# R3. RIACCENSIONE QUANDO LE CONDIZIONI DELLO STACCO NON CI SONO PIU' (v4)
+#
+# Solo se lo stacco l'ha fatto R1 (flag auto_staccata_da_previsione alzato):
+# uno spegnimento a mano o dal distacco carichi non viene mai annullato.
+# Con l'auto spenta la previsione simula l'auto accesa per i primi 15 minuti
+# (potenza nominale), quindi "raggiungibile" o "pieno" vuol dire che
+# riaccendendola ora R1 non scatterebbe. Isteresi:
+#   - stato favorevole da almeno 10 minuti (lo stacco richiede 5 minuti)
+#   - almeno 20 minuti dall'ultimo stacco
+# Solo con il sole sopra l'orizzonte: di notte il contattore resta spento e
+# il flag resta alzato, quindi l'auto puo' ripartire il mattino dopo.
+#==================================================================================
+- id: ricarica_auto_riaccensione_condizioni_ok
+  alias: "Ricarica auto - Riaccensione quando il condensatore puo' riempirsi"
+  description: >
+    Riaccende il contattore auto staccato dalla previsione quando la previsione
+    torna raggiungibile o pieno da 10 minuti, ad almeno 20 minuti dallo stacco.
+  mode: single
+  max_exceeded: silent
+  triggers:
+    - trigger: time_pattern
+      minutes: "/5"
+  conditions:
+    - condition: state
+      entity_id: input_boolean.auto_staccata_da_previsione
+      state: "on"
+      for: "00:20:00"
+    - condition: state
+      entity_id: input_boolean.auto_manuale
+      state: "off"
+    - condition: state
+      entity_id: switch.solo_auto_contattore_interruttore
+      state: "off"
+    - condition: state
+      entity_id: sun.sun
+      state: above_horizon
+    - condition: state
+      entity_id: sensor.condensatore_previsione_pieno
+      state:
+        - raggiungibile
+        - pieno
+      for: "00:10:00"
+  actions:
+    - variables:
+        c: "{{ state_attr('sensor.condensatore_previsione_pieno', 'calcolo') or {} }}"
+    - action: switch.turn_on
+      continue_on_error: true
+      target:
+        entity_id: switch.solo_auto_contattore_interruttore
+    - action: notify.mobile_app_cph2653
+      continue_on_error: true
+      data:
+        title: "Ricarica auto riaccesa"
+        message: >
+          Il condensatore puo' di nuovo riempirsi anche con l'auto in carica.
+          Nel SC {{ c.livello_kwh | default('?') }} kWh,
+          stato {{ states('sensor.condensatore_previsione_pieno') }},
+          produzione residua prevista {{ c.produzione_residua_kwh | default('?') }} kWh.
+        data:
+          tag: ricarica_auto_sc
+          ttl: 0
+
+#==================================================================================
+# R4. FLAG STACCO ABBASSATO A OGNI RIACCENSIONE (v4)
+# Vale anche per la riaccensione a mano: da quel momento decidi tu.
+#==================================================================================
+- id: ricarica_auto_reset_flag_stacco
+  alias: "Ricarica auto - Reset flag stacco a contattore acceso"
+  mode: single
+  triggers:
+    - trigger: state
+      entity_id: switch.solo_auto_contattore_interruttore
+      to: "on"
+  conditions:
+    - condition: state
+      entity_id: input_boolean.auto_staccata_da_previsione
+      state: "on"
+  actions:
+    - action: input_boolean.turn_off
+      target:
+        entity_id: input_boolean.auto_staccata_da_previsione

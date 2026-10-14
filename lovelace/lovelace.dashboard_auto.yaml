@@ -1,5 +1,5 @@
 config:
-  title: Auto v.4
+  title: Auto v.5
   views:
   - max_columns: 2
     path: auto
@@ -26,6 +26,12 @@ config:
         name: Gestione manuale (blocca lo stacco automatico)
         type: tile
         vertical: false
+      - entity: input_boolean.auto_staccata_da_previsione
+        grid_options:
+          columns: 12
+        name: Staccata dalla previsione (si riaccende da sola)
+        type: tile
+        vertical: false
       - entity: sensor.solo_auto_contattore_potenza_di_fase_a
         grid_options:
           columns: 4
@@ -47,7 +53,10 @@ config:
       - content: '**Gestione manuale alzata**: l''automazione non stacca mai la ricarica,
           anche se il condensatore non arriverebbe al pieno. **Abbassata**: con il
           sole alto e l''auto oltre 1 kW, se la previsione resta "non raggiungibile"
-          per 15 minuti il contattore viene staccato. Nessuna automazione lo riaccende.'
+          per 5 minuti il contattore viene staccato e viene alzato "Staccata dalla
+          previsione". Quando la previsione torna "raggiungibile" o "pieno" per 10
+          minuti (almeno 20 minuti dopo lo stacco) il contattore viene riacceso. Uno
+          spegnimento fatto a mano o dal distacco carichi non viene mai annullato.'
         type: markdown
       type: grid
     - cards:
@@ -235,6 +244,16 @@ config:
         grid_options:
           columns: 6
         name: Soglia valutabilita'
+        type: tile
+        vertical: false
+      - entity: input_number.ricarica_auto_potenza
+        features:
+        - style: buttons
+          type: numeric-input
+        features_position: bottom
+        grid_options:
+          columns: 6
+        name: Potenza auto in carica
         type: tile
         vertical: false
       - entity: sensor.carico_casa_media_15_min
