@@ -1,5 +1,5 @@
 config:
-  title: Auto v.1
+  title: Auto v.4
   views:
   - max_columns: 2
     path: auto
@@ -73,8 +73,8 @@ config:
           \n{% if c | count == 0 %}\nNessun calcolo disponibile (notte, profilo sereno\
           \ mancante o sensore energia al pieno senza minimo del giorno).\n{% else\
           \ %}\n| | Valore | Significato |\n|---|---:|---|\n| **T1** | **{{ c.t1_min\
-          \ ~ ' min' if c.t1_min is not none else 'oltre il sole' }}** | tempo per\
-          \ arrivare al pieno |\n| **Tempo disponibile** | **{{ c.disponibile_min\
+          \ ~ ' min' if c.t1_min is not none else 'oltre il sole' }}** | al pieno,\
+          \ staccando l'auto fra 15 min |\n| **Tempo disponibile** | **{{ c.disponibile_min\
           \ }} min** | fino alla fine del surplus |\n| Ora pieno prevista | {{ c.ora_pieno\
           \ or '-' }} | |\n| Fine surplus prevista | {{ c.fine_surplus or '-' }} |\
           \ |\n| Tensione minima oggi | {{ c.v_min }} V | punto di partenza del SC\
@@ -88,9 +88,11 @@ config:
           \ ad ora | {{ c.sereno_fatto_kwh }} kWh | dal profilo |\n| **Scala** | **{{\
           \ (c.scala * 100) | round(0) | int }}%** | oggi rispetto al sereno |\n|\
           \ Produzione residua | {{ c.produzione_residua_kwh }} kWh | prevista fino\
-          \ a sera |\n| Carico casa | {{ c.carico_kw }} kW | media 15 min, auto compresa\
-          \ |\n| Energia assorbibile dal SC | {{ c.energia_sc_prevista_kwh }} kWh\
-          \ | surplus fino a sera, entro il limite di carica |\n{% endif %}\n"
+          \ a sera |\n| Carico casa senza auto | {{ c.carico_kw }} kW | media 15 min,\
+          \ usato dopo lo stacco |\n| Auto | {{ c.auto_kw }} kW | media 15 min, ancora\
+          \ accesa per 15 min nella simulazione |\n| Energia assorbibile dal SC |\
+          \ {{ c.energia_sc_prevista_kwh }} kWh | surplus fino a sera, entro il limite\
+          \ di carica |\n{% endif %}\n"
         type: markdown
       type: grid
     - cards:
@@ -182,15 +184,15 @@ config:
           group_by:
             duration: 5min
             func: avg
-          name: condensatore (carica in alto)
+          name: 'condensatore: + carica / - scarica'
           transform: return -x;
           type: line
         - color: '#D55E00'
-          entity: sensor.inverter_uflex_external_ct1_power
+          entity: sensor.inverter_uflex_grid_power
           group_by:
             duration: 5min
             func: avg
-          name: rete (prelievo in alto)
+          name: 'rete: + compro / - vendo'
           type: line
         span:
           start: day

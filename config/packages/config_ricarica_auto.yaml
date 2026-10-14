@@ -1,4 +1,16 @@
-# config_ricarica_auto_4.yaml
+# config_ricarica_auto_5.yaml
+# v5 (14/10/2026): CORRETTA la domanda che il calcolo si pone. Fino alla v4 la
+#   simulazione teneva l'auto accesa fino a sera: "con l'auto sempre in carica,
+#   il SC arriva al pieno?". Il 14/10 alle 14:20 il SC era a 6,4 kWh su 6,5,
+#   la previsione residua 7,1 kWh, ma FV 3,8 kW < carico 4,4 kW con l'auto:
+#   risposta "no" e auto staccata alle 14:35. Staccata l'auto il SC si e'
+#   riempito in 45 minuti con ancora circa 3,8 kWh di sole residuo.
+#   La domanda giusta e': "se stacco l'auto fra 15 minuti, il SC fa ancora in
+#   tempo a riempirsi?". La simulazione ora:
+#     - primi 15 minuti: carico attuale con l'auto (il SC puo' anche scaricarsi)
+#     - dopo: carico senza l'auto (media 15 min casa - media 15 min auto)
+#   Cosi' l'auto carica fino all'ultimo momento utile. Nuovo sensore
+#   Auto Potenza Media 15 min. Riavvio RAPIDO.
 # v4 (12/10/2026): CORRETTO il blocco su "pieno". Fino alla v3, una volta
 #   registrata l'ora del pieno, la previsione restava "pieno" fino a mezzanotte
 #   anche con il SC che si scaricava: il 12/10 pieno alle 12:04, poi l'auto lo
@@ -66,9 +78,10 @@
 # per l'ultimo 0,85 kWh T1 e' ottimista. Il margine (input_number) compensa
 # in parte.
 #
-# CARICO DELLA CASA
-# Media degli ultimi 15 minuti di sensor.inverter_uflex_load_power, auto
-# compresa, tenuta costante per il resto della giornata.
+# CARICO DELLA CASA (v5)
+# Primi 15 minuti: media 15 min di sensor.inverter_uflex_load_power, auto
+# compresa (l'auto resta accesa finche' l'automazione non interviene).
+# Dopo: stessa media meno la media 15 min dell'auto, costante fino a sera.
 #==================================================================================
 
 sensor:
@@ -79,6 +92,17 @@ sensor:
     name: "Carico Casa Media 15 min"
     unique_id: carico_casa_media_15_min
     entity_id: sensor.inverter_uflex_load_power
+    state_characteristic: mean
+    max_age:
+      minutes: 15
+    sampling_size: 1000
+
+  # v5: media mobile 15 minuti della potenza auto (kW, come il contattore).
+  # Sottratta dal carico casa per simulare la casa con l'auto staccata.
+  - platform: statistics
+    name: "Auto Potenza Media 15 min"
+    unique_id: auto_potenza_media_15_min
+    entity_id: sensor.solo_auto_contattore_potenza_di_fase_a
     state_characteristic: mean
     max_age:
       minutes: 15
@@ -188,13 +212,18 @@ template:
             {%- set prodotto = states('sensor.inverter_uflex_today_production') | float(0) -%}
             {%- set scala = prodotto / sereno_fatto if sereno_fatto > 0 else 0 -%}
             {%- set carico = states('sensor.carico_casa_media_15_min') | float(states('sensor.inverter_uflex_load_power') | float(0)) / 1000 -%}
+            {%- set auto_kw = states('sensor.auto_potenza_media_15_min') | float(states('sensor.solo_auto_contattore_potenza_di_fase_a') | float(0)) -%}
+            {%- set carico_senza = [carico - auto_kw, 0] | max -%}
             {%- set imax = states('number.inverter_uflex_battery_max_charging_current') | float(80) -%}
             {%- set ns = namespace(e=0, t1=none, ultimo=0, pv=0) -%}
             {%- for i in range(1, ((24 - hf) * 12) | int + 1) -%}
               {%- set t = hf + i / 12 -%}
               {%- set pv = scala * p[[(t - 1 / 24) | int, 23] | min] -%}
               {%- set ns.pv = ns.pv + pv / 12 -%}
-              {%- set surplus = pv - carico -%}
+              {%- set surplus = pv - (carico if i <= 3 else carico_senza) -%}
+              {%- if surplus < 0 and i <= 3 -%}
+                {%- set ns.e = ns.e + surplus / 12 -%}
+              {%- endif -%}
               {%- if surplus > 0 -%}
                 {%- set fl = [(livello + ns.e) / eu, 1.0] | min -%}
                 {%- set vv = namespace(v=curva[-1][0]) -%}
@@ -230,7 +259,8 @@ template:
                  'sereno_fatto_kwh': sereno_fatto | round(2),
                  'scala': scala | round(2),
                  'produzione_residua_kwh': ns.pv | round(2),
-                 'carico_kw': carico | round(2),
+                 'carico_kw': carico_senza | round(2),
+                 'auto_kw': auto_kw | round(2),
                  'energia_sc_prevista_kwh': ns.e | round(2),
                  't1_min': ns.t1,
                  'disponibile_min': ns.ultimo,
@@ -272,13 +302,18 @@ template:
               {%- set prodotto = states('sensor.inverter_uflex_today_production') | float(0) -%}
               {%- set scala = prodotto / sereno_fatto if sereno_fatto > 0 else 0 -%}
               {%- set carico = states('sensor.carico_casa_media_15_min') | float(states('sensor.inverter_uflex_load_power') | float(0)) / 1000 -%}
+              {%- set auto_kw = states('sensor.auto_potenza_media_15_min') | float(states('sensor.solo_auto_contattore_potenza_di_fase_a') | float(0)) -%}
+              {%- set carico_senza = [carico - auto_kw, 0] | max -%}
               {%- set imax = states('number.inverter_uflex_battery_max_charging_current') | float(80) -%}
               {%- set ns = namespace(e=0, t1=none, ultimo=0, pv=0) -%}
               {%- for i in range(1, ((24 - hf) * 12) | int + 1) -%}
                 {%- set t = hf + i / 12 -%}
                 {%- set pv = scala * p[[(t - 1 / 24) | int, 23] | min] -%}
                 {%- set ns.pv = ns.pv + pv / 12 -%}
-                {%- set surplus = pv - carico -%}
+                {%- set surplus = pv - (carico if i <= 3 else carico_senza) -%}
+                {%- if surplus < 0 and i <= 3 -%}
+                  {%- set ns.e = ns.e + surplus / 12 -%}
+                {%- endif -%}
                 {%- if surplus > 0 -%}
                   {%- set fl = [(livello + ns.e) / eu, 1.0] | min -%}
                   {%- set vv = namespace(v=curva[-1][0]) -%}
@@ -314,7 +349,8 @@ template:
                    'sereno_fatto_kwh': sereno_fatto | round(2),
                    'scala': scala | round(2),
                    'produzione_residua_kwh': ns.pv | round(2),
-                   'carico_kw': carico | round(2),
+                   'carico_kw': carico_senza | round(2),
+                   'auto_kw': auto_kw | round(2),
                    'energia_sc_prevista_kwh': ns.e | round(2),
                    't1_min': ns.t1,
                    'disponibile_min': ns.ultimo,

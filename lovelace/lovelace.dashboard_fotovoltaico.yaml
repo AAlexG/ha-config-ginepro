@@ -347,13 +347,13 @@ config:
               text: max tens.V
           decimals: 2
           id: volt
-      - graph_span: 60d
+      - graph_span: 30d
         grid_options:
           columns: 12
           rows: auto
         header:
           show: true
-          title: Tensione min condens.60gg
+          title: Tensione min condens.30gg
         series:
         - color: '#0072B2'
           entity: sensor.inverter_uflex_battery_voltage

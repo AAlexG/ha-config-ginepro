@@ -24,8 +24,8 @@
     "0xa4c138e6a0d06219": {
         "voltage": 2500,
         "battery": 48,
-        "temperature": 21.77,
-        "humidity": 51.04,
+        "temperature": 21.99,
+        "humidity": 54.84,
         "linkquality": 140
     },
     "0xa4c1385040d042fb": {
@@ -35,22 +35,22 @@
         "power_outage_memory": "restore",
         "indicator_mode": "off/on",
         "child_lock": "UNLOCK",
-        "voltage": 227.4,
+        "voltage": 227.3,
         "power": 0,
         "current": 0,
         "linkquality": 136
     },
     "0xa4c1383e0fd87686": {
-        "state": "OFF",
-        "energy": 40.48,
+        "state": "ON",
+        "energy": 40.62,
         "countdown": 0,
         "power_outage_memory": "restore",
         "indicator_mode": "off/on",
         "child_lock": "UNLOCK",
-        "voltage": 226.7,
+        "voltage": 227.3,
         "linkquality": 84,
-        "power": 0,
-        "current": 0
+        "power": 19,
+        "current": 0.08
     },
     "0xa4c1384b868fa6bd": {
         "state": "OFF",
@@ -76,18 +76,18 @@
         "countdown": 0,
         "power_outage_memory": "on",
         "indicator_mode": "off/on",
-        "power": 3,
+        "power": 2,
         "current": 0.03,
         "voltage": 230,
-        "energy": 0.24,
+        "energy": 0.27,
         "linkquality": 100,
         "child_lock": "UNLOCK"
     },
     "0xa4c1380eff54ffff": {
         "battery": 100,
-        "temperature": 22.6,
+        "temperature": 22.4,
         "voltage": 2900,
-        "humidity": 58.2,
+        "humidity": 58.9,
         "temperature_sensor_select": "internal",
         "comfort_temperature_min": 19,
         "comfort_temperature_max": 35.2,
@@ -108,8 +108,8 @@
     "0xa4c1380f0678ffff": {
         "battery": 100,
         "voltage": 3000,
-        "temperature": 22.7,
-        "humidity": 59.9,
+        "temperature": 22.8,
+        "humidity": 59.5,
         "temperature_sensor_select": "internal",
         "comfort_temperature_min": 19,
         "comfort_temperature_max": 43.7,

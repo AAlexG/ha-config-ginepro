@@ -1,5 +1,10 @@
-# automations_ricarica_auto_2.yaml
+# automations_ricarica_auto_3.yaml
 #
+# v3 (14/10/2026): tenuta ridotta da 15 a 5 minuti. Con config_ricarica_auto v5
+#   "non raggiungibile" significa gia' "staccando fra 15 minuti e' troppo tardi":
+#   aspettarne altri 15 farebbe perdere sole al SC. La scala si basa sulla
+#   produzione cumulata del giorno e il carico e' una media 15 min, quindi una
+#   nuvola di passaggio non basta a cambiare lo stato.
 # v2 (08/10/2026): notifica con il livello reale del SC (kWh) al posto del SoC
 #   dell'inverter, allineata a config_ricarica_auto v3.
 # v1 (08/10/2026): prima versione. Stacco della ricarica auto quando il
@@ -11,9 +16,9 @@
 # R1. STACCO RICARICA AUTO SE IL SC NON ARRIVA AL PIENO
 #
 # Ogni 5 minuti, se l'auto sta caricando (oltre 1 kW sul contattore) e la
-# previsione dice "non raggiungibile" da almeno 15 minuti, stacca il contattore.
-# I 15 minuti servono a: assorbire una nuvola di passaggio e dare tempo alla
-# media del carico casa di includere l'auto appena partita.
+# previsione dice "non raggiungibile" da almeno 5 minuti (v3), stacca il
+# contattore. "Non raggiungibile" significa: staccando l'auto fra 15 minuti il
+# SC non farebbe piu' in tempo a riempirsi (config_ricarica_auto v5).
 #
 # Solo con il sole sopra l'orizzonte: di notte il SC non puo' riempirsi in
 # nessun caso e staccare l'auto non darebbe nulla al SC.
@@ -27,7 +32,7 @@
   alias: "Ricarica auto - Stacco se il condensatore non arriva al pieno"
   description: >
     Con l'auto in carica e il sole alto, stacca il contattore auto se la
-    previsione dice da 15 minuti che il condensatore non raggiungera' il pieno
+    previsione dice da 5 minuti che il condensatore non raggiungera' il pieno
     prima della fine del surplus FV. Non interviene con auto_manuale alzato.
   mode: single
   max_exceeded: silent
@@ -51,7 +56,7 @@
     - condition: state
       entity_id: sensor.condensatore_previsione_pieno
       state: non raggiungibile
-      for: "00:15:00"
+      for: "00:05:00"
   actions:
     - variables:
         c: "{{ state_attr('sensor.condensatore_previsione_pieno', 'calcolo') or {} }}"
@@ -66,10 +71,10 @@
         message: >
           Il condensatore non arriverebbe al pieno con l'auto in carica.
           Nel SC {{ c.livello_kwh | default('?') }} kWh, ne mancano {{ c.energia_mancante_kwh | default('?') }} (margine compreso);
-          con l'auto ne entrerebbero {{ c.energia_sc_prevista_kwh | default('?') }} kWh
+          staccando l'auto fra 15 minuti ne entrerebbero {{ c.energia_sc_prevista_kwh | default('?') }} kWh
           prima della fine del surplus ({{ c.fine_surplus or 'nessun surplus' }}).
           Produzione di oggi al {{ ((c.scala | default(0)) * 100) | round(0) }}% del sereno,
-          residua prevista {{ c.produzione_residua_kwh | default('?') }} kWh, carico {{ c.carico_kw | default('?') }} kW.
+          residua prevista {{ c.produzione_residua_kwh | default('?') }} kWh, casa senza auto {{ c.carico_kw | default('?') }} kW, auto {{ c.auto_kw | default('?') }} kW.
           Per caricare comunque: alza "Auto Contattore - Gestione Manuale" e riaccendi.
         data:
           tag: ricarica_auto_sc
