@@ -7,243 +7,6 @@ config:
     path: elettricita
     sections:
     - cards:
-      - heading: TOTALI
-        heading_style: title
-        type: heading
-      - heading: 'DA SEMPRE (solo mesi dove esistono rilevato e bolette):'
-        heading_style: subtitle
-        type: heading
-      - entity: input_number.elettricita_totale_rilevato_kwh
-        features_position: bottom
-        grid_options:
-          columns: 6
-          rows: auto
-        icon: mdi:solar-power
-        name: Rilevato
-        type: tile
-        vertical: false
-      - entity: input_number.elettricita_totale_bollette_kwh
-        features_position: bottom
-        grid_options:
-          columns: 6
-          rows: auto
-        name: Bollette
-        type: tile
-        vertical: false
-      - heading: RISPARMIO
-        heading_style: subtitle
-        icon: ''
-        type: heading
-      - entity: input_number.pv_totale_euro
-        features_position: bottom
-        grid_options:
-          columns: 4
-          rows: 1
-        icon: mdi:piggy-bank
-        name: Risparmiato
-        type: tile
-        vertical: false
-      - entity: input_number.pv_risparmio_euro
-        features_position: bottom
-        grid_options:
-          columns: 4
-          rows: 1
-        icon: mdi:solar-power
-        name: Autoconsumo
-        type: tile
-        vertical: false
-      - entity: input_number.pv_gse_euro
-        features_position: bottom
-        grid_options:
-          columns: 4
-          rows: 1
-        icon: mdi:cash-multiple
-        icon_tap_action:
-          action: navigate
-          navigation_path: /dashboard-consumi/elettricita
-        name: Da GSE
-        type: tile
-        vertical: false
-      - entity: input_number.pv_recupero_pct
-        features_position: bottom
-        grid_options:
-          columns: 4
-          rows: 1
-        icon: mdi:percent
-        name: '% recupero'
-        type: tile
-        vertical: false
-      - heading: TOTALI MENSILI
-        heading_style: subtitle
-        type: heading
-      - content: '{% set d = state_attr(''sensor.pv_tabella_mensile'', ''mesi'') %}
-          {%
-
-          if d is none %} _Dati non disponibili_ {% else %} {% set mesi = d
-
-          | reverse | list %} <div
-
-          style="overflow-x:auto;overflow-y:auto;max-height:400px;font-size:11px">
-
-          <table
-
-          style="border-collapse:collapse;width:100%;white-space:nowrap">
-
-          <thead><tr
-
-          style="position:sticky;top:0;background:#1a1a2e;color:#e0e0e0">
-
-          <th style="padding:4px 6px;border:1px solid #444">Mese</th> <th
-
-          style="padding:4px 6px;border:1px solid #444">Prod</th> <th
-
-          style="padding:4px 6px;border:1px solid #444">Consumo da FV</th> <th
-
-          style="padding:4px 6px;border:1px solid #444">% Consumo</th>
-
-          <th style="padding:4px 6px;border:1px solid #444">Da rete</th> <th
-
-          style="padding:4px 6px;border:1px solid #444">Totale Consumi</th> <th
-
-          style="padding:4px 6px;border:1px solid #444">A rete</th> <th
-
-          style="padding:4px 6px;border:1px solid #444">Bat Carica</th> <th
-
-          style="padding:4px 6px;border:1px solid #444">Bat Scarica</th> <th
-
-          style="padding:4px 6px;border:1px solid #444">%Perd</th>
-
-          </tr></thead> <tbody> {% for r in mesi %} {% if loop.first or
-
-          loop.last %} <tr style="font-weight:bold;background:#2a2a3e"> {%
-
-          else %} <tr> {% endif %} <td style="padding:3px 6px;border:1px
-
-          solid #333">{{ r.mese }}</td> <td style="padding:3px
-
-          6px;border:1px solid #333;text-align:right">{{ r.produzione
-
-          }}</td> <td style="padding:3px 6px;border:1px solid
-
-          #333;text-align:right">{{ r.autoconsumo }}</td> <td
-
-          style="padding:3px 6px;border:1px solid #333;text-align:right">{{
-
-          r.pct_auto }}%</td> <td style="padding:3px 6px;border:1px solid
-
-          #333;text-align:right">{{ r.import }}</td> <td style="padding:3px
-
-          6px;border:1px solid #333;text-align:right">{{ r.consumo_tot
-
-          }}</td> <td style="padding:3px 6px;border:1px solid
-
-          #333;text-align:right">{{ r.export }}</td> <td style="padding:3px
-
-          6px;border:1px solid #333;text-align:right">{{ r.batt_carica
-
-          }}</td> <td style="padding:3px 6px;border:1px solid
-
-          #333;text-align:right">{{ r.batt_scarica }}</td> <td
-
-          style="padding:3px 6px;border:1px solid #333;text-align:right">{{
-
-          r.pct_batt_loss }}%</td> </tr> {% endfor %} </tbody></table></div>
-
-          {% endif %}
-
-          '
-        grid_options:
-          columns: full
-          rows: auto
-        type: markdown
-      - grid_options:
-          columns: full
-          rows: auto
-        icon: mdi:solar-panel-large
-        icon_height: 15px
-        name: Panel Analytics
-        show_icon: true
-        show_name: true
-        show_state: false
-        tap_action:
-          action: perform-action
-          data:
-            data:
-              package_name: appinventor.ai_aagorine.PanelAnalytics
-            message: command_launch_app
-          perform_action: notify.mobile_app_cph2653
-        type: button
-      - heading: TOTALI MENSILI x TIPO APPARECCHI
-        heading_style: subtitle
-        type: heading
-      - content: '{% set d = state_attr(''sensor.pv_tabella_mensile'', ''mesi'') %}
-          {% if d is none %} _Dati non disponibili_ {% else %} {% set mesi = d | reverse
-          | list %} <div style="overflow-x:auto;overflow-y:auto;max-height:400px;font-size:11px">
-          <table style="border-collapse:collapse;width:100%;white-space:nowrap"> <thead><tr
-          style="position:sticky;top:0;background:#1a1a2e;color:#e0e0e0"> <th style="padding:4px
-          6px;border:1px solid #444">Mese</th> <th style="padding:4px 6px;border:1px
-          solid #444">Pompa</th> <th style="padding:4px 6px;border:1px solid #444">Fancoil</th>
-          <th style="padding:4px 6px;border:1px solid #444">Deumid.</th> <th style="padding:4px
-          6px;border:1px solid #444">Lavatr.</th> <th style="padding:4px 6px;border:1px
-          solid #444">Auto</th> <th style="padding:4px 6px;border:1px solid #444">Sauna</th>
-          <th style="padding:4px 6px;border:1px solid #444">Cucina</th> <th style="padding:4px
-          6px;border:1px solid #444">Altri</th> <th style="padding:4px 6px;border:1px
-          solid #444">Totale consumi</th> </tr></thead> <tbody> {% for r in mesi %}
-          {% if loop.first or loop.last %} <tr style="font-weight:bold;background:#2a2a3e">
-          {% else %} <tr> {% endif %} <td style="padding:3px 6px;border:1px solid
-          #333">{{ r.mese }}</td> <td style="padding:3px 6px;border:1px solid #333;text-align:right">{{
-          (r.get(''pompa'', 0) | string) | replace(''.'', '','') }}</td> <td style="padding:3px
-          6px;border:1px solid #333;text-align:right">{{ (r.get(''fancoil'', 0) |
-          string) | replace(''.'', '','') }}</td> <td style="padding:3px 6px;border:1px
-          solid #333;text-align:right">{{ (r.get(''deumid'', 0) | string) | replace(''.'',
-          '','') }}</td> <td style="padding:3px 6px;border:1px solid #333;text-align:right">{{
-          (r.get(''lavatrice'', 0) | string) | replace(''.'', '','') }}</td> <td style="padding:3px
-          6px;border:1px solid #333;text-align:right">{{ (r.get(''auto'', 0) | string)
-          | replace(''.'', '','') }}</td> <td style="padding:3px 6px;border:1px solid
-          #333;text-align:right">{{ (r.get(''sauna'', 0) | string) | replace(''.'',
-          '','') }}</td> <td style="padding:3px 6px;border:1px solid #333;text-align:right">{{
-          (r.get(''cucina'', 0) | string) | replace(''.'', '','') }}</td> <td style="padding:3px
-          6px;border:1px solid #333;text-align:right">{{ (r.get(''altri'', 0) | string)
-          | replace(''.'', '','') }}</td> <td style="padding:3px 6px;border:1px solid
-          #333;text-align:right">{{ r.get(''consumo_tot'', 0) }}</td> </tr> {% endfor
-          %} </tbody></table></div> {% endif %} '
-        grid_options:
-          columns: full
-          rows: auto
-        type: markdown
-      - entity: input_number.elettricita_prezzo_kwh
-        grid_options:
-          columns: 12
-          rows: 2
-        name: "Prezzo da rete (\u20AC x 1 kWh)"
-        type: entity
-      - entity: input_number.elettricita_quota_fissa_mese
-        grid_options:
-          columns: 12
-          rows: 2
-        name: Quota fissa mensile in bolletta
-        type: entity
-      - color: '#009E73'
-        entity: sensor.fv_co2_evitata
-        features_position: bottom
-        grid_options:
-          columns: 6
-          rows: 1
-        icon: mdi:molecule-co2
-        name: CO2 evitata
-        type: tile
-        vertical: false
-      - color: '#009E73'
-        entity: sensor.fv_alberi_equivalenti
-        features_position: bottom
-        grid_options:
-          columns: 6
-          rows: 1
-        icon: mdi:forest
-        name: Alberi equivalenti
-        type: tile
-        vertical: false
-    - cards:
       - heading: CONSUMI ORA
         heading_style: title
         icon: ''
@@ -452,18 +215,6 @@ config:
         show_entity_picture: false
         type: tile
         vertical: false
-      - entity: sensor.cucina_energia_oggi
-        features_position: bottom
-        grid_options:
-          columns: 4
-          rows: 1
-        icon: mdi:fridge-outline
-        icon_tap_action:
-          action: navigate
-          navigation_path: /dashboard-fancoil/fancoil
-        name: Cucina
-        type: tile
-        vertical: false
       - entity: sensor.sauna_energia_oggi
         features_position: bottom
         grid_options:
@@ -474,6 +225,18 @@ config:
           action: navigate
           navigation_path: /dashboard-fancoil
         name: Sauna
+        type: tile
+        vertical: false
+      - entity: sensor.cucina_energia_oggi
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        icon: mdi:fridge-outline
+        icon_tap_action:
+          action: navigate
+          navigation_path: /dashboard-fancoil/fancoil
+        name: Cucina
         type: tile
         vertical: false
       - color: '#7E57C2'
@@ -492,6 +255,285 @@ config:
         type: tile
         vertical: false
       type: grid
+    - cards:
+      - heading: TOTALI
+        heading_style: title
+        type: heading
+      - heading: 'DA SEMPRE (solo mesi dove esistono rilevato e bolette):'
+        heading_style: subtitle
+        type: heading
+      - entity: input_number.elettricita_totale_rilevato_kwh
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: auto
+        icon: mdi:solar-power
+        name: Rilevato
+        type: tile
+        vertical: false
+      - entity: input_number.elettricita_totale_bollette_kwh
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: auto
+        name: Bollette
+        type: tile
+        vertical: false
+      - heading: Risparmio da fotovoltaico
+        heading_style: subtitle
+        icon: ''
+        type: heading
+      - entity: input_number.pv_totale_euro
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        icon: mdi:piggy-bank
+        name: Risparmiato
+        type: tile
+        vertical: false
+      - entity: input_number.pv_risparmio_euro
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        icon: mdi:solar-power
+        name: Autoconsumo
+        type: tile
+        vertical: false
+      - entity: input_number.pv_gse_euro
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        icon: mdi:cash-multiple
+        icon_tap_action:
+          action: navigate
+          navigation_path: /dashboard-consumi/elettricita
+        name: Da GSE
+        type: tile
+        vertical: false
+      - entity: sensor.pdc_recupero_investimento
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        icon: mdi:percent
+        name: '% recupero'
+        type: tile
+        vertical: false
+      - color: '#009E73'
+        entity: sensor.fv_co2_evitata
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        icon: mdi:molecule-co2
+        name: CO2 evitata
+        type: tile
+        vertical: false
+      - color: '#009E73'
+        entity: sensor.fv_alberi_equivalenti
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        icon: mdi:forest
+        name: Alberi equivalenti
+        type: tile
+        vertical: false
+      - heading: Risparmio da pompa di calore
+        heading_style: subtitle
+        icon: ''
+        type: heading
+      - entity: input_number.pv_recupero_pct
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        icon: mdi:percent
+        name: '% recupero'
+        type: tile
+        vertical: false
+      - entity: sensor.pdc_risparmio_totale
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        icon: mdi:piggy-bank
+        name: Risparmiato
+        type: tile
+        vertical: false
+      - color: '#0072B2'
+        entity: input_number.pdc_risparmio_estate_euro
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        icon: mdi:snowflake
+        name: EstateVsFryo
+        type: tile
+        vertical: false
+      - color: '#0072B2'
+        entity: input_number.pdc_risparmio_inverno_euro
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        icon: mdi:fire
+        name: InvernoVsGas
+        type: tile
+        vertical: false
+      - heading: TOTALI MENSILI
+        heading_style: subtitle
+        type: heading
+      - content: '{% set d = state_attr(''sensor.pv_tabella_mensile'', ''mesi'') %}
+          {%
+
+          if d is none %} _Dati non disponibili_ {% else %} {% set mesi = d
+
+          | reverse | list %} <div
+
+          style="overflow-x:auto;overflow-y:auto;max-height:400px;font-size:11px">
+
+          <table
+
+          style="border-collapse:collapse;width:100%;white-space:nowrap">
+
+          <thead><tr
+
+          style="position:sticky;top:0;background:#1a1a2e;color:#e0e0e0">
+
+          <th style="padding:4px 6px;border:1px solid #444">Mese</th> <th
+
+          style="padding:4px 6px;border:1px solid #444">Prod</th> <th
+
+          style="padding:4px 6px;border:1px solid #444">Consumo da FV</th> <th
+
+          style="padding:4px 6px;border:1px solid #444">% Consumo</th>
+
+          <th style="padding:4px 6px;border:1px solid #444">Da rete</th> <th
+
+          style="padding:4px 6px;border:1px solid #444">Totale Consumi</th> <th
+
+          style="padding:4px 6px;border:1px solid #444">A rete</th> <th
+
+          style="padding:4px 6px;border:1px solid #444">Bat Carica</th> <th
+
+          style="padding:4px 6px;border:1px solid #444">Bat Scarica</th> <th
+
+          style="padding:4px 6px;border:1px solid #444">%Perd</th>
+
+          </tr></thead> <tbody> {% for r in mesi %} {% if loop.first or
+
+          loop.last %} <tr style="font-weight:bold;background:#2a2a3e"> {%
+
+          else %} <tr> {% endif %} <td style="padding:3px 6px;border:1px
+
+          solid #333">{{ r.mese }}</td> <td style="padding:3px
+
+          6px;border:1px solid #333;text-align:right">{{ r.produzione
+
+          }}</td> <td style="padding:3px 6px;border:1px solid
+
+          #333;text-align:right">{{ r.autoconsumo }}</td> <td
+
+          style="padding:3px 6px;border:1px solid #333;text-align:right">{{
+
+          r.pct_auto }}%</td> <td style="padding:3px 6px;border:1px solid
+
+          #333;text-align:right">{{ r.import }}</td> <td style="padding:3px
+
+          6px;border:1px solid #333;text-align:right">{{ r.consumo_tot
+
+          }}</td> <td style="padding:3px 6px;border:1px solid
+
+          #333;text-align:right">{{ r.export }}</td> <td style="padding:3px
+
+          6px;border:1px solid #333;text-align:right">{{ r.batt_carica
+
+          }}</td> <td style="padding:3px 6px;border:1px solid
+
+          #333;text-align:right">{{ r.batt_scarica }}</td> <td
+
+          style="padding:3px 6px;border:1px solid #333;text-align:right">{{
+
+          r.pct_batt_loss }}%</td> </tr> {% endfor %} </tbody></table></div>
+
+          {% endif %}
+
+          '
+        grid_options:
+          columns: full
+          rows: auto
+        type: markdown
+      - grid_options:
+          columns: full
+          rows: auto
+        icon: mdi:solar-panel-large
+        icon_height: 15px
+        name: Panel Analytics
+        show_icon: true
+        show_name: true
+        show_state: false
+        tap_action:
+          action: perform-action
+          data:
+            data:
+              package_name: appinventor.ai_aagorine.PanelAnalytics
+            message: command_launch_app
+          perform_action: notify.mobile_app_cph2653
+        type: button
+      - heading: TOTALI MENSILI x TIPO APPARECCHI
+        heading_style: subtitle
+        type: heading
+      - content: '{% set d = state_attr(''sensor.pv_tabella_mensile'', ''mesi'') %}
+          {% if d is none %} _Dati non disponibili_ {% else %} {% set mesi = d | reverse
+          | list %} <div style="overflow-x:auto;overflow-y:auto;max-height:400px;font-size:11px">
+          <table style="border-collapse:collapse;width:100%;white-space:nowrap"> <thead><tr
+          style="position:sticky;top:0;background:#1a1a2e;color:#e0e0e0"> <th style="padding:4px
+          6px;border:1px solid #444">Mese</th> <th style="padding:4px 6px;border:1px
+          solid #444">Pompa</th> <th style="padding:4px 6px;border:1px solid #444">Fancoil</th>
+          <th style="padding:4px 6px;border:1px solid #444">Deumid.</th> <th style="padding:4px
+          6px;border:1px solid #444">Lavatr.</th> <th style="padding:4px 6px;border:1px
+          solid #444">Auto</th> <th style="padding:4px 6px;border:1px solid #444">Sauna</th>
+          <th style="padding:4px 6px;border:1px solid #444">Cucina</th> <th style="padding:4px
+          6px;border:1px solid #444">Altri</th> <th style="padding:4px 6px;border:1px
+          solid #444">Totale consumi</th> </tr></thead> <tbody> {% for r in mesi %}
+          {% if loop.first or loop.last %} <tr style="font-weight:bold;background:#2a2a3e">
+          {% else %} <tr> {% endif %} <td style="padding:3px 6px;border:1px solid
+          #333">{{ r.mese }}</td> <td style="padding:3px 6px;border:1px solid #333;text-align:right">{{
+          (r.get(''pompa'', 0) | string) | replace(''.'', '','') }}</td> <td style="padding:3px
+          6px;border:1px solid #333;text-align:right">{{ (r.get(''fancoil'', 0) |
+          string) | replace(''.'', '','') }}</td> <td style="padding:3px 6px;border:1px
+          solid #333;text-align:right">{{ (r.get(''deumid'', 0) | string) | replace(''.'',
+          '','') }}</td> <td style="padding:3px 6px;border:1px solid #333;text-align:right">{{
+          (r.get(''lavatrice'', 0) | string) | replace(''.'', '','') }}</td> <td style="padding:3px
+          6px;border:1px solid #333;text-align:right">{{ (r.get(''auto'', 0) | string)
+          | replace(''.'', '','') }}</td> <td style="padding:3px 6px;border:1px solid
+          #333;text-align:right">{{ (r.get(''sauna'', 0) | string) | replace(''.'',
+          '','') }}</td> <td style="padding:3px 6px;border:1px solid #333;text-align:right">{{
+          (r.get(''cucina'', 0) | string) | replace(''.'', '','') }}</td> <td style="padding:3px
+          6px;border:1px solid #333;text-align:right">{{ (r.get(''altri'', 0) | string)
+          | replace(''.'', '','') }}</td> <td style="padding:3px 6px;border:1px solid
+          #333;text-align:right">{{ r.get(''consumo_tot'', 0) }}</td> </tr> {% endfor
+          %} </tbody></table></div> {% endif %} '
+        grid_options:
+          columns: full
+          rows: auto
+        type: markdown
+      - entity: input_number.elettricita_prezzo_kwh
+        grid_options:
+          columns: 12
+          rows: 2
+        name: "Prezzo da rete (\u20AC x 1 kWh)"
+        type: entity
+      - entity: input_number.elettricita_quota_fissa_mese
+        grid_options:
+          columns: 12
+          rows: 2
+        name: Quota fissa mensile in bolletta
+        type: entity
     - cards:
       - heading: ULTIMI 30 GG
         heading_style: title

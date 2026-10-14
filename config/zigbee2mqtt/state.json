@@ -14,8 +14,8 @@
         "linkquality": 100
     },
     "0xa4c138f820e17e6e": {
-        "voltage": 2600,
-        "battery": 93,
+        "voltage": 2700,
+        "battery": 98,
         "contact": false,
         "tamper": false,
         "battery_low": false,
@@ -24,8 +24,8 @@
     "0xa4c138e6a0d06219": {
         "voltage": 2500,
         "battery": 48,
-        "temperature": 21.73,
-        "humidity": 50.42,
+        "temperature": 21.77,
+        "humidity": 51.04,
         "linkquality": 140
     },
     "0xa4c1385040d042fb": {
@@ -35,7 +35,7 @@
         "power_outage_memory": "restore",
         "indicator_mode": "off/on",
         "child_lock": "UNLOCK",
-        "voltage": 226.1,
+        "voltage": 227.4,
         "power": 0,
         "current": 0,
         "linkquality": 136
@@ -47,7 +47,7 @@
         "power_outage_memory": "restore",
         "indicator_mode": "off/on",
         "child_lock": "UNLOCK",
-        "voltage": 226.6,
+        "voltage": 226.7,
         "linkquality": 84,
         "power": 0,
         "current": 0
@@ -76,18 +76,18 @@
         "countdown": 0,
         "power_outage_memory": "on",
         "indicator_mode": "off/on",
-        "power": 2,
+        "power": 3,
         "current": 0.03,
         "voltage": 230,
-        "energy": 0.23,
+        "energy": 0.24,
         "linkquality": 100,
         "child_lock": "UNLOCK"
     },
     "0xa4c1380eff54ffff": {
         "battery": 100,
-        "temperature": 22.4,
+        "temperature": 22.6,
         "voltage": 2900,
-        "humidity": 57.2,
+        "humidity": 58.2,
         "temperature_sensor_select": "internal",
         "comfort_temperature_min": 19,
         "comfort_temperature_max": 35.2,
@@ -108,8 +108,8 @@
     "0xa4c1380f0678ffff": {
         "battery": 100,
         "voltage": 3000,
-        "temperature": 22.8,
-        "humidity": 59.7,
+        "temperature": 22.7,
+        "humidity": 59.9,
         "temperature_sensor_select": "internal",
         "comfort_temperature_min": 19,
         "comfort_temperature_max": 43.7,
