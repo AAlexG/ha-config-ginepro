@@ -1,4 +1,15 @@
-# config_ricarica_auto_5.yaml
+# config_ricarica_auto_6.yaml
+# v6 (14/10/2026): stessa domanda sia con l'auto accesa sia con l'auto spenta:
+#   "se l'auto carica per i prossimi 15 minuti e poi si stacca, il SC si
+#   riempie ancora?". Con l'auto spenta la simulazione aggiunge nei primi 15
+#   minuti la potenza nominale dell'auto (input_number.ricarica_auto_potenza).
+#   Cosi' "raggiungibile" con l'auto spenta significa che le condizioni dello
+#   stacco non ci sono piu' e l'auto si puo' riaccendere
+#   (automations_ricarica_auto v4). Nuovo input_boolean
+#   auto_staccata_da_previsione: ricorda che lo stacco l'ha fatto la previsione.
+#   Il pieno deve essere raggiunto DOPO i 15 minuti di auto simulata, e lo
+#   stato "pieno" vale solo se il SC e' pieno E resterebbe riempibile con
+#   l'auto accesa 15 minuti: altrimenti e' "non raggiungibile".
 # v5 (14/10/2026): CORRETTA la domanda che il calcolo si pone. Fino alla v4 la
 #   simulazione teneva l'auto accesa fino a sera: "con l'auto sempre in carica,
 #   il SC arriva al pieno?". Il 14/10 alle 14:20 il SC era a 6,4 kWh su 6,5,
@@ -78,7 +89,9 @@
 # per l'ultimo 0,85 kWh T1 e' ottimista. Il margine (input_number) compensa
 # in parte.
 #
-# CARICO DELLA CASA (v5)
+# CARICO DELLA CASA (v5, v6)
+# v6: carico senza auto = media casa - media auto; carico con auto = carico
+# senza auto + auto (media se accesa, potenza nominale se spenta).
 # Primi 15 minuti: media 15 min di sensor.inverter_uflex_load_power, auto
 # compresa (l'auto resta accesa finche' l'automazione non interviene).
 # Dopo: stessa media meno la media 15 min dell'auto, costante fino a sera.
@@ -151,6 +164,17 @@ input_number:
     mode: box
     icon: mdi:shield-half-full
 
+  # v6: potenza assorbita dall'auto in carica, usata nella simulazione quando
+  # il contattore e' spento. Misurata: circa 3,5 kW. Da impostare a 3.5.
+  ricarica_auto_potenza:
+    name: "Ricarica auto - Potenza auto"
+    min: 1
+    max: 7.4
+    step: 0.1
+    unit_of_measurement: "kW"
+    mode: box
+    icon: mdi:car-electric
+
   ricarica_auto_soglia_sereno:
     name: "Ricarica auto - Soglia valutabilita'"
     min: 0.5
@@ -159,6 +183,15 @@ input_number:
     unit_of_measurement: "kWh"
     mode: box
     icon: mdi:weather-sunset-up
+
+input_boolean:
+  # v6: alzato SOLO dall'automazione di stacco per previsione. Abbassato quando
+  # il contattore torna acceso (riaccensione automatica o manuale). La
+  # riaccensione automatica avviene solo con questo flag alzato: uno
+  # spegnimento fatto a mano o dal distacco carichi non viene mai annullato.
+  auto_staccata_da_previsione:
+    name: "Auto - Staccata dalla previsione"
+    icon: mdi:car-clock
 
 template:
   - triggers:
@@ -212,15 +245,18 @@ template:
             {%- set prodotto = states('sensor.inverter_uflex_today_production') | float(0) -%}
             {%- set scala = prodotto / sereno_fatto if sereno_fatto > 0 else 0 -%}
             {%- set carico = states('sensor.carico_casa_media_15_min') | float(states('sensor.inverter_uflex_load_power') | float(0)) / 1000 -%}
-            {%- set auto_kw = states('sensor.auto_potenza_media_15_min') | float(states('sensor.solo_auto_contattore_potenza_di_fase_a') | float(0)) -%}
-            {%- set carico_senza = [carico - auto_kw, 0] | max -%}
+            {%- set auto_media = states('sensor.auto_potenza_media_15_min') | float(states('sensor.solo_auto_contattore_potenza_di_fase_a') | float(0)) -%}
+            {%- set auto_on = is_state('switch.solo_auto_contattore_interruttore', 'on') -%}
+            {%- set auto_kw = auto_media if auto_on else states('input_number.ricarica_auto_potenza') | float(3.5) -%}
+            {%- set carico_senza = [carico - auto_media, 0] | max -%}
+            {%- set carico_con = carico_senza + auto_kw -%}
             {%- set imax = states('number.inverter_uflex_battery_max_charging_current') | float(80) -%}
             {%- set ns = namespace(e=0, t1=none, ultimo=0, pv=0) -%}
             {%- for i in range(1, ((24 - hf) * 12) | int + 1) -%}
               {%- set t = hf + i / 12 -%}
               {%- set pv = scala * p[[(t - 1 / 24) | int, 23] | min] -%}
               {%- set ns.pv = ns.pv + pv / 12 -%}
-              {%- set surplus = pv - (carico if i <= 3 else carico_senza) -%}
+              {%- set surplus = pv - (carico_con if i <= 3 else carico_senza) -%}
               {%- if surplus < 0 and i <= 3 -%}
                 {%- set ns.e = ns.e + surplus / 12 -%}
               {%- endif -%}
@@ -235,18 +271,18 @@ template:
                 {%- set ns.e = ns.e + [surplus, imax * vv.v / 1000] | min / 12 -%}
                 {%- set ns.ultimo = i * 5 -%}
               {%- endif -%}
-              {%- if ns.t1 is none and ns.e >= serve -%}
+              {%- if ns.t1 is none and ns.e >= serve and i > 3 -%}
                 {%- set ns.t1 = i * 5 -%}
               {%- endif -%}
             {%- endfor -%}
-            {%- if mancante <= 0.05 -%}
-              {%- set r.stato = 'pieno' -%}
-            {%- elif sereno_fatto < states('input_number.ricarica_auto_soglia_sereno') | float(1) -%}
+            {%- if sereno_fatto < states('input_number.ricarica_auto_soglia_sereno') | float(1) -%}
               {%- set r.stato = 'non valutabile' -%}
-            {%- elif ns.t1 is not none -%}
-              {%- set r.stato = 'raggiungibile' -%}
-            {%- else -%}
+            {%- elif ns.t1 is none -%}
               {%- set r.stato = 'non raggiungibile' -%}
+            {%- elif mancante <= 0.05 -%}
+              {%- set r.stato = 'pieno' -%}
+            {%- else -%}
+              {%- set r.stato = 'raggiungibile' -%}
             {%- endif -%}
             {%- set r.d = {
                  'v_min': vmin | float,
@@ -302,15 +338,18 @@ template:
               {%- set prodotto = states('sensor.inverter_uflex_today_production') | float(0) -%}
               {%- set scala = prodotto / sereno_fatto if sereno_fatto > 0 else 0 -%}
               {%- set carico = states('sensor.carico_casa_media_15_min') | float(states('sensor.inverter_uflex_load_power') | float(0)) / 1000 -%}
-              {%- set auto_kw = states('sensor.auto_potenza_media_15_min') | float(states('sensor.solo_auto_contattore_potenza_di_fase_a') | float(0)) -%}
-              {%- set carico_senza = [carico - auto_kw, 0] | max -%}
+              {%- set auto_media = states('sensor.auto_potenza_media_15_min') | float(states('sensor.solo_auto_contattore_potenza_di_fase_a') | float(0)) -%}
+              {%- set auto_on = is_state('switch.solo_auto_contattore_interruttore', 'on') -%}
+              {%- set auto_kw = auto_media if auto_on else states('input_number.ricarica_auto_potenza') | float(3.5) -%}
+              {%- set carico_senza = [carico - auto_media, 0] | max -%}
+              {%- set carico_con = carico_senza + auto_kw -%}
               {%- set imax = states('number.inverter_uflex_battery_max_charging_current') | float(80) -%}
               {%- set ns = namespace(e=0, t1=none, ultimo=0, pv=0) -%}
               {%- for i in range(1, ((24 - hf) * 12) | int + 1) -%}
                 {%- set t = hf + i / 12 -%}
                 {%- set pv = scala * p[[(t - 1 / 24) | int, 23] | min] -%}
                 {%- set ns.pv = ns.pv + pv / 12 -%}
-                {%- set surplus = pv - (carico if i <= 3 else carico_senza) -%}
+                {%- set surplus = pv - (carico_con if i <= 3 else carico_senza) -%}
                 {%- if surplus < 0 and i <= 3 -%}
                   {%- set ns.e = ns.e + surplus / 12 -%}
                 {%- endif -%}
@@ -325,18 +364,18 @@ template:
                   {%- set ns.e = ns.e + [surplus, imax * vv.v / 1000] | min / 12 -%}
                   {%- set ns.ultimo = i * 5 -%}
                 {%- endif -%}
-                {%- if ns.t1 is none and ns.e >= serve -%}
+                {%- if ns.t1 is none and ns.e >= serve and i > 3 -%}
                   {%- set ns.t1 = i * 5 -%}
                 {%- endif -%}
               {%- endfor -%}
-              {%- if mancante <= 0.05 -%}
-                {%- set r.stato = 'pieno' -%}
-              {%- elif sereno_fatto < states('input_number.ricarica_auto_soglia_sereno') | float(1) -%}
+              {%- if sereno_fatto < states('input_number.ricarica_auto_soglia_sereno') | float(1) -%}
                 {%- set r.stato = 'non valutabile' -%}
-              {%- elif ns.t1 is not none -%}
-                {%- set r.stato = 'raggiungibile' -%}
-              {%- else -%}
+              {%- elif ns.t1 is none -%}
                 {%- set r.stato = 'non raggiungibile' -%}
+              {%- elif mancante <= 0.05 -%}
+                {%- set r.stato = 'pieno' -%}
+              {%- else -%}
+                {%- set r.stato = 'raggiungibile' -%}
               {%- endif -%}
               {%- set r.d = {
                    'v_min': vmin | float,

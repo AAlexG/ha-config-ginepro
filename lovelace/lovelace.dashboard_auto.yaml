@@ -26,16 +26,21 @@ config:
         name: Gestione manuale (blocca lo stacco automatico)
         type: tile
         vertical: false
+      - heading: "Parametri ricarica (detagli - vedi pi\xF9 giu)"
+        heading_style: title
+        type: heading
       - entity: input_boolean.auto_staccata_da_previsione
+        features_position: bottom
         grid_options:
           columns: 12
         name: Staccata dalla previsione (si riaccende da sola)
         type: tile
         vertical: false
       - entity: sensor.solo_auto_contattore_potenza_di_fase_a
+        features_position: bottom
         grid_options:
           columns: 4
-        name: Potenza auto
+        name: PotenzaOra
         type: tile
         vertical: false
       - entity: sensor.auto_energia_oggi
@@ -45,9 +50,10 @@ config:
         type: tile
         vertical: false
       - entity: sensor.auto_energia_mese
+        features_position: bottom
         grid_options:
           columns: 4
-        name: Energia mese
+        name: EnergiaMese
         type: tile
         vertical: false
       - content: '**Gestione manuale alzata**: l''automazione non stacca mai la ricarica,
@@ -222,7 +228,8 @@ config:
           type: numeric-input
         features_position: bottom
         grid_options:
-          columns: 6
+          columns: full
+          rows: auto
         name: Energia SC dal vuoto al pieno
         type: tile
         vertical: false
@@ -232,7 +239,8 @@ config:
           type: numeric-input
         features_position: bottom
         grid_options:
-          columns: 6
+          columns: full
+          rows: auto
         name: Margine previsione
         type: tile
         vertical: false
@@ -242,8 +250,9 @@ config:
           type: numeric-input
         features_position: bottom
         grid_options:
-          columns: 6
-        name: Soglia valutabilita'
+          columns: full
+          rows: auto
+        name: Soglia Valutabilita'
         type: tile
         vertical: false
       - entity: input_number.ricarica_auto_potenza
@@ -252,25 +261,29 @@ config:
           type: numeric-input
         features_position: bottom
         grid_options:
-          columns: 6
-        name: Potenza auto in carica
+          columns: full
+          rows: auto
+        name: 'Potenza Carica auto standard '
         type: tile
         vertical: false
       - entity: sensor.carico_casa_media_15_min
         grid_options:
-          columns: 6
+          columns: full
+          rows: auto
         name: Carico casa media 15 min
         type: tile
         vertical: false
       - entity: sensor.pv_profilo_sereno
         grid_options:
-          columns: 6
+          columns: full
+          rows: auto
         name: Giornata serena (totale)
         type: tile
         vertical: false
       - entity: sensor.inverter_uflex_battery_voltage
         grid_options:
-          columns: 6
+          columns: full
+          rows: auto
         name: Tensione SC
         type: tile
         vertical: false
