@@ -110,3 +110,10 @@ items:
   show_in_sidebar: true
   title: Tania
   url_path: dashboard-tania
+- icon: mdi:battery-30-bluetooth
+  id: dashboard_bms
+  mode: storage
+  require_admin: false
+  show_in_sidebar: true
+  title: BMS
+  url_path: dashboard-bms

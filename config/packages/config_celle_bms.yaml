@@ -1,4 +1,6 @@
-# config_celle_bms_2.yaml
+# config_celle_bms_3.yaml
+# v3 (15/10/2026): aggiunto attributo letture (ultime 14 letture con le
+#   tensioni delle 14 celle in mV e il SOC) per la tabella della plancia BMS.
 # v2 (15/10/2026): aggiunti SOH, tensione porta, scarto in mV rispetto
 #   alla media di cella max, cella min, celle 4 e 13, e il riepilogo giornaliero degli
 #   ultimi 7 giorni (fondo scarica e cima carica) per la plancia.
@@ -315,3 +317,12 @@ template:
               'dmax': d if r is none else [d, r.dmax] | max
             } -%}
             {{ (n2.l + [nuovo])[-7:] }}
+          letture: >-
+            {%- set h = trigger.json.hex -%}
+            {%- set ns = namespace(c=[]) -%}
+            {%- for k in range(14) -%}
+              {%- set ns.c = ns.c + [h[20+4*k:24+4*k] | int(base=16)] -%}
+            {%- endfor -%}
+            {%- set soc = (h[120:124] | int(base=16)) / 10 -%}
+            {%- set vecchie = this.attributes.letture | default([]) -%}
+            {{ (vecchie + [{'t': now().strftime('%d/%m %H:%M'), 's': soc, 'c': ns.c}])[-14:] }}

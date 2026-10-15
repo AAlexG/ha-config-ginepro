@@ -1,0 +1,306 @@
+config:
+  title: BMS
+  views:
+  - max_columns: 2
+    path: bms
+    sections:
+    - cards:
+      - heading: BMS CONDENSATORE (Bluetooth)
+        heading_style: title
+        type: heading
+      - grid_options:
+          columns: 4
+          rows: auto
+        icon: mdi:solar-power-variant
+        icon_height: 20px
+        name: Fotovoltaico
+        show_icon: true
+        show_name: true
+        show_state: false
+        tap_action:
+          action: navigate
+          navigation_path: /dashboard-fotovoltaico/fotovoltaico
+        type: button
+      - content: '{% set d = states.sensor.condensatore_celle_differenza %}{% if d
+          is none or d.state in [''unknown'',''unavailable''] %}_Nessuna lettura_{%
+          else %}{% set t = as_timestamp(d.last_reported) %}Ultima lettura **{{ t
+          | timestamp_custom(''%d/%m %H:%M'') }}** ({{ ((as_timestamp(now()) - t)
+          / 60) | round(0) | int }} min fa){% endif %}'
+        grid_options:
+          columns: full
+          rows: auto
+        type: markdown
+      - entity: sensor.condensatore_bms_soc
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        name: SOC
+        type: tile
+        vertical: false
+      - entity: sensor.condensatore_bms_tensione
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        name: Tensione
+        type: tile
+        vertical: false
+      - entity: sensor.condensatore_bms_corrente
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        name: Corrente
+        type: tile
+        vertical: false
+      - entity: sensor.condensatore_bms_residuo
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        name: Residuo
+        type: tile
+        vertical: false
+      - entity: sensor.condensatore_bms_capacita
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        name: "Capacit\xE0"
+        type: tile
+        vertical: false
+      - entity: sensor.condensatore_bms_soh
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        name: SOH
+        type: tile
+        vertical: false
+      - entity: sensor.condensatore_bms_cicli
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        name: Cicli
+        type: tile
+        vertical: false
+      - entity: sensor.condensatore_bms_tensione_porta
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        name: Tens. porta
+        type: tile
+        vertical: false
+      - entity: sensor.condensatore_celle_differenza
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        name: "\u0394 celle"
+        type: tile
+        vertical: false
+      - heading: Temperature BMS
+        heading_style: subtitle
+        type: heading
+      - entity: sensor.condensatore_bms_temperatura_1
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        name: T1
+        type: tile
+        vertical: false
+      - entity: sensor.condensatore_bms_temperatura_2
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        name: T2
+        type: tile
+        vertical: false
+      - entity: sensor.condensatore_bms_temperatura_3
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        name: T3
+        type: tile
+        vertical: false
+      - entity: sensor.condensatore_bms_temperatura_4
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        name: T4
+        type: tile
+        vertical: false
+      - entity: sensor.condensatore_bms_temperatura_5
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        name: T5
+        type: tile
+        vertical: false
+      - entity: sensor.condensatore_bms_temperatura_6
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        name: T6
+        type: tile
+        vertical: false
+      type: grid
+    - cards:
+      - heading: 'CELLE: ULTIME 14 LETTURE'
+        heading_style: title
+        type: heading
+      - content: "{% set L = state_attr('sensor.condensatore_celle_riepilogo', 'letture')\
+          \ %}{% if not L %}_Nessuna lettura_{% else %}{% set L = L | reverse | list\
+          \ %}mV \xB7 colonne dalla lettura pi\xF9 recente \xB7 **\u2B07 grassetto**\
+          \ = cella pi\xF9 bassa \xB7 _corsivo_ = pi\xF9 alta\n<div style=\"overflow-x:auto;font-size:11px\"\
+          ><table style=\"border-collapse:collapse;white-space:nowrap\"><tr><th style=\"\
+          padding:2px 4px;border:1px solid #444\">Cella</th>{% for r in L %}<th style=\"\
+          padding:2px 4px;border:1px solid #444\">{{ r.t[6:] }}</th>{% endfor %}</tr>{%\
+          \ for k in range(14) %}<tr><td style=\"padding:2px 4px;border:1px solid\
+          \ #333;text-align:right\"><b>{{ k + 1 }}</b></td>{% for r in L %}{% set\
+          \ v = r.c[k] %}<td style=\"padding:2px 4px;border:1px solid #333;text-align:right\"\
+          >{% if v == r.c | min %}<b>\u2B07{{ v }}</b>{% elif v == r.c | max %}<i>{{\
+          \ v }}</i>{% else %}{{ v }}{% endif %}</td>{% endfor %}</tr>{% endfor %}<tr><td\
+          \ style=\"padding:2px 4px;border:1px solid #333\"><b>\u0394</b></td>{% for\
+          \ r in L %}<td style=\"padding:2px 4px;border:1px solid #333;text-align:right\"\
+          ><b>{{ r.c | max - r.c | min }}</b></td>{% endfor %}</tr><tr><td style=\"\
+          padding:2px 4px;border:1px solid #333\"><b>SOC</b></td>{% for r in L %}<td\
+          \ style=\"padding:2px 4px;border:1px solid #333;text-align:right\">{{ r.s\
+          \ | round(0) | int }}</td>{% endfor %}</tr></table></div>{% endif %}"
+        grid_options:
+          columns: full
+          rows: auto
+        type: markdown
+      - graph_span: 7d
+        grid_options:
+          columns: 12
+          rows: auto
+        header:
+          show: true
+          title: 'Celle: scarto dalla media 7gg (mV)'
+        series:
+        - color: '#E69F00'
+          entity: sensor.condensatore_celle_scarto_max
+          name: cella max
+          stroke_width: 2
+          type: line
+          yaxis_id: mv
+        - color: '#56B4E9'
+          entity: sensor.condensatore_celle_scarto_min
+          name: cella min
+          stroke_width: 2
+          type: line
+          yaxis_id: mv
+        - color: '#D55E00'
+          entity: sensor.condensatore_cella_13_scarto
+          name: cella 13
+          stroke_width: 3
+          type: line
+          yaxis_id: mv
+        - color: '#009E73'
+          entity: sensor.condensatore_cella_04_scarto
+          name: cella 4
+          stroke_width: 3
+          type: line
+          yaxis_id: mv
+        - color: '#999999'
+          entity: sensor.condensatore_bms_soc
+          name: SOC
+          stroke_dash: 4
+          stroke_width: 1
+          type: line
+          yaxis_id: soc
+        type: custom:apexcharts-card
+        yaxis:
+        - apex_config:
+            title:
+              text: mV
+          decimals: 0
+          id: mv
+        - apex_config:
+            title:
+              text: SOC %
+          decimals: 0
+          id: soc
+          max: 100
+          min: 0
+          opposite: true
+      - graph_span: 7d
+        grid_options:
+          columns: 12
+          rows: auto
+        header:
+          show: true
+          title: Differenza celle e tensione 7gg
+        series:
+        - color: '#D55E00'
+          entity: sensor.condensatore_celle_differenza
+          name: "\u0394 celle"
+          stroke_width: 2
+          type: line
+          yaxis_id: mv
+        - color: '#0072B2'
+          entity: sensor.condensatore_bms_tensione
+          name: tensione
+          stroke_width: 1
+          type: line
+          yaxis_id: v
+        type: custom:apexcharts-card
+        yaxis:
+        - apex_config:
+            title:
+              text: "\u0394 mV"
+          decimals: 0
+          id: mv
+          min: 0
+        - apex_config:
+            title:
+              text: V
+          decimals: 1
+          id: v
+          opposite: true
+      type: grid
+    - cards:
+      - heading: ULTIMI 7 GIORNI
+        heading_style: title
+        type: heading
+      - content: "{% set d = state_attr('sensor.condensatore_celle_riepilogo', 'giorni')\
+          \ %}{% if not d %}_Dati non ancora disponibili_{% else %}**Fine scarica**\
+          \ (tensione minima del giorno)\n\n| Giorno | Ora | V | SOC | \u0394 mV |\
+          \ Min | C13 | C4 |\n|--|--|--:|--:|--:|--:|--:|--:|\n{% for r in d | reverse\
+          \ %}| {{ r.g }} | {{ r.hb }} | {{ r.vb }} | {{ r.sob }} | **{{ r.db }}**\
+          \ | {{ r.cb }} | {{ '%+d' | format(r.b13) }} | {{ '%+d' | format(r.b4) }}\
+          \ |\n{% endfor %}{% endif %}"
+        grid_options:
+          columns: full
+          rows: auto
+        type: markdown
+      - content: "{% set d = state_attr('sensor.condensatore_celle_riepilogo', 'giorni')\
+          \ %}{% if not d %}_Dati non ancora disponibili_{% else %}**Fine carica**\
+          \ (tensione massima del giorno)\n\n| Giorno | Ora | V | SOC | \u0394 mV\
+          \ | Min | C13 | \u0394 max |\n|--|--|--:|--:|--:|--:|--:|--:|\n{% for r\
+          \ in d | reverse %}| {{ r.g }} | {{ r.ha }} | {{ r.va }} | {{ r.soa }} |\
+          \ **{{ r.da }}** | {{ r.ca }} | {{ '%+d' | format(r.a13) }} | {{ r.dmax\
+          \ }} |\n{% endfor %}{% endif %}"
+        grid_options:
+          columns: full
+          rows: auto
+        type: markdown
+      - content: "C13 e C4 = scarto in mV dalla media delle 14 celle. Min = numero\
+          \ della cella pi\xF9 bassa. \u0394 = cella max \u2212 cella min."
+        grid_options:
+          columns: full
+          rows: auto
+        type: markdown
+      type: grid
+    title: BMS
+    type: sections
