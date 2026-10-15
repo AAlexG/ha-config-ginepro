@@ -1,0 +1,317 @@
+# config_celle_bms_2.yaml
+# v2 (15/10/2026): aggiunti SOH, tensione porta, scarto in mV rispetto
+#   alla media di cella max, cella min, celle 4 e 13, e il riepilogo giornaliero degli
+#   ultimi 7 giorni (fondo scarica e cima carica) per la plancia.
+# v1 (15/10/2026): tensioni delle 14 celle del condensatore UFLEX lette
+#   via Bluetooth dal BMS (BP00, protocollo Enjie EMU110x, comando 0x61)
+#   da un'app App Inventor su OnePlus 8, che invia la risposta grezza
+#   (110 byte in esadecimale) al webhook. Qui si decodifica.
+#   Formato JSON atteso: {"hex": "7E1400610000...0D"}
+
+template:
+  - triggers:
+      - trigger: webhook
+        webhook_id: bms_celle_ginepro_k7q2x9
+        allowed_methods: [POST]
+        local_only: true
+    conditions:
+      - condition: template
+        value_template: >-
+          {%- set h = trigger.json.hex | default('') | upper -%}
+          {{ h | length == 220 and h[:4] == '7E14' and h[-2:] == '0D' }}
+    sensor:
+      - name: Condensatore Cella 01
+        unique_id: condensatore_cella_01
+        unit_of_measurement: V
+        device_class: voltage
+        state_class: measurement
+        state: "{{ (trigger.json.hex[20:24] | int(base=16)) / 1000 }}"
+      - name: Condensatore Cella 02
+        unique_id: condensatore_cella_02
+        unit_of_measurement: V
+        device_class: voltage
+        state_class: measurement
+        state: "{{ (trigger.json.hex[24:28] | int(base=16)) / 1000 }}"
+      - name: Condensatore Cella 03
+        unique_id: condensatore_cella_03
+        unit_of_measurement: V
+        device_class: voltage
+        state_class: measurement
+        state: "{{ (trigger.json.hex[28:32] | int(base=16)) / 1000 }}"
+      - name: Condensatore Cella 04
+        unique_id: condensatore_cella_04
+        unit_of_measurement: V
+        device_class: voltage
+        state_class: measurement
+        state: "{{ (trigger.json.hex[32:36] | int(base=16)) / 1000 }}"
+      - name: Condensatore Cella 05
+        unique_id: condensatore_cella_05
+        unit_of_measurement: V
+        device_class: voltage
+        state_class: measurement
+        state: "{{ (trigger.json.hex[36:40] | int(base=16)) / 1000 }}"
+      - name: Condensatore Cella 06
+        unique_id: condensatore_cella_06
+        unit_of_measurement: V
+        device_class: voltage
+        state_class: measurement
+        state: "{{ (trigger.json.hex[40:44] | int(base=16)) / 1000 }}"
+      - name: Condensatore Cella 07
+        unique_id: condensatore_cella_07
+        unit_of_measurement: V
+        device_class: voltage
+        state_class: measurement
+        state: "{{ (trigger.json.hex[44:48] | int(base=16)) / 1000 }}"
+      - name: Condensatore Cella 08
+        unique_id: condensatore_cella_08
+        unit_of_measurement: V
+        device_class: voltage
+        state_class: measurement
+        state: "{{ (trigger.json.hex[48:52] | int(base=16)) / 1000 }}"
+      - name: Condensatore Cella 09
+        unique_id: condensatore_cella_09
+        unit_of_measurement: V
+        device_class: voltage
+        state_class: measurement
+        state: "{{ (trigger.json.hex[52:56] | int(base=16)) / 1000 }}"
+      - name: Condensatore Cella 10
+        unique_id: condensatore_cella_10
+        unit_of_measurement: V
+        device_class: voltage
+        state_class: measurement
+        state: "{{ (trigger.json.hex[56:60] | int(base=16)) / 1000 }}"
+      - name: Condensatore Cella 11
+        unique_id: condensatore_cella_11
+        unit_of_measurement: V
+        device_class: voltage
+        state_class: measurement
+        state: "{{ (trigger.json.hex[60:64] | int(base=16)) / 1000 }}"
+      - name: Condensatore Cella 12
+        unique_id: condensatore_cella_12
+        unit_of_measurement: V
+        device_class: voltage
+        state_class: measurement
+        state: "{{ (trigger.json.hex[64:68] | int(base=16)) / 1000 }}"
+      - name: Condensatore Cella 13
+        unique_id: condensatore_cella_13
+        unit_of_measurement: V
+        device_class: voltage
+        state_class: measurement
+        state: "{{ (trigger.json.hex[68:72] | int(base=16)) / 1000 }}"
+      - name: Condensatore Cella 14
+        unique_id: condensatore_cella_14
+        unit_of_measurement: V
+        device_class: voltage
+        state_class: measurement
+        state: "{{ (trigger.json.hex[72:76] | int(base=16)) / 1000 }}"
+      - name: Condensatore Celle Differenza
+        unique_id: condensatore_celle_differenza
+        unit_of_measurement: mV
+        state_class: measurement
+        state: >-
+          {%- set h = trigger.json.hex -%}
+          {%- set ns = namespace(c=[]) -%}
+          {%- for k in range(14) -%}
+            {%- set ns.c = ns.c + [h[20+4*k:24+4*k] | int(base=16)] -%}
+          {%- endfor -%}
+          {{ ns.c | max - ns.c | min }}
+        attributes:
+          cella_min: >-
+            {%- set h = trigger.json.hex -%}
+            {%- set ns = namespace(c=[]) -%}
+            {%- for k in range(14) -%}
+              {%- set ns.c = ns.c + [h[20+4*k:24+4*k] | int(base=16)] -%}
+            {%- endfor -%}
+            {{ ns.c.index(ns.c | min) + 1 }}
+          cella_max: >-
+            {%- set h = trigger.json.hex -%}
+            {%- set ns = namespace(c=[]) -%}
+            {%- for k in range(14) -%}
+              {%- set ns.c = ns.c + [h[20+4*k:24+4*k] | int(base=16)] -%}
+            {%- endfor -%}
+            {{ ns.c.index(ns.c | max) + 1 }}
+          v_min: >-
+            {%- set h = trigger.json.hex -%}
+            {%- set ns = namespace(c=[]) -%}
+            {%- for k in range(14) -%}
+              {%- set ns.c = ns.c + [h[20+4*k:24+4*k] | int(base=16)] -%}
+            {%- endfor -%}
+            {{ (ns.c | min) / 1000 }}
+          v_max: >-
+            {%- set h = trigger.json.hex -%}
+            {%- set ns = namespace(c=[]) -%}
+            {%- for k in range(14) -%}
+              {%- set ns.c = ns.c + [h[20+4*k:24+4*k] | int(base=16)] -%}
+            {%- endfor -%}
+            {{ (ns.c | max) / 1000 }}
+          v_media: >-
+            {%- set h = trigger.json.hex -%}
+            {%- set ns = namespace(c=[]) -%}
+            {%- for k in range(14) -%}
+              {%- set ns.c = ns.c + [h[20+4*k:24+4*k] | int(base=16)] -%}
+            {%- endfor -%}
+            {{ ((ns.c | sum) / 14 / 1000) | round(4) }}
+      - name: Condensatore Cella 04 Scarto
+        unique_id: condensatore_cella_04_scarto
+        unit_of_measurement: mV
+        state_class: measurement
+        state: >-
+          {%- set h = trigger.json.hex -%}
+          {%- set ns = namespace(c=[]) -%}
+          {%- for k in range(14) -%}
+            {%- set ns.c = ns.c + [h[20+4*k:24+4*k] | int(base=16)] -%}
+          {%- endfor -%}
+          {{ (ns.c[3] - (ns.c | sum) / 14) | round(1) }}
+      - name: Condensatore Cella 13 Scarto
+        unique_id: condensatore_cella_13_scarto
+        unit_of_measurement: mV
+        state_class: measurement
+        state: >-
+          {%- set h = trigger.json.hex -%}
+          {%- set ns = namespace(c=[]) -%}
+          {%- for k in range(14) -%}
+            {%- set ns.c = ns.c + [h[20+4*k:24+4*k] | int(base=16)] -%}
+          {%- endfor -%}
+          {{ (ns.c[12] - (ns.c | sum) / 14) | round(1) }}
+      - name: Condensatore Celle Scarto Max
+        unique_id: condensatore_celle_scarto_max
+        unit_of_measurement: mV
+        state_class: measurement
+        state: >-
+          {%- set h = trigger.json.hex -%}
+          {%- set ns = namespace(c=[]) -%}
+          {%- for k in range(14) -%}
+            {%- set ns.c = ns.c + [h[20+4*k:24+4*k] | int(base=16)] -%}
+          {%- endfor -%}
+          {{ (ns.c | max - (ns.c | sum) / 14) | round(1) }}
+      - name: Condensatore Celle Scarto Min
+        unique_id: condensatore_celle_scarto_min
+        unit_of_measurement: mV
+        state_class: measurement
+        state: >-
+          {%- set h = trigger.json.hex -%}
+          {%- set ns = namespace(c=[]) -%}
+          {%- for k in range(14) -%}
+            {%- set ns.c = ns.c + [h[20+4*k:24+4*k] | int(base=16)] -%}
+          {%- endfor -%}
+          {{ (ns.c | min - (ns.c | sum) / 14) | round(1) }}
+      - name: Condensatore BMS Tensione
+        unique_id: condensatore_bms_tensione
+        unit_of_measurement: "V"
+        device_class: voltage
+        state_class: measurement
+        state: "{{ (trigger.json.hex[106:110] | int(base=16)) / 100 }}"
+      - name: Condensatore BMS Corrente
+        unique_id: condensatore_bms_corrente
+        unit_of_measurement: "A"
+        device_class: current
+        state_class: measurement
+        state: "{%- set v = (trigger.json.hex[102:106] | int(base=16)) -%}{{ ((v - 65536) if v > 32767 else v) / 100 }}"
+      - name: Condensatore BMS SOC
+        unique_id: condensatore_bms_soc
+        unit_of_measurement: "%"
+        device_class: battery
+        state_class: measurement
+        state: "{{ (trigger.json.hex[120:124] | int(base=16)) / 10 }}"
+      - name: Condensatore BMS Residuo
+        unique_id: condensatore_bms_residuo
+        unit_of_measurement: "Ah"
+        state_class: measurement
+        state: "{{ (trigger.json.hex[110:114] | int(base=16)) / 100 }}"
+      - name: Condensatore BMS Capacita
+        unique_id: condensatore_bms_capacita
+        unit_of_measurement: "Ah"
+        state_class: measurement
+        state: "{{ (trigger.json.hex[116:120] | int(base=16)) / 100 }}"
+      - name: Condensatore BMS Cicli
+        unique_id: condensatore_bms_cicli
+        state_class: total_increasing
+        state: "{{ (trigger.json.hex[128:132] | int(base=16)) }}"
+      - name: Condensatore BMS SOH
+        unique_id: condensatore_bms_soh
+        unit_of_measurement: "%"
+        state_class: measurement
+        state: "{{ (trigger.json.hex[132:136] | int(base=16)) / 10 }}"
+      - name: Condensatore BMS Tensione Porta
+        unique_id: condensatore_bms_tensione_porta
+        unit_of_measurement: "V"
+        device_class: voltage
+        state_class: measurement
+        state: "{{ (trigger.json.hex[136:140] | int(base=16)) / 100 }}"
+      - name: Condensatore BMS Temperatura 1
+        unique_id: condensatore_bms_temperatura_1
+        unit_of_measurement: °C
+        device_class: temperature
+        state_class: measurement
+        state: "{{ ((trigger.json.hex[78:82] | int(base=16)) / 10 - 273.1) | round(1) }}"
+      - name: Condensatore BMS Temperatura 2
+        unique_id: condensatore_bms_temperatura_2
+        unit_of_measurement: °C
+        device_class: temperature
+        state_class: measurement
+        state: "{{ ((trigger.json.hex[82:86] | int(base=16)) / 10 - 273.1) | round(1) }}"
+      - name: Condensatore BMS Temperatura 3
+        unique_id: condensatore_bms_temperatura_3
+        unit_of_measurement: °C
+        device_class: temperature
+        state_class: measurement
+        state: "{{ ((trigger.json.hex[86:90] | int(base=16)) / 10 - 273.1) | round(1) }}"
+      - name: Condensatore BMS Temperatura 4
+        unique_id: condensatore_bms_temperatura_4
+        unit_of_measurement: °C
+        device_class: temperature
+        state_class: measurement
+        state: "{{ ((trigger.json.hex[90:94] | int(base=16)) / 10 - 273.1) | round(1) }}"
+      - name: Condensatore BMS Temperatura 5
+        unique_id: condensatore_bms_temperatura_5
+        unit_of_measurement: °C
+        device_class: temperature
+        state_class: measurement
+        state: "{{ ((trigger.json.hex[94:98] | int(base=16)) / 10 - 273.1) | round(1) }}"
+      - name: Condensatore BMS Temperatura 6
+        unique_id: condensatore_bms_temperatura_6
+        unit_of_measurement: °C
+        device_class: temperature
+        state_class: measurement
+        state: "{{ ((trigger.json.hex[98:102] | int(base=16)) / 10 - 273.1) | round(1) }}"
+      - name: Condensatore Celle Riepilogo
+        unique_id: condensatore_celle_riepilogo
+        state: "{{ now().strftime('%d/%m %H:%M') }}"
+        attributes:
+          giorni: >-
+            {%- set h = trigger.json.hex -%}
+            {%- set ns = namespace(c=[]) -%}
+            {%- for k in range(14) -%}
+              {%- set ns.c = ns.c + [h[20+4*k:24+4*k] | int(base=16)] -%}
+            {%- endfor -%}
+            {%- set v = (h[106:110] | int(base=16)) / 100 -%}
+            {%- set soc = (h[120:124] | int(base=16)) / 10 -%}
+            {%- set media = (ns.c | sum) / 14 -%}
+            {%- set d = ns.c | max - ns.c | min -%}
+            {%- set cm = ns.c.index(ns.c | min) + 1 -%}
+            {%- set s13 = (ns.c[12] - media) | round(0) | int -%}
+            {%- set s4 = (ns.c[3] - media) | round(0) | int -%}
+            {%- set oggi = now().strftime('%d/%m') -%}
+            {%- set ora = now().strftime('%H:%M') -%}
+            {%- set vecchi = this.attributes.giorni | default([]) -%}
+            {%- set n2 = namespace(r=none, l=[]) -%}
+            {%- for x in vecchi -%}
+              {%- if x.g == oggi -%}{%- set n2.r = x -%}
+              {%- else -%}{%- set n2.l = n2.l + [x] -%}{%- endif -%}
+            {%- endfor -%}
+            {%- set r = n2.r -%}
+            {%- set basso = r is none or v < r.vb -%}
+            {%- set alto = r is none or v > r.va -%}
+            {%- set nuovo = {
+              'g': oggi,
+              'vb': v if basso else r.vb, 'sob': soc if basso else r.sob,
+              'hb': ora if basso else r.hb, 'db': d if basso else r.db,
+              'cb': cm if basso else r.cb, 'b13': s13 if basso else r.b13,
+              'b4': s4 if basso else r.b4,
+              'va': v if alto else r.va, 'soa': soc if alto else r.soa,
+              'ha': ora if alto else r.ha, 'da': d if alto else r.da,
+              'ca': cm if alto else r.ca, 'a13': s13 if alto else r.a13,
+              'a4': s4 if alto else r.a4,
+              'dmax': d if r is none else [d, r.dmax] | max
+            } -%}
+            {{ (n2.l + [nuovo])[-7:] }}

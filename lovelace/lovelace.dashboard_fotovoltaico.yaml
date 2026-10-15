@@ -1,13 +1,13 @@
 config:
   path: fotovoltaico
-  title: Fotovoltaico v.30
+  title: Fotovoltaico v.31
   views:
   - cards: []
     max_columns: 2
     path: fotovoltaico
     sections:
     - cards:
-      - heading: PARAMETRI DEL SISTEMA ORA
+      - heading: SISTEMA ORA
         heading_style: title
         type: heading
       - entity: input_boolean.condensatore_staccato
@@ -33,27 +33,27 @@ config:
         type: button
       - entity: sensor.inverter_uflex_device_state
         features_position: bottom
-        name: InverterStato
+        name: Stato inverter
         type: tile
         vertical: false
-      - entity: sensor.inverter_uflex_device_state
+      - entity: sensor.condensatore_bms_soc
         features_position: bottom
-        name: Cond.Stato
+        name: SOC BMS
         type: tile
         vertical: false
       - entity: sensor.inverter_uflex_battery
         features_position: bottom
-        name: BatteryCharge
+        name: SOC inverter
         type: tile
         vertical: false
       - entity: sensor.inverter_uflex_battery_voltage
         features_position: bottom
-        name: Cond.Tensione
+        name: Tensione
         type: tile
         vertical: false
       - entity: sensor.inverter_uflex_battery_current
         features_position: bottom
-        name: Cond.Corrente
+        name: Corrente
         type: tile
         vertical: false
       - entity: sensor.condensatore_corrente_scarica_max_oggi
@@ -61,7 +61,7 @@ config:
         grid_options:
           columns: 12
           rows: 1
-        name: 'Corrente max di scarica cond.oggi '
+        name: Scarica max oggi
         type: tile
         vertical: false
       - entity: sensor.condensatore_tensione_max_oggi
@@ -69,18 +69,18 @@ config:
         grid_options:
           columns: 12
           rows: 1
-        name: 'Tensione max cond. oggi '
+        name: Tensione max oggi
         type: tile
         vertical: false
       - cards:
         - entity: sensor.inverter_uflex_temperature
           features_position: bottom
-          name: Temp inverter
+          name: Temp. inverter
           type: tile
           vertical: false
         - entity: sensor.inverter_uflex_dc_temperature
           features_position: bottom
-          name: Temp DC Inverter
+          name: Temp. DC
           type: tile
           vertical: false
         columns: 2
@@ -163,7 +163,7 @@ config:
           show_daily: true
         type: custom:sunsynk-power-flow-card
         wide: false
-      - heading: 'Limite max corrente per condensatore per:'
+      - heading: Corrente max condensatore
         heading_style: subtitle
         type: heading
       - entity: number.inverter_uflex_battery_max_charging_current
@@ -171,7 +171,7 @@ config:
         grid_options:
           columns: 6
           rows: auto
-        name: 'Carica '
+        name: Carica
         type: tile
         vertical: false
       - entity: number.inverter_uflex_battery_max_discharging_current
@@ -181,7 +181,7 @@ config:
         name: Scarica
         type: tile
         vertical: false
-      - heading: 'Soglie di carica residua x condensatore '
+      - heading: Soglie SOC condensatore
         heading_style: subtitle
         type: heading
       - entity: number.inverter_uflex_battery_shutdown_soc
@@ -191,7 +191,7 @@ config:
           rows: auto
         icon_tap_action:
           action: more-info
-        name: Fa Shutdown al
+        name: Shutdown
         tap_action:
           action: more-info
         type: tile
@@ -203,7 +203,7 @@ config:
           rows: auto
         icon_tap_action:
           action: more-info
-        name: "Non scarica pi\xF9 al"
+        name: Stop scarica (Low Batt)
         tap_action:
           action: more-info
         type: tile
@@ -215,12 +215,12 @@ config:
           rows: auto
         icon_tap_action:
           action: more-info
-        name: Inizia  scarica dopo shutdown al
+        name: Riavvio dopo shutdown
         tap_action:
           action: more-info
         type: tile
         vertical: false
-      - heading: 'Altri parametri '
+      - heading: Altri parametri
         heading_style: subtitle
         type: heading
       - entity: number.inverter_uflex_pv_power
@@ -230,14 +230,14 @@ config:
           rows: auto
         icon_tap_action:
           action: more-info
-        name: Limite potenza accettato da panelli
+        name: Limite potenza FV
         tap_action:
           action: more-info
         type: tile
         vertical: false
       type: grid
     - cards:
-      - heading: Super CONDENSATORE
+      - heading: CONDENSATORE
         heading_style: title
         type: heading
       - graph_span: 48hour
@@ -246,11 +246,11 @@ config:
           rows: auto
         header:
           show: true
-          title: Tensione cond. 48h
+          title: Tensione max/ora 48h
         series:
         - color: '#0072B2'
           entity: sensor.condensatore_tensione_collegato
-          name: massima oraria ora
+          name: tensione
           statistics:
             period: hour
             type: max
@@ -258,7 +258,7 @@ config:
           yaxis_id: volt
         - color: '#0072B2'
           entity: sensor.inverter_uflex_battery_voltage
-          name: Absorption limit
+          name: Absorption
           show:
             in_legend: false
           statistics:
@@ -282,11 +282,11 @@ config:
           rows: auto
         header:
           show: true
-          title: Corrente di Carica&Scarica cond.48h
+          title: Corrente max/ora 48h
         series:
         - color: '#D55E00'
           entity: sensor.inverter_uflex_battery_current
-          name: Corrente Carica max oraria ora
+          name: carica
           statistics:
             period: hour
             type: min
@@ -295,7 +295,7 @@ config:
           yaxis_id: amp
         - color: '#0072B2'
           entity: sensor.inverter_uflex_battery_current
-          name: Corrente Scarica max oraria ora
+          name: scarica
           statistics:
             period: hour
             type: max
@@ -317,11 +317,11 @@ config:
           rows: auto
         header:
           show: true
-          title: Tensione max condens.60gg
+          title: Tensione max/giorno 60gg
         series:
         - color: '#0072B2'
           entity: sensor.inverter_uflex_battery_voltage
-          name: Tensione max oggi
+          name: tensione
           statistics:
             period: day
             type: max
@@ -329,7 +329,7 @@ config:
           yaxis_id: volt
         - color: '#D55E00'
           entity: sensor.inverter_uflex_battery_voltage
-          name: Absorption limit
+          name: Absorption
           show:
             in_legend: false
           statistics:
@@ -353,11 +353,11 @@ config:
           rows: auto
         header:
           show: true
-          title: Tensione min condens.30gg
+          title: Tensione min/giorno 30gg
         series:
         - color: '#0072B2'
           entity: sensor.inverter_uflex_battery_voltage
-          name: Tensione min oggi
+          name: tensione
           statistics:
             period: day
             type: min
@@ -376,11 +376,11 @@ config:
           rows: auto
         header:
           show: true
-          title: Corrente di scarica max di cond.30gg
+          title: Scarica max/giorno 30gg
         series:
         - color: '#0072B2'
           entity: sensor.condensatore_corrente_scarica_max_oggi
-          name: Corrente di Scarica max oggi
+          name: scarica
           statistics:
             period: day
             type: max
@@ -388,7 +388,7 @@ config:
           yaxis_id: A
         - color: '#0072B2'
           entity: sensor.condensatore_corrente_scarica_max_oggi
-          name: limite scarica
+          name: limite
           show:
             in_legend: false
           statistics:
@@ -413,11 +413,11 @@ config:
           rows: auto
         header:
           show: true
-          title: Energia max cond.30g (goal 7,6kWh)
+          title: "Energia vuoto\u2192pieno 30gg"
         series:
         - color: '#009E73'
           entity: sensor.condensatore_energia_al_pieno
-          name: Energia max cond. oggi
+          name: energia
           statistics:
             period: day
             type: max
@@ -451,7 +451,7 @@ config:
           rows: auto
         header:
           show: true
-          title: Superamenti soglia Absorption al giorno
+          title: Superamenti Absorption/giorno
         series:
         - color: '#D55E00'
           entity: sensor.condensatore_superamenti_oggi
@@ -475,7 +475,7 @@ config:
           rows: auto
         header:
           show: true
-          title: Temp max condens.&inventer DC 30gg
+          title: Temp. max/giorno 30gg
         series:
         - entity: sensor.inverter_uflex_battery_temperature
           name: condensatore
@@ -504,7 +504,7 @@ config:
           rows: auto
         header:
           show: true
-          title: Energia di condens. 30gg
+          title: Energia carica/scarica 30gg
         series:
         - entity: sensor.inverter_uflex_today_battery_charge
           name: carica
@@ -519,7 +519,7 @@ config:
             period: day
             type: state
           type: column
-          yaxis_id: C
+          yaxis_id: kwh
         type: custom:apexcharts-card
         yaxis:
         - apex_config:
@@ -527,6 +527,281 @@ config:
               text: kWh
           decimals: 2
           id: kwh
+      type: grid
+    - cards:
+      - heading: BMS CONDENSATORE (Bluetooth)
+        heading_style: title
+        type: heading
+      - content: '{% set d = states.sensor.condensatore_celle_differenza %}{% if d
+          is none or d.state in [''unknown'',''unavailable''] %}_Nessuna lettura_{%
+          else %}{% set t = as_timestamp(d.last_reported) %}Ultima lettura **{{ t
+          | timestamp_custom(''%d/%m %H:%M'') }}** ({{ ((as_timestamp(now()) - t)
+          / 60) | round(0) | int }} min fa){% endif %}'
+        grid_options:
+          columns: full
+          rows: auto
+        type: markdown
+      - entity: sensor.condensatore_bms_soc
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        name: SOC
+        type: tile
+        vertical: false
+      - entity: sensor.condensatore_bms_tensione
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        name: Tensione
+        type: tile
+        vertical: false
+      - entity: sensor.condensatore_bms_corrente
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        name: Corrente
+        type: tile
+        vertical: false
+      - entity: sensor.condensatore_bms_residuo
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        name: Residuo
+        type: tile
+        vertical: false
+      - entity: sensor.condensatore_bms_capacita
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        name: "Capacit\xE0"
+        type: tile
+        vertical: false
+      - entity: sensor.condensatore_bms_soh
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        name: SOH
+        type: tile
+        vertical: false
+      - entity: sensor.condensatore_bms_cicli
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        name: Cicli
+        type: tile
+        vertical: false
+      - entity: sensor.condensatore_bms_tensione_porta
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        name: Tens. porta
+        type: tile
+        vertical: false
+      - entity: sensor.condensatore_celle_differenza
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        name: "\u0394 celle"
+        type: tile
+        vertical: false
+      - heading: Temperature BMS
+        heading_style: subtitle
+        type: heading
+      - entity: sensor.condensatore_bms_temperatura_1
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        name: T1
+        type: tile
+        vertical: false
+      - entity: sensor.condensatore_bms_temperatura_2
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        name: T2
+        type: tile
+        vertical: false
+      - entity: sensor.condensatore_bms_temperatura_3
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        name: T3
+        type: tile
+        vertical: false
+      - entity: sensor.condensatore_bms_temperatura_4
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        name: T4
+        type: tile
+        vertical: false
+      - entity: sensor.condensatore_bms_temperatura_5
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        name: T5
+        type: tile
+        vertical: false
+      - entity: sensor.condensatore_bms_temperatura_6
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        name: T6
+        type: tile
+        vertical: false
+      - heading: Celle ultima lettura
+        heading_style: subtitle
+        type: heading
+      - content: "{% set ns = namespace(c=[]) %}{% for k in range(1, 15) %}{% set\
+          \ e = 'sensor.condensatore_cella_' ~ ('0' if k < 10 else '') ~ k %}{% set\
+          \ ns.c = ns.c + [states(e) | float(0)] %}{% endfor %}{% if ns.c | max ==\
+          \ 0 %}_Nessun dato_{% else %}{% set m = (ns.c | sum) / 14 %}{% set lo =\
+          \ ns.c | min %}{% set hi = ns.c | max %}Media **{{ '%.3f' | format(m) }}\
+          \ V** \xB7 \u0394 **{{ ((hi - lo) * 1000) | round(0) | int }} mV** \xB7\
+          \ \u2B06 max \u2B07 min \xB7 mV = scarto da media\n\n| Cella | V | mV |\
+          \ Cella | V | mV |\n|--:|--:|--:|--:|--:|--:|\n{% for i in range(7) %}{%\
+          \ for j in [i, i + 7] %}{% set v = ns.c[j] %}| {{ j + 1 }}{{ ' \u2B06' if\
+          \ v == hi }}{{ ' \u2B07' if v == lo }} | {{ '%.3f' | format(v) }} | {{ '%+d'\
+          \ | format(((v - m) * 1000) | round(0) | int) }} {% endfor %}|\n{% endfor\
+          \ %}{% endif %}"
+        grid_options:
+          columns: full
+          rows: auto
+        type: markdown
+      - graph_span: 7d
+        grid_options:
+          columns: 12
+          rows: auto
+        header:
+          show: true
+          title: 'Celle: scarto dalla media 7gg (mV)'
+        series:
+        - color: '#E69F00'
+          entity: sensor.condensatore_celle_scarto_max
+          name: cella max
+          stroke_width: 2
+          type: line
+          yaxis_id: mv
+        - color: '#56B4E9'
+          entity: sensor.condensatore_celle_scarto_min
+          name: cella min
+          stroke_width: 2
+          type: line
+          yaxis_id: mv
+        - color: '#D55E00'
+          entity: sensor.condensatore_cella_13_scarto
+          name: cella 13
+          stroke_width: 3
+          type: line
+          yaxis_id: mv
+        - color: '#009E73'
+          entity: sensor.condensatore_cella_04_scarto
+          name: cella 4
+          stroke_width: 3
+          type: line
+          yaxis_id: mv
+        - color: '#999999'
+          entity: sensor.condensatore_bms_soc
+          name: SOC
+          stroke_dash: 4
+          stroke_width: 1
+          type: line
+          yaxis_id: soc
+        type: custom:apexcharts-card
+        yaxis:
+        - apex_config:
+            title:
+              text: mV
+          decimals: 0
+          id: mv
+        - apex_config:
+            title:
+              text: SOC %
+          decimals: 0
+          id: soc
+          max: 100
+          min: 0
+          opposite: true
+      - graph_span: 7d
+        grid_options:
+          columns: 12
+          rows: auto
+        header:
+          show: true
+          title: Differenza celle e tensione 7gg
+        series:
+        - color: '#D55E00'
+          entity: sensor.condensatore_celle_differenza
+          name: "\u0394 celle"
+          stroke_width: 2
+          type: line
+          yaxis_id: mv
+        - color: '#0072B2'
+          entity: sensor.condensatore_bms_tensione
+          name: tensione
+          stroke_width: 1
+          type: line
+          yaxis_id: v
+        type: custom:apexcharts-card
+        yaxis:
+        - apex_config:
+            title:
+              text: "\u0394 mV"
+          decimals: 0
+          id: mv
+          min: 0
+        - apex_config:
+            title:
+              text: V
+          decimals: 1
+          id: v
+          opposite: true
+      - heading: Ultimi 7 giorni
+        heading_style: subtitle
+        type: heading
+      - content: "{% set d = state_attr('sensor.condensatore_celle_riepilogo', 'giorni')\
+          \ %}{% if not d %}_Dati non ancora disponibili_{% else %}**Fine scarica**\
+          \ (tensione minima del giorno)\n\n| Giorno | Ora | V | SOC | \u0394 mV |\
+          \ Min | C13 | C4 |\n|--|--|--:|--:|--:|--:|--:|--:|\n{% for r in d | reverse\
+          \ %}| {{ r.g }} | {{ r.hb }} | {{ r.vb }} | {{ r.sob }} | **{{ r.db }}**\
+          \ | {{ r.cb }} | {{ '%+d' | format(r.b13) }} | {{ '%+d' | format(r.b4) }}\
+          \ |\n{% endfor %}{% endif %}"
+        grid_options:
+          columns: full
+          rows: auto
+        type: markdown
+      - content: "{% set d = state_attr('sensor.condensatore_celle_riepilogo', 'giorni')\
+          \ %}{% if not d %}_Dati non ancora disponibili_{% else %}**Fine carica**\
+          \ (tensione massima del giorno)\n\n| Giorno | Ora | V | SOC | \u0394 mV\
+          \ | Min | C13 | \u0394 max |\n|--|--|--:|--:|--:|--:|--:|--:|\n{% for r\
+          \ in d | reverse %}| {{ r.g }} | {{ r.ha }} | {{ r.va }} | {{ r.soa }} |\
+          \ **{{ r.da }}** | {{ r.ca }} | {{ '%+d' | format(r.a13) }} | {{ r.dmax\
+          \ }} |\n{% endfor %}{% endif %}"
+        grid_options:
+          columns: full
+          rows: auto
+        type: markdown
+      - content: "C13 e C4 = scarto in mV dalla media delle 14 celle. Min = numero\
+          \ della cella pi\xF9 bassa. \u0394 = cella max \u2212 cella min."
+        grid_options:
+          columns: full
+          rows: auto
+        type: markdown
       type: grid
     - cards:
       - heading: PANELLI FOTOVOLTAICI
