@@ -1,4 +1,7 @@
-# automations_sistema_4.yaml
+# automations_sistema_5.yaml
+# v5 (16/10/2026): controllo file con elenco in /config/file_attesi.yaml
+#   (versionato, niente comandi a mano); file nuovi non in elenco segnalati
+#   con una notifica persistente.
 # v4 (16/10/2026): aggiunta sistema_controllo_file_config (file di
 #   configurazione mancanti o ridotti).
 #
@@ -244,12 +247,13 @@
 #
 # Il 10/10/2026 automations_fotovoltaico.yaml e' sparito da /config/automations
 # e per 6 giorni nessuno se n'e' accorto. controllo_file.py confronta i file su
-# disco con /config/file_attesi.json e segnala:
+# disco con /config/file_attesi.yaml e segnala:
 #   - file mancanti;
 #   - file automazioni con meno "- id:" di prima, scripts.yaml con meno script
 #     (file sovrascritto o troncato).
-# Dopo ogni modifica voluta (file aggiunto o tolto, automazioni rimosse) va
-# aggiornato l'elenco: Azioni -> shell_command.controllo_file_aggiorna.
+# file_attesi.yaml va aggiornato (nuova versione) a ogni file aggiunto o tolto
+# e a ogni automazione rimossa. I file presenti ma non in elenco arrivano solo
+# come notifica persistente: non sono un guasto, l'elenco e' indietro.
 # Controllo all'avvio di HA (dopo 1 minuto) e alle 08:52 e 20:52.
 # La copia da cui recuperare e' il repository GitHub ha-config-ginepro.
 #==================================================================================
@@ -284,14 +288,30 @@
         - action: persistent_notification.dismiss
           data:
             notification_id: controllo_file_config
+        - if:
+            - condition: template
+              value_template: "{{ r.nuovi | count > 0 }}"
+          then:
+            - action: persistent_notification.create
+              data:
+                title: "📁 File non in elenco"
+                notification_id: controllo_file_nuovi
+                message: >-
+                  Presenti in /config ma non in file_attesi.yaml
+                  ({{ r.elenco }}): {{ r.nuovi | join(', ') }}.
+                  Va aggiunta una nuova versione di file_attesi.yaml.
+          else:
+            - action: persistent_notification.dismiss
+              data:
+                notification_id: controllo_file_nuovi
       else:
         - variables:
             testo: >-
               {% if r.stato == 'errore' %}Il controllo non e' partito: {{ r.dettaglio }}
               {% else %}{% if r.mancanti %}Mancanti: {{ r.mancanti | join(', ') }}.
               {% endif %}{% if r.ridotti %}Con meno automazioni o script: {{ r.ridotti | join(', ') }}.
-              {% endif %}Elenco atteso del {{ r.elenco_del }}. Copia di recupero su GitHub (ha-config-ginepro).
-              Se la modifica e' voluta: Azioni -> shell_command.controllo_file_aggiorna.{% endif %}
+              {% endif %}Elenco {{ r.elenco }}. Copia di recupero su GitHub (ha-config-ginepro).
+              Se la modifica e' voluta va aggiornato file_attesi.yaml.{% endif %}
         - action: notify.mobile_app_cph2653
           continue_on_error: true
           data:

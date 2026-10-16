@@ -1,0 +1,112 @@
+# file_attesi_2.yaml
+# v2 (16/10/2026): aggiunti i due file ESPHome, confrontato con l'elenco
+#   reale di HA (88 file).
+#
+# Elenco dei file che devono esistere in /config. Letto da controllo_file.py
+# (automazione sistema_controllo_file_config, all'avvio di HA e alle 08:52
+# e 20:52). Da aggiornare con una nuova versione a ogni file aggiunto o
+# tolto e a ogni automazione rimossa.
+#
+# Valore vuoto: il file deve solo esistere.
+# Numero: il file deve contenere almeno quel numero di automazioni ("- id:")
+# o, per scripts.yaml, di script. Serve a scoprire un file sovrascritto
+# con una versione piu' corta.
+
+file:
+  # --- Configurazione principale ---
+  configuration.yaml:
+  scripts.yaml: 27
+  scenes.yaml:
+  secrets.yaml:
+  # --- Automazioni (numero = automazioni minime nel file) ---
+  automations/automations_acqua.yaml: 4
+  automations/automations_caldaia.yaml: 14
+  automations/automations_clima.yaml: 15
+  automations/automations_consumi.yaml: 3
+  automations/automations_deumidificatori.yaml: 4
+  automations/automations_elettricita.yaml: 5
+  automations/automations_fotovoltaico.yaml: 6
+  automations/automations_gas.yaml: 1
+  automations/automations_irrigazione.yaml: 9
+  automations/automations_lavatrice.yaml: 1
+  automations/automations_luci.yaml: 1
+  automations/automations_meteo.yaml: 5
+  automations/automations_pompa_calore.yaml: 9
+  automations/automations_resmed.yaml: 3
+  automations/automations_rete.yaml: 4
+  automations/automations_ricarica_auto.yaml: 4
+  automations/automations_sicurezza.yaml: 13
+  automations/automations_sistema.yaml: 9
+  automations/automations_tende.yaml: 7
+  automations/automations_yamaha.yaml: 5
+  # --- Package ---
+  packages/config_acqua.yaml:
+  packages/config_caldaia.yaml:
+  packages/config_celle_bms.yaml:
+  packages/config_clima.yaml:
+  packages/config_consumi.yaml:
+  packages/config_deumidificatori.yaml:
+  packages/config_elettricita.yaml:
+  packages/config_fotovoltaico.yaml:
+  packages/config_gas.yaml:
+  packages/config_irrigazione.yaml:
+  packages/config_lavatrice.yaml:
+  packages/config_meteo.yaml:
+  packages/config_pompa_calore.yaml:
+  packages/config_rete.yaml:
+  packages/config_ricarica_auto.yaml:
+  packages/config_sicurezza.yaml:
+  packages/config_sistema.yaml:
+  packages/config_tende.yaml:
+  # --- Script Python ---
+  controllo_file.py:
+  lavatrice_programmi.py:
+  pv_giorni_senza_sole.py:
+  pv_profilo_sereno.py:
+  pv_tabella_mensile.py:
+  salva_bolletta.py:
+  totali_consumi.py:
+  vivino_proxy.py:
+  # --- Dati JSON ---
+  lavatrice_programmi.json:
+  lavatrice_tabella.json:
+  pv_profilo_sereno.json:
+  pv_tabella_mensile.json:
+  # --- Integrazioni personalizzate ---
+  custom_components/aquarea/manifest.json:
+  custom_components/browser_mod/manifest.json:
+  custom_components/ftp/manifest.json:
+  custom_components/hacs/manifest.json:
+  custom_components/localtuya/manifest.json:
+  custom_components/netgear_wax/manifest.json:
+  custom_components/pun_sensor/manifest.json:
+  custom_components/sat/manifest.json:
+  custom_components/solarman/manifest.json:
+  custom_components/sonoff/manifest.json:
+  custom_components/sunspec/manifest.json:
+  custom_components/tigo/manifest.json:
+  # --- ESPHome ---
+  esphome/rpi-fan-controller-1.yaml:
+  esphome/secrets.yaml:
+  # --- Zigbee2MQTT ---
+  zigbee2mqtt/configuration.yaml:
+  # --- Plance (.storage) ---
+  .storage/lovelace.casa_ginepro:
+  .storage/lovelace.dashboard_auto:
+  .storage/lovelace.dashboard_bms:
+  .storage/lovelace.dashboard_clima:
+  .storage/lovelace.dashboard_consumi:
+  .storage/lovelace.dashboard_fancoil:
+  .storage/lovelace.dashboard_fotovoltaico:
+  .storage/lovelace.dashboard_irrigazione:
+  .storage/lovelace.dashboard_meteo:
+  .storage/lovelace.dashboard_panasonic:
+  .storage/lovelace.dashboard_sicurezza:
+  .storage/lovelace.dashboard_tania:
+  .storage/lovelace.dashboard_tende:
+  .storage/lovelace.dettagli_inverter:
+  .storage/lovelace.otgw_caldaia:
+  .storage/lovelace.wi_fi:
+  .storage/lovelace.zone_casa:
+  .storage/lovelace_dashboards:
+  .storage/lovelace_resources:

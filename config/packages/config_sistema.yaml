@@ -1,4 +1,6 @@
-# config_sistema_6.yaml
+# config_sistema_7.yaml
+# v7 (16/10/2026): tolto controllo_file_aggiorna. L'elenco dei file attesi
+# e' /config/file_attesi.yaml, versionato come gli altri file.
 # v6 (16/10/2026): shell_command controllo_file e controllo_file_aggiorna
 # (sorveglianza file di configurazione, controllo_file.py).
 # Package Casa Ginepro - Sistema: monitoraggio Raspberry, ultima modifica configurazione, Vivino proxy, vacanza
@@ -32,11 +34,9 @@ command_line:
 shell_command:
   avvia_vivino_proxy: "python3 /config/vivino_proxy.py &"
   # Sorveglianza file di configurazione (automazione
-  # sistema_controllo_file_config). Il primo restituisce il JSON dei file
-  # mancanti o ridotti; il secondo riscrive /config/file_attesi.json dallo
-  # stato attuale: va eseguito dopo ogni modifica voluta ai file.
+  # sistema_controllo_file_config): confronta /config con
+  # /config/file_attesi.yaml e restituisce il JSON dei file mancanti o ridotti.
   controllo_file: "python3 /config/controllo_file.py"
-  controllo_file_aggiorna: "python3 /config/controllo_file.py aggiorna"
 
 input_boolean:
 
