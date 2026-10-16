@@ -1,4 +1,5 @@
-# file_attesi_2.yaml
+# file_attesi_3.yaml
+# v3 (16/10/2026): aggiunto installa.py (pulsante Installa e riavvia).
 # v2 (16/10/2026): aggiunti i due file ESPHome, confrontato con l'elenco
 #   reale di HA (88 file).
 #
@@ -60,6 +61,7 @@ file:
   packages/config_tende.yaml:
   # --- Script Python ---
   controllo_file.py:
+  installa.py:
   lavatrice_programmi.py:
   pv_giorni_senza_sole.py:
   pv_profilo_sereno.py:
