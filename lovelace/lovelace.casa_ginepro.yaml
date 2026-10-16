@@ -1774,6 +1774,9 @@ config:
         name: Stato UPS
         type: tile
         vertical: false
+      - heading: AGGIORNAMENTI
+        heading_style: subtitle
+        type: heading
       - grid_options:
           columns: 6
           rows: 2
