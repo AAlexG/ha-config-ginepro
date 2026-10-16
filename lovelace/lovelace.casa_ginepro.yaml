@@ -6,6 +6,25 @@ config:
     path: home
     sections:
     - cards:
+      - grid_options:
+          columns: 6
+          rows: 2
+        hold_action:
+          action: none
+        icon: mdi:package-down
+        icon_height: 20px
+        name: Installa e riavvia
+        show_icon: true
+        show_name: true
+        show_state: false
+        tap_action:
+          action: perform-action
+          confirmation:
+            text: Installare i file di /config/da_installare e riavviare Home Assistant?
+          perform_action: script.turn_on
+          target:
+            entity_id: script.installa_e_riavvia
+        type: button
       - heading: APRI CANCELLI & ALARMI
         heading_style: title
         icon: mdi:security
@@ -1777,25 +1796,6 @@ config:
       - heading: AGGIORNAMENTI
         heading_style: subtitle
         type: heading
-      - grid_options:
-          columns: 6
-          rows: 2
-        hold_action:
-          action: none
-        icon: mdi:package-down
-        icon_height: 20px
-        name: Installa e riavvia
-        show_icon: true
-        show_name: true
-        show_state: false
-        tap_action:
-          action: perform-action
-          confirmation:
-            text: Installare i file di /config/da_installare e riavviare Home Assistant?
-          perform_action: script.turn_on
-          target:
-            entity_id: script.installa_e_riavvia
-        type: button
       type: grid
     title: 'Casa Ginepro '
     type: sections

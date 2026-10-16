@@ -1,4 +1,6 @@
-# config_celle_bms_4.yaml
+# config_celle_bms_5.yaml
+# v5 (16/10/2026): attributo hex con la risposta grezza completa del BMS,
+#   per decodificare allarmi e stati che seguono la tensione porta.
 # v4 (15/10/2026): lo scarto delle celle ora e' il distacco in mV dalla
 #   cella piu' alta (riferimento del bilanciamento BMS), non dalla media.
 #   Nuovi sensori Distacco al posto di Scarto; riepilogo con chiavi xb/xa.
@@ -310,6 +312,7 @@ template:
               'dmax': d if r is none else [d, r.dmax] | max
             } -%}
             {{ (n2.l + [nuovo])[-7:] }}
+          hex: "{{ trigger.json.hex }}"
           letture: >-
             {%- set h = trigger.json.hex -%}
             {%- set ns = namespace(c=[]) -%}
