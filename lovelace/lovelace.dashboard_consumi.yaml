@@ -283,6 +283,15 @@ config:
         heading_style: subtitle
         icon: ''
         type: heading
+      - entity: input_number.pv_recupero_pct
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        icon: mdi:percent
+        name: '% recupero'
+        type: tile
+        vertical: false
       - entity: input_number.pv_totale_euro
         features_position: bottom
         grid_options:
@@ -313,15 +322,6 @@ config:
         name: Da GSE
         type: tile
         vertical: false
-      - entity: sensor.pdc_recupero_investimento
-        features_position: bottom
-        grid_options:
-          columns: 6
-          rows: 1
-        icon: mdi:percent
-        name: '% recupero'
-        type: tile
-        vertical: false
       - color: '#009E73'
         entity: sensor.fv_co2_evitata
         features_position: bottom
@@ -346,10 +346,10 @@ config:
         heading_style: subtitle
         icon: ''
         type: heading
-      - entity: input_number.pv_recupero_pct
+      - entity: sensor.pdc_recupero_investimento
         features_position: bottom
         grid_options:
-          columns: 4
+          columns: 6
           rows: 1
         icon: mdi:percent
         name: '% recupero'

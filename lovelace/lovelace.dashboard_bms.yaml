@@ -21,9 +21,6 @@ config:
           action: navigate
           navigation_path: /dashboard-fotovoltaico/fotovoltaico
         type: button
-      - heading: Stato attuale BMS
-        heading_style: subtitle
-        type: heading
       - content: '{% set d = states.sensor.condensatore_celle_differenza %}{% if d
           is none or d.state in [''unknown'',''unavailable''] %}_Nessuna lettura_{%
           else %}{% set t = as_timestamp(d.last_reported) %}Ultima lettura **{{ t
@@ -33,6 +30,14 @@ config:
           columns: full
           rows: auto
         type: markdown
+      - entity: sensor.condensatore_bms_soh
+        features_position: bottom
+        grid_options:
+          columns: full
+          rows: auto
+        name: SOH (state of health)
+        type: tile
+        vertical: false
       - entity: sensor.condensatore_bms_capacita
         features_position: bottom
         grid_options:
@@ -57,12 +62,12 @@ config:
         name: SOC
         type: tile
         vertical: false
-      - entity: sensor.condensatore_celle_differenza
+      - entity: sensor.condensatore_bms_cicli
         features_position: bottom
         grid_options:
           columns: 4
           rows: 1
-        name: "\u0394 celle"
+        name: Cicli
         type: tile
         vertical: false
       - entity: sensor.condensatore_bms_tensione
@@ -81,22 +86,6 @@ config:
         name: Corrente
         type: tile
         vertical: false
-      - entity: sensor.condensatore_bms_soh
-        features_position: bottom
-        grid_options:
-          columns: full
-          rows: auto
-        name: SOH (StateOfHealth)
-        type: tile
-        vertical: false
-      - entity: sensor.condensatore_bms_cicli
-        features_position: bottom
-        grid_options:
-          columns: 4
-          rows: 1
-        name: Cicli
-        type: tile
-        vertical: false
       - entity: sensor.condensatore_bms_tensione_porta
         features_position: bottom
         grid_options:
@@ -105,39 +94,52 @@ config:
         name: Tens. porta
         type: tile
         vertical: false
-      - heading: Temperature BMS
-        heading_style: subtitle
-        type: heading
-      - graph_span: 24hours
+      - entity: sensor.condensatore_celle_differenza
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        name: "\u0394 celle ora"
+        type: tile
+        vertical: false
+      - graph_span: 48h
         grid_options:
           columns: 12
           rows: auto
         header:
           show: true
-          title: Temperature interne BMS 24h
+          title: Temperature BMS 48h
         series:
+        - color: '#D55E00'
+          entity: sensor.condensatore_bms_temperatura_5
+          name: T5
+          stroke_width: 2
+          type: line
+          yaxis_id: C
+        - color: '#0072B2'
+          entity: sensor.condensatore_bms_temperatura_6
+          name: T6
+          stroke_width: 2
+          type: line
+          yaxis_id: C
         - entity: sensor.condensatore_bms_temperatura_1
           name: T1
+          stroke_width: 2
           type: line
           yaxis_id: C
         - entity: sensor.condensatore_bms_temperatura_2
           name: T2
+          stroke_width: 2
           type: line
           yaxis_id: C
         - entity: sensor.condensatore_bms_temperatura_3
           name: T3
+          stroke_width: 2
           type: line
           yaxis_id: C
         - entity: sensor.condensatore_bms_temperatura_4
           name: T4
-          type: line
-          yaxis_id: C
-        - entity: sensor.condensatore_bms_temperatura_5
-          name: T5
-          type: line
-          yaxis_id: C
-        - entity: sensor.condensatore_bms_temperatura_6
-          name: T6
+          stroke_width: 2
           type: line
           yaxis_id: C
         type: custom:apexcharts-card
@@ -145,7 +147,7 @@ config:
         - apex_config:
             title:
               text: C
-          decimals: 0
+          decimals: 1
           id: C
       type: grid
     - cards:
@@ -163,30 +165,107 @@ config:
           \ #333\"><b>Vpacco</b></td>{% for r in L %}<td style=\"padding:2px 4px;border:1px\
           \ solid #333;text-align:right\"><b>{{ '%.2f' | format((r.c | sum) / 1000)\
           \ }}</b></td>{% endfor %}</tr><tr><td style=\"padding:2px 4px;border:1px\
-          \ solid #333\"><b>Vmax</b></td>{% for r in L %}<td style=\"padding:2px 4px;border:1px\
-          \ solid #333;text-align:right\">{{ '%.3f' | format((r.c | max) / 1000) }}</td>{%\
-          \ endfor %}</tr>{% for k in range(14) %}<tr><td style=\"padding:2px 4px;border:1px\
-          \ solid #333;text-align:right\"><b>{{ k + 1 }}</b></td>{% for r in L %}{%\
-          \ set v = r.c[k] - r.c | max %}<td style=\"padding:2px 4px;border:1px solid\
-          \ #333;text-align:right\">{% if r.c[k] == r.c | min %}<b>\u2B07{{ v }}</b>{%\
-          \ else %}{{ v }}{% endif %}</td>{% endfor %}</tr>{% endfor %}<tr><td style=\"\
-          padding:2px 4px;border:1px solid #333\"><b>\u0394</b></td>{% for r in L\
-          \ %}<td style=\"padding:2px 4px;border:1px solid #333;text-align:right\"\
-          ><b>{{ r.c | max - r.c | min }}</b></td>{% endfor %}</tr><tr><td style=\"\
-          padding:2px 4px;border:1px solid #333\"><b>SOC</b></td>{% for r in L %}<td\
-          \ style=\"padding:2px 4px;border:1px solid #333;text-align:right\">{{ r.s\
-          \ | round(0) | int }}</td>{% endfor %}</tr></table></div>{% endif %}"
+          \ solid #333\"><b>SOC%</b></td>{% for r in L %}<td style=\"padding:2px 4px;border:1px\
+          \ solid #333;text-align:right\"><b>{{ r.s | round(1) }}</b></td>{% endfor\
+          \ %}</tr><tr><td style=\"padding:2px 4px;border:1px solid #333\"><b>Vmax</b></td>{%\
+          \ for r in L %}<td style=\"padding:2px 4px;border:1px solid #333;text-align:right\"\
+          >{{ '%.3f' | format((r.c | max) / 1000) }}</td>{% endfor %}</tr>{% for k\
+          \ in range(14) %}<tr><td style=\"padding:2px 4px;border:1px solid #333;text-align:right\"\
+          ><b>{{ k + 1 }}</b></td>{% for r in L %}{% set v = r.c[k] - r.c | max %}<td\
+          \ style=\"padding:2px 4px;border:1px solid #333;text-align:right\">{% if\
+          \ r.c[k] == r.c | min %}<b>\u2B07{{ v }}</b>{% else %}{{ v }}{% endif %}</td>{%\
+          \ endfor %}</tr>{% endfor %}<tr><td style=\"padding:2px 4px;border:1px solid\
+          \ #333\"><b>\u0394</b></td>{% for r in L %}<td style=\"padding:2px 4px;border:1px\
+          \ solid #333;text-align:right\"><b>{{ r.c | max - r.c | min }}</b></td>{%\
+          \ endfor %}</tr></table></div>{% endif %}"
         grid_options:
           columns: full
           rows: auto
         type: markdown
-      - graph_span: 24h
+      - battery:
+          energy: 6990
+          show_daily: true
+          shutdown_soc: number.inverter_uflex_battery_low_soc
+        battery2:
+          animate: true
+          auto_scale: true
+          colour: '#ffc0cb'
+          dynamic_colour: true
+          energy: 0
+          hide_soc: false
+          invert_flow: false
+          invert_power: false
+          linear_gradient: true
+          navigate: ''
+          path_threshold: 100
+          remaining_energy_to_shutdown: false
+          show_absolute: false
+          show_remaining_energy: true
+          shutdown_soc: 20
+          soc_end_of_charge: 100
+        card_height: 100%
+        card_width: 100%
+        cardstyle: lite
+        center_no_grid: false
+        decimal_places: 2
+        decimal_places_energy: 1
+        dynamic_line_width: true
+        entities:
+          battery_current_191: sensor.inverter_uflex_battery_current
+          battery_power_190: sensor.inverter_uflex_battery_power
+          battery_soc_184: sensor.inverter_uflex_battery
+          battery_temp_182: sensor.inverter_uflex_battery_temperature
+          battery_voltage_183: sensor.inverter_uflex_battery_voltage
+          day_battery_charge_70: sensor.inverter_uflex_today_battery_charge
+          day_battery_discharge_71: sensor.inverter_uflex_today_battery_discharge
+          day_grid_export_77: sensor.inverter_uflex_today_energy_export
+          day_grid_import_76: sensor.inverter_uflex_today_energy_import
+          day_load_energy_84: sensor.inverter_uflex_today_load_consumption
+          day_pv_energy_108: sensor.inverter_uflex_today_production
+          essential_power: sensor.inverter_uflex_load_power
+          grid_ct_power_172: sensor.inverter_uflex_external_ct1_power
+          grid_power_169: sensor.inverter_uflex_external_power
+          inverter_status_59: sensor.inverter_uflex_device_state
+          inverter_voltage_154: sensor.inverter_uflex_grid_l1_voltage
+          load_frequency_192: sensor.inverter_uflex_grid_frequency
+          pv1_current_110: sensor.inverter_uflex_pv1_current
+          pv1_power_186: sensor.inverter_uflex_pv1_power
+          pv1_voltage_109: sensor.inverter_uflex_pv1_voltage
+          pv2_current_112: sensor.inverter_uflex_pv2_current
+          pv2_power_187: sensor.inverter_uflex_pv2_power
+          pv2_voltage_111: sensor.inverter_uflex_pv2_voltage
+          pv_total_power: sensor.inverter_uflex_pv_power
+        grid:
+          show_daily_buy: true
+          show_daily_sell: true
+          show_nonessential: true
+        inverter:
+          autarky: power
+          auto_scale: true
+          colour: '#9e9e9e'
+          model: sunsynk
+          modern: true
+          three_phase: false
+        large_font: true
+        load:
+          show_daily: true
+        max_line_width: 4
+        min_line_width: 1
+        show_battery: true
+        show_grid: true
+        show_solar: true
+        solar:
+          mppts: 2
+          show_daily: true
+        type: custom:sunsynk-power-flow-card
+        wide: false
+      - graph_span: 48h
         grid_options:
           columns: 12
           rows: auto
         header:
           show: true
-          title: "Distacco dalla cella pi\xF9 alta 24h (mV)"
+          title: "Distacco dalla cella pi\xF9 alta 48h (mV)"
         series:
         - color: '#56B4E9'
           entity: sensor.condensatore_celle_distacco_min
@@ -213,7 +292,7 @@ config:
             in_legend: false
           stroke_dash: 6
           stroke_width: 1
-          transform: return -30;
+          transform: return -20;
           type: line
           yaxis_id: mv
         - color: '#999999'
@@ -223,7 +302,7 @@ config:
             in_legend: false
           stroke_dash: 6
           stroke_width: 1
-          transform: return -20;
+          transform: return -10;
           type: line
           yaxis_id: mv
         - color: '#E69F00'
@@ -240,30 +319,33 @@ config:
               text: mV
           decimals: 0
           id: mv
+          max: 0
         - apex_config:
             title:
               text: SOC %
           decimals: 0
           id: soc
+          max: 100
+          min: 0
           opposite: true
-      - graph_span: 24h
+      - graph_span: 48h
         grid_options:
           columns: 12
           rows: auto
         header:
           show: true
-          title: "\u0394 celle e tensione 24h"
+          title: Differenza celle e tensione 48h
         series:
         - color: '#D55E00'
           entity: sensor.condensatore_celle_differenza
           name: "\u0394 celle"
-          stroke_width: 1.5
+          stroke_width: 2
           type: line
           yaxis_id: mv
         - color: '#0072B2'
           entity: sensor.condensatore_bms_tensione
           name: tensione
-          stroke_width: 1.5
+          stroke_width: 1
           type: line
           yaxis_id: v
         type: custom:apexcharts-card
@@ -308,8 +390,9 @@ config:
           rows: auto
         type: markdown
       - content: "C13 e C4 = distacco in mV dalla cella pi\xF9 alta (riferimento del\
-          \ bilanciamento BMS: parte oltre 30 mV, si ferma sotto 20 mV). Min = numero\
-          \ della cella pi\xF9 bassa. \u0394 = cella max \u2212 cella min."
+          \ bilanciamento BMS: Equalization opening 20 mV, closing 10 mV, solo sopra\
+          \ 4,0 V per cella). Min = numero della cella pi\xF9 bassa. \u0394 = cella\
+          \ max \u2212 cella min."
         grid_options:
           columns: full
           rows: auto

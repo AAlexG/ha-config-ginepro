@@ -1,4 +1,4 @@
-# scripts_59.yaml
+# scripts_60.yaml
 # v59 (08/10/2026): fonte_imposta, controllo del rele' valvola scritto come
 #   if/then (prima un if con solo else, rifiutato da Home Assistant).
 # v58 (08/10/2026): i comandi di pompa e caldaia (pompa_accendi/_spegni/_commuta,
@@ -392,6 +392,23 @@ salva_bolletta:
         - condition: template
           value_template: "{{ dati.ok }}"
       then:
+        # Svuota tutti i campi della sezione bollette (il mese resta).
+        # Senza questo passo un valore rimasto in un campo (es. GSE di un
+        # mese precedente) veniva riscritto nel mese salvato dopo.
+        # Solo a salvataggio riuscito: in caso di errore i valori restano
+        # per poter ripetere.
+        - action: input_number.set_value
+          target:
+            entity_id:
+              - input_number.bolletta_elec_kwh
+              - input_number.bolletta_elec_euro
+              - input_number.bolletta_gas_mc
+              - input_number.bolletta_gas_euro
+              - input_number.bolletta_acqua_mc
+              - input_number.bolletta_acqua_euro
+              - input_number.bolletta_gse_euro
+          data:
+            value: 0
         # Aggiorna il prezzo GSE stimato con l'ultimo mese calcolato.
         - if:
             - condition: template

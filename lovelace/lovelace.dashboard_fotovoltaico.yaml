@@ -274,6 +274,7 @@ config:
           statistics:
             period: hour
             type: max
+          stroke_width: 2
           type: line
           yaxis_id: volt
         - color: '#0072B2'
@@ -343,6 +344,7 @@ config:
           statistics:
             period: day
             type: max
+          stroke_width: 2
           type: line
           yaxis_id: volt
         - color: '#D55E00'
@@ -487,16 +489,16 @@ config:
           decimals: 0
           id: conteggio
           min: 0
-      - graph_span: 30d
+      - graph_span: 7d
         grid_options:
           columns: 12
           rows: auto
         header:
           show: true
-          title: Temp. max/giorno 30gg
+          title: Temp. max/giorno 7gg
         series:
-        - entity: sensor.inverter_uflex_battery_temperature
-          name: condens. T1
+        - entity: sensor.condensatore_bms_temperatura_5
+          name: Temp BMS T5
           statistics:
             period: day
             type: max
@@ -516,13 +518,14 @@ config:
               text: "\xB0C"
           decimals: 2
           id: C
+          min: 20
       - graph_span: 12months
         grid_options:
           columns: 12
           rows: auto
         header:
           show: true
-          title: Energia carica/scarica 12 month
+          title: Energia carica/scarica 12 mesi
         series:
         - entity: sensor.inverter_uflex_today_battery_charge
           name: carica
