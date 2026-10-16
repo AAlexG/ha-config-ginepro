@@ -1,4 +1,6 @@
-# automations_sistema_3.yaml
+# automations_sistema_4.yaml
+# v4 (16/10/2026): aggiunta sistema_controllo_file_config (file di
+#   configurazione mancanti o ridotti).
 #
 # Sistema: UPS, ventola Raspberry, aggiornamenti, backup GitHub, Vivino proxy.
 # File creato il 30/09/2026 dalla riorganizzazione "un argomento = automations_X + config_X".
@@ -236,3 +238,73 @@
   action:
     - delay: "00:00:30"
     - action: shell_command.avvia_vivino_proxy
+
+#==================================================================================
+# CONTROLLO FILE DI CONFIGURAZIONE
+#
+# Il 10/10/2026 automations_fotovoltaico.yaml e' sparito da /config/automations
+# e per 6 giorni nessuno se n'e' accorto. controllo_file.py confronta i file su
+# disco con /config/file_attesi.json e segnala:
+#   - file mancanti;
+#   - file automazioni con meno "- id:" di prima, scripts.yaml con meno script
+#     (file sovrascritto o troncato).
+# Dopo ogni modifica voluta (file aggiunto o tolto, automazioni rimosse) va
+# aggiornato l'elenco: Azioni -> shell_command.controllo_file_aggiorna.
+# Controllo all'avvio di HA (dopo 1 minuto) e alle 08:52 e 20:52.
+# La copia da cui recuperare e' il repository GitHub ha-config-ginepro.
+#==================================================================================
+- id: sistema_controllo_file_config
+  alias: "Sistema - Controllo file di configurazione"
+  mode: single
+  max_exceeded: silent
+  triggers:
+    - trigger: homeassistant
+      event: start
+    - trigger: time
+      at:
+        - "08:52:00"
+        - "20:52:00"
+  actions:
+    - if:
+        - condition: template
+          value_template: "{{ trigger.platform == 'homeassistant' }}"
+      then:
+        - delay: "00:01:00"
+    - action: shell_command.controllo_file
+      response_variable: esito
+    - variables:
+        r: >-
+          {%- if esito.returncode == 0 -%}{{ esito.stdout | from_json }}
+          {%- else -%}{{ {'stato': 'errore', 'dettaglio': (esito.stderr or esito.stdout or 'nessun output')[-300:]} }}
+          {%- endif -%}
+    - if:
+        - condition: template
+          value_template: "{{ r.stato == 'ok' }}"
+      then:
+        - action: persistent_notification.dismiss
+          data:
+            notification_id: controllo_file_config
+      else:
+        - variables:
+            testo: >-
+              {% if r.stato == 'errore' %}Il controllo non e' partito: {{ r.dettaglio }}
+              {% else %}{% if r.mancanti %}Mancanti: {{ r.mancanti | join(', ') }}.
+              {% endif %}{% if r.ridotti %}Con meno automazioni o script: {{ r.ridotti | join(', ') }}.
+              {% endif %}Elenco atteso del {{ r.elenco_del }}. Copia di recupero su GitHub (ha-config-ginepro).
+              Se la modifica e' voluta: Azioni -> shell_command.controllo_file_aggiorna.{% endif %}
+        - action: notify.mobile_app_cph2653
+          continue_on_error: true
+          data:
+            title: "📁 File di configurazione"
+            message: "{{ testo }}"
+            data:
+              tag: controllo_file_config
+              priority: high
+              ttl: 0
+              persistent: "true"
+        - action: persistent_notification.create
+          continue_on_error: true
+          data:
+            title: "📁 File di configurazione"
+            notification_id: controllo_file_config
+            message: "{{ testo }}"

@@ -1,4 +1,12 @@
-# config_elettricita_18.yaml
+# config_elettricita_19.yaml
+# v19 (16/10/2026): Altri Apparecchi Oggi, mezzanotte. Gli utility meter
+#   giornalieri si azzerano alle 00:00:00, il carico giornaliero dell'inverter
+#   2-3 minuti dopo (aggiorna ogni 10-15 min). In quei minuti Altri valeva il
+#   carico di tutto ieri (es. 8,9 -> 16,4 -> 0): il salto e il crollo
+#   successivo, letto come reset, gonfiavano le statistiche di 5-16 kWh a
+#   notte. Ora il cambio giorno usa la data (attributo giorno) e nell'ora 0
+#   il sensore resta a 0 finche' l'inverter non si e' azzerato (< 1 kWh).
+#   Tolta la finestra di 15 minuti senza pavimento.
 # v18 (16/10/2026): Altri Apparecchi Oggi non va piu' in unavailable quando
 #   manca una sorgente: trattiene l'ultimo valore. Prima il passaggio da
 #   unavailable perdeva il pavimento monotono (this.state = unavailable) e un
@@ -189,9 +197,8 @@ template:
   # altri_apparecchi_mese, che usa questo sensore come sorgente, conta il
   # valore da capo. E' lo stesso meccanismo che ha gonfiato i deumidificatori
   # (vedi config_clima, "SOMME MONOTONE"). Soluzione identica: sensore
-  # trigger-based che trattiene il massimo della giornata. Nei primi 15
-  # minuti dopo la mezzanotte il pavimento e' disattivato, per lasciare
-  # passare l'azzeramento giornaliero del carico casa dell'inverter.
+  # trigger-based che trattiene il massimo della giornata. Il cambio giorno
+  # e l'azzeramento ritardato dell'inverter sono gestiti nel template (v19).
   # Stesso unique_id: entity_id e storico restano quelli di prima.
   # ============================================================
   - triggers:
@@ -217,11 +224,15 @@ template:
         state_class: total_increasing
         icon: mdi:home-lightning-bolt-outline
         # v18: niente availability. Se manca una sorgente il sensore
-        # trattiene l'ultimo valore (this.state, ripristinato anche dopo un
-        # riavvio) invece di andare in unavailable: cosi' il pavimento
-        # monotono non si perde e al ritorno non c'e' nessun calo.
-        # Nei primi 15 minuti dopo la mezzanotte, con una sorgente mancante,
-        # vale 0 (nuovo giorno): il valore di ieri non viene trascinato.
+        # trattiene il valore della giornata (this.state, ripristinato anche
+        # dopo un riavvio) invece di andare in unavailable: cosi' il
+        # pavimento monotono non si perde e al ritorno non c'e' nessun calo.
+        # v19: cambio giorno dalla data. L'attributo giorno registra la data
+        # dell'ultimo calcolo: se e' diversa da oggi il pavimento riparte da 0.
+        # Se l'attributo manca (primo avvio) vale come stesso giorno, salvo
+        # nell'ora 0. Nell'ora 0, finche' il carico giornaliero dell'inverter
+        # e' >= 1 kWh, l'inverter non si e' ancora azzerato: il sensore resta
+        # al valore di oggi (0) e non calcola con il carico di ieri.
         state: >-
           {% set fonti = ['sensor.inverter_uflex_today_load_consumption',
                           'sensor.panasonic_consumata_oggi',
@@ -231,12 +242,16 @@ template:
                           'sensor.auto_energia_oggi',
                           'sensor.cucina_energia_oggi'] %}
           {% set mancanti = fonti | reject('has_value') | list | count %}
-          {% set mezzanotte = now().hour == 0 and now().minute < 15 %}
-          {% set prec = this.state | float(0) %}
-          {% if mancanti > 0 %}
-            {{ 0 if mezzanotte else prec | round(2) }}
+          {% set oggi = now().date() | string %}
+          {% set g = this.attributes.get('giorno') %}
+          {% set stesso = g == oggi or (g is none and now().hour > 0) %}
+          {% set prec = this.state | float(0) if stesso else 0 %}
+          {% set inv = states('sensor.inverter_uflex_today_load_consumption') | float(0) %}
+          {% set inv_azzerato = now().hour > 0 or inv < 1 %}
+          {% if mancanti > 0 or not inv_azzerato %}
+            {{ prec | round(2) }}
           {% else %}
-            {% set nuovo = [ states('sensor.inverter_uflex_today_load_consumption') | float(0)
+            {% set nuovo = [ inv
                  - states('sensor.panasonic_consumata_oggi') | float(0)
                  - states('sensor.consumo_deumidificatori_oggi') | float(0)
                  - states('sensor.consumo_fancoil_totale_oggi') | float(0)
@@ -244,10 +259,11 @@ template:
                  - states('sensor.sauna_energia_oggi') | float(0)
                  - states('sensor.auto_energia_oggi') | float(0)
                  - states('sensor.cucina_energia_oggi') | float(0), 0 ] | max | round(2) %}
-            {{ nuovo if mezzanotte else [nuovo, prec] | max | round(2) }}
+            {{ [nuovo, prec] | max | round(2) }}
           {% endif %}
         attributes:
           consumo_casa: "{{ states('sensor.inverter_uflex_today_load_consumption') }}"
+          giorno: "{{ now().date() | string }}"
           sorgenti_mancanti: >-
             {{ ['sensor.inverter_uflex_today_load_consumption',
                 'sensor.panasonic_consumata_oggi',

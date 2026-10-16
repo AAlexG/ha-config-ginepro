@@ -1,5 +1,13 @@
 #!/usr/bin/env python3
-# pv_tabella_mensile_17.py
+# pv_tabella_mensile_18.py
+# v18 (16/10/2026): due colonne nuove per la tabella apparecchi.
+#   perdite_inv = consumo_tot - carico inverter (today_load_consumption):
+#     consumo proprio dell'inverter e perdite di conversione. Con questa voce
+#     la somma apparecchi + altri + perdite_inv torna con consumo_tot.
+#     Assente nei mesi senza statistiche del carico inverter.
+#   perdite_acc = carica - scarica dell'accumulo: energia entrata nel
+#     condensatore e non restituita. NON fa parte di consumo_tot (vedi v13),
+#     e' una voce a parte.
 # Calcola per ogni mese con produzione FV:
 #   - produzione (kWh)
 #   - autoconsumo = produzione - export (kWh)
@@ -139,6 +147,8 @@ def main():
         t_prod = t_auto = t_imp = t_cons = t_exp = t_bc = t_bd = 0.0
         t_pompa = t_fancoil = t_deumid = t_lavatrice = 0.0
         t_eauto = t_sauna = t_cucina = t_altri = 0.0
+        t_pinv = t_pacc = 0.0
+        pinv_presente = False
 
         for ym in mesi:
             p  = prod.get(ym, 0.0)
@@ -149,7 +159,8 @@ def main():
 
             autocons    = round(max(0.0, p - ex), 3)
             pct_auto    = round(autocons / p * 100, 1) if p > 0 else 0.0
-            consumo_tot = round(max(0.0, autocons - bc + bd + im))
+            consumo_raw = max(0.0, autocons - bc + bd + im)
+            consumo_tot = round(consumo_raw)
             pct_batt_loss = round((bc - bd) / bc * 100, 1) if bc > 0 else 0.0
 
             t_prod += p
@@ -178,6 +189,16 @@ def main():
             t_cucina    += ap_cucina
             t_altri     += ap_altri
 
+            # v18: perdite. perdite_inv solo se il carico inverter ha dati nel mese.
+            p_acc = round(bc - bd, 1)
+            t_pacc += bc - bd
+            extra = {"perdite_acc": p_acc}
+            if ym in load:
+                p_inv = consumo_raw - load[ym]
+                t_pinv += p_inv
+                pinv_presente = True
+                extra["perdite_inv"] = round(p_inv, 1)
+
             rows.append({
                 "mese":          fmt_mese(ym),
                 "produzione":    round(p),
@@ -198,6 +219,7 @@ def main():
                 "sauna":         round(ap_sauna, 1),
                 "cucina":        round(ap_cucina, 1),
                 "altri":         round(ap_altri, 1),
+                **extra,
             })
 
         # Riga totali con % ricalcolate sui totali
@@ -224,7 +246,10 @@ def main():
             "sauna":         round(t_sauna, 1),
             "cucina":        round(t_cucina, 1),
             "altri":         round(t_altri, 1),
+            "perdite_acc":   round(t_pacc, 1),
         }
+        if pinv_presente:
+            totale["perdite_inv"] = round(t_pinv, 1)
 
         # Totali in prima posizione, poi mesi dal più recente
         output = list(reversed(rows)) + [totale]
