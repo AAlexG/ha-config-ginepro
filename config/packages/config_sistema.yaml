@@ -1,4 +1,8 @@
-# config_sistema_8.yaml
+# config_sistema_9.yaml
+# v9 (16/10/2026): installa_e_riavvia sceglie il riavvio dai file installati
+# (installa.py, campo riavvio): RAPIDO = Riavvio rapido
+# (homeassistant.reload_all), COMPLETO = Riavvia Home Assistant
+# (homeassistant.restart), oppure nessuno. Con la cartella vuota: RAPIDO.
 # v8 (16/10/2026): pulsante "Installa e riavvia". shell_command installa_*
 # (fasi di /config/installa.py) e script.installa_e_riavvia.
 # v7 (16/10/2026): tolto controllo_file_aggiorna. L'elenco dei file attesi
@@ -74,10 +78,12 @@ script:
   #    posto, salvando gli originali.
   # 2. Se ha toccato file di configurazione: controllo configurazione in
   #    background, interrogato ogni 10 s per al massimo 6 minuti.
-  # 3. Controllo OK: archivia in SORGENTI (ultime 5 versioni), notifica,
-  #    riavvio RAPIDO. Controllo fallito o troppo lento: rimette gli
-  #    originali, notifica l'errore, nessun riavvio.
-  # Con la cartella vuota fa solo il riavvio.
+  # 3. Controllo OK: archivia in SORGENTI (ultime 5 versioni), notifica e
+  #    riavvia come indicato da installa.py: RAPIDO (Riavvio rapido,
+  #    homeassistant.reload_all) o COMPLETO (Riavvia Home Assistant,
+  #    homeassistant.restart) o nessuno. Controllo fallito o troppo lento:
+  #    rimette gli originali, notifica l'errore, nessun riavvio.
+  # Con la cartella vuota fa solo il Riavvio rapido.
   # ============================================================
   installa_e_riavvia:
     alias: "Installa e riavvia"
@@ -106,7 +112,7 @@ script:
           - condition: template
             value_template: "{{ r.totale == 0 }}"
         then:
-          - action: homeassistant.restart
+          - action: homeassistant.reload_all
           - stop: "nessun file da installare"
       - if:
           - condition: template
@@ -154,7 +160,10 @@ script:
                 Installati: {{ r.installati | join(', ') or 'nessuno' }}.
                 {% if r.esphome %}Archiviati, da caricare dall'ESPHome: {{ r.esphome | join(', ') }}.
                 {% endif %}{% if r.scartati %}Scartati (restano in da_installare): {{ r.scartati | join('; ') }}.
-                {% endif %}{{ r.avvisi | join(' ') }} Riavvio RAPIDO in corso.
+                {% endif %}{{ r.avvisi | join(' ') }}
+                {% if r.riavvio == 'completo' %}Riavvio COMPLETO ({{ r.motivi | join('; ') }}).
+                {% elif r.riavvio == 'rapido' %}Riavvio RAPIDO.
+                {% else %}Nessun riavvio necessario.{% endif %}
           - action: notify.mobile_app_cph2653
             continue_on_error: true
             data:
@@ -166,7 +175,17 @@ script:
               title: "📦 Installazione completata"
               notification_id: installa_e_riavvia
               message: "{{ testo }}"
-          - action: homeassistant.restart
+          - choose:
+              - conditions:
+                  - condition: template
+                    value_template: "{{ r.riavvio == 'completo' }}"
+                sequence:
+                  - action: homeassistant.restart
+              - conditions:
+                  - condition: template
+                    value_template: "{{ r.riavvio == 'rapido' }}"
+                sequence:
+                  - action: homeassistant.reload_all
         else:
           - action: shell_command.installa_annulla
           - variables:

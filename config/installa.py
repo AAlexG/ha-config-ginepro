@@ -1,5 +1,15 @@
 #!/usr/bin/env python3
-# installa_1.py
+# installa_2.py
+#
+# v2 (16/10/2026): il tipo di riavvio si decide dai file installati.
+#   RAPIDO   = Riavvio rapido di HA (homeassistant.reload_all): automazioni,
+#              scripts.yaml, package che cambiano solo domini ricaricabili.
+#   COMPLETO = Riavvia Home Assistant (homeassistant.restart): plance (HA
+#              le rilegge solo all'avvio), configuration.yaml, package che
+#              cambiano domini non ricaricabili (shell_command,
+#              utility_meter, sensori a piattaforma...).
+#   Nessuno  = solo file Python, file_attesi, ESPHome.
+#   prepara restituisce "riavvio" e "motivi".
 #
 # Installazione dei file consegnati da Claude (pulsante "Installa e riavvia",
 # plancia Casa Ginepro, script.installa_e_riavvia in config_sistema).
@@ -66,6 +76,15 @@ PLANCE = {
 # Sottocartelle di SORGENTI in cui si tengono solo le ultime TENERE versioni.
 DA_PULIRE = ["AUTOMATIONS", "CONFIGURATIONS", "CONFIGURATIONS/PACKAGES",
              "PY", "SCRIPTS", "PLANCE", "ESPHOME"]
+
+# Domini che il Riavvio rapido ricarica. Tutto il resto, se cambia in un
+# package, richiede il riavvio COMPLETO.
+RICARICABILI = {
+    "automation", "script", "scene", "template", "group", "command_line",
+    "input_boolean", "input_number", "input_select", "input_text",
+    "input_datetime", "input_button", "counter", "timer", "schedule",
+    "zone", "person",
+}
 
 RE_NOME = re.compile(r"^(?P<base>.+?)_(?P<v>\d+)(?P<ext>\.py\.txt|\.py|\.yaml)$")
 RE_ESPHOME = re.compile(r"^(?P<base>.+?)-(?P<v>\d+)(?P<ext>\.yaml)$")
@@ -173,6 +192,36 @@ def controlla_contenuto(tipo, nome, base, v, percorso):
     return dati, None
 
 
+def leggi_yaml(percorso):
+    try:
+        with open(percorso, encoding="utf-8", errors="replace") as f:
+            y = yaml.load(f, Loader=_Loader)
+        return y if isinstance(y, dict) else {}
+    except (OSError, yaml.YAMLError):
+        return None
+
+
+def riavvio_per(tipo, base, dest, src):
+    """Ritorna ("nessuno"|"rapido"|"completo", motivo)."""
+    if tipo == "plancia":
+        return "completo", f"{base}: HA rilegge le plance solo all'avvio"
+    if tipo != "file" or src.endswith((".py", ".py.txt")) or base == "file_attesi":
+        return "nessuno", ""
+    if base == "configuration":
+        return "completo", "configuration.yaml"
+    if base.startswith("automations_") or base == "scripts":
+        return "rapido", ""
+    vecchio, nuovo = leggi_yaml(dest), leggi_yaml(src)
+    if vecchio is None or nuovo is None:
+        return "completo", f"{base}: confronto non riuscito"
+    cambiati = sorted(k for k in set(vecchio) | set(nuovo)
+                      if vecchio.get(k) != nuovo.get(k))
+    fissi = [k for k in cambiati if k not in RICARICABILI]
+    if fissi:
+        return "completo", f"{base}: {', '.join(fissi)}"
+    return ("rapido" if cambiati else "nessuno"), ""
+
+
 def prepara():
     os.makedirs(IN, exist_ok=True)
     avvisi = []
@@ -216,6 +265,7 @@ def prepara():
         if errore:
             scartati.append(f"{nome}: {errore}")
             continue
+        riavvio, motivo = riavvio_per(tipo, base, dest, src)
         copia = None
         if os.path.exists(dest):
             copia = os.path.join(RIPRISTINO, f"{len(fatti)}_{os.path.basename(dest)}")
@@ -238,7 +288,8 @@ def prepara():
                 f.write(contenuto)
             os.replace(tmp, dest)
         fatti.append({"nome": nome, "tipo": tipo, "base": base, "v": v, "prima": vi,
-                      "dest": dest, "copia": copia, "sotto": sotto, "arch": nome_arch})
+                      "dest": dest, "copia": copia, "sotto": sotto, "arch": nome_arch,
+                      "riavvio": riavvio, "motivo": motivo})
 
     with open(STATO, "w", encoding="utf-8") as f:
         json.dump({"fatti": fatti, "esphome": esphome}, f, ensure_ascii=False)
@@ -252,6 +303,10 @@ def prepara():
           "installati": [descr(x) for x in fatti],
           "file_config": sum(1 for x in fatti if x["tipo"] == "file"),
           "esphome": [x["nome"] for x in esphome],
+          "riavvio": ("completo" if any(x["riavvio"] == "completo" for x in fatti)
+                      else "rapido" if any(x["riavvio"] == "rapido" for x in fatti)
+                      else "nessuno"),
+          "motivi": [x["motivo"] for x in fatti if x["riavvio"] == "completo" and x["motivo"]],
           "scartati": scartati, "avvisi": avvisi})
 
 
