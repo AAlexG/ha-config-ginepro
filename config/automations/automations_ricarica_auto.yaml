@@ -1,5 +1,9 @@
-# automations_ricarica_auto_4.yaml
+# automations_ricarica_auto_5.yaml
 #
+# v5 (14/10/2026): R3 non si caricava: HA non accetta "for" in una condizione
+#   state con una lista di stati. Sostituita da una condizione template con
+#   last_changed. Il passaggio pieno <-> raggiungibile riazzera i 10 minuti:
+#   piu' prudente, non cambia la logica.
 # v4 (14/10/2026): riaccensione automatica (R3). Lo stacco R1 alza il flag
 #   input_boolean.auto_staccata_da_previsione; quando la previsione torna
 #   "raggiungibile" o "pieno" con l'auto spenta (la simulazione v6 include gia'
@@ -148,12 +152,11 @@
     - condition: state
       entity_id: sun.sun
       state: above_horizon
-    - condition: state
-      entity_id: sensor.condensatore_previsione_pieno
-      state:
-        - raggiungibile
-        - pieno
-      for: "00:10:00"
+    - condition: template
+      value_template: >-
+        {{ states('sensor.condensatore_previsione_pieno') in ['raggiungibile', 'pieno']
+           and now() - states.sensor.condensatore_previsione_pieno.last_changed
+               >= timedelta(minutes=10) }}
   actions:
     - variables:
         c: "{{ state_attr('sensor.condensatore_previsione_pieno', 'calcolo') or {} }}"

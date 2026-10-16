@@ -21,6 +21,9 @@ config:
           action: navigate
           navigation_path: /dashboard-fotovoltaico/fotovoltaico
         type: button
+      - heading: Stato attuale BMS
+        heading_style: subtitle
+        type: heading
       - content: '{% set d = states.sensor.condensatore_celle_differenza %}{% if d
           is none or d.state in [''unknown'',''unavailable''] %}_Nessuna lettura_{%
           else %}{% set t = as_timestamp(d.last_reported) %}Ultima lettura **{{ t
@@ -30,12 +33,36 @@ config:
           columns: full
           rows: auto
         type: markdown
+      - entity: sensor.condensatore_bms_capacita
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        name: "Capacit\xE0Max"
+        type: tile
+        vertical: false
+      - entity: sensor.condensatore_bms_residuo
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        name: Residuo
+        type: tile
+        vertical: false
       - entity: sensor.condensatore_bms_soc
         features_position: bottom
         grid_options:
           columns: 4
           rows: 1
         name: SOC
+        type: tile
+        vertical: false
+      - entity: sensor.condensatore_celle_differenza
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        name: "\u0394 celle"
         type: tile
         vertical: false
       - entity: sensor.condensatore_bms_tensione
@@ -54,28 +81,12 @@ config:
         name: Corrente
         type: tile
         vertical: false
-      - entity: sensor.condensatore_bms_residuo
-        features_position: bottom
-        grid_options:
-          columns: 4
-          rows: 1
-        name: Residuo
-        type: tile
-        vertical: false
-      - entity: sensor.condensatore_bms_capacita
-        features_position: bottom
-        grid_options:
-          columns: 4
-          rows: 1
-        name: "Capacit\xE0"
-        type: tile
-        vertical: false
       - entity: sensor.condensatore_bms_soh
         features_position: bottom
         grid_options:
-          columns: 4
-          rows: 1
-        name: SOH
+          columns: full
+          rows: auto
+        name: SOH (StateOfHealth)
         type: tile
         vertical: false
       - entity: sensor.condensatore_bms_cicli
@@ -94,65 +105,48 @@ config:
         name: Tens. porta
         type: tile
         vertical: false
-      - entity: sensor.condensatore_celle_differenza
-        features_position: bottom
-        grid_options:
-          columns: 4
-          rows: 1
-        name: "\u0394 celle"
-        type: tile
-        vertical: false
       - heading: Temperature BMS
         heading_style: subtitle
         type: heading
-      - entity: sensor.condensatore_bms_temperatura_1
-        features_position: bottom
+      - graph_span: 24hours
         grid_options:
-          columns: 4
-          rows: 1
-        name: T1
-        type: tile
-        vertical: false
-      - entity: sensor.condensatore_bms_temperatura_2
-        features_position: bottom
-        grid_options:
-          columns: 4
-          rows: 1
-        name: T2
-        type: tile
-        vertical: false
-      - entity: sensor.condensatore_bms_temperatura_3
-        features_position: bottom
-        grid_options:
-          columns: 4
-          rows: 1
-        name: T3
-        type: tile
-        vertical: false
-      - entity: sensor.condensatore_bms_temperatura_4
-        features_position: bottom
-        grid_options:
-          columns: 4
-          rows: 1
-        name: T4
-        type: tile
-        vertical: false
-      - entity: sensor.condensatore_bms_temperatura_5
-        features_position: bottom
-        grid_options:
-          columns: 4
-          rows: 1
-        name: T5
-        type: tile
-        vertical: false
-      - entity: sensor.condensatore_bms_temperatura_6
-        features_position: bottom
-        grid_options:
-          columns: 4
-          rows: 1
-        name: T6
-        type: tile
-        vertical: false
+          columns: 12
+          rows: auto
+        header:
+          show: true
+          title: Temperature interne BMS 24h
+        series:
+        - entity: sensor.condensatore_bms_temperatura_1
+          name: T1
+          type: line
+          yaxis_id: C
+        - entity: sensor.condensatore_bms_temperatura_2
+          name: T2
+          type: line
+          yaxis_id: C
+        - entity: sensor.condensatore_bms_temperatura_3
+          name: T3
+          type: line
+          yaxis_id: C
+        - entity: sensor.condensatore_bms_temperatura_4
+          name: T4
+          type: line
+          yaxis_id: C
+        - entity: sensor.condensatore_bms_temperatura_5
+          name: T5
+          type: line
+          yaxis_id: C
+        - entity: sensor.condensatore_bms_temperatura_6
+          name: T6
+          type: line
+          yaxis_id: C
+        type: custom:apexcharts-card
+        yaxis:
+        - apex_config:
+            title:
+              text: C
+          decimals: 0
+          id: C
       type: grid
     - cards:
       - heading: 'CELLE: ULTIME 14 LETTURE'
@@ -160,18 +154,24 @@ config:
         type: heading
       - content: "{% set L = state_attr('sensor.condensatore_celle_riepilogo', 'letture')\
           \ %}{% if not L %}_Nessuna lettura_{% else %}{% set L = L | reverse | list\
-          \ %}mV \xB7 colonne dalla lettura pi\xF9 recente \xB7 **\u2B07 grassetto**\
-          \ = cella pi\xF9 bassa \xB7 _corsivo_ = pi\xF9 alta\n<div style=\"overflow-x:auto;font-size:11px\"\
-          ><table style=\"border-collapse:collapse;white-space:nowrap\"><tr><th style=\"\
-          padding:2px 4px;border:1px solid #444\">Cella</th>{% for r in L %}<th style=\"\
-          padding:2px 4px;border:1px solid #444\">{{ r.t[6:] }}</th>{% endfor %}</tr>{%\
-          \ for k in range(14) %}<tr><td style=\"padding:2px 4px;border:1px solid\
-          \ #333;text-align:right\"><b>{{ k + 1 }}</b></td>{% for r in L %}{% set\
-          \ v = r.c[k] %}<td style=\"padding:2px 4px;border:1px solid #333;text-align:right\"\
-          >{% if v == r.c | min %}<b>\u2B07{{ v }}</b>{% elif v == r.c | max %}<i>{{\
-          \ v }}</i>{% else %}{{ v }}{% endif %}</td>{% endfor %}</tr>{% endfor %}<tr><td\
-          \ style=\"padding:2px 4px;border:1px solid #333\"><b>\u0394</b></td>{% for\
-          \ r in L %}<td style=\"padding:2px 4px;border:1px solid #333;text-align:right\"\
+          \ %}mV di distacco dalla cella pi\xF9 alta (0 = pi\xF9 alta) \xB7 colonne\
+          \ dalla lettura pi\xF9 recente \xB7 **\u2B07 grassetto** = cella pi\xF9\
+          \ bassa\n<div style=\"overflow-x:auto;font-size:11px\"><table style=\"border-collapse:collapse;white-space:nowrap\"\
+          ><tr><th style=\"padding:2px 4px;border:1px solid #444\">Cella</th>{% for\
+          \ r in L %}<th style=\"padding:2px 4px;border:1px solid #444\">{{ r.t[6:]\
+          \ }}</th>{% endfor %}</tr><tr><td style=\"padding:2px 4px;border:1px solid\
+          \ #333\"><b>Vpacco</b></td>{% for r in L %}<td style=\"padding:2px 4px;border:1px\
+          \ solid #333;text-align:right\"><b>{{ '%.2f' | format((r.c | sum) / 1000)\
+          \ }}</b></td>{% endfor %}</tr><tr><td style=\"padding:2px 4px;border:1px\
+          \ solid #333\"><b>Vmax</b></td>{% for r in L %}<td style=\"padding:2px 4px;border:1px\
+          \ solid #333;text-align:right\">{{ '%.3f' | format((r.c | max) / 1000) }}</td>{%\
+          \ endfor %}</tr>{% for k in range(14) %}<tr><td style=\"padding:2px 4px;border:1px\
+          \ solid #333;text-align:right\"><b>{{ k + 1 }}</b></td>{% for r in L %}{%\
+          \ set v = r.c[k] - r.c | max %}<td style=\"padding:2px 4px;border:1px solid\
+          \ #333;text-align:right\">{% if r.c[k] == r.c | min %}<b>\u2B07{{ v }}</b>{%\
+          \ else %}{{ v }}{% endif %}</td>{% endfor %}</tr>{% endfor %}<tr><td style=\"\
+          padding:2px 4px;border:1px solid #333\"><b>\u0394</b></td>{% for r in L\
+          \ %}<td style=\"padding:2px 4px;border:1px solid #333;text-align:right\"\
           ><b>{{ r.c | max - r.c | min }}</b></td>{% endfor %}</tr><tr><td style=\"\
           padding:2px 4px;border:1px solid #333\"><b>SOC</b></td>{% for r in L %}<td\
           \ style=\"padding:2px 4px;border:1px solid #333;text-align:right\">{{ r.s\
@@ -180,39 +180,53 @@ config:
           columns: full
           rows: auto
         type: markdown
-      - graph_span: 7d
+      - graph_span: 24h
         grid_options:
           columns: 12
           rows: auto
         header:
           show: true
-          title: 'Celle: scarto dalla media 7gg (mV)'
+          title: "Distacco dalla cella pi\xF9 alta 24h (mV)"
         series:
-        - color: '#E69F00'
-          entity: sensor.condensatore_celle_scarto_max
-          name: cella max
-          stroke_width: 2
-          type: line
-          yaxis_id: mv
         - color: '#56B4E9'
-          entity: sensor.condensatore_celle_scarto_min
+          entity: sensor.condensatore_celle_distacco_min
           name: cella min
           stroke_width: 2
           type: line
           yaxis_id: mv
         - color: '#D55E00'
-          entity: sensor.condensatore_cella_13_scarto
+          entity: sensor.condensatore_cella_13_distacco
           name: cella 13
           stroke_width: 3
           type: line
           yaxis_id: mv
         - color: '#009E73'
-          entity: sensor.condensatore_cella_04_scarto
+          entity: sensor.condensatore_cella_04_distacco
           name: cella 4
           stroke_width: 3
           type: line
           yaxis_id: mv
         - color: '#999999'
+          entity: sensor.condensatore_celle_differenza
+          name: avvio bilanciamento
+          show:
+            in_legend: false
+          stroke_dash: 6
+          stroke_width: 1
+          transform: return -30;
+          type: line
+          yaxis_id: mv
+        - color: '#999999'
+          entity: sensor.condensatore_celle_differenza
+          name: fine bilanciamento
+          show:
+            in_legend: false
+          stroke_dash: 6
+          stroke_width: 1
+          transform: return -20;
+          type: line
+          yaxis_id: mv
+        - color: '#E69F00'
           entity: sensor.condensatore_bms_soc
           name: SOC
           stroke_dash: 4
@@ -231,27 +245,25 @@ config:
               text: SOC %
           decimals: 0
           id: soc
-          max: 100
-          min: 0
           opposite: true
-      - graph_span: 7d
+      - graph_span: 24h
         grid_options:
           columns: 12
           rows: auto
         header:
           show: true
-          title: Differenza celle e tensione 7gg
+          title: "\u0394 celle e tensione 24h"
         series:
         - color: '#D55E00'
           entity: sensor.condensatore_celle_differenza
           name: "\u0394 celle"
-          stroke_width: 2
+          stroke_width: 1.5
           type: line
           yaxis_id: mv
         - color: '#0072B2'
           entity: sensor.condensatore_bms_tensione
           name: tensione
-          stroke_width: 1
+          stroke_width: 1.5
           type: line
           yaxis_id: v
         type: custom:apexcharts-card
@@ -278,8 +290,8 @@ config:
           \ (tensione minima del giorno)\n\n| Giorno | Ora | V | SOC | \u0394 mV |\
           \ Min | C13 | C4 |\n|--|--|--:|--:|--:|--:|--:|--:|\n{% for r in d | reverse\
           \ %}| {{ r.g }} | {{ r.hb }} | {{ r.vb }} | {{ r.sob }} | **{{ r.db }}**\
-          \ | {{ r.cb }} | {{ '%+d' | format(r.b13) }} | {{ '%+d' | format(r.b4) }}\
-          \ |\n{% endfor %}{% endif %}"
+          \ | {{ r.cb }} | {{ r.xb13 if r.xb13 is defined else '\u2013' }} | {{ r.xb4\
+          \ if r.xb4 is defined else '\u2013' }} |\n{% endfor %}{% endif %}"
         grid_options:
           columns: full
           rows: auto
@@ -289,13 +301,14 @@ config:
           \ (tensione massima del giorno)\n\n| Giorno | Ora | V | SOC | \u0394 mV\
           \ | Min | C13 | \u0394 max |\n|--|--|--:|--:|--:|--:|--:|--:|\n{% for r\
           \ in d | reverse %}| {{ r.g }} | {{ r.ha }} | {{ r.va }} | {{ r.soa }} |\
-          \ **{{ r.da }}** | {{ r.ca }} | {{ '%+d' | format(r.a13) }} | {{ r.dmax\
-          \ }} |\n{% endfor %}{% endif %}"
+          \ **{{ r.da }}** | {{ r.ca }} | {{ r.xa13 if r.xa13 is defined else '\u2013\
+          ' }} | {{ r.dmax }} |\n{% endfor %}{% endif %}"
         grid_options:
           columns: full
           rows: auto
         type: markdown
-      - content: "C13 e C4 = scarto in mV dalla media delle 14 celle. Min = numero\
+      - content: "C13 e C4 = distacco in mV dalla cella pi\xF9 alta (riferimento del\
+          \ bilanciamento BMS: parte oltre 30 mV, si ferma sotto 20 mV). Min = numero\
           \ della cella pi\xF9 bassa. \u0394 = cella max \u2212 cella min."
         grid_options:
           columns: full

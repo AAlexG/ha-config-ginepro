@@ -9,12 +9,11 @@ config:
       - heading: SISTEMA ORA
         heading_style: title
         type: heading
-      - entity: input_boolean.condensatore_staccato
+      - entity: sensor.inverter_uflex_device_state
         features_position: bottom
         grid_options:
-          columns: 6
           rows: auto
-        name: Condensatore in avaria
+        name: Stato inverter
         type: tile
         vertical: false
       - grid_options:
@@ -43,19 +42,28 @@ config:
           action: navigate
           navigation_path: /dashboard-bms/bms
         type: button
-      - entity: sensor.inverter_uflex_device_state
+      - entity: input_boolean.condensatore_staccato
         features_position: bottom
-        name: Stato inverter
+        grid_options:
+          columns: full
+          rows: auto
+        name: Condensatore in avaria
         type: tile
         vertical: false
       - entity: sensor.condensatore_bms_soc
         features_position: bottom
-        name: SOC BMS
+        grid_options:
+          columns: full
+          rows: auto
+        name: SOC BMS ogni 15min
         type: tile
         vertical: false
       - entity: sensor.inverter_uflex_battery
         features_position: bottom
-        name: SOC inverter
+        grid_options:
+          columns: 12
+          rows: 1
+        name: 'SOC inverter momentanea '
         type: tile
         vertical: false
       - entity: sensor.inverter_uflex_battery_voltage
@@ -321,8 +329,6 @@ config:
               text: A
           decimals: 0
           id: amp
-          max: 100
-          min: -100
       - graph_span: 60d
         grid_options:
           columns: 12
@@ -490,7 +496,7 @@ config:
           title: Temp. max/giorno 30gg
         series:
         - entity: sensor.inverter_uflex_battery_temperature
-          name: condensatore
+          name: condens. T1
           statistics:
             period: day
             type: max
@@ -510,26 +516,26 @@ config:
               text: "\xB0C"
           decimals: 2
           id: C
-      - graph_span: 30d
+      - graph_span: 12months
         grid_options:
           columns: 12
           rows: auto
         header:
           show: true
-          title: Energia carica/scarica 30gg
+          title: Energia carica/scarica 12 month
         series:
         - entity: sensor.inverter_uflex_today_battery_charge
           name: carica
           statistics:
-            period: day
-            type: state
+            period: month
+            type: change
           type: column
           yaxis_id: kwh
         - entity: sensor.inverter_uflex_today_battery_discharge
           name: scarica
           statistics:
-            period: day
-            type: state
+            period: month
+            type: change
           type: column
           yaxis_id: kwh
         type: custom:apexcharts-card

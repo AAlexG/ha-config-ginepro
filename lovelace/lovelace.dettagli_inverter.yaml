@@ -1,5 +1,5 @@
 config:
-  title: Dettagli inverter v.1
+  title: Dettagli inverter v.3
   views:
   - cards: []
     max_columns: 2
@@ -26,16 +26,17 @@ config:
           \ UFLEX HY-SP-6-IT (integrazione Solarman). **Ogni modifica \xE8 immediata**:\
           \ non c'\xE8 conferma e non c'\xE8 annulla. Per i valori numerici i tasti\
           \ \u2212 / + cambiano di un passo; per scrivere un valore preciso tocca\
-          \ il riquadro e usa la finestra che si apre.\n\n**Simboli**\n\u2705 valore\
-          \ verificato sulla brochure UFLEX 2024 (inverter pag. 5, supercondensatore\
-          \ UFSC48-7.6)\n\u26A0\uFE0F valore al limite o da far verificare a UFLEX\n\
-          \u2753 non lo so: nessuna fonte UFLEX per questo valore\n\n**Da dove vengono\
-          \ le spiegazioni**\nIl manuale dell'inverter UFLEX non \xE8 disponibile.\
-          \ Le spiegazioni sono prese dal manuale Deye SUN-5/8K-SG01LP1 (it.deyeinverter.com).\
-          \ L'inverter risponde alla stessa mappa Modbus Deye, ma UFLEX non ha confermato\
-          \ che il funzionamento sia identico.\n\n**Sola lettura**\nI parametri dell'ultima\
-          \ sezione (rete, protezioni, sistema) non hanno comandi in plancia, perch\xE9\
-          \ una modifica sbagliata pu\xF2 staccare l'impianto dalla rete."
+          \ il riquadro e usa la finestra che si apre.\n\n**Fonti**\n- **MU** = manuale\
+          \ d'uso del supercondensatore UFSC48\n- **MI** = manuale dell'inverter HY-SP\n\
+          - **BR** = brochure UFLEX 2024\n\nSe valore attuale e manuale coincidono,\
+          \ accanto c'\xE8 solo la fonte.\n\n**Simboli**\n\u2705 valore uguale a quello\
+          \ del manuale\n\u26A0\uFE0F valore diverso dal manuale, o da far verificare\
+          \ a UFLEX\n\u2753 il manuale non d\xE0 un valore: domanda aperta per l'ingegnere\
+          \ UFLEX\n\n**Accumulo e inverter comunicano** dal 12/10 (cavo RJ45 BMS):\
+          \ SoC, temperatura e limiti di carica arrivano dal BMS del modulo.\n\n**Sola\
+          \ lettura**\nI parametri dell'ultima sezione (rete, protezioni, sistema)\
+          \ non hanno comandi in plancia, perch\xE9 una modifica sbagliata pu\xF2\
+          \ staccare l'impianto dalla rete."
         grid_options:
           columns: full
           rows: auto
@@ -168,39 +169,45 @@ config:
       - heading: "INVERTER \xB7 ACCUMULO: TIPO E CARICA"
         heading_style: title
         type: heading
-      - content: "**Tipo di accumulo** \u2013 *Lead-Battery*: l'inverter carica a\
-          \ tensione, in 4 fasi come una batteria al piombo. *Lithium*: le soglie\
-          \ le decide il BMS dell'accumulo attraverso il cavo di comunicazione. \n\
-          \n**Soglie in volt o in %** \u2013 *Voltage*: valgono le soglie in volt.\
-          \ *Capacity*: valgono quelle in %. *No Battery*: l'inverter lavora senza\
-          \ accumulo. Per noi seve capacity\n\n**Protocollo BMS** \u2013 \xC8 il protocollo\
-          \ di comunicazione con il BMS. Conta solo in modalit\xE0 *Lithium* con il\
-          \ cavo collegato, quindi \xE8 nostro\n\n**Capacit\xE0** \u2013 \u2705 147\
-          \ Ah, come da scheda UFSC48-7.6.\n\n**Corrente max carica** \u2013 \u2705\
-          \ 80 A, sotto i 100 A del modulo e i 135 A dell'inverter.\n\n**Corrente\
-          \ max scarica** \u2013 \u2705 90 A, abbassata da 100 A il 9/10 dopo il blocco\
-          \ dell'8/10. \xC8 sotto i 100 A del modulo, con margine.\n\n**Tensione Absorption**\
-          \ \u2013 \xC8 la tensione di fine carica. \u2705 58 V, cio\xE8 la tensione\
-          \ massima di carica della scheda.\n\n**Tensione Float** \u2013 \xC8 la tensione\
-          \ di mantenimento a carica completa. \u2705 57 V, il valore consigliato\
-          \ da UFLEX.\n\n**Tensione Equalization** \u2013 \xC8 la tensione della carica\
-          \ periodica di equalizzazione, che serve alle batterie al piombo. \u2705\
-          \ 58 V, uguale ad Absorption, quindi non supera il massimo.\n\n**Equalizz.\
-          \ ogni / Durata equalizz.** \u2013 Ogni quanti giorni fare l'equalizzazione\
-          \ e per quante ore. \u2753 Con durata 0 h e tensione uguale ad Absorption\
-          \ \xE8 probabile che non abbia effetto pratico (deduzione, non verificata).\n\
-          \n**Compensaz. temperatura** \u2013 Correzione delle tensioni di carica\
-          \ in base alla temperatura, tipica del piombo. 0 vuol dire nessuna correzione.\
-          \ \u2753 La brochure dice che il modulo non ha problemi di temperatura,\
-          \ ma non d\xE0 un valore. Il sensore di temperatura batteria dell'inverter\
-          \ \xE8 fisso a 25 \xB0C.\n\n**Resistenza interna** \u2013 Serve all'inverter\
-          \ per correggere la tensione letta sotto carico. \u2753 La scheda d\xE0\
-          \ un ESR < 10 m\u03A9 misurato a 1 kHz, che non \xE8 necessariamente la\
-          \ stessa grandezza. Il valore di fabbrica Deye \xE8 25 m\u03A9.\n\n**Efficienza\
-          \ di carica** \u2013 \u2753 La scheda d\xE0 il 97,8 % andata e ritorno;\
-          \ il manuale non spiega come l'inverter usa questo valore.\n\n**Risveglio\
-          \ accumulo** (\"Activate Battery\") \u2013 \u2753 Il manuale Deye non lo\
-          \ descrive. Dal nome serve a riattivare un accumulo in protezione."
+      - content: "**Tipo di accumulo** \u2013 *Lithium*: l'inverter segue i limiti\
+          \ che il BMS del modulo comunica dal cavo. *Lead-Battery*: carica a tensione\
+          \ in 4 fasi, senza BMS. Impostato: **{{ states('select.inverter_uflex_battery_control_mode')\
+          \ }}**. \u2705 MU p.14.\n\n**Soglie in volt o in %** \u2013 *Voltage*: valgono\
+          \ le soglie in volt. *Capacity* (\"Use Batt %\"): valgono quelle in %, sul\
+          \ SoC che arriva dal BMS. Impostato: **{{ states('select.inverter_uflex_battery_operation_mode')\
+          \ }}**. MI p.27 descrive l'opzione ma non indica quale usare con il supercondensatore.\n\
+          \n**Protocollo BMS** \u2013 Impostato: **{{ states('select.inverter_uflex_battery_bms_type')\
+          \ }}**. \u2705 MU p.14. \u2753 Lo stesso protocollo compare con tre nomi:\
+          \ PYLON in HA, \"Lithium Mode 00 / SUNKET\" sul display, PN_GDLT nell'app\
+          \ BMS.\n\n**DIP switch del modulo** \u2013 tutti su OFF per un modulo singolo.\
+          \ \u2705 MU p.8 (l'ingegnere aveva indicato DIP 5 su ON, che per il manuale\
+          \ vuol dire 2 moduli in parallelo).\n\n**Capacit\xE0** \u2013 {{ states('number.inverter_uflex_battery_capacity')\
+          \ }} Ah. \u2705 BR (7,6 kWh). Misurata dai contatori dell'inverter in settembre\u2013\
+          ottobre, prima del cavo BMS: 6,5\u20137,0 kWh entrano dal vuoto al pieno,\
+          \ circa 6,3 kWh escono ogni notte.\n\n**Corrente max carica / scarica**\
+          \ \u2013 {{ states('number.inverter_uflex_battery_max_charging_current')\
+          \ }} A / {{ states('number.inverter_uflex_battery_max_discharging_current')\
+          \ }} A. \u2705 MU p.12, MI p.27: 100 A. \u2753 Il blocco dell'8/10 \xE8\
+          \ arrivato dopo circa un minuto di scarica a 100 A, senza cavo BMS: da chiedere\
+          \ se ora il BMS limita da solo la corrente.\n\n**Absorption / Float / Equalization**\
+          \ \u2013 {{ states('number.inverter_uflex_battery_absorption') }} / {{ states('number.inverter_uflex_battery_float')\
+          \ }} / {{ states('number.inverter_uflex_battery_equalization') }} V. \u2705\
+          \ MU p.12: 58,8 / 57 / 58,8 V. In modalit\xE0 *Lithium* non vengono usati:\
+          \ la tensione di carica la chiede il BMS (MI p.29).\n\n**Equalizz. ogni\
+          \ / Durata equalizz.** \u2013 Non usati in modalit\xE0 *Lithium* (MI p.29).\n\
+          \n**Compensaz. temperatura** \u2013 0 vuol dire nessuna correzione. Non\
+          \ usata in modalit\xE0 *Lithium*. La temperatura ora arriva dal BMS; prima\
+          \ del 12/10 era fissa a 25 \xB0C.\n\n**Resistenza interna** \u2013 {{ states('number.inverter_uflex_battery_resistance')\
+          \ }} m\u03A9. \u2753 MI mostra 25 m\u03A9 come esempio, BR indica un ESR\
+          \ sotto 10 m\u03A9. Non \xE8 chiaro se serva in modalit\xE0 *Lithium*.\n\
+          \n**Efficienza di carica** \u2013 {{ states('number.inverter_uflex_battery_charging_efficiency')\
+          \ }} %. \u2753 BR indica il 97,8 % andata e ritorno. Non \xE8 chiaro se\
+          \ serva in modalit\xE0 *Lithium*.\n\n**Risveglio accumulo** (\"Activate\
+          \ Battery\") \u2013 {{ states('switch.inverter_uflex_battery_wake_up') }}.\
+          \ MI p.27: recupera un accumulo scaricato troppo caricandolo lentamente.\
+          \ A modulo carico non fa nulla.\n\n**Disable Float / BMS_Err_Stop** \u2013\
+          \ Non hanno un'entit\xE0 in HA: si impostano dal display (MI p.27 e p.45).\
+          \ \u2753 Domande aperte per l'ingegnere."
         grid_options:
           columns: full
           rows: auto
@@ -375,16 +382,20 @@ config:
       - heading: "INVERTER \xB7 ACCUMULO: SOGLIE DI SCARICA"
         heading_style: title
         type: heading
-      - content: "**Spegnimento** \u2013 Sotto questa tensione l'inverter smette di\
-          \ scaricare l'accumulo. 10% coincide con la tensione minima di scarica della\
-          \ scheda, quindi non c'\xE8 margine. In pratica non ci si arriva, perch\xE9\
-          \ la mattina l'accumulo si ferma a circa 10%.\n\n**Batteria bassa** \u2013\
-          \ \xC8 la soglia di allarme di batteria scarica. \xC8 la stessa tensione\
-          \ usata come limite dai programmi orari, tranne la fascia delle 09:00. \u2753\
-          \n\n**Ripartenza** \u2013 Dopo uno spegnimento per batteria scarica, l'inverter\
-          \ ricomincia a scaricare solo quando la tensione torna sopra questo valore.\
-          \ \u2753\n\n La brochure UFLEX raccomanda una profondit\xE0 di scarica non\
-          \ oltre il 90 %."
+      - content: "Con *Capacity* valgono le soglie in % qui sotto, sul SoC del BMS.\
+          \ Le soglie in volt ({{ states('number.inverter_uflex_battery_shutdown_voltage')\
+          \ }} / {{ states('number.inverter_uflex_battery_low_voltage') }} / {{ states('number.inverter_uflex_battery_restart_voltage')\
+          \ }} V) non vengono usate.\n\n**Spegnimento** \u2013 Sotto questo SoC l'inverter\
+          \ smette di scaricare l'accumulo: {{ states('number.inverter_uflex_battery_shutdown_soc')\
+          \ }} %. \u2705 BR: profondit\xE0 di scarica non oltre il 90 %.\n\n**Batteria\
+          \ bassa** \u2013 Soglia di allarme: {{ states('number.inverter_uflex_battery_low_soc')\
+          \ }} %. Abbassata da 35 % a 11 % il 12/10, insieme all'allarme \"Remaining\
+          \ capacity\" del BMS (da 15 % a 11 %): sotto quella soglia il BMS blocca\
+          \ la scarica.\n\n**Ripartenza** \u2013 Dopo uno spegnimento per accumulo\
+          \ scarico, l'inverter ricomincia a scaricarlo solo quando il SoC torna sopra\
+          \ {{ states('number.inverter_uflex_battery_restart_soc') }} %. \u2753 Il\
+          \ manuale non d\xE0 un valore.\n\n\u2753 Le soglie SoC (spegnimento, batteria\
+          \ bassa, ripartenza, fasce) sono fra le domande per l'ingegnere."
         grid_options:
           columns: full
           rows: auto
@@ -468,20 +479,29 @@ config:
         heading_style: title
         type: heading
       - content: "**Programmi orari attivi** \u2013 Indica in quali giorni valgono\
-          \ le 6 fasce. *Week* vuol dire tutti i giorni; *Disabled* le disattiva tutte.\n\
-          \n**Come funziona una fascia** \u2013 Ogni fascia va dal suo **Inizio**\
-          \ all'inizio della fascia successiva; la fascia 6 arriva fino alle 01:00.\n\
-          - **Potenza max**: potenza massima con cui l'accumulo pu\xF2 scaricare in\
-          \ quella fascia.\n- **Soglia accumulo**: in quella fascia l'accumulo non\
-          \ viene scaricato sotto questo valore (in V con modalit\xE0 *Voltage*, in\
-          \ % con *Capacity*).\n- **Carica da**: se impostato su *Grid* o *Generator*,\
+          \ le 6 fasce. *Week* vuol dire tutti i giorni; *Disabled* le disattiva tutte.\
+          \ Impostato: **{{ states('select.inverter_uflex_time_of_use') }}**.\n\n\
+          **Come funziona una fascia** \u2013 Ogni fascia va dal suo **Inizio** all'inizio\
+          \ della fascia successiva; la fascia 6 arriva fino all'inizio della fascia\
+          \ 1.\n- **Potenza max**: potenza massima con cui l'accumulo pu\xF2 scaricare\
+          \ in quella fascia.\n- **Soglia accumulo**: in quella fascia l'accumulo\
+          \ non viene scaricato sotto questo valore (in V con modalit\xE0 *Voltage*,\
+          \ in % con *Capacity*).\n- **Carica da**: se impostato su *Grid* o *Generator*,\
           \ in quella fascia l'accumulo viene caricato da rete o generatore fino alla\
-          \ soglia. *Disabled* vuol dire solo FV.\n\n**Valori attuali** \u2013 Tutte\
-          \ le fasce hanno la carica da rete disattivata e la potenza a 6000 W. La\
-          \ soglia \xE8 42,5 V in tutte le fasce. La fascia 3 (09:00\u201313:00) era\
-          \ impostata dall'installatore a 49 V ed \xE8 stata abbassata a 42,5 V l'11/10.\
-          \ Con 49 V, l'8/10 dalle 09:22 alle 09:31 la casa ha prelevato 1000\u2013\
-          1500 W dalla rete con l'accumulo fermo a 48,6 V."
+          \ soglia. *Disabled* vuol dire solo FV.\n\n**Valori attuali** (modalit\xE0\
+          \ **{{ states('select.inverter_uflex_battery_operation_mode') }}**, quindi\
+          \ vale la soglia in {{ '%' if is_state('select.inverter_uflex_battery_operation_mode',\
+          \ 'Capacity') else 'V' }}):\n\n| Fascia | Inizio | Carica da | Potenza |\
+          \ Soglia % |\n|---|---|---|---|---|\n{%- for i in range(1, 7) %}\n| {{ i\
+          \ }} | {{ states('time.inverter_uflex_program_' ~ i ~ '_time')[:5] }} |\
+          \ {{ states('select.inverter_uflex_program_' ~ i ~ '_charging') }} | {{\
+          \ states('number.inverter_uflex_program_' ~ i ~ '_power') | int(0) }} W\
+          \ | {{ states('number.inverter_uflex_program_' ~ i ~ '_soc') }} % |\n{%-\
+          \ endfor %}\n\nSoglia % di tutte le fasce: \u2705 10 % (BR: profondit\xE0\
+          \ di scarica non oltre il 90 %), impostata il 12/10; prima le fasce lavoravano\
+          \ in tensione a 42,5 V. Storia: con la fascia 3 a 49 V, l'8/10 dalle 09:22\
+          \ alle 09:31 la casa ha prelevato 1000\u20131500 W dalla rete con l'accumulo\
+          \ fermo a 48,6 V."
         grid_options:
           columns: full
           rows: auto

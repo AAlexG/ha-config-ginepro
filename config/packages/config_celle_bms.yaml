@@ -1,4 +1,7 @@
-# config_celle_bms_3.yaml
+# config_celle_bms_4.yaml
+# v4 (15/10/2026): lo scarto delle celle ora e' il distacco in mV dalla
+#   cella piu' alta (riferimento del bilanciamento BMS), non dalla media.
+#   Nuovi sensori Distacco al posto di Scarto; riepilogo con chiavi xb/xa.
 # v3 (15/10/2026): aggiunto attributo letture (ultime 14 letture con le
 #   tensioni delle 14 celle in mV e il SOC) per la tabella della plancia BMS.
 # v2 (15/10/2026): aggiunti SOH, tensione porta, scarto in mV rispetto
@@ -153,8 +156,8 @@ template:
               {%- set ns.c = ns.c + [h[20+4*k:24+4*k] | int(base=16)] -%}
             {%- endfor -%}
             {{ ((ns.c | sum) / 14 / 1000) | round(4) }}
-      - name: Condensatore Cella 04 Scarto
-        unique_id: condensatore_cella_04_scarto
+      - name: Condensatore Cella 04 Distacco
+        unique_id: condensatore_cella_04_distacco
         unit_of_measurement: mV
         state_class: measurement
         state: >-
@@ -163,9 +166,9 @@ template:
           {%- for k in range(14) -%}
             {%- set ns.c = ns.c + [h[20+4*k:24+4*k] | int(base=16)] -%}
           {%- endfor -%}
-          {{ (ns.c[3] - (ns.c | sum) / 14) | round(1) }}
-      - name: Condensatore Cella 13 Scarto
-        unique_id: condensatore_cella_13_scarto
+          {{ ns.c[3] - ns.c | max }}
+      - name: Condensatore Cella 13 Distacco
+        unique_id: condensatore_cella_13_distacco
         unit_of_measurement: mV
         state_class: measurement
         state: >-
@@ -174,9 +177,9 @@ template:
           {%- for k in range(14) -%}
             {%- set ns.c = ns.c + [h[20+4*k:24+4*k] | int(base=16)] -%}
           {%- endfor -%}
-          {{ (ns.c[12] - (ns.c | sum) / 14) | round(1) }}
-      - name: Condensatore Celle Scarto Max
-        unique_id: condensatore_celle_scarto_max
+          {{ ns.c[12] - ns.c | max }}
+      - name: Condensatore Celle Distacco Min
+        unique_id: condensatore_celle_distacco_min
         unit_of_measurement: mV
         state_class: measurement
         state: >-
@@ -185,18 +188,7 @@ template:
           {%- for k in range(14) -%}
             {%- set ns.c = ns.c + [h[20+4*k:24+4*k] | int(base=16)] -%}
           {%- endfor -%}
-          {{ (ns.c | max - (ns.c | sum) / 14) | round(1) }}
-      - name: Condensatore Celle Scarto Min
-        unique_id: condensatore_celle_scarto_min
-        unit_of_measurement: mV
-        state_class: measurement
-        state: >-
-          {%- set h = trigger.json.hex -%}
-          {%- set ns = namespace(c=[]) -%}
-          {%- for k in range(14) -%}
-            {%- set ns.c = ns.c + [h[20+4*k:24+4*k] | int(base=16)] -%}
-          {%- endfor -%}
-          {{ (ns.c | min - (ns.c | sum) / 14) | round(1) }}
+          {{ ns.c | min - ns.c | max }}
       - name: Condensatore BMS Tensione
         unique_id: condensatore_bms_tensione
         unit_of_measurement: "V"
@@ -291,8 +283,8 @@ template:
             {%- set media = (ns.c | sum) / 14 -%}
             {%- set d = ns.c | max - ns.c | min -%}
             {%- set cm = ns.c.index(ns.c | min) + 1 -%}
-            {%- set s13 = (ns.c[12] - media) | round(0) | int -%}
-            {%- set s4 = (ns.c[3] - media) | round(0) | int -%}
+            {%- set s13 = ns.c[12] - ns.c | max -%}
+            {%- set s4 = ns.c[3] - ns.c | max -%}
             {%- set oggi = now().strftime('%d/%m') -%}
             {%- set ora = now().strftime('%H:%M') -%}
             {%- set vecchi = this.attributes.giorni | default([]) -%}
@@ -302,18 +294,19 @@ template:
               {%- else -%}{%- set n2.l = n2.l + [x] -%}{%- endif -%}
             {%- endfor -%}
             {%- set r = n2.r -%}
+            {%- if r is not none and 'xb13' not in r -%}{%- set r = none -%}{%- endif -%}
             {%- set basso = r is none or v < r.vb -%}
             {%- set alto = r is none or v > r.va -%}
             {%- set nuovo = {
               'g': oggi,
               'vb': v if basso else r.vb, 'sob': soc if basso else r.sob,
               'hb': ora if basso else r.hb, 'db': d if basso else r.db,
-              'cb': cm if basso else r.cb, 'b13': s13 if basso else r.b13,
-              'b4': s4 if basso else r.b4,
+              'cb': cm if basso else r.cb, 'xb13': s13 if basso else r.xb13,
+              'xb4': s4 if basso else r.xb4,
               'va': v if alto else r.va, 'soa': soc if alto else r.soa,
               'ha': ora if alto else r.ha, 'da': d if alto else r.da,
-              'ca': cm if alto else r.ca, 'a13': s13 if alto else r.a13,
-              'a4': s4 if alto else r.a4,
+              'ca': cm if alto else r.ca, 'xa13': s13 if alto else r.xa13,
+              'xa4': s4 if alto else r.xa4,
               'dmax': d if r is none else [d, r.dmax] | max
             } -%}
             {{ (n2.l + [nuovo])[-7:] }}
