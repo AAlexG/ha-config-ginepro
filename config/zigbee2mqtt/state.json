@@ -24,8 +24,8 @@
     "0xa4c138e6a0d06219": {
         "voltage": 2500,
         "battery": 48,
-        "temperature": 21.65,
-        "humidity": 59.39,
+        "temperature": 21.82,
+        "humidity": 59.91,
         "linkquality": 140
     },
     "0xa4c1385040d042fb": {
@@ -42,15 +42,15 @@
     },
     "0xa4c1383e0fd87686": {
         "state": "ON",
-        "energy": 40.87,
+        "energy": 40.88,
         "countdown": 0,
         "power_outage_memory": "restore",
         "indicator_mode": "off/on",
         "child_lock": "UNLOCK",
-        "voltage": 239,
+        "voltage": 234,
         "linkquality": 84,
         "power": 20.3,
-        "current": 0.08
+        "current": 0.1
     },
     "0xa4c1384b868fa6bd": {
         "state": "OFF",
@@ -108,8 +108,8 @@
     "0xa4c1380f0678ffff": {
         "battery": 100,
         "voltage": 3000,
-        "temperature": 22.6,
-        "humidity": 57.9,
+        "temperature": 22.8,
+        "humidity": 55.9,
         "temperature_sensor_select": "internal",
         "comfort_temperature_min": 19,
         "comfort_temperature_max": 43.7,
@@ -146,11 +146,11 @@
     "0xa4c13844184e6395": {
         "rain": false,
         "battery": 96,
-        "illuminance_raw": 5744,
-        "illuminance_average_20min": 5763,
+        "illuminance_raw": 5838,
+        "illuminance_average_20min": 5772,
         "illuminance_maximum_today": 5866,
         "cleaning_reminder": false,
-        "rain_intensity": 3,
+        "rain_intensity": 6,
         "linkquality": 64
     }
 }
