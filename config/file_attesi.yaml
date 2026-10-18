@@ -1,4 +1,5 @@
-# file_attesi_7.yaml
+# file_attesi_8.yaml
+# v8 (18/10/2026): tolta l'integrazione ftp (rimossa, ora si lavora via Samba).
 # v7 (18/10/2026): ESPHome rpi-fan-controller.yaml senza versione.
 # v6 (16/10/2026): aggiunte le plance Devices e Manual Settings.
 # v5 (16/10/2026): automations_cantinetta.yaml passa a 4 automazioni.
@@ -82,7 +83,6 @@ file:
   # --- Integrazioni personalizzate ---
   custom_components/aquarea/manifest.json:
   custom_components/browser_mod/manifest.json:
-  custom_components/ftp/manifest.json:
   custom_components/hacs/manifest.json:
   custom_components/localtuya/manifest.json:
   custom_components/netgear_wax/manifest.json:
