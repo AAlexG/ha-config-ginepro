@@ -1,0 +1,215 @@
+# automations_cantinetta_2.yaml
+#
+# v2 (16/10/2026): aggiunta la presa Zigbee della cantinetta
+#   (switch.presa_cantinetta_zigbee): riaccensione immediata se si spegne,
+#   con notifica, e avviso se la presa non e' raggiungibile. Avviso
+#   "cantinetta non raggiungibile" portato da 30 a 10 minuti.
+#
+# Cantinetta vino Liebherr WSbl 5001 ("cantinetta Vino 1"), integrazione
+# ufficiale Liebherr (cloud, HomeAPI). File creato il 16/10/2026.
+#
+# L'API Liebherr per questa cantinetta espone solo:
+#   sensor.cantinetta_vino_1           temperatura misurata (gradi interi)
+#   number.cantinetta_vino_1_setpoint  temperatura impostata (5-20 gradi)
+# Niente allarmi porta o guasto: gli avvisi qui sotto li ricavano da questi due.
+
+# TEMPERATURA FUORI TARGET
+# Avvisa se la temperatura misurata resta lontana dal setpoint di oltre 2 gradi
+# per 30 minuti (porta rimasta aperta, guasto). Quando rientra entro 2 gradi
+# la notifica viene cancellata dal telefono.
+# Nota: dopo un cambio grande di setpoint la cantinetta impiega tempo a
+# raggiungerlo, quindi puo' arrivare un avviso anche senza guasto.
+
+- id: cantinetta_vino_temperatura_fuori_target
+  alias: "Cantinetta vino – temperatura fuori target"
+  description: >-
+    Avvisa se la temperatura della cantinetta resta a oltre 2 gradi dal setpoint
+    per 30 minuti; cancella la notifica quando rientra.
+  mode: single
+  triggers:
+    - trigger: template
+      id: fuori
+      value_template: >-
+        {{ has_value('sensor.cantinetta_vino_1')
+           and has_value('number.cantinetta_vino_1_setpoint')
+           and (states('sensor.cantinetta_vino_1') | float(0)
+                - states('number.cantinetta_vino_1_setpoint') | float(0)) | abs > 2 }}
+      for:
+        minutes: 30
+    - trigger: template
+      id: rientro
+      value_template: >-
+        {{ has_value('sensor.cantinetta_vino_1')
+           and has_value('number.cantinetta_vino_1_setpoint')
+           and (states('sensor.cantinetta_vino_1') | float(0)
+                - states('number.cantinetta_vino_1_setpoint') | float(0)) | abs <= 2 }}
+  actions:
+    - choose:
+        - conditions:
+            - condition: trigger
+              id: fuori
+          sequence:
+            - action: notify.mobile_app_cph2653
+              data:
+                title: "Cantinetta vino fuori temperatura"
+                message: >-
+                  Temperatura {{ states('sensor.cantinetta_vino_1') }} °C,
+                  impostata {{ states('number.cantinetta_vino_1_setpoint') }} °C,
+                  da oltre 30 minuti. Controlla che la porta sia chiusa.
+                data:
+                  tag: cantinetta_vino_temperatura
+                  channel: Cantinetta
+                  importance: high
+        - conditions:
+            - condition: trigger
+              id: rientro
+          sequence:
+            - action: notify.mobile_app_cph2653
+              data:
+                message: clear_notification
+                data:
+                  tag: cantinetta_vino_temperatura
+
+# CANTINETTA NON RAGGIUNGIBILE
+# Avvisa se il sensore resta non disponibile per 10 minuti: SmartDeviceBox
+# senza Wi-Fi, cloud Liebherr fermo o Internet assente. Quando torna
+# disponibile la notifica viene cancellata.
+
+- id: cantinetta_vino_non_raggiungibile
+  alias: "Cantinetta vino – non raggiungibile"
+  description: >-
+    Avvisa se la cantinetta resta non disponibile per 10 minuti; cancella la
+    notifica quando torna disponibile.
+  mode: single
+  triggers:
+    - trigger: state
+      id: offline
+      entity_id: sensor.cantinetta_vino_1
+      to: unavailable
+      for:
+        minutes: 10
+    - trigger: state
+      id: online
+      entity_id: sensor.cantinetta_vino_1
+      from: unavailable
+  actions:
+    - choose:
+        - conditions:
+            - condition: trigger
+              id: offline
+          sequence:
+            - action: notify.mobile_app_cph2653
+              data:
+                title: "Cantinetta vino non raggiungibile"
+                message: >-
+                  La cantinetta non comunica da 10 minuti. Controlla sul display
+                  (Impostazioni → Wi-Fi) se la SmartDeviceBox e' ancora collegata.
+                data:
+                  tag: cantinetta_vino_offline
+                  channel: Cantinetta
+                  importance: high
+        - conditions:
+            - condition: trigger
+              id: online
+          sequence:
+            - action: notify.mobile_app_cph2653
+              data:
+                message: clear_notification
+                data:
+                  tag: cantinetta_vino_offline
+
+# PRESA ZIGBEE SPENTA
+# La cantinetta non deve mai restare senza corrente: se la presa si spegne
+# (tasto, comando, app) HA la riaccende subito e manda un avviso con l'esito.
+# Scatta anche all'avvio di HA se la trova spenta.
+
+- id: cantinetta_presa_riaccensione
+  alias: "Cantinetta vino – presa spenta, riaccensione"
+  description: >-
+    Riaccende subito la presa della cantinetta se risulta spenta e avvisa,
+    indicando se la riaccensione e' riuscita.
+  mode: single
+  triggers:
+    - trigger: state
+      entity_id: switch.presa_cantinetta_zigbee
+      to: "off"
+    - trigger: homeassistant
+      event: start
+  conditions:
+    - condition: state
+      entity_id: switch.presa_cantinetta_zigbee
+      state: "off"
+  actions:
+    - action: switch.turn_on
+      target:
+        entity_id: switch.presa_cantinetta_zigbee
+      continue_on_error: true
+    - wait_template: "{{ is_state('switch.presa_cantinetta_zigbee', 'on') }}"
+      timeout: "00:00:15"
+    - action: notify.mobile_app_cph2653
+      data:
+        title: >-
+          {{ 'Presa cantinetta riaccesa' if wait.completed
+             else 'Presa cantinetta SPENTA' }}
+        message: >-
+          {% if wait.completed %}
+          La presa della cantinetta si era spenta ed e' stata riaccesa.
+          Controlla chi o cosa l'ha spenta.
+          {% else %}
+          La presa della cantinetta e' spenta e la riaccensione non e' riuscita
+          (stato: {{ states('switch.presa_cantinetta_zigbee') }}).
+          La cantinetta e' senza corrente: va accesa a mano.
+          {% endif %}
+        data:
+          tag: cantinetta_presa_spenta
+          channel: Cantinetta
+          importance: high
+
+# PRESA ZIGBEE NON RAGGIUNGIBILE
+# Avvisa se la presa risulta non disponibile; cancella la notifica quando
+# torna. Funziona solo se in Zigbee2MQTT la disponibilita' (availability)
+# e' attiva per questa presa: Z2M la segna offline se non risponde entro
+# 10 minuti (valore predefinito per i dispositivi alimentati da rete).
+
+- id: cantinetta_presa_non_raggiungibile
+  alias: "Cantinetta vino – presa non raggiungibile"
+  description: >-
+    Avvisa se la presa Zigbee della cantinetta diventa non disponibile;
+    cancella la notifica quando torna disponibile.
+  mode: single
+  triggers:
+    - trigger: state
+      id: offline
+      entity_id: switch.presa_cantinetta_zigbee
+      to: unavailable
+      for:
+        minutes: 1
+    - trigger: state
+      id: online
+      entity_id: switch.presa_cantinetta_zigbee
+      from: unavailable
+  actions:
+    - choose:
+        - conditions:
+            - condition: trigger
+              id: offline
+          sequence:
+            - action: notify.mobile_app_cph2653
+              data:
+                title: "Presa cantinetta non raggiungibile"
+                message: >-
+                  La presa Zigbee della cantinetta non risponde. Controlla che
+                  sia inserita e che la cantinetta sia accesa.
+                data:
+                  tag: cantinetta_presa_offline
+                  channel: Cantinetta
+                  importance: high
+        - conditions:
+            - condition: trigger
+              id: online
+          sequence:
+            - action: notify.mobile_app_cph2653
+              data:
+                message: clear_notification
+                data:
+                  tag: cantinetta_presa_offline

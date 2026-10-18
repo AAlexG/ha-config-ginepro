@@ -30,6 +30,20 @@ config:
           columns: full
           rows: auto
         type: markdown
+      - content: '{% set a = states(''sensor.condensatore_bms_allarmi'') %}{% if a
+          in [''unknown'',''unavailable''] %}**Allarmi BMS:** _nessuna lettura_{%
+          elif a == ''Nessuno'' %}**Allarmi BMS:** nessuno{% else %}<ha-alert alert-type="warning">**Allarmi
+          BMS:** {{ a }}</ha-alert>{% endif %}'
+        grid_options:
+          columns: full
+          rows: auto
+        type: markdown
+      - content: "**Stato:** {{ states('sensor.condensatore_bms_stato') }} \xB7 **Bilanciamento:**\
+          \ {{ states('sensor.condensatore_bms_bilanciamento') }}"
+        grid_options:
+          columns: full
+          rows: auto
+        type: markdown
       - entity: sensor.condensatore_bms_soh
         features_position: bottom
         grid_options:
@@ -158,26 +172,28 @@ config:
           \ %}{% if not L %}_Nessuna lettura_{% else %}{% set L = L | reverse | list\
           \ %}mV di distacco dalla cella pi\xF9 alta (0 = pi\xF9 alta) \xB7 colonne\
           \ dalla lettura pi\xF9 recente \xB7 **\u2B07 grassetto** = cella pi\xF9\
-          \ bassa\n<div style=\"overflow-x:auto;font-size:11px\"><table style=\"border-collapse:collapse;white-space:nowrap\"\
-          ><tr><th style=\"padding:2px 4px;border:1px solid #444\">Cella</th>{% for\
-          \ r in L %}<th style=\"padding:2px 4px;border:1px solid #444\">{{ r.t[6:]\
-          \ }}</th>{% endfor %}</tr><tr><td style=\"padding:2px 4px;border:1px solid\
-          \ #333\"><b>Vpacco</b></td>{% for r in L %}<td style=\"padding:2px 4px;border:1px\
-          \ solid #333;text-align:right\"><b>{{ '%.2f' | format((r.c | sum) / 1000)\
-          \ }}</b></td>{% endfor %}</tr><tr><td style=\"padding:2px 4px;border:1px\
-          \ solid #333\"><b>SOC%</b></td>{% for r in L %}<td style=\"padding:2px 4px;border:1px\
-          \ solid #333;text-align:right\"><b>{{ r.s | round(1) }}</b></td>{% endfor\
-          \ %}</tr><tr><td style=\"padding:2px 4px;border:1px solid #333\"><b>Vmax</b></td>{%\
-          \ for r in L %}<td style=\"padding:2px 4px;border:1px solid #333;text-align:right\"\
-          >{{ '%.3f' | format((r.c | max) / 1000) }}</td>{% endfor %}</tr>{% for k\
-          \ in range(14) %}<tr><td style=\"padding:2px 4px;border:1px solid #333;text-align:right\"\
-          ><b>{{ k + 1 }}</b></td>{% for r in L %}{% set v = r.c[k] - r.c | max %}<td\
-          \ style=\"padding:2px 4px;border:1px solid #333;text-align:right\">{% if\
-          \ r.c[k] == r.c | min %}<b>\u2B07{{ v }}</b>{% else %}{{ v }}{% endif %}</td>{%\
-          \ endfor %}</tr>{% endfor %}<tr><td style=\"padding:2px 4px;border:1px solid\
-          \ #333\"><b>\u0394</b></td>{% for r in L %}<td style=\"padding:2px 4px;border:1px\
-          \ solid #333;text-align:right\"><b>{{ r.c | max - r.c | min }}</b></td>{%\
-          \ endfor %}</tr></table></div>{% endif %}"
+          \ bassa \xB7 \u2022 = in bilanciamento\n<div style=\"overflow-x:auto;font-size:11px\"\
+          ><table style=\"border-collapse:collapse;white-space:nowrap\"><tr><th style=\"\
+          padding:2px 4px;border:1px solid #444\">Cella</th>{% for r in L %}<th style=\"\
+          padding:2px 4px;border:1px solid #444\">{{ r.t[6:] }}</th>{% endfor %}</tr><tr><td\
+          \ style=\"padding:2px 4px;border:1px solid #333\"><b>Vpacco</b></td>{% for\
+          \ r in L %}<td style=\"padding:2px 4px;border:1px solid #333;text-align:right\"\
+          ><b>{{ '%.2f' | format((r.c | sum) / 1000) }}</b></td>{% endfor %}</tr><tr><td\
+          \ style=\"padding:2px 4px;border:1px solid #333\"><b>SOC%</b></td>{% for\
+          \ r in L %}<td style=\"padding:2px 4px;border:1px solid #333;text-align:right\"\
+          ><b>{{ r.s | round(1) }}</b></td>{% endfor %}</tr><tr><td style=\"padding:2px\
+          \ 4px;border:1px solid #333\"><b>Vmax</b></td>{% for r in L %}<td style=\"\
+          padding:2px 4px;border:1px solid #333;text-align:right\">{{ '%.3f' | format((r.c\
+          \ | max) / 1000) }}</td>{% endfor %}</tr>{% for k in range(14) %}<tr><td\
+          \ style=\"padding:2px 4px;border:1px solid #333;text-align:right\"><b>{{\
+          \ k + 1 }}</b></td>{% for r in L %}{% set v = r.c[k] - r.c | max %}<td style=\"\
+          padding:2px 4px;border:1px solid #333;text-align:right\">{% if r.c[k] ==\
+          \ r.c | min %}<b>\u2B07{{ v }}</b>{% else %}{{ v }}{% endif %}{% if ((r.b\
+          \ | default(0)) // 2 ** k) % 2 == 1 %}\u2022{% endif %}</td>{% endfor %}</tr>{%\
+          \ endfor %}<tr><td style=\"padding:2px 4px;border:1px solid #333\"><b>\u0394\
+          </b></td>{% for r in L %}<td style=\"padding:2px 4px;border:1px solid #333;text-align:right\"\
+          ><b>{{ r.c | max - r.c | min }}</b></td>{% endfor %}</tr></table></div>{%\
+          \ endif %}"
         grid_options:
           columns: full
           rows: auto
@@ -259,30 +275,18 @@ config:
           show_daily: true
         type: custom:sunsynk-power-flow-card
         wide: false
-      - graph_span: 48h
+      - graph_span: 4d
         grid_options:
           columns: 12
           rows: auto
         header:
           show: true
-          title: "Distacco dalla cella pi\xF9 alta 48h (mV)"
+          title: "\u0394 cella n.13 e SOC 48h"
         series:
-        - color: '#56B4E9'
-          entity: sensor.condensatore_celle_distacco_min
-          name: cella min
-          stroke_width: 2
-          type: line
-          yaxis_id: mv
         - color: '#D55E00'
           entity: sensor.condensatore_cella_13_distacco
-          name: cella 13
-          stroke_width: 3
-          type: line
-          yaxis_id: mv
-        - color: '#009E73'
-          entity: sensor.condensatore_cella_04_distacco
-          name: cella 4
-          stroke_width: 3
+          name: cella 13 ora
+          stroke_width: 2
           type: line
           yaxis_id: mv
         - color: '#999999'
@@ -307,7 +311,7 @@ config:
           yaxis_id: mv
         - color: '#E69F00'
           entity: sensor.condensatore_bms_soc
-          name: SOC
+          name: SOC ora
           stroke_dash: 4
           stroke_width: 1
           type: line
@@ -327,40 +331,6 @@ config:
           id: soc
           max: 100
           min: 0
-          opposite: true
-      - graph_span: 48h
-        grid_options:
-          columns: 12
-          rows: auto
-        header:
-          show: true
-          title: Differenza celle e tensione 48h
-        series:
-        - color: '#D55E00'
-          entity: sensor.condensatore_celle_differenza
-          name: "\u0394 celle"
-          stroke_width: 2
-          type: line
-          yaxis_id: mv
-        - color: '#0072B2'
-          entity: sensor.condensatore_bms_tensione
-          name: tensione
-          stroke_width: 1
-          type: line
-          yaxis_id: v
-        type: custom:apexcharts-card
-        yaxis:
-        - apex_config:
-            title:
-              text: "\u0394 mV"
-          decimals: 0
-          id: mv
-          min: 0
-        - apex_config:
-            title:
-              text: V
-          decimals: 1
-          id: v
           opposite: true
       type: grid
     - cards:
@@ -385,6 +355,38 @@ config:
           \ in d | reverse %}| {{ r.g }} | {{ r.ha }} | {{ r.va }} | {{ r.soa }} |\
           \ **{{ r.da }}** | {{ r.ca }} | {{ r.xa13 if r.xa13 is defined else '\u2013\
           ' }} | {{ r.dmax }} |\n{% endfor %}{% endif %}"
+        grid_options:
+          columns: full
+          rows: auto
+        type: markdown
+      - content: "{% set d = state_attr('sensor.condensatore_celle_riepilogo', 'bilanciamento')\
+          \ %}{% if not d %}_Nessun bilanciamento registrato_{% else %}{% set d =\
+          \ d | reverse | list %}**Bilanciamento per giorno** \xB7 per ogni cella,\
+          \ in quante letture (una ogni 15 min) era in bilanciamento \xB7 C13 = distacco\
+          \ della cella 13 dalla pi\xF9 alta, in mV\n<div style=\"overflow-x:auto;font-size:11px\"\
+          ><table style=\"border-collapse:collapse;white-space:nowrap\"><tr><th style=\"\
+          padding:2px 4px;border:1px solid #444\">Cella</th>{% for r in d %}<th style=\"\
+          padding:2px 4px;border:1px solid #444\">{{ r.g }}</th>{% endfor %}</tr>{%\
+          \ for k in range(14) %}<tr><td style=\"padding:2px 4px;border:1px solid\
+          \ #333;text-align:right\"><b>{{ k + 1 }}</b></td>{% for r in d %}<td style=\"\
+          padding:2px 4px;border:1px solid #333;text-align:right\">{{ r.k[k] if r.k[k]\
+          \ else '\xB7' }}</td>{% endfor %}</tr>{% endfor %}<tr><td style=\"padding:2px\
+          \ 4px;border:1px solid #333\"><b>Letture</b></td>{% for r in d %}<td style=\"\
+          padding:2px 4px;border:1px solid #333;text-align:right\"><b>{{ r.n }}</b></td>{%\
+          \ endfor %}</tr><tr><td style=\"padding:2px 4px;border:1px solid #333\"\
+          ><b>Dalle</b></td>{% for r in d %}<td style=\"padding:2px 4px;border:1px\
+          \ solid #333;text-align:right\">{{ r.h1 }}</td>{% endfor %}</tr><tr><td\
+          \ style=\"padding:2px 4px;border:1px solid #333\"><b>Alle</b></td>{% for\
+          \ r in d %}<td style=\"padding:2px 4px;border:1px solid #333;text-align:right\"\
+          >{{ r.h2 }}</td>{% endfor %}</tr><tr><td style=\"padding:2px 4px;border:1px\
+          \ solid #333\"><b>C13 inizio</b></td>{% for r in d %}<td style=\"padding:2px\
+          \ 4px;border:1px solid #333;text-align:right\">{{ r.x1 }}</td>{% endfor\
+          \ %}</tr><tr><td style=\"padding:2px 4px;border:1px solid #333\"><b>C13\
+          \ fine</b></td>{% for r in d %}<td style=\"padding:2px 4px;border:1px solid\
+          \ #333;text-align:right\"><b>{{ r.x2 }}</b></td>{% endfor %}</tr><tr><td\
+          \ style=\"padding:2px 4px;border:1px solid #333\"><b>A fine</b></td>{% for\
+          \ r in d %}<td style=\"padding:2px 4px;border:1px solid #333;text-align:right\"\
+          >{{ r.i2 }}</td>{% endfor %}</tr></table></div>{% endif %}"
         grid_options:
           columns: full
           rows: auto

@@ -1,4 +1,20 @@
-# config_celle_bms_5.yaml
+# config_celle_bms_8.yaml
+# v8 (18/10/2026): riepilogo con attributo bilanciamento (ultimi 7 giorni:
+#   per ogni cella quante letture era in bilanciamento, ora di inizio e fine,
+#   distacco della cella 13 a inizio e fine, corrente all'ultima lettura)
+#   e mappa di bilanciamento 'b' in ogni lettura dell'attributo letture.
+# v7 (17/10/2026): sensori Bilanciamento (byte 33-34 della coda = mappa a bit
+#   delle celle 1-14 in bilanciamento, verificata il 17/10: mai la cella piu'
+#   bassa, mai due celle vicine, zero in scarica) e Stato (byte 22:
+#   01 scarica, 02 carica, 10 fermo).
+# v6 (16/10/2026): sensore Allarmi BMS dalla coda della risposta (byte dopo
+#   la tensione porta). Decodifica verificata su 3 letture (15/10 09:33
+#   senza allarmi, 16/10 14:52 con "Monomer high voltage alarm" e "Total
+#   pressure high pressure alarm" in app, 16/10 21:14 senza allarmi):
+#   byte 0-13 = celle 1-14, byte 21 = tensione pacco; 0 normale,
+#   1 sotto soglia, 2 sopra soglia. Byte 14-20 (temperature, corrente)
+#   dal reverse engineering, non ancora visti diversi da 0.
+#   Byte 22 e 26 riportati grezzi: significato non confermato.
 # v5 (16/10/2026): attributo hex con la risposta grezza completa del BMS,
 #   per decodificare allarmi e stati che seguono la tensione porta.
 # v4 (15/10/2026): lo scarto delle celle ora e' il distacco in mV dalla
@@ -270,6 +286,72 @@ template:
         device_class: temperature
         state_class: measurement
         state: "{{ ((trigger.json.hex[98:102] | int(base=16)) / 10 - 273.1) | round(1) }}"
+      - name: Condensatore BMS Allarmi
+        unique_id: condensatore_bms_allarmi
+        icon: mdi:alert-outline
+        state: >-
+          {%- set h = trigger.json.hex -%}
+          {%- set nomi = {14: 'Temp 1', 15: 'Temp 2', 16: 'Temp 3', 17: 'Temp 4',
+                          18: 'Temp ambiente', 19: 'Temp potenza',
+                          20: 'Corrente carica', 21: 'Tensione pacco'} -%}
+          {%- set ns = namespace(alte=[], basse=[], altri=[]) -%}
+          {%- for k in range(14) -%}
+            {%- set x = h[140+2*k:142+2*k] | int(base=16) -%}
+            {%- if x == 2 -%}{%- set ns.alte = ns.alte + [k+1] -%}
+            {%- elif x == 1 -%}{%- set ns.basse = ns.basse + [k+1] -%}
+            {%- elif x > 2 -%}{%- set ns.altri = ns.altri + ['Cella ' ~ (k+1) ~ ' cod ' ~ x] -%}
+            {%- endif -%}
+          {%- endfor -%}
+          {%- for k in range(14, 22) -%}
+            {%- set x = h[140+2*k:142+2*k] | int(base=16) -%}
+            {%- if x == 2 -%}{%- set ns.altri = ns.altri + [nomi[k] ~ ' alta'] -%}
+            {%- elif x == 1 -%}{%- set ns.altri = ns.altri + [nomi[k] ~ ' bassa'] -%}
+            {%- elif x > 2 -%}{%- set ns.altri = ns.altri + [nomi[k] ~ ' cod ' ~ x] -%}
+            {%- endif -%}
+          {%- endfor -%}
+          {%- set ns2 = namespace(l=[]) -%}
+          {%- if ns.alte -%}{%- set ns2.l = ns2.l + ['Celle alte: ' ~ ns.alte | join(',')] -%}{%- endif -%}
+          {%- if ns.basse -%}{%- set ns2.l = ns2.l + ['Celle basse: ' ~ ns.basse | join(',')] -%}{%- endif -%}
+          {%- set ns2.l = ns2.l + ns.altri -%}
+          {{ (ns2.l | join(' | ') if ns2.l else 'Nessuno')[:250] }}
+        attributes:
+          numero: >-
+            {%- set h = trigger.json.hex -%}
+            {%- set ns = namespace(n=0) -%}
+            {%- for k in range(22) -%}
+              {%- if h[140+2*k:142+2*k] != '00' -%}{%- set ns.n = ns.n + 1 -%}{%- endif -%}
+            {%- endfor -%}
+            {{ ns.n }}
+          byte_22: "{{ trigger.json.hex[184:186] }}"
+          byte_26: "{{ trigger.json.hex[192:194] }}"
+          coda: "{{ trigger.json.hex[140:214] }}"
+      - name: Condensatore BMS Bilanciamento
+        unique_id: condensatore_bms_bilanciamento
+        icon: mdi:scale-balance
+        state: >-
+          {%- set h = trigger.json.hex -%}
+          {%- set m = (h[206:208] | int(base=16)) + 256 * (h[208:210] | int(base=16)) -%}
+          {%- set ns = namespace(c=[]) -%}
+          {%- for k in range(14) -%}
+            {%- if (m // 2 ** k) % 2 == 1 -%}{%- set ns.c = ns.c + [k+1] -%}{%- endif -%}
+          {%- endfor -%}
+          {{ 'Celle ' ~ ns.c | join(',') if ns.c else 'Nessuna' }}
+        attributes:
+          numero: >-
+            {%- set h = trigger.json.hex -%}
+            {%- set m = (h[206:208] | int(base=16)) + 256 * (h[208:210] | int(base=16)) -%}
+            {%- set ns = namespace(n=0) -%}
+            {%- for k in range(14) -%}
+              {%- if (m // 2 ** k) % 2 == 1 -%}{%- set ns.n = ns.n + 1 -%}{%- endif -%}
+            {%- endfor -%}
+            {{ ns.n }}
+          mappa: "{{ trigger.json.hex[206:210] }}"
+      - name: Condensatore BMS Stato
+        unique_id: condensatore_bms_stato
+        icon: mdi:battery-sync-outline
+        state: >-
+          {%- set b = trigger.json.hex[184:186] -%}
+          {{ {'01': 'Scarica', '02': 'Carica', '10': 'Fermo'}.get(b, 'Codice ' ~ b) }}
       - name: Condensatore Celle Riepilogo
         unique_id: condensatore_celle_riepilogo
         state: "{{ now().strftime('%d/%m %H:%M') }}"
@@ -321,4 +403,35 @@ template:
             {%- endfor -%}
             {%- set soc = (h[120:124] | int(base=16)) / 10 -%}
             {%- set vecchie = this.attributes.letture | default([]) -%}
-            {{ (vecchie + [{'t': now().strftime('%d/%m %H:%M'), 's': soc, 'c': ns.c}])[-14:] }}
+            {%- set m = (h[206:208] | int(base=16)) + 256 * (h[208:210] | int(base=16)) -%}
+            {{ (vecchie + [{'t': now().strftime('%d/%m %H:%M'), 's': soc, 'c': ns.c, 'b': m}])[-14:] }}
+          bilanciamento: >-
+            {%- set h = trigger.json.hex -%}
+            {%- set m = (h[206:208] | int(base=16)) + 256 * (h[208:210] | int(base=16)) -%}
+            {%- set ns = namespace(c=[]) -%}
+            {%- for k in range(14) -%}
+              {%- set ns.c = ns.c + [h[20+4*k:24+4*k] | int(base=16)] -%}
+            {%- endfor -%}
+            {%- set x = ns.c[12] - ns.c | max -%}
+            {%- set i = h[102:106] | int(base=16) -%}
+            {%- set i = ((i - 65536) if i > 32767 else i) / 100 -%}
+            {%- set oggi = now().strftime('%d/%m') -%}
+            {%- set ora = now().strftime('%H:%M') -%}
+            {%- set vecchi = this.attributes.bilanciamento | default([]) -%}
+            {%- set n2 = namespace(r=none, l=[]) -%}
+            {%- for y in vecchi -%}
+              {%- if y.g == oggi -%}{%- set n2.r = y -%}
+              {%- else -%}{%- set n2.l = n2.l + [y] -%}{%- endif -%}
+            {%- endfor -%}
+            {%- if m > 0 -%}
+              {%- set r = n2.r if n2.r is not none else {'g': oggi, 'n': 0, 'k': [0] * 14, 'h1': ora, 'x1': x} -%}
+              {%- set n3 = namespace(k=[]) -%}
+              {%- for k in range(14) -%}
+                {%- set n3.k = n3.k + [r.k[k] + ((m // 2 ** k) % 2)] -%}
+              {%- endfor -%}
+              {%- set r = {'g': oggi, 'n': r.n + 1, 'k': n3.k, 'h1': r.h1, 'x1': r.x1,
+                           'h2': ora, 'x2': x, 'i2': i | round(1)} -%}
+              {{ (n2.l + [r])[-7:] }}
+            {%- else -%}
+              {{ (n2.l + ([n2.r] if n2.r is not none else []))[-7:] }}
+            {%- endif -%}

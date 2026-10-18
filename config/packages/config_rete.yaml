@@ -1,4 +1,4 @@
-# config_rete_2.yaml
+# config_rete_3.yaml
 # Package Casa Ginepro - Rete: whitelist MAC e tabella dispositivi WiFi.
 # Rinominato il 30/09/2026 da config_wifi_rete (ultima versione 14), contenuto
 # invariato. Automazioni collegate: automations_rete.
@@ -40,7 +40,7 @@ template:
               '38:18:4c:1a:d0:c3': '005 TV sala Sony',
               '8c:79:f5:4f:88:01': '006 TV Samsung sotto',
               'd8:f1:5b:15:26:40': '011 stazione meteo sala',
-              '22:7a:a4:df:b7:d7': '014 fritz repeater 2400',
+              '22:7a:a4:df:b7:d8': '014 fritz repeater 2400',
               '44:a5:6e:48:69:d8': '015 RBS20 di riserva',
               '38:94:ed:0c:78:df': '017 RBS50 tetto',
               'a0:40:a0:5e:40:d2': '016 RBS50 box',
@@ -85,9 +85,10 @@ template:
               '6c:3c:7c:c5:88:51': '072 Stampante Canon sopra',
               'd8:1f:12:93:61:65': '073 contattore sauna',
               'f8:6d:cc:3d:26:d4': '074 Fiat 500e',
-              '48:9d:ff:04:a3:ed': '075 Oneplus 8 vecchio x Russia',
+              '5c:17:cf:ca:a4:ea': '075 Oneplus 8 vecchio x Russia',
               '84:f3:eb:ef:13:5e': '076 Luce terrazza',
               'd8:3a:dd:9f:9e:0a': '077 Homeassistant-Rapsberry 5',
+              '00:1D:63:8E:46:F8': '078 cantinetta Liebheir',
               '4c:f5:dc:fd:39:cc': '085 camera sotto pergola EZVIZ',
               'ec:71:db:db:94:06': '168 camera Georgi ReolinkE1 Zoom',
               'e8:ca:c8:f8:47:65': '177 camera Nata ReolinkE1 Zoom',

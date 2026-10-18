@@ -11,11 +11,11 @@ config:
         name: PresaArmadio
         type: tile
         vertical: false
-      - entity: sensor.0xa4c1384b868fa6bd_linkquality
+      - entity: sensor.presa_cantinetta_zigbee_linkquality
         features:
         - type: trend-graph
         features_position: bottom
-        name: PresaTania
+        name: PresaCantinetta
         type: tile
         vertical: false
       - entity: sensor.presa_box_porta_zigbee_linkquality

@@ -9,9 +9,9 @@ items:
 - icon: mdi:solar-panel-large
   id: dashboard_fotovoltaico
   mode: storage
-  require_admin: false
+  require_admin: true
   show_in_sidebar: true
-  title: 'fotovoltaico '
+  title: 'Fotovoltaico '
   url_path: dashboard-fotovoltaico
 - icon: mdi:meteor
   id: dashboard_meteo
@@ -37,7 +37,7 @@ items:
 - icon: mdi:home-thermometer-outline
   id: dashboard_panasonic
   mode: storage
-  require_admin: false
+  require_admin: true
   show_in_sidebar: true
   title: Panasonic & Heishamon
   url_path: dashboard-panasonic
@@ -50,16 +50,16 @@ items:
 - icon: mdi:water-boiler
   id: otgw_caldaia
   mode: storage
-  require_admin: false
+  require_admin: true
   show_in_sidebar: true
   title: BAXI & OTGW
   url_path: otgw-caldaia
 - icon: mdi:fan
   id: dashboard_fancoil
   mode: storage
-  require_admin: false
+  require_admin: true
   show_in_sidebar: true
-  title: Devices & Fancoil
+  title: Fancoil & Deumidificatori
   url_path: dashboard-fancoil
 - icon: mdi:lock
   id: dashboard_sicurezza
@@ -85,7 +85,7 @@ items:
 - icon: mdi:wifi
   id: wi_fi
   mode: storage
-  require_admin: false
+  require_admin: true
   show_in_sidebar: true
   title: Wi-Fi & Zigbee
   url_path: wi-fi
@@ -113,7 +113,21 @@ items:
 - icon: mdi:battery-30-bluetooth
   id: dashboard_bms
   mode: storage
-  require_admin: false
+  require_admin: true
   show_in_sidebar: true
   title: BMS
   url_path: dashboard-bms
+- icon: mdi:devices
+  id: dashboard_devices
+  mode: storage
+  require_admin: true
+  show_in_sidebar: true
+  title: Altri devices
+  url_path: dashboard-devices
+- icon: mdi:human-male
+  id: manual_settings
+  mode: storage
+  require_admin: false
+  show_in_sidebar: true
+  title: Manual Settings
+  url_path: manual-settings

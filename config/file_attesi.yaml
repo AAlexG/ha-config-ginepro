@@ -1,4 +1,8 @@
-# file_attesi_3.yaml
+# file_attesi_7.yaml
+# v7 (18/10/2026): ESPHome rpi-fan-controller.yaml senza versione.
+# v6 (16/10/2026): aggiunte le plance Devices e Manual Settings.
+# v5 (16/10/2026): automations_cantinetta.yaml passa a 4 automazioni.
+# v4 (16/10/2026): aggiunto automations_cantinetta.yaml (2 automazioni).
 # v3 (16/10/2026): aggiunto installa.py (pulsante Installa e riavvia).
 # v2 (16/10/2026): aggiunti i due file ESPHome, confrontato con l'elenco
 #   reale di HA (88 file).
@@ -22,6 +26,7 @@ file:
   # --- Automazioni (numero = automazioni minime nel file) ---
   automations/automations_acqua.yaml: 4
   automations/automations_caldaia.yaml: 14
+  automations/automations_cantinetta.yaml: 4
   automations/automations_clima.yaml: 15
   automations/automations_consumi.yaml: 3
   automations/automations_deumidificatori.yaml: 4
@@ -88,7 +93,7 @@ file:
   custom_components/sunspec/manifest.json:
   custom_components/tigo/manifest.json:
   # --- ESPHome ---
-  esphome/rpi-fan-controller-1.yaml:
+  esphome/rpi-fan-controller.yaml:
   esphome/secrets.yaml:
   # --- Zigbee2MQTT ---
   zigbee2mqtt/configuration.yaml:
@@ -98,6 +103,7 @@ file:
   .storage/lovelace.dashboard_bms:
   .storage/lovelace.dashboard_clima:
   .storage/lovelace.dashboard_consumi:
+  .storage/lovelace.dashboard_devices:
   .storage/lovelace.dashboard_fancoil:
   .storage/lovelace.dashboard_fotovoltaico:
   .storage/lovelace.dashboard_irrigazione:
@@ -107,6 +113,7 @@ file:
   .storage/lovelace.dashboard_tania:
   .storage/lovelace.dashboard_tende:
   .storage/lovelace.dettagli_inverter:
+  .storage/lovelace.manual_settings:
   .storage/lovelace.otgw_caldaia:
   .storage/lovelace.wi_fi:
   .storage/lovelace.zone_casa:
