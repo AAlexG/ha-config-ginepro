@@ -1567,9 +1567,6 @@ config:
         name: Stato UPS
         type: tile
         vertical: false
-      - heading: AGGIORNAMENTI
-        heading_style: subtitle
-        type: heading
       type: grid
     title: 'Casa Ginepro '
     type: sections

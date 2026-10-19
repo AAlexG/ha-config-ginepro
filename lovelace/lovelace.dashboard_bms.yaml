@@ -116,7 +116,7 @@ config:
         name: "\u0394 celle ora"
         type: tile
         vertical: false
-      - graph_span: 48h
+      - graph_span: 7d
         grid_options:
           columns: 12
           rows: auto
@@ -287,32 +287,13 @@ config:
           entity: sensor.condensatore_cella_13_distacco
           name: cella 13 ora
           stroke_width: 2
+          transform: 'return x === null ? null : -x;'
           type: line
           yaxis_id: mv
-        - color: '#999999'
-          entity: sensor.condensatore_celle_differenza
-          name: avvio bilanciamento
-          show:
-            in_legend: false
-          stroke_dash: 6
-          stroke_width: 1
-          transform: return -20;
-          type: line
-          yaxis_id: mv
-        - color: '#999999'
-          entity: sensor.condensatore_celle_differenza
-          name: fine bilanciamento
-          show:
-            in_legend: false
-          stroke_dash: 6
-          stroke_width: 1
-          transform: return -10;
-          type: line
-          yaxis_id: mv
-        - color: '#E69F00'
+        - color: '#E69F99'
           entity: sensor.condensatore_bms_soc
           name: SOC ora
-          stroke_dash: 4
+          stroke_dash: 5
           stroke_width: 1
           type: line
           yaxis_id: soc
@@ -323,7 +304,6 @@ config:
               text: mV
           decimals: 0
           id: mv
-          max: 0
         - apex_config:
             title:
               text: SOC %

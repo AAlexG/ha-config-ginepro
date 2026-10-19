@@ -297,39 +297,6 @@ config:
               text: max tens.V
           decimals: 2
           id: volt
-      - graph_span: 48hour
-        grid_options:
-          columns: 12
-          rows: auto
-        header:
-          show: true
-          title: Corrente max/ora 48h
-        series:
-        - color: '#D55E00'
-          entity: sensor.inverter_uflex_battery_current
-          name: carica
-          statistics:
-            period: hour
-            type: min
-          transform: return Math.max(-x, 0);
-          type: column
-          yaxis_id: amp
-        - color: '#0072B2'
-          entity: sensor.inverter_uflex_battery_current
-          name: scarica
-          statistics:
-            period: hour
-            type: max
-          transform: return -Math.max(x, 0);
-          type: column
-          yaxis_id: amp
-        type: custom:apexcharts-card
-        yaxis:
-        - apex_config:
-            title:
-              text: A
-          decimals: 0
-          id: amp
       - graph_span: 60d
         grid_options:
           columns: 12
@@ -390,13 +357,46 @@ config:
               text: min tens.V
           decimals: 2
           id: volt
+      - graph_span: 3d
+        grid_options:
+          columns: 12
+          rows: auto
+        header:
+          show: true
+          title: Corrente max/ora 72h
+        series:
+        - color: '#D55E00'
+          entity: sensor.inverter_uflex_battery_current
+          name: carica
+          statistics:
+            period: hour
+            type: min
+          transform: return Math.max(-x, 0);
+          type: column
+          yaxis_id: amp
+        - color: '#0072B2'
+          entity: sensor.inverter_uflex_battery_current
+          name: scarica
+          statistics:
+            period: hour
+            type: max
+          transform: return -Math.max(x, 0);
+          type: column
+          yaxis_id: amp
+        type: custom:apexcharts-card
+        yaxis:
+        - apex_config:
+            title:
+              text: A
+          decimals: 0
+          id: amp
       - graph_span: 30d
         grid_options:
           columns: 12
           rows: auto
         header:
           show: true
-          title: Scarica max/giorno 30gg
+          title: Corente scarica max/gg 30gg
         series:
         - color: '#0072B2'
           entity: sensor.condensatore_corrente_scarica_max_oggi
@@ -423,7 +423,7 @@ config:
         yaxis:
         - apex_config:
             title:
-              text: Corrente max al giorno, A
+              text: A
           decimals: 2
           id: A
           min: 0
@@ -471,7 +471,7 @@ config:
           rows: auto
         header:
           show: true
-          title: Superamenti Absorption/giorno
+          title: Superamenti Absorption/gg, 60gg
         series:
         - color: '#D55E00'
           entity: sensor.condensatore_superamenti_oggi
@@ -495,7 +495,7 @@ config:
           rows: auto
         header:
           show: true
-          title: Temp. max/giorno 7gg
+          title: Temperatura max/giorno 7gg
         series:
         - entity: sensor.condensatore_bms_temperatura_5
           name: Temp BMS T5
@@ -519,6 +519,80 @@ config:
           decimals: 2
           id: C
           min: 20
+      - graph_span: 1d
+        grid_options:
+          columns: 12
+          rows: auto
+        header:
+          show: true
+          title: SOC di condens. Vs prodizione 24h
+        series:
+        - entity: sensor.inverter_uflex_battery
+          name: SOC ora
+          statistics:
+            period: hour
+            type: max
+          stroke_width: 2
+          type: line
+          yaxis_id: perc
+        - entity: sensor.inverter_uflex_pv_power
+          name: prodizione ora
+          statistics:
+            period: hour
+            type: max
+          stroke_width: 2
+          type: column
+          yaxis_id: kwh
+        type: custom:apexcharts-card
+        yaxis:
+        - apex_config:
+            title:
+              text: produzione, kWh
+          decimals: 2
+          id: kwh
+          opposite: true
+        - apex_config:
+            title:
+              text: SOC %
+          decimals: 2
+          id: perc
+      - graph_span: 3d
+        grid_options:
+          columns: 12
+          rows: auto
+        header:
+          show: true
+          title: SOC di condens. Vs a rete 3gg
+        series:
+        - entity: sensor.inverter_uflex_battery
+          name: SOC ora
+          statistics:
+            period: hour
+            type: max
+          stroke_width: 2
+          type: line
+          yaxis_id: perc
+        - entity: sensor.inverter_uflex_today_energy_export
+          name: a rete ora
+          statistics:
+            period: hour
+            type: change
+          stroke_width: 2
+          type: column
+          yaxis_id: kwh
+        type: custom:apexcharts-card
+        yaxis:
+        - apex_config:
+            title:
+              text: a rete, kWh
+          decimals: 2
+          id: kwh
+          opposite: true
+        - apex_config:
+            title:
+              text: SOC %
+          decimals: 2
+          id: perc
       - graph_span: 12months
         grid_options:
           columns: 12
@@ -868,7 +942,7 @@ config:
       - card:
           entities:
           - entity: sensor.inverter_uflex_pv_power
-            name: Momentanea
+            name: Produzione ora
           header: null
           hours_to_show: 24
           refresh_interval: 60
