@@ -1,4 +1,19 @@
-# automations_tende_5.yaml
+# automations_tende_6.yaml
+# v6 (19/10/2026): la pergola si riapre 20 minuti dopo l'ultima vaschetta,
+#   non piu' circa 80. Il 19/10 si e' visto che hourly_rain e' una somma
+#   mobile di 60 minuti, non un accumulo che si azzera ogni ora: resta > 0
+#   fino a un'ora dopo l'ultima goccia. Con "hourly_rain > 0" come emergenza,
+#   la chiusura rinnovava ultimo_allarme per tutta quell'ora e il rilascio
+#   aspettava poi altri 20 minuti.
+#   - Chiusura: hourly_rain conta come emergenza solo quando sale (trigger
+#     sul passaggio sopra 0, oppure ultima vaschetta da meno di 150 s, cioe'
+#     entro il ciclo successivo da 2 minuti). Variabile v_vaschetta.
+#   - Rilascio: al posto di "hourly_rain <= 0" chiede almeno 20 minuti
+#     dall'ultima vaschetta (sensor.pioggia_ultima_vaschetta, in config_tende).
+#     Se quel sensore non e' disponibile vale come vaschetta vecchia: restano
+#     rain_rate e ultimo_allarme a proteggere.
+#   - pergola_pioggia_oggi (ciclo fitto) usa ancora hourly_rain > 0.
+#   - Tenda e irrigazione invariate: li' l'ora in piu' e' solo protettiva.
 # v4 (12/10/2026): aggiunto il sensore pioggia Tuya Zigbee
 #   (binary_sensor.sensore_pioggia_tuya_rain). L'11/10 la stazione ha
 #   visto la pioggia solo alle 12:45:26, 2-3 minuti dopo l'inizio: il
@@ -151,6 +166,8 @@
 # alle 10:55, alle 11:00 torna a 0 mentre sta ancora piovendo. rain_rate
 # copre quel buco e intercetta la pioggia locale immediatamente; hourly_rain
 # resta per dare persistenza all'allarme dopo che ha smesso.
+# v6 (tende) - Il 19/10/2026 hourly_rain risulta una somma mobile di 60
+# minuti, senza azzeramento orario: vedi intestazione v6.
 # NOTA: event_rain volutamente NON usato, resta > 0 per ore dopo la pioggia
 # e terrebbe la pergola chiusa per l'intera giornata.
 #
@@ -214,6 +231,13 @@
         v_raffica: "{{ states('sensor.hp1000se_pro_pro_v1_6_4_wind_gust') | float(0) }}"
         v_rate: "{{ states('sensor.hp1000se_pro_pro_v1_6_4_rain_rate') | float(0) }}"
         v_oraria: "{{ states('sensor.hp1000se_pro_pro_v1_6_4_hourly_rain') | float(0) }}"
+        # v6: vaschetta appena scattata (trigger su hourly_rain o ultimo
+        # scatto da meno di 150 s). Sostituisce "v_oraria > 0" come emergenza.
+        v_vaschetta: >-
+          {{ (trigger is defined and trigger.entity_id is defined
+               and trigger.entity_id == 'sensor.hp1000se_pro_pro_v1_6_4_hourly_rain')
+             or (now().timestamp()
+                 - as_timestamp(states('sensor.pioggia_ultima_vaschetta'), 0) < 150) }}
         # v4: sensore Tuya bagnato da meno di 30 minuti (vedi intestazione).
         v_tuya: >-
           {{ is_state('binary_sensor.sensore_pioggia_tuya_rain', 'on')
@@ -237,7 +261,7 @@
     - variables:
         emergenza: >-
           {{ v_raffica > 40 or v_tuya or v_rate > 0
-             or v_oraria > 0 or mm_previsti > 0 }}
+             or v_vaschetta or mm_previsti > 0 }}
         ora_inizio: >-
           {% if is_state('input_boolean.pergola_meteo_chiusura','on') %}
           {{ states.input_boolean.pergola_meteo_chiusura.last_changed
@@ -259,7 +283,7 @@
              ~ ([ ('raffica ' ~ (v_raffica | round(1)) ~ ' km/h') if v_raffica > 40 else none,
                   'gocce sul sensore pioggia' if v_tuya else none,
                   ('pioggia ' ~ (v_rate | round(1)) ~ ' mm/h') if v_rate > 0 else none,
-                  ('accumulo ' ~ (v_oraria | round(1)) ~ ' mm') if v_oraria > 0 else none,
+                  ('pioggia ultima ora ' ~ (v_oraria | round(1)) ~ ' mm') if v_vaschetta else none,
                   ('previsione ' ~ (mm_previsti | round(1)) ~ ' mm/3h') if mm_previsti > 0 else none ]
                 | reject('none') | list | join(' + '))
              ~ ' · riapre non prima delle ' ~ ora_riapertura }}
@@ -301,7 +325,7 @@
                   Allarme meteo: {{ ([ ('raffica ' ~ (v_raffica | round(1)) ~ ' km/h') if v_raffica > 40 else none,
                       'gocce sul sensore pioggia' if v_tuya else none,
                       ('pioggia ' ~ (v_rate | round(1)) ~ ' mm/h') if v_rate > 0 else none,
-                      ('accumulo ' ~ (v_oraria | round(1)) ~ ' mm') if v_oraria > 0 else none,
+                      ('pioggia ultima ora ' ~ (v_oraria | round(1)) ~ ' mm') if v_vaschetta else none,
                       ('previsione ' ~ (mm_previsti | round(1)) ~ ' mm/3h') if mm_previsti > 0 else none ]
                     | reject('none') | list | join(' + ')) }}.
                   Con "Pergola manuale" alzato la sicurezza meteo non la chiude:
@@ -360,6 +384,10 @@
 # chiusa almeno 30 + 20 minuti, tempo in cui la stazione, se piove davvero,
 # ha gia' misurato la pioggia.
 #
+# v6: la condizione su hourly_rain <= 0 e' sostituita da "almeno 20 minuti
+# dall'ultima vaschetta" (sensor.pioggia_ultima_vaschetta). hourly_rain e' una
+# somma mobile di 60 minuti e teneva chiusa la pergola fino a 80 minuti.
+#
 # Il controllo istantaneo di vento/raffica/pioggia resta come seconda rete:
 # copre il caso in cui la chiusura non giri (flag vacanza o blocco manuale)
 # e quindi non aggiorni piu' il timestamp.
@@ -385,7 +413,8 @@
       value_template: >-
         {{ (states('sensor.hp1000se_pro_pro_v1_6_4_wind_gust') | float(0) <= 40)
            and (states('sensor.hp1000se_pro_pro_v1_6_4_rain_rate') | float(0) <= 0)
-           and (states('sensor.hp1000se_pro_pro_v1_6_4_hourly_rain') | float(0) <= 0) }}
+           and (now().timestamp()
+                - as_timestamp(states('sensor.pioggia_ultima_vaschetta'), 0) >= 1200) }}
   actions:
     - action: input_boolean.turn_off
       target:

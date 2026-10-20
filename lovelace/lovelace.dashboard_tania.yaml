@@ -3,6 +3,19 @@ config:
   views:
   - sections:
     - cards:
+      - heading: Accensione/spegnimento CPAP Resmed
+        heading_style: title
+        type: heading
+      - entity: switch.cameratania_resmed_tania_presa_tuya_socket_1
+        features:
+        - type: toggle
+        features_position: inline
+        name: CPAP
+        type: tile
+        vertical: false
+      - heading: ___________________________________________
+        heading_style: title
+        type: heading
       - heading: Apertura e chiusura cancelli e portone
         heading_style: title
         type: heading

@@ -548,7 +548,7 @@ config:
         - apex_config:
             title:
               text: produzione, kWh
-          decimals: 2
+          decimals: 0
           id: kwh
           opposite: true
         - apex_config:
@@ -593,13 +593,50 @@ config:
               text: SOC %
           decimals: 2
           id: perc
+      - graph_span: 3d
+        grid_options:
+          columns: 12
+          rows: auto
+        header:
+          show: true
+          title: SOC di condens. Vs Da rete 3gg
+        series:
+        - entity: sensor.inverter_uflex_battery
+          name: SOC ora
+          statistics:
+            period: hour
+            type: max
+          stroke_width: 2
+          type: line
+          yaxis_id: perc
+        - entity: sensor.inverter_uflex_today_energy_import
+          name: da rete ora
+          statistics:
+            period: hour
+            type: change
+          stroke_width: 2
+          type: column
+          yaxis_id: kwh
+        type: custom:apexcharts-card
+        yaxis:
+        - apex_config:
+            title:
+              text: da rete, kWh
+          decimals: 2
+          id: kwh
+          opposite: true
+        - apex_config:
+            title:
+              text: SOC %
+          decimals: 2
+          id: perc
       - graph_span: 12months
         grid_options:
           columns: 12
           rows: auto
         header:
           show: true
-          title: Energia carica/scarica 12 mesi
+          title: Energia cond.carica/scarica 12 mesi
         series:
         - entity: sensor.inverter_uflex_today_battery_charge
           name: carica
@@ -947,30 +984,29 @@ config:
           hours_to_show: 24
           refresh_interval: 60
           show: true
-          title: Oggi, Watt
           type: history-graph
         conditions: []
         type: conditional
-      - graph_span: 7d
+      - graph_span: 30d
         grid_options:
           columns: 12
           rows: auto
         header:
           show: true
-          title: Max production 7d, W
+          title: Max giornaliera 30gg, W
         series:
         - entity: sensor.inverter_uflex_pv_power
-          name: production
+          name: max production
           statistics:
             period: day
             type: max
-          type: line
+          type: column
           yaxis_id: W
         type: custom:apexcharts-card
         yaxis:
         - apex_config:
             title:
-              text: W
+              text: max production,W
           decimals: 0
           id: W
           min: 0
@@ -980,7 +1016,7 @@ config:
           rows: auto
         header:
           show: true
-          title: Ultimi 30gg, kWh
+          title: Total giornaliera 30gg, kWh
         series:
         - entity: sensor.inverter_uflex_today_production
           name: production oggi
@@ -993,7 +1029,7 @@ config:
         yaxis:
         - apex_config:
             title:
-              text: kWh
+              text: total production,kWh
           decimals: 1
           id: kwh
           min: 0
@@ -1003,7 +1039,7 @@ config:
           rows: auto
         header:
           show: true
-          title: Ultimi 12 mesi, kWh
+          title: Total mensile 12 mesi, kWh
         series:
         - entity: sensor.inverter_uflex_today_production
           name: production mese
@@ -1016,7 +1052,7 @@ config:
         yaxis:
         - apex_config:
             title:
-              text: kWh
+              text: total production, kWh
           decimals: 1
           id: kwh
           min: 0

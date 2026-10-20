@@ -1,4 +1,6 @@
-# config_tende_3.yaml
+# config_tende_4.yaml
+# v4 (19/10/2026): nuovo sensor.pioggia_ultima_vaschetta (ora dell'ultimo
+#   scatto del pluviometro), usato dal rilascio della pergola.
 # v3 (08/10/2026): nuovo input_boolean.pergola_meteo_avviso_manuale (stato
 #   interno dell'avviso meteo con pergola in gestione manuale).
 # v2 (08/10/2026): pergola_blocco_manuale segue la regola di tutti i flag
@@ -114,3 +116,34 @@ input_number:
     mode: slider
     unit_of_measurement: "%"
     icon: mdi:weather-sunset-up
+
+#==================================================================================
+# PIOGGIA - ORA DELL'ULTIMA VASCHETTA
+# hourly_rain della stazione e' una somma mobile degli ultimi 60 minuti
+# (verificato il 19/10/2026: nessun azzeramento allo scoccare dell'ora, il
+# valore scende piano dopo la pioggia). Resta quindi > 0 fino a un'ora dopo
+# l'ultima goccia misurata. Qui si registra l'istante in cui hourly_rain
+# SALE, cioe' quando il pluviometro scatta (0,1 mm): le discese sono solo
+# l'uscita dei vecchi scatti dalla finestra di 60 minuti e non contano.
+# Letto da pergola_meteo_chiusura e pergola_meteo_rilascio.
+#==================================================================================
+template:
+  - triggers:
+      - trigger: state
+        entity_id: sensor.hp1000se_pro_pro_v1_6_4_hourly_rain
+        not_from: ["unavailable", "unknown"]
+        not_to: ["unavailable", "unknown"]
+    sensor:
+      - name: "Pioggia Ultima Vaschetta"
+        unique_id: pioggia_ultima_vaschetta
+        device_class: timestamp
+        icon: mdi:weather-rainy
+        state: >-
+          {% if trigger.to_state.state | float(0)
+                > trigger.from_state.state | float(0) %}
+            {{ now().isoformat() }}
+          {% elif this.state not in ['unknown', 'unavailable', none] %}
+            {{ this.state }}
+          {% else %}
+            {{ none }}
+          {% endif %}
