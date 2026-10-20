@@ -1,4 +1,6 @@
-# file_attesi_8.yaml
+# file_attesi_9.yaml
+# v9 (20/10/2026): aggiunta l'integrazione uflex_bms (lettura Bluetooth
+#   del BMS del condensatore direttamente da HA).
 # v8 (18/10/2026): tolta l'integrazione ftp (rimossa, ora si lavora via Samba).
 # v7 (18/10/2026): ESPHome rpi-fan-controller.yaml senza versione.
 # v6 (16/10/2026): aggiunte le plance Devices e Manual Settings.
@@ -92,6 +94,7 @@ file:
   custom_components/sonoff/manifest.json:
   custom_components/sunspec/manifest.json:
   custom_components/tigo/manifest.json:
+  custom_components/uflex_bms/manifest.json:
   # --- ESPHome ---
   esphome/rpi-fan-controller.yaml:
   esphome/secrets.yaml:
