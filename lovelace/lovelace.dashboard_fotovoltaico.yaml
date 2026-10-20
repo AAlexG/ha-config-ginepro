@@ -1,5 +1,5 @@
 config:
-  title: Fotovoltaico v.33
+  title: Fotovoltaico v.34
   views:
   - cards: []
     max_columns: 2
@@ -255,6 +255,35 @@ config:
           action: more-info
         type: tile
         vertical: false
+      type: grid
+    - cards:
+      - heading: DG CASA
+        heading_style: title
+        icon: mdi:electric-switch
+        type: heading
+      - content: "{% set s = 'sensor.inverter_uflex_load_power' %}\n{% set p = states(s)\
+          \ %}\n{% set a = states.automation | selectattr('attributes.id','defined')\n\
+          \   | selectattr('attributes.id','eq','elettricita_dg_casa_scattato') |\
+          \ list | first | default(none) %}\n{% if not has_value(s) %}\n### <font\
+          \ color=\"#7F7F7F\">\u26AA Stato sconosciuto</font>\nCarico casa non disponibile\
+          \ ({{ p }}).\n{% elif p | float(0) < 50 %}\n### <font color=\"#D55E00\"\
+          >\u26A0\uFE0F DG CASA APERTO</font>\nCarico casa **{{ p | float(0) | round(0)\
+          \ }} W** (sotto 50 W)\n{% else %}\n### <font color=\"#0072B2\">\u2714\uFE0F\
+          \ DG CASA armato</font>\nCarico casa **{{ p | float(0) | round(0) }} W**\n\
+          {% endif %}\n\n| | |\n|---|---|\n| Ultimo scatto | {{ as_timestamp(a.attributes.last_triggered)\
+          \ | timestamp_custom('%d/%m %H:%M') if a and a.attributes.last_triggered\
+          \ else 'mai' }} |\n| In attesa di riarmo | {{ 's\xEC' if a and a.attributes.current\
+          \ | default(0) > 0 else 'no' }} |\n| Automazione | {{ ('attiva' if a.state\
+          \ == 'on' else 'DISATTIVATA') if a else 'non trovata' }} |\n\n**Condizioni**\
+          \ (automazione *Elettricit\xE0 - DG CASA scattato*)\n- **Scattato**: carico\
+          \ casa sotto **50 W** per **30 s**\n- **Riarmato**: sopra **50 W** per **30\
+          \ s**, entro 24 h\n- Sensore: `sensor.inverter_uflex_load_power`, uscita\
+          \ backup dell'inverter UFLEX (unica utenza: DG CASA)\n- Se HA si riavvia\
+          \ durante l'attesa, l'avviso di riarmo non parte\n"
+        grid_options:
+          columns: full
+          rows: auto
+        type: markdown
       type: grid
     - cards:
       - heading: CONDENSATORE

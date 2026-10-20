@@ -316,8 +316,17 @@ config:
           rows: auto
         header:
           show: true
-          title: "Max e Min \u0394 cella n.13 7gg"
+          title: "Max e Min \u0394 cella n.13 e SOC %"
         series:
+        - entity: sensor.condensatore_cella_13_distacco
+          name: "Max \u0394 cella n.13 oggi"
+          statistics:
+            period: day
+            type: min
+          stroke_width: 2
+          transform: 'return x === null ? null : -x;'
+          type: line
+          yaxis_id: volt
         - entity: sensor.condensatore_cella_13_distacco
           name: "Min \u0394 cella n.13 oggi"
           statistics:
@@ -327,15 +336,28 @@ config:
           transform: 'return x === null ? null : -x;'
           type: line
           yaxis_id: volt
-        - entity: sensor.condensatore_cella_13_distacco
-          name: "Max \u0394 cella n.13 oggi"
+        - entity: sensor.condensatore_bms_soc
+          name: SOC min
+          show:
+            in_legend: false
           statistics:
             period: day
             type: min
-          stroke_width: 3
-          transform: 'return x === null ? null : -x;'
+          stroke_dash: 5
+          stroke_width: 1
           type: line
-          yaxis_id: volt
+          yaxis_id: soc
+        - entity: sensor.condensatore_bms_soc
+          name: SOC max
+          show:
+            in_legend: false
+          statistics:
+            period: day
+            type: max
+          stroke_dash: 5
+          stroke_width: 1
+          type: line
+          yaxis_id: soc
         type: custom:apexcharts-card
         yaxis:
         - apex_config:
@@ -344,6 +366,14 @@ config:
           decimals: 2
           id: volt
           min: 0
+        - apex_config:
+            title:
+              text: SOC %
+          decimals: 0
+          id: soc
+          max: 100
+          min: 0
+          opposite: true
       type: grid
     - cards:
       - heading: ULTIMI 7 GIORNI
