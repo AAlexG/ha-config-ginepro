@@ -1,0 +1,13 @@
+{
+  "config": {
+    "flow_title": "{name}",
+    "step": {
+      "confirm": {"description": "Configurare il BMS {name} ({address})?"},
+      "user": {"data": {"address": "Dispositivo"}}
+    },
+    "abort": {
+      "already_configured": "BMS gia' configurato",
+      "no_devices_found": "Nessun BMS BP00 visibile"
+    }
+  }
+}
