@@ -1,4 +1,7 @@
-# automations_clima_79.yaml
+# automations_clima_80.yaml
+#
+# v80 (21/10/2026): clima_inizializzazione, lotto 3: default della retta
+#   mandata base del PID heating (config_pompa_calore_6).
 #
 # v79 (21/10/2026): promemoria flag manuali: aggiunto resmed_manuale
 #   (config_resmed_1).
@@ -89,7 +92,7 @@
       event: start
   actions:
     - variables:
-        versione_attesa: 2
+        versione_attesa: 3
         versione_applicata: "{{ states('input_number.clima_default_versione') | int(2) }}"
         # Terne [lotto, entita', valore]
         valori_default:
@@ -119,6 +122,11 @@
           # --- Lotto 2: limiti di mandata in raffrescamento ---
           - [2, input_number.panasonic_mandata_cool_min, 14]
           - [2, input_number.panasonic_mandata_cool_max, 19]
+          # --- Lotto 3: retta mandata base PID heating (v80) ---
+          - [3, input_number.panasonic_heat_base_text_fredda, 0]
+          - [3, input_number.panasonic_heat_base_mandata_fredda, 35]
+          - [3, input_number.panasonic_heat_base_text_mite, 15]
+          - [3, input_number.panasonic_heat_base_mandata_mite, 30]
         da_applicare: >
           {% set ns = namespace(elenco=[]) %}
           {% for v in valori_default %}

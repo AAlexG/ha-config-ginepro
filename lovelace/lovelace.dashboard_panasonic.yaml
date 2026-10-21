@@ -1,6 +1,6 @@
 config:
   path: panasonic
-  title: Panasonic/Heishamon v.27
+  title: Panasonic/Heishamon v.28
   views:
   - cards: []
     icon: mdi:heat-pump
@@ -166,6 +166,38 @@ config:
           columns: 4
           rows: 1
         name: COP 6h
+        type: tile
+        vertical: false
+      - entity: sensor.panasonic_cop_oggi
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        name: COP oggi
+        type: tile
+        vertical: false
+      - entity: sensor.panasonic_avvii_compressore_1h
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        name: Avvii 1h
+        type: tile
+        vertical: false
+      - entity: sensor.panasonic_avvii_compressore_oggi
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        name: Avvii oggi
+        type: tile
+        vertical: false
+      - entity: sensor.panasonic_pid_heat_base
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        name: Base mandata
         type: tile
         vertical: false
       - entity: sensor.panasonic_potenza_consumata_calcolata

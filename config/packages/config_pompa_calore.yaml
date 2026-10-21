@@ -1,4 +1,13 @@
-# config_pompa_calore_5.yaml
+# config_pompa_calore_6.yaml
+# v6 (21/10/2026): base del PID heating dalla temperatura esterna.
+#   Nuovi input_number panasonic_heat_base_text_fredda/_mite e
+#   panasonic_heat_base_mandata_fredda/_mite (retta mandata base vs T esterna,
+#   default 35 C a 0 C fuori, 30 C a 15 C fuori) e sensor.panasonic_pid_heat_base.
+#   Prima la base era 35 C fissa: con aria mite e pochi emettitori aperti la
+#   pompa produceva piu' di quanto l'impianto assorbisse e il compressore
+#   ciclava (arresto con mandata sotto setpoint e ritorno = mandata, 21/10).
+#   Diagnostica cicli: binary_sensor.panasonic_compressore_in_moto,
+#   sensor.panasonic_avvii_compressore_1h e _oggi.
 # v5 (21/10/2026): COP su energia invece che su potenza istantanea.
 #   Nuovi sensor.panasonic_prodotta_6h / panasonic_consumata_6h (statistics,
 #   variazione degli accumulatori nelle ultime 6 ore), sensor.panasonic_cop_6h
@@ -41,6 +50,30 @@ template:
         icon: mdi:lightning-bolt
         availability: "{{ has_value('input_number.panasonic_energia_consumata_acc') }}"
         state: "{{ states('input_number.panasonic_energia_consumata_acc') | float(0) | round(4) }}"
+      # v6: mandata base del PID heating, retta fra due punti (T esterna,
+      # mandata) limitata agli estremi. Temperatura esterna dalla stazione
+      # HP1000SE, come free heating e free cooling. Senza stazione il sensore
+      # non e' disponibile e il PID torna alla base fissa 35 C.
+      - name: "Panasonic PID Heat Base"
+        unique_id: "panasonic_pid_heat_base"
+        unit_of_measurement: "°C"
+        state_class: measurement
+        icon: mdi:chart-bell-curve-cumulative
+        availability: >-
+          {{ has_value('sensor.hp1000se_pro_pro_v1_6_4_outdoor_temperature')
+             and has_value('input_number.panasonic_heat_base_text_fredda')
+             and has_value('input_number.panasonic_heat_base_text_mite')
+             and states('input_number.panasonic_heat_base_text_mite') | float(0)
+                 > states('input_number.panasonic_heat_base_text_fredda') | float(0) }}
+        state: >-
+          {% set t = states('sensor.hp1000se_pro_pro_v1_6_4_outdoor_temperature') | float(0) %}
+          {% set t1 = states('input_number.panasonic_heat_base_text_fredda') | float(0) %}
+          {% set m1 = states('input_number.panasonic_heat_base_mandata_fredda') | float(35) %}
+          {% set t2 = states('input_number.panasonic_heat_base_text_mite') | float(15) %}
+          {% set m2 = states('input_number.panasonic_heat_base_mandata_mite') | float(30) %}
+          {% set tc = [[t, t1] | max, t2] | min %}
+          {{ (m1 + (tc - t1) * (m2 - m1) / (t2 - t1)) | round(1) }}
+
       # v5: COP mobile 6 ore = energia prodotta / energia consumata nelle
       # ultime 6 ore (variazione degli accumulatori, sensor statistics sotto).
       # Assorbe cicli on/off, avvii e risoluzione del DT. Disponibile solo con
@@ -69,6 +102,16 @@ template:
         state: >-
           {{ (states('sensor.panasonic_prodotta_oggi') | float(0)
               / states('sensor.panasonic_consumata_oggi') | float(1)) | round(2) }}
+
+  # v6: compressore in moto (frequenza > 0). delay_off 60 s: un campione a 0
+  # isolato non conta come arresto e riavvio.
+  - binary_sensor:
+      - name: "Panasonic Compressore In Moto"
+        unique_id: "panasonic_compressore_in_moto"
+        icon: mdi:engine
+        availability: "{{ has_value('sensor.panasonic_heat_pump_main_compressor_freq') }}"
+        delay_off: "00:01:00"
+        state: "{{ states('sensor.panasonic_heat_pump_main_compressor_freq') | float(0) > 0 }}"
 
   - sensor:
       # Potenza termica prodotta: calcolata da flow e delta T
@@ -197,6 +240,45 @@ input_number:
   panasonic_pid_setpoint_heat:
     name: "Panasonic Setpoint Mandata Riscaldamento"
     min: 10
+    max: 55
+    step: 0.5
+    unit_of_measurement: "°C"
+    mode: box
+    icon: mdi:thermometer-water
+
+  # v6: retta della mandata base del PID heating (sensor.panasonic_pid_heat_base).
+  # Default (lotto 3 di clima_inizializzazione): 35 C con 0 C fuori, 30 C con
+  # 15 C fuori. Oltre gli estremi la base resta al valore dell'estremo.
+  panasonic_heat_base_text_fredda:
+    name: "PID Heat – T esterna fredda"
+    min: -20
+    max: 20
+    step: 0.5
+    unit_of_measurement: "°C"
+    mode: box
+    icon: mdi:snowflake-thermometer
+
+  panasonic_heat_base_mandata_fredda:
+    name: "PID Heat – Mandata base al freddo"
+    min: 20
+    max: 55
+    step: 0.5
+    unit_of_measurement: "°C"
+    mode: box
+    icon: mdi:thermometer-water
+
+  panasonic_heat_base_text_mite:
+    name: "PID Heat – T esterna mite"
+    min: -10
+    max: 25
+    step: 0.5
+    unit_of_measurement: "°C"
+    mode: box
+    icon: mdi:sun-thermometer
+
+  panasonic_heat_base_mandata_mite:
+    name: "PID Heat – Mandata base col mite"
+    min: 20
     max: 55
     step: 0.5
     unit_of_measurement: "°C"
@@ -389,6 +471,26 @@ sensor:
       hours: 6
     sampling_size: 500
     keep_last_sample: true
+
+  # v6: avvii del compressore (passaggi a on) nell'ultima ora e da mezzanotte.
+  # Servono a misurare i cicli on/off prima e dopo la base da T esterna.
+  - platform: history_stats
+    name: "Panasonic Avvii Compressore 1h"
+    unique_id: panasonic_avvii_compressore_1h
+    entity_id: binary_sensor.panasonic_compressore_in_moto
+    state: "on"
+    type: count
+    start: "{{ now() - timedelta(hours=1) }}"
+    end: "{{ now() }}"
+
+  - platform: history_stats
+    name: "Panasonic Avvii Compressore Oggi"
+    unique_id: panasonic_avvii_compressore_oggi
+    entity_id: binary_sensor.panasonic_compressore_in_moto
+    state: "on"
+    type: count
+    start: "{{ today_at() }}"
+    end: "{{ now() }}"
 
 utility_meter:
 

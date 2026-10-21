@@ -1,4 +1,8 @@
-# automations_pompa_calore_7.yaml
+# automations_pompa_calore_8.yaml
+#
+# v8 (21/10/2026): PID heating con mandata base da temperatura esterna
+#   (sensor.panasonic_pid_heat_base, config_pompa_calore_6) al posto di 35 C
+#   fissi. Sensore non disponibile: base 35 come prima.
 #
 # v7 (21/10/2026): panasonic_accumulo_energia accumula come consumo il
 #   maggiore fra la stima da corrente compressore (esclude ventilatore,
@@ -368,6 +372,7 @@
     Notte: camera Georgi e camera Tania, ognuna col proprio termometro e col
     proprio target; comanda la camera piu' lontana dal target.
     Isteresi 0.5C, topic SetZ1HeatRequestTemperature.
+    Mandata base da T esterna (sensor.panasonic_pid_heat_base, v8).
   triggers:
     - trigger: time_pattern
       minutes: "/5"
@@ -459,10 +464,14 @@
           {{ states('input_number.clima_freeheating_setpoint_offset') | float(5) if freeheating_on else 0 }}
         smin: >
           {{ states('input_number.clima_freeheating_setpoint_min') | float(20) if freeheating_on else 25 }}
+        # v8: base da T esterna invece di 35 fissi (vedi config_pompa_calore).
+        base: >
+          {{ states('sensor.panasonic_pid_heat_base') | float(35)
+             if has_value('sensor.panasonic_pid_heat_base') else 35 }}
         # --- ANTI-WINDUP (integrazione condizionata), speculare al cooling ---
         integrale_candidato: "{{ integrale_prec + errore * dt / 60 }}"
         raw_candidato: >
-          {{ 35 + (errore * kp) + (integrale_candidato * ki) + (derivativo * kd) - fh }}
+          {{ base + (errore * kp) + (integrale_candidato * ki) + (derivativo * kd) - fh }}
         nuovo_integrale: >
           {% if raw_candidato > 55 and errore > 0 %}
             {{ integrale_prec }}
@@ -472,7 +481,7 @@
             {{ [[integrale_candidato, -8] | max, 8] | min }}
           {% endif %}
         setpoint_raw: >
-          {{ 35 + (errore * kp) + (nuovo_integrale * ki) + (derivativo * kd) - fh }}
+          {{ base + (errore * kp) + (nuovo_integrale * ki) + (derivativo * kd) - fh }}
         setpoint: >
           {{ [[setpoint_raw, smin] | max, 55] | min | round(0) | int }}
     - choose:
