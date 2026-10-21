@@ -160,20 +160,25 @@ config:
         name: "Modalit\xE0"
         type: tile
         vertical: false
-      - entity: sensor.panasonic_cop_6h
+      - entity: binary_sensor.panasonic_heat_pump_main_quiet_mode_schedule
         features_position: bottom
-        grid_options:
-          columns: 4
-          rows: 1
-        name: COP 6h
+        name: Quite Mode
         type: tile
         vertical: false
-      - entity: sensor.panasonic_cop_oggi
+      - entity: select.panasonic_heat_pump_main_powerful_mode_time
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        name: MaxPotenza
+        type: tile
+        vertical: false
+      - entity: sensor.panasonic_pid_heat_base
         features_position: bottom
         grid_options:
           columns: 4
           rows: 1
-        name: COP oggi
+        name: BaseMandata
         type: tile
         vertical: false
       - entity: sensor.panasonic_avvii_compressore_1h
@@ -192,89 +197,12 @@ config:
         name: Avvii oggi
         type: tile
         vertical: false
-      - entity: sensor.panasonic_pid_heat_base
-        features_position: bottom
-        grid_options:
-          columns: 4
-          rows: 1
-        name: Base mandata
-        type: tile
-        vertical: false
-      - entity: sensor.panasonic_potenza_consumata_calcolata
-        features_position: bottom
-        grid_options:
-          columns: 4
-          rows: 1
-        name: Consum.ora
-        type: tile
-        vertical: false
-      - entity: sensor.panasonic_potenza_prodotta_calcolata
-        features_position: bottom
-        grid_options:
-          columns: 4
-          rows: 1
-        name: Produz.ora
-        type: tile
-        vertical: false
-      - entity: sensor.panasonic_consumata_oggi
-        features_position: bottom
-        grid_options:
-          columns: 3
-          rows: 1
-        name: Consum.oggi
-        type: tile
-        vertical: false
-      - entity: sensor.panasonic_prodotta_oggi
-        features_position: bottom
-        grid_options:
-          columns: 3
-          rows: 1
-        name: Produz.oggi
-        type: tile
-        vertical: false
-      - entity: sensor.panasonic_consumata_mese
-        features_position: bottom
-        grid_options:
-          columns: 3
-          rows: 1
-        name: Consum.mese
-        type: tile
-        vertical: false
-      - entity: sensor.panasonic_prodotta_mese
-        features_position: bottom
-        grid_options:
-          columns: 3
-          rows: 1
-        name: Produz.Mese
-        type: tile
-        vertical: false
-      - entity: select.panasonic_heat_pump_main_powerful_mode_time
-        features_position: bottom
-        grid_options:
-          columns: 6
-          rows: 1
-        name: Max Potenza
-        type: tile
-        vertical: false
-      - entity: binary_sensor.panasonic_heat_pump_main_quiet_mode_schedule
-        features_position: bottom
-        name: Quite Mode
-        type: tile
-        vertical: false
       - entity: sensor.panasonic_heat_pump_main_pump_speed
         features_position: bottom
         grid_options:
           columns: 4
           rows: 1
-        name: Giri pompa idraulica
-        type: tile
-        vertical: false
-      - entity: sensor.panasonic_heat_pump_main_error
-        features_position: bottom
-        grid_options:
-          columns: 6
-          rows: 1
-        name: Ultimo Errore
+        name: GiriPompaIdraulica
         type: tile
         vertical: false
       - content: "{% set code = states('sensor.panasonic_heat_pump_main_error') |\
@@ -359,6 +287,74 @@ config:
           columns: full
           rows: auto
         type: markdown
+      - heading: COP-Coef.tra energia consum.e prodotta
+        heading_style: subtitle
+        icon: mdi:heat-pump
+        type: heading
+      - entity: sensor.panasonic_cop_6h
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        name: COP 6h
+        type: tile
+        vertical: false
+      - entity: sensor.panasonic_cop_oggi
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        name: COP oggi
+        type: tile
+        vertical: false
+      - entity: sensor.panasonic_potenza_consumata_calcolata
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        name: Consum.ora
+        type: tile
+        vertical: false
+      - entity: sensor.panasonic_potenza_prodotta_calcolata
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        name: Produz.ora
+        type: tile
+        vertical: false
+      - entity: sensor.panasonic_consumata_oggi
+        features_position: bottom
+        grid_options:
+          columns: 3
+          rows: 1
+        name: ConsumOggi
+        type: tile
+        vertical: false
+      - entity: sensor.panasonic_prodotta_oggi
+        features_position: bottom
+        grid_options:
+          columns: 3
+          rows: 1
+        name: Produz.oggi
+        type: tile
+        vertical: false
+      - entity: sensor.panasonic_consumata_mese
+        features_position: bottom
+        grid_options:
+          columns: 3
+          rows: 1
+        name: Consum.mese
+        type: tile
+        vertical: false
+      - entity: sensor.panasonic_prodotta_mese
+        features_position: bottom
+        grid_options:
+          columns: 3
+          rows: 1
+        name: Produz.Mese
+        type: tile
+        vertical: false
       - heading: POMPA -TEMPERATURE ORA
         heading_style: title
         icon: mdi:coolant-temperature

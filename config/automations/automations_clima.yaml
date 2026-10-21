@@ -1,4 +1,10 @@
-# automations_clima_80.yaml
+# automations_clima_81.yaml
+#
+# v81 (21/10/2026): fancoil_georgi_controllo e fancoil_sala_controllo girano
+#   anche a ogni nuova lettura dei termometri (camere Georgi e Tania, sala),
+#   non solo ogni 5 minuti. Prima fra due giri la camera poteva superare la
+#   soglia di spegnimento di alcuni decimi (Georgi 22,7 C con soglia 22,3 C,
+#   21/10). Il controllo ogni 5 minuti resta come sicurezza.
 #
 # v80 (21/10/2026): clima_inizializzazione, lotto 3: default della retta
 #   mandata base del PID heating (config_pompa_calore_6).
@@ -393,10 +399,20 @@
     notte segue la camera piu' fredda fra le due.
     Decisione per camera: T_camera vs target camera E outlet_temp vs soglia
     di efficacia dell'acqua calcolata sul target di quella camera.
+    v81: gira anche a ogni nuova lettura dei termometri delle camere.
   mode: single
+  # v81: con i trigger sui termometri un giro puo' arrivare mentre l'altro e'
+  # in corso; viene scartato senza avviso nel log (il successivo decide).
+  max_exceeded: silent
   triggers:
     - trigger: time_pattern
       minutes: "/5"
+    # v81: nuova lettura (solo cambio di stato, non di attributi)
+    - trigger: state
+      entity_id:
+        - sensor.termometro_georgi_zigbee_temperature
+        - sensor.termometro_tania_zigbee_temperature
+      to: ~
   conditions:
     # Blocco fancoil in vacanza (flag attivabile anche a mano da plancia clima)
     - condition: state
@@ -555,10 +571,16 @@
   description: >
     Ogni 5 minuti decide lo stato del fancoil sala in base a T_sala vs target
     giorno (isteresi 0,3 C) e outlet_temp. Attivo solo in modalita giorno.
+    v81: gira anche a ogni nuova lettura del termometro sala.
   mode: single
+  max_exceeded: silent
   triggers:
     - trigger: time_pattern
       minutes: "/5"
+    # v81: nuova lettura (solo cambio di stato, non di attributi)
+    - trigger: state
+      entity_id: sensor.hp1000se_pro_pro_v1_6_4_indoor_temperature
+      to: ~
   conditions:
     # Blocco fancoil in vacanza (flag attivabile anche a mano da plancia clima)
     - condition: state

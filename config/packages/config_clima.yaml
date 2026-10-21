@@ -1,4 +1,8 @@
-# config_clima_15.yaml
+# config_clima_16.yaml
+# v16 (21/10/2026): binary_sensor.clima_condizione_free_cooling vale solo con
+#   la pompa in Cool. Prima guardava solo il meteo e d'inverno restava sempre
+#   on (T esterna < 28 C), mostrando "Acceso" in plancia Clima pur senza
+#   effetti: clima_freecooling_controllo agisce solo in Cool.
 # v15 (08/10/2026): rimosso input_number.mintemp_notte_inverno_sala. Era letto
 #   solo dal target notturno del SAT, che ora segue le camere come la pompa
 #   (automations_caldaia_2, clima_sync_sat_target): la sala di notte non e'
@@ -114,6 +118,7 @@ template:
 # modo affidabile. Per cambiare la durata si modifica questo file.
 # Il target di riferimento e' sempre quello della sala: dalla v55 il free
 # cooling esiste solo in modalita giorno.
+# v16: con la pompa non in Cool il sensore e' off (free cooling solo estivo).
   - binary_sensor:
 
       - name: "Clima Condizione Free Cooling"
@@ -136,7 +141,11 @@ template:
           {% set bonus = states('input_number.clima_delta_naturale_vento_bonus') | float(2) %}
           {% set soglia_vento = states('input_number.clima_soglia_vento_naturale') | float(6) %}
           {% set delta = t_ext - target %}
-          {{ delta < base or (delta < (base + bonus) and vento >= soglia_vento) }}
+          {# v16: solo con la pompa in raffrescamento; il delay_on di 1 ora
+             parte quindi anche dal passaggio a Cool #}
+          {% set cool = states('select.panasonic_heat_pump_main_operating_mode_state')
+                        in ['Cool', 'Cool only'] %}
+          {{ cool and (delta < base or (delta < (base + bonus) and vento >= soglia_vento)) }}
 
 sensor:
 
