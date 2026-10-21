@@ -1,4 +1,6 @@
-# file_attesi_11.yaml
+# file_attesi_13.yaml
+# v13 (21/10/2026): aggiunte l'integrazione garmin_connect e la plancia Salute.
+# v12 (21/10/2026): automations_luci.yaml passa a 5 automazioni.
 # v11 (21/10/2026): automations_luci.yaml passa a 4 automazioni.
 # v10 (21/10/2026): nuovo packages/config_lenzuola.yaml;
 #   automations_luci.yaml passa a 3 automazioni.
@@ -41,7 +43,7 @@ file:
   automations/automations_gas.yaml: 1
   automations/automations_irrigazione.yaml: 9
   automations/automations_lavatrice.yaml: 1
-  automations/automations_luci.yaml: 4
+  automations/automations_luci.yaml: 5
   automations/automations_meteo.yaml: 5
   automations/automations_pompa_calore.yaml: 9
   automations/automations_resmed.yaml: 3
@@ -89,6 +91,7 @@ file:
   # --- Integrazioni personalizzate ---
   custom_components/aquarea/manifest.json:
   custom_components/browser_mod/manifest.json:
+  custom_components/garmin_connect/manifest.json:
   custom_components/hacs/manifest.json:
   custom_components/localtuya/manifest.json:
   custom_components/netgear_wax/manifest.json:
@@ -116,6 +119,7 @@ file:
   .storage/lovelace.dashboard_irrigazione:
   .storage/lovelace.dashboard_meteo:
   .storage/lovelace.dashboard_panasonic:
+  .storage/lovelace.dashboard_salute:
   .storage/lovelace.dashboard_sicurezza:
   .storage/lovelace.dashboard_tania:
   .storage/lovelace.dashboard_tende:

@@ -1,4 +1,9 @@
-# config_lenzuola_1.yaml
+# config_lenzuola_3.yaml
+# v3 (21/10/2026): sensori template in ora leggibile (HH:MM) per la plancia
+#   Salute: ora media a letto, accensione prevista, spegnimento previsto.
+# v2 (21/10/2026): si usa anche l'orologio Garmin (sensor.garmin_connect_bedtime,
+#   ora di addormentamento). Nuovi: tempo medio per addormentarsi, notti
+#   Garmin registrate, ultima notte registrata, ultimo bedtime Garmin usato.
 # v1 (21/10/2026): file nuovo. Helper per stimare l'ora in cui Alex va a
 #   dormire dall'ultimo spegnimento serale delle luci cucina
 #   (switch.presa_luci_cucina_socket_1). Automazioni in automations_luci.
@@ -10,13 +15,29 @@
 input_datetime:
 
   # Ultimo spegnimento manuale delle luci cucina fra le 20:30 e le 03:00.
-  # Scritto da luci_cucina_registra_spegnimento, letto alle 04:00 da
-  # lenzuola_aggiorna_ora_letto.
+  # Scritto da luci_cucina_registra_spegnimento, letto da
+  # lenzuola_aggiorna_ora_letto e dallo spegnimento delle lenzuola.
   lenzuola_ultimo_spegnimento_cucina:
     name: "Lenzuola - Ultimo spegnimento cucina"
     has_date: true
     has_time: true
     icon: mdi:lightbulb-off-outline
+
+  # Quando e' stata aggiunta l'ultima notte alla media dell'ora a letto.
+  # Evita di contare due volte la stessa notte (Garmin e controllo 14:00).
+  lenzuola_ultima_registrazione:
+    name: "Lenzuola - Ultima notte registrata"
+    has_date: true
+    has_time: true
+    icon: mdi:calendar-check
+
+  # Ultimo valore di sensor.garmin_connect_bedtime gia' usato per la media
+  # del tempo per addormentarsi.
+  lenzuola_ultimo_bedtime_garmin:
+    name: "Lenzuola - Ultimo bedtime Garmin usato"
+    has_date: true
+    has_time: true
+    icon: mdi:watch
 
 input_number:
 
@@ -34,6 +55,18 @@ input_number:
     unit_of_measurement: min
     icon: mdi:bed-clock
 
+  # Tempo medio fra lo spegnimento delle luci cucina e l'addormentamento
+  # rilevato dal Garmin. Solo notti con entrambi i dati e differenza
+  # fra 0 e 180 minuti. Stessa media dell'ora a letto (1/n, poi 0,2).
+  lenzuola_tempo_addormentamento:
+    name: "Lenzuola - Tempo medio per addormentarsi"
+    min: 0
+    max: 180
+    step: 1
+    mode: box
+    unit_of_measurement: min
+    icon: mdi:sleep
+
 counter:
 
   # Notti registrate nella media. Serve per il peso 1/n delle prime notti.
@@ -41,3 +74,53 @@ counter:
     name: "Lenzuola - Notti registrate"
     step: 1
     icon: mdi:counter
+
+  # Notti usate per il tempo medio per addormentarsi.
+  lenzuola_notti_garmin:
+    name: "Lenzuola - Notti Garmin registrate"
+    step: 1
+    icon: mdi:counter
+
+template:
+  - sensor:
+      # Ora media a letto in HH:MM (l'helper e' in minuti dalle 18:00).
+      - name: "Lenzuola - Ora media a letto"
+        unique_id: lenzuola_ora_media_letto_hhmm
+        icon: mdi:bed-clock
+        availability: >-
+          {{ states('counter.lenzuola_notti_registrate') | int(0) > 0 }}
+        state: >-
+          {% set h = (states('input_number.lenzuola_ora_media_letto') | int(0) + 1080) % 1440 %}
+          {{ '%02d:%02d' | format(h // 60, h % 60) }}
+
+      # Ora in cui lenzuola_accensione_sera accendera' (media - 30 min).
+      # "In attesa" finche' non ci sono 5 notti; "Non in Heat" fuori stagione.
+      - name: "Lenzuola - Accensione prevista"
+        unique_id: lenzuola_accensione_prevista
+        icon: mdi:radiator
+        state: >-
+          {% if states('counter.lenzuola_notti_registrate') | int(0) < 5 %}
+            In attesa ({{ states('counter.lenzuola_notti_registrate') | int(0) }}/5 notti)
+          {% elif states('select.panasonic_heat_pump_main_operating_mode_state')
+                  not in ['Heat', 'Heat only'] %}
+            Non in Heat
+          {% else %}
+            {% set h = (states('input_number.lenzuola_ora_media_letto') | int(0) + 1050) % 1440 %}
+            {{ '%02d:%02d' | format(h // 60, h % 60) }}
+          {% endif %}
+
+      # Ora in cui lenzuola_spegnimento_notte spegnera': spegnimento cucina di
+      # stasera + tempo medio per addormentarsi + 30 min.
+      - name: "Lenzuola - Spegnimento previsto"
+        unique_id: lenzuola_spegnimento_previsto
+        icon: mdi:radiator-off
+        state: >-
+          {% set c = as_timestamp(states('input_datetime.lenzuola_ultimo_spegnimento_cucina'), 0) %}
+          {% set attesa = states('input_number.lenzuola_tempo_addormentamento') | int(0) %}
+          {% if states('counter.lenzuola_notti_garmin') | int(0) < 3 %}
+            In attesa ({{ states('counter.lenzuola_notti_garmin') | int(0) }}/3 notti Garmin)
+          {% elif c == 0 or now().timestamp() - c > 6 * 3600 %}
+            Dopo le luci cucina
+          {% else %}
+            {{ (c + (attesa + 30) * 60) | timestamp_custom('%H:%M') }}
+          {% endif %}
