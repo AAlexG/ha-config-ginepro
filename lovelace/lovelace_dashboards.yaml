@@ -131,3 +131,10 @@ items:
   show_in_sidebar: true
   title: Manual Settings
   url_path: manual-settings
+- icon: mdi:face-man-shimmer
+  id: dashboard_salute
+  mode: storage
+  require_admin: true
+  show_in_sidebar: true
+  title: Salute
+  url_path: dashboard-salute

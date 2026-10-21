@@ -1,0 +1,832 @@
+"""Services for Garmin Connect integration."""
+
+from __future__ import annotations
+
+import json
+from datetime import date, datetime
+from pathlib import Path
+from typing import TYPE_CHECKING, Any
+from zoneinfo import ZoneInfo
+
+from aiohttp import ClientError
+from ha_garmin import GarminConnectError
+from homeassistant.core import (
+    HomeAssistant,
+    ServiceCall,
+    ServiceResponse,
+    SupportsResponse,
+    callback,
+)
+from homeassistant.exceptions import HomeAssistantError
+from homeassistant.helpers import config_validation as cv
+from homeassistant.helpers import entity_registry as er
+from homeassistant.util import dt as dt_util
+
+from .const import DOMAIN
+
+try:
+    import probatio as vol
+except ImportError:  # Home Assistant < 2026.10 ships voluptuous instead
+    import voluptuous as vol  # type: ignore[no-redef]
+
+if TYPE_CHECKING:
+    from ha_garmin import GarminClient
+
+    from .coordinator import GarminConnectCoordinators
+
+# Service names
+SERVICE_SET_ACTIVE_GEAR = "set_active_gear"
+SERVICE_ADD_BODY_COMPOSITION = "add_body_composition"
+SERVICE_ADD_BLOOD_PRESSURE = "add_blood_pressure"
+SERVICE_CREATE_ACTIVITY = "create_activity"
+SERVICE_UPLOAD_ACTIVITY = "upload_activity"
+SERVICE_DOWNLOAD_ACTIVITY = "download_activity"
+SERVICE_ADD_GEAR_TO_ACTIVITY = "add_gear_to_activity"
+SERVICE_ADD_HYDRATION = "add_hydration"
+SERVICE_ADD_NUTRITION = "add_nutrition_log"
+SERVICE_CREATE_WORKOUT = "create_workout"
+SERVICE_UPDATE_WORKOUT = "update_workout"
+SERVICE_DELETE_WORKOUT = "delete_workout"
+SERVICE_SCHEDULE_WORKOUT = "schedule_workout"
+SERVICE_UNSCHEDULE_WORKOUT = "unschedule_workout"
+
+# Errors the library raises for bad input (unparsable timestamp, value out of
+# its own limits, unsupported file) on top of its API/network errors.
+_SERVICE_ERRORS = (GarminConnectError, ClientError, ValueError)
+
+UPLOAD_ACTIVITY_FORMATS = {".fit", ".gpx", ".tcx"}
+
+
+def _upload_path_allowed(hass: HomeAssistant, path: Path) -> bool:
+    """Return whether a file may be uploaded from ``path``.
+
+    Anything inside the config directory is fine; the rest must be in
+    allowlist_external_dirs (which does not include the config directory by
+    default). Symlinks are resolved first so a link in the config directory
+    cannot point outside it. Blocking: run in the executor.
+    """
+    try:
+        resolved = path.resolve()
+        config_dir = Path(hass.config.config_dir).resolve()
+    except OSError, RuntimeError:
+        return False
+    if resolved.is_relative_to(config_dir):
+        return True
+    return hass.config.is_allowed_path(str(path))
+
+
+def _iso_timestamp(value: datetime | None) -> str | None:
+    """Serialize a validated timestamp for the library, which parses ISO 8601.
+
+    A naive timestamp is wall-clock time in HA's zone; without one the library
+    defaults to now in the Garmin calendar zone.
+    """
+    if value is None:
+        return None
+    if value.tzinfo is None:
+        value = value.replace(tzinfo=dt_util.get_default_time_zone())
+    return value.isoformat()
+
+
+# Service schemas. Ranges mirror the selectors in services.yaml so YAML and
+# API callers, which bypass the UI selectors, get the same limits.
+SET_ACTIVE_GEAR_SCHEMA = vol.Schema(
+    {
+        vol.Optional("gear_uuid"): cv.string,
+        vol.Optional("entity_id"): cv.entity_id,
+        vol.Required("activity_type"): vol.In(
+            ["running", "cycling", "hiking", "walking", "swimming", "other"]
+        ),
+        vol.Optional("setting", default="set this as default, unset others"): vol.In(
+            ["set this as default, unset others", "set as default", "unset default"]
+        ),
+    }
+)
+
+ADD_BODY_COMPOSITION_SCHEMA = vol.Schema(
+    {
+        vol.Optional("entity_id"): cv.entity_id,
+        vol.Required("weight"): vol.All(vol.Coerce(float), vol.Range(min=20, max=300)),
+        vol.Optional("timestamp"): cv.datetime,
+        vol.Optional("bmi"): vol.All(vol.Coerce(float), vol.Range(min=10, max=60)),
+        vol.Optional("percent_fat"): vol.All(vol.Coerce(float), vol.Range(min=1, max=70)),
+        vol.Optional("percent_hydration"): vol.All(vol.Coerce(float), vol.Range(min=1, max=80)),
+        vol.Optional("visceral_fat_mass"): vol.All(vol.Coerce(float), vol.Range(min=0, max=50)),
+        vol.Optional("bone_mass"): vol.All(vol.Coerce(float), vol.Range(min=0, max=10)),
+        vol.Optional("muscle_mass"): vol.All(vol.Coerce(float), vol.Range(min=0, max=150)),
+        vol.Optional("basal_met"): vol.All(vol.Coerce(float), vol.Range(min=500, max=5000)),
+        vol.Optional("active_met"): vol.All(vol.Coerce(float), vol.Range(min=500, max=10000)),
+        vol.Optional("physique_rating"): vol.All(vol.Coerce(float), vol.Range(min=1, max=9)),
+        vol.Optional("metabolic_age"): vol.All(vol.Coerce(float), vol.Range(min=10, max=100)),
+        vol.Optional("visceral_fat_rating"): vol.All(vol.Coerce(float), vol.Range(min=1, max=59)),
+    }
+)
+
+ADD_BLOOD_PRESSURE_SCHEMA = vol.Schema(
+    {
+        vol.Optional("entity_id"): cv.entity_id,
+        vol.Required("systolic"): vol.All(vol.Coerce(int), vol.Range(min=70, max=260)),
+        vol.Required("diastolic"): vol.All(vol.Coerce(int), vol.Range(min=40, max=150)),
+        vol.Optional("pulse"): vol.All(vol.Coerce(int), vol.Range(min=20, max=250)),
+        vol.Optional("timestamp"): cv.datetime,
+        vol.Optional("notes"): cv.string,
+    }
+)
+
+CREATE_ACTIVITY_SCHEMA = vol.Schema(
+    {
+        vol.Optional("entity_id"): cv.entity_id,
+        vol.Required("activity_name"): cv.string,
+        vol.Required("activity_type"): vol.In(
+            [
+                "running",
+                "cycling",
+                "walking",
+                "hiking",
+                "swimming",
+                "fitness_equipment",
+                "other",
+            ]
+        ),
+        vol.Optional("start_datetime"): cv.datetime,
+        vol.Required("duration_min"): vol.All(vol.Coerce(int), vol.Range(min=1, max=1440)),
+        vol.Optional("distance_km", default=0.0): vol.All(
+            vol.Coerce(float), vol.Range(min=0, max=1000)
+        ),
+        vol.Optional("time_zone"): cv.time_zone,
+    }
+)
+
+UPLOAD_ACTIVITY_SCHEMA = vol.Schema(
+    {
+        vol.Optional("entity_id"): cv.entity_id,
+        vol.Required("file_path"): cv.string,
+    }
+)
+
+DOWNLOAD_ACTIVITY_FORMATS = ["fit", "original", "tcx", "gpx", "kml", "csv"]
+
+DOWNLOAD_ACTIVITY_SCHEMA = vol.Schema(
+    {
+        vol.Optional("entity_id"): cv.entity_id,
+        vol.Required("activity_id"): vol.Coerce(int),
+        vol.Optional("file_format", default="fit"): vol.In(DOWNLOAD_ACTIVITY_FORMATS),
+        vol.Optional("file_path"): cv.string,
+    }
+)
+
+ADD_GEAR_TO_ACTIVITY_SCHEMA = vol.Schema(
+    {
+        vol.Required("activity_id"): vol.Coerce(int),
+        vol.Optional("gear_uuid"): cv.string,
+        vol.Optional("entity_id"): cv.entity_id,
+    }
+)
+
+ADD_HYDRATION_SCHEMA = vol.Schema(
+    {
+        vol.Optional("entity_id"): cv.entity_id,
+        # Negative values subtract; the library rejects anything beyond 10 L.
+        vol.Required("value_in_ml"): vol.All(vol.Coerce(float), vol.Range(min=-10000, max=10000)),
+        vol.Optional("timestamp"): cv.datetime,
+    }
+)
+
+ADD_NUTRITION_SCHEMA = vol.Schema(
+    {
+        vol.Optional("entity_id"): cv.entity_id,
+        vol.Required("calories"): vol.All(vol.Coerce(float), vol.Range(min=0, max=10000)),
+        vol.Optional("carbs"): vol.All(vol.Coerce(float), vol.Range(min=0, max=2000)),
+        vol.Optional("protein"): vol.All(vol.Coerce(float), vol.Range(min=0, max=2000)),
+        vol.Optional("fat"): vol.All(vol.Coerce(float), vol.Range(min=0, max=2000)),
+        vol.Optional("name", default="Quick Add"): cv.string,
+        vol.Optional("timestamp"): cv.datetime,
+    }
+)
+
+
+def _workout_json(value: Any) -> dict[str, Any]:
+    """Accept a workout as an object, or as a JSON string (e.g. from a template)."""
+    if isinstance(value, str):
+        try:
+            value = json.loads(value)
+        except ValueError as err:
+            raise vol.Invalid(f"invalid workout JSON: {err}") from err
+    if not isinstance(value, dict):
+        raise vol.Invalid("workout must be a JSON object")
+    return value
+
+
+def _positive_id(value: Any) -> int:
+    """Validate a Garmin ID without int() silently changing it.
+
+    Accepts ints, whole floats (the UI number selector sends 42.0) and digit
+    strings; rejects bools, fractions like 1.9 and non-positive values.
+    """
+    if isinstance(value, bool):
+        raise vol.Invalid("ID must be a positive integer")
+    if isinstance(value, float):
+        if not value.is_integer():
+            raise vol.Invalid("ID must be a positive integer")
+        value = int(value)
+    elif isinstance(value, str) and value.strip().isascii() and value.strip().isdigit():
+        value = int(value.strip())
+    if not isinstance(value, int) or value < 1:
+        raise vol.Invalid("ID must be a positive integer")
+    return value
+
+
+CREATE_WORKOUT_SCHEMA = vol.Schema(
+    {
+        vol.Optional("entity_id"): cv.entity_id,
+        vol.Required("workout"): _workout_json,
+        vol.Optional("date"): cv.date,
+    }
+)
+
+UPDATE_WORKOUT_SCHEMA = vol.Schema(
+    {
+        vol.Optional("entity_id"): cv.entity_id,
+        vol.Required("workout_id"): _positive_id,
+        vol.Required("workout"): _workout_json,
+    }
+)
+
+DELETE_WORKOUT_SCHEMA = vol.Schema(
+    {
+        vol.Optional("entity_id"): cv.entity_id,
+        vol.Required("workout_id"): _positive_id,
+    }
+)
+
+SCHEDULE_WORKOUT_SCHEMA = vol.Schema(
+    {
+        vol.Optional("entity_id"): cv.entity_id,
+        vol.Required("workout_id"): _positive_id,
+        vol.Required("date"): cv.date,
+    }
+)
+
+UNSCHEDULE_WORKOUT_SCHEMA = vol.Schema(
+    {
+        vol.Optional("entity_id"): cv.entity_id,
+        vol.Required("schedule_id"): _positive_id,
+    }
+)
+
+
+def _returned_id(result: Any, key: str) -> int:
+    """Return the positive integer ID Garmin sent back under ``key``.
+
+    schedule_workout answers {"workoutScheduleId": ..., "workout": {...}}; that
+    ID is also the calendar item "id" and what unschedule_workout takes.
+    """
+    value = result.get(key) if isinstance(result, dict) else None
+    if not isinstance(value, int) or isinstance(value, bool) or value < 1:
+        raise GarminConnectError(f"Garmin response has no {key}")
+    return value
+
+
+def _get_client(
+    hass: HomeAssistant,
+    *,
+    entity_id: str | None = None,
+) -> GarminClient:
+    """Get the Garmin client for a targeted or fallback config entry."""
+    return _get_coordinators(hass, entity_id=entity_id).core.client
+
+
+def _get_coordinators(
+    hass: HomeAssistant,
+    *,
+    entity_id: str | None = None,
+) -> GarminConnectCoordinators:
+    """Get the coordinators of a targeted or fallback config entry."""
+    entries = hass.config_entries.async_entries(DOMAIN)
+    if not entries:
+        raise HomeAssistantError(
+            translation_domain=DOMAIN,
+            translation_key="no_integration_configured",
+        )
+
+    if len(entries) > 1 and not entity_id:
+        raise HomeAssistantError(
+            translation_domain=DOMAIN,
+            translation_key="ambiguous_account",
+        )
+
+    entry = entries[0]
+
+    if entity_id:
+        registry_entry = er.async_get(hass).async_get(entity_id)
+        if registry_entry is None:
+            raise HomeAssistantError(
+                translation_domain=DOMAIN,
+                translation_key="entity_not_found",
+                translation_placeholders={"entity_id": entity_id},
+            )
+
+        matched = next(
+            (
+                candidate
+                for candidate in entries
+                if candidate.entry_id == registry_entry.config_entry_id
+            ),
+            None,
+        )
+        if matched is None:
+            raise HomeAssistantError(
+                translation_domain=DOMAIN,
+                translation_key="entity_not_found",
+                translation_placeholders={"entity_id": entity_id},
+            )
+        entry = matched
+
+    if getattr(entry, "runtime_data", None) is None:
+        raise HomeAssistantError(
+            translation_domain=DOMAIN,
+            translation_key="integration_not_loaded",
+        )
+
+    coordinators: GarminConnectCoordinators = entry.runtime_data
+    return coordinators
+
+
+@callback
+def async_setup_services(hass: HomeAssistant) -> None:
+    """Register Garmin Connect services; the account is resolved per call."""
+
+    async def handle_set_active_gear(call: ServiceCall) -> None:
+        """Handle set_active_gear service call."""
+        activity_type = call.data["activity_type"]
+        setting = call.data["setting"]
+        gear_uuid = call.data.get("gear_uuid")
+        entity_id = call.data.get("entity_id")
+
+        if not gear_uuid:
+            if not entity_id:
+                raise HomeAssistantError(
+                    translation_domain=DOMAIN,
+                    translation_key="no_gear_specified",
+                )
+            state = hass.states.get(entity_id)
+            if not state:
+                raise HomeAssistantError(
+                    translation_domain=DOMAIN,
+                    translation_key="entity_not_found",
+                    translation_placeholders={"entity_id": entity_id},
+                )
+            gear_uuid = state.attributes.get("gear_uuid")
+            if not gear_uuid:
+                raise HomeAssistantError(
+                    translation_domain=DOMAIN,
+                    translation_key="gear_uuid_not_found",
+                    translation_placeholders={"entity_id": entity_id},
+                )
+
+        client = _get_client(hass, entity_id=entity_id)
+        try:
+            await client.set_active_gear(
+                activity_type=activity_type,
+                setting=setting,
+                gear_uuid=gear_uuid,
+            )
+        except _SERVICE_ERRORS as err:
+            raise HomeAssistantError(
+                translation_domain=DOMAIN,
+                translation_key="set_active_gear_failed",
+                translation_placeholders={"error": str(err)},
+            ) from err
+
+    async def handle_add_body_composition(call: ServiceCall) -> None:
+        """Handle add_body_composition service call."""
+        client = _get_client(
+            hass,
+            entity_id=call.data.get("entity_id"),
+        )
+        try:
+            await client.add_body_composition(
+                timestamp=_iso_timestamp(call.data.get("timestamp")),
+                weight=call.data["weight"],
+                percent_fat=call.data.get("percent_fat"),
+                percent_hydration=call.data.get("percent_hydration"),
+                visceral_fat_mass=call.data.get("visceral_fat_mass"),
+                bone_mass=call.data.get("bone_mass"),
+                muscle_mass=call.data.get("muscle_mass"),
+                basal_met=call.data.get("basal_met"),
+                active_met=call.data.get("active_met"),
+                physique_rating=call.data.get("physique_rating"),
+                metabolic_age=call.data.get("metabolic_age"),
+                visceral_fat_rating=call.data.get("visceral_fat_rating"),
+                bmi=call.data.get("bmi"),
+            )
+        except _SERVICE_ERRORS as err:
+            raise HomeAssistantError(
+                translation_domain=DOMAIN,
+                translation_key="add_body_composition_failed",
+                translation_placeholders={"error": str(err)},
+            ) from err
+
+    async def handle_add_blood_pressure(call: ServiceCall) -> None:
+        """Handle add_blood_pressure service call."""
+        client = _get_client(hass, entity_id=call.data.get("entity_id"))
+        try:
+            await client.set_blood_pressure(
+                systolic=call.data["systolic"],
+                diastolic=call.data["diastolic"],
+                pulse=call.data.get("pulse"),
+                timestamp=_iso_timestamp(call.data.get("timestamp")),
+                notes=call.data.get("notes", ""),
+            )
+        except _SERVICE_ERRORS as err:
+            raise HomeAssistantError(
+                translation_domain=DOMAIN,
+                translation_key="add_blood_pressure_failed",
+                translation_placeholders={"error": str(err)},
+            ) from err
+
+    async def handle_create_activity(call: ServiceCall) -> None:
+        """Handle create_activity service call."""
+        client = _get_client(hass, entity_id=call.data.get("entity_id"))
+        time_zone = call.data.get("time_zone") or str(hass.config.time_zone)
+        # Garmin wants wall-clock time in `time_zone` with millisecond precision.
+        start: datetime = call.data.get("start_datetime") or dt_util.now()
+        if start.tzinfo is not None:
+            start = start.astimezone(ZoneInfo(time_zone))
+        start_datetime = start.strftime("%Y-%m-%dT%H:%M:%S.000")
+        try:
+            await client.create_activity(
+                activity_name=call.data["activity_name"],
+                activity_type=call.data["activity_type"],
+                start_datetime=start_datetime,
+                duration_min=call.data["duration_min"],
+                distance_km=call.data.get("distance_km", 0.0),
+                time_zone=time_zone,
+            )
+        except _SERVICE_ERRORS as err:
+            raise HomeAssistantError(
+                translation_domain=DOMAIN,
+                translation_key="create_activity_failed",
+                translation_placeholders={"error": str(err)},
+            ) from err
+
+    async def handle_upload_activity(call: ServiceCall) -> None:
+        """Handle upload_activity service call."""
+        client = _get_client(hass, entity_id=call.data.get("entity_id"))
+        file_path = call.data["file_path"]
+        path = Path(file_path)
+        if not path.is_absolute():
+            path = Path(hass.config.path(file_path))
+        # Anything outside the config dir must be in allowlist_external_dirs,
+        # or any readable file could be sent to Garmin.
+        if not await hass.async_add_executor_job(_upload_path_allowed, hass, path):
+            raise HomeAssistantError(
+                translation_domain=DOMAIN,
+                translation_key="path_not_allowed",
+                translation_placeholders={"file_path": str(path)},
+            )
+        if path.suffix.lower() not in UPLOAD_ACTIVITY_FORMATS:
+            raise HomeAssistantError(
+                translation_domain=DOMAIN,
+                translation_key="unsupported_file_format",
+                translation_placeholders={
+                    "file_path": str(path),
+                    "formats": ", ".join(sorted(UPLOAD_ACTIVITY_FORMATS)),
+                },
+            )
+        if not await hass.async_add_executor_job(path.is_file):
+            raise HomeAssistantError(
+                translation_domain=DOMAIN,
+                translation_key="file_not_found",
+                translation_placeholders={"file_path": str(path)},
+            )
+        try:
+            await client.upload_activity(str(path))
+        except _SERVICE_ERRORS as err:
+            raise HomeAssistantError(
+                translation_domain=DOMAIN,
+                translation_key="upload_activity_failed",
+                translation_placeholders={"error": str(err)},
+            ) from err
+
+    async def handle_download_activity(call: ServiceCall) -> ServiceResponse:
+        """Handle download_activity service call."""
+        client = _get_client(hass, entity_id=call.data.get("entity_id"))
+        activity_id = call.data["activity_id"]
+        file_format = call.data["file_format"]
+        extension = "zip" if file_format == "original" else file_format
+
+        default_name = f"activity_{activity_id}.{extension}"
+        file_path = call.data.get("file_path")
+        if file_path:
+            path = Path(file_path)
+            if not path.is_absolute():
+                path = Path(hass.config.path(file_path))
+            if path.suffix == "":
+                path = path / default_name
+            # User-supplied paths must be in allowlist_external_dirs;
+            # the default location below is integration-controlled.
+            if not await hass.async_add_executor_job(hass.config.is_allowed_path, str(path)):
+                raise HomeAssistantError(
+                    translation_domain=DOMAIN,
+                    translation_key="path_not_allowed",
+                    translation_placeholders={"file_path": str(path)},
+                )
+        else:
+            path = Path(hass.config.path("garmin_activities")) / default_name
+
+        try:
+            content = await client.download_activity(activity_id, file_format)
+        except _SERVICE_ERRORS as err:
+            raise HomeAssistantError(
+                translation_domain=DOMAIN,
+                translation_key="download_activity_failed",
+                translation_placeholders={"error": str(err)},
+            ) from err
+
+        def _write() -> None:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_bytes(content)
+
+        await hass.async_add_executor_job(_write)
+
+        if call.return_response:
+            return {
+                "file_path": str(path),
+                "size_bytes": len(content),
+                "activity_id": activity_id,
+                "file_format": file_format,
+            }
+        return None
+
+    async def handle_add_gear_to_activity(call: ServiceCall) -> None:
+        """Handle add_gear_to_activity service call."""
+        activity_id = call.data["activity_id"]
+        gear_uuid = call.data.get("gear_uuid")
+        entity_id = call.data.get("entity_id")
+
+        if not gear_uuid:
+            if not entity_id:
+                raise HomeAssistantError(
+                    translation_domain=DOMAIN,
+                    translation_key="no_gear_specified",
+                )
+            state = hass.states.get(entity_id)
+            if not state:
+                raise HomeAssistantError(
+                    translation_domain=DOMAIN,
+                    translation_key="entity_not_found",
+                    translation_placeholders={"entity_id": entity_id},
+                )
+            gear_uuid = state.attributes.get("gear_uuid")
+            if not gear_uuid:
+                raise HomeAssistantError(
+                    translation_domain=DOMAIN,
+                    translation_key="gear_uuid_not_found",
+                    translation_placeholders={"entity_id": entity_id},
+                )
+
+        client = _get_client(hass, entity_id=entity_id)
+        try:
+            await client.add_gear_to_activity(
+                gear_uuid=gear_uuid,
+                activity_id=activity_id,
+            )
+        except _SERVICE_ERRORS as err:
+            raise HomeAssistantError(
+                translation_domain=DOMAIN,
+                translation_key="add_gear_to_activity_failed",
+                translation_placeholders={"error": str(err)},
+            ) from err
+
+    async def handle_add_hydration(call: ServiceCall) -> None:
+        """Handle add_hydration service call."""
+        client = _get_client(hass, entity_id=call.data.get("entity_id"))
+        try:
+            await client.set_hydration(
+                value_in_ml=call.data["value_in_ml"],
+                timestamp=_iso_timestamp(call.data.get("timestamp")),
+            )
+        except _SERVICE_ERRORS as err:
+            raise HomeAssistantError(
+                translation_domain=DOMAIN,
+                translation_key="add_hydration_failed",
+                translation_placeholders={"error": str(err)},
+            ) from err
+
+    async def handle_add_nutrition(call: ServiceCall) -> None:
+        """Handle add_nutrition_log service call."""
+        client = _get_client(hass, entity_id=call.data.get("entity_id"))
+        try:
+            await client.add_nutrition_log(
+                calories=call.data["calories"],
+                carbs=call.data.get("carbs"),
+                protein=call.data.get("protein"),
+                fat=call.data.get("fat"),
+                name=call.data.get("name", "Quick Add"),
+                timestamp=_iso_timestamp(call.data.get("timestamp")),
+            )
+        except _SERVICE_ERRORS as err:
+            raise HomeAssistantError(
+                translation_domain=DOMAIN,
+                translation_key="add_nutrition_failed",
+                translation_placeholders={"error": str(err)},
+            ) from err
+
+    async def _workout_call(call: ServiceCall, error_key: str, method: str, **kwargs: Any) -> Any:
+        """Run a workout write and refresh activity data so the calendar updates."""
+        coordinators = _get_coordinators(hass, entity_id=call.data.get("entity_id"))
+        try:
+            result = await getattr(coordinators.core.client, method)(**kwargs)
+        except _SERVICE_ERRORS as err:
+            raise HomeAssistantError(
+                translation_domain=DOMAIN,
+                translation_key=error_key,
+                translation_placeholders={"error": str(err)},
+            ) from err
+        await coordinators.activity.async_request_refresh()
+        return result
+
+    async def handle_create_workout(call: ServiceCall) -> ServiceResponse:
+        """Handle create_workout; optionally schedule it in the same call."""
+        coordinators = _get_coordinators(hass, entity_id=call.data.get("entity_id"))
+        client = coordinators.core.client
+        schedule_date: date | None = call.data.get("date")
+        try:
+            workout_id = _returned_id(
+                await client.create_workout(call.data["workout"]), "workoutId"
+            )
+        except _SERVICE_ERRORS as err:
+            raise HomeAssistantError(
+                translation_domain=DOMAIN,
+                translation_key="create_workout_failed",
+                translation_placeholders={"error": str(err)},
+            ) from err
+
+        schedule_id = None
+        try:
+            if schedule_date is not None:
+                try:
+                    schedule_id = _returned_id(
+                        await client.schedule_workout(workout_id, schedule_date),
+                        "workoutScheduleId",
+                    )
+                except _SERVICE_ERRORS as err:
+                    # The workout exists now; name it so a retry can schedule it
+                    # instead of creating a duplicate.
+                    raise HomeAssistantError(
+                        translation_domain=DOMAIN,
+                        translation_key="create_workout_schedule_failed",
+                        translation_placeholders={
+                            "workout_id": str(workout_id),
+                            "error": str(err),
+                        },
+                    ) from err
+        finally:
+            await coordinators.activity.async_request_refresh()
+
+        if not call.return_response:
+            return None
+        response: dict[str, Any] = {"workout_id": workout_id}
+        if schedule_date is not None:
+            response |= {"schedule_id": schedule_id, "date": schedule_date.isoformat()}
+        return response
+
+    async def handle_update_workout(call: ServiceCall) -> None:
+        """Handle update_workout service call."""
+        await _workout_call(
+            call,
+            "update_workout_failed",
+            "update_workout",
+            workout_id=call.data["workout_id"],
+            workout=call.data["workout"],
+        )
+
+    async def handle_delete_workout(call: ServiceCall) -> None:
+        """Handle delete_workout service call."""
+        await _workout_call(
+            call, "delete_workout_failed", "delete_workout", workout_id=call.data["workout_id"]
+        )
+
+    async def handle_schedule_workout(call: ServiceCall) -> ServiceResponse:
+        """Handle schedule_workout service call."""
+        schedule_date: date = call.data["date"]
+        result = await _workout_call(
+            call,
+            "schedule_workout_failed",
+            "schedule_workout",
+            workout_id=call.data["workout_id"],
+            schedule_date=schedule_date,
+        )
+        try:
+            schedule_id = _returned_id(result, "workoutScheduleId")
+        except GarminConnectError as err:
+            raise HomeAssistantError(
+                translation_domain=DOMAIN,
+                translation_key="schedule_workout_failed",
+                translation_placeholders={"error": str(err)},
+            ) from err
+        if not call.return_response:
+            return None
+        return {
+            "schedule_id": schedule_id,
+            "workout_id": call.data["workout_id"],
+            "date": schedule_date.isoformat(),
+        }
+
+    async def handle_unschedule_workout(call: ServiceCall) -> None:
+        """Handle unschedule_workout service call."""
+        await _workout_call(
+            call,
+            "unschedule_workout_failed",
+            "unschedule_workout",
+            scheduled_workout_id=call.data["schedule_id"],
+        )
+
+    hass.services.async_register(
+        DOMAIN,
+        SERVICE_SET_ACTIVE_GEAR,
+        handle_set_active_gear,
+        schema=SET_ACTIVE_GEAR_SCHEMA,
+    )
+    hass.services.async_register(
+        DOMAIN,
+        SERVICE_ADD_BODY_COMPOSITION,
+        handle_add_body_composition,
+        schema=ADD_BODY_COMPOSITION_SCHEMA,
+    )
+    hass.services.async_register(
+        DOMAIN,
+        SERVICE_ADD_BLOOD_PRESSURE,
+        handle_add_blood_pressure,
+        schema=ADD_BLOOD_PRESSURE_SCHEMA,
+    )
+    hass.services.async_register(
+        DOMAIN,
+        SERVICE_CREATE_ACTIVITY,
+        handle_create_activity,
+        schema=CREATE_ACTIVITY_SCHEMA,
+    )
+    hass.services.async_register(
+        DOMAIN,
+        SERVICE_UPLOAD_ACTIVITY,
+        handle_upload_activity,
+        schema=UPLOAD_ACTIVITY_SCHEMA,
+    )
+    hass.services.async_register(
+        DOMAIN,
+        SERVICE_DOWNLOAD_ACTIVITY,
+        handle_download_activity,
+        schema=DOWNLOAD_ACTIVITY_SCHEMA,
+        supports_response=SupportsResponse.OPTIONAL,
+    )
+    hass.services.async_register(
+        DOMAIN,
+        SERVICE_ADD_GEAR_TO_ACTIVITY,
+        handle_add_gear_to_activity,
+        schema=ADD_GEAR_TO_ACTIVITY_SCHEMA,
+    )
+    hass.services.async_register(
+        DOMAIN,
+        SERVICE_ADD_HYDRATION,
+        handle_add_hydration,
+        schema=ADD_HYDRATION_SCHEMA,
+    )
+    hass.services.async_register(
+        DOMAIN,
+        SERVICE_ADD_NUTRITION,
+        handle_add_nutrition,
+        schema=ADD_NUTRITION_SCHEMA,
+    )
+    hass.services.async_register(
+        DOMAIN,
+        SERVICE_CREATE_WORKOUT,
+        handle_create_workout,
+        schema=CREATE_WORKOUT_SCHEMA,
+        supports_response=SupportsResponse.OPTIONAL,
+    )
+    hass.services.async_register(
+        DOMAIN,
+        SERVICE_UPDATE_WORKOUT,
+        handle_update_workout,
+        schema=UPDATE_WORKOUT_SCHEMA,
+    )
+    hass.services.async_register(
+        DOMAIN,
+        SERVICE_DELETE_WORKOUT,
+        handle_delete_workout,
+        schema=DELETE_WORKOUT_SCHEMA,
+    )
+    hass.services.async_register(
+        DOMAIN,
+        SERVICE_SCHEDULE_WORKOUT,
+        handle_schedule_workout,
+        schema=SCHEDULE_WORKOUT_SCHEMA,
+        supports_response=SupportsResponse.OPTIONAL,
+    )
+    hass.services.async_register(
+        DOMAIN,
+        SERVICE_UNSCHEDULE_WORKOUT,
+        handle_unschedule_workout,
+        schema=UNSCHEDULE_WORKOUT_SCHEMA,
+    )

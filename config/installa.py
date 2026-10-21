@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
-# installa_2.py
+# installa_3.py
 #
+# v3 (21/10/2026): un package nuovo (prima non esisteva) si confronta con un
+#   file vuoto invece di dare "confronto non riuscito": se contiene solo
+#   domini ricaricabili basta il Riavvio rapido.
 # v2 (16/10/2026): il tipo di riavvio si decide dai file installati.
 #   RAPIDO   = Riavvio rapido di HA (homeassistant.reload_all): automazioni,
 #              scripts.yaml, package che cambiano solo domini ricaricabili.
@@ -211,7 +214,9 @@ def riavvio_per(tipo, base, dest, src):
         return "completo", "configuration.yaml"
     if base.startswith("automations_") or base == "scripts":
         return "rapido", ""
-    vecchio, nuovo = leggi_yaml(dest), leggi_yaml(src)
+    # Package nuovo: prima non c'era, si confronta con un file vuoto.
+    vecchio = leggi_yaml(dest) if os.path.exists(dest) else {}
+    nuovo = leggi_yaml(src)
     if vecchio is None or nuovo is None:
         return "completo", f"{base}: confronto non riuscito"
     cambiati = sorted(k for k in set(vecchio) | set(nuovo)
