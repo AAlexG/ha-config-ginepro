@@ -1,4 +1,11 @@
-# automations_pompa_calore_6.yaml
+# automations_pompa_calore_7.yaml
+#
+# v7 (21/10/2026): panasonic_accumulo_energia accumula come consumo il
+#   maggiore fra la stima da corrente compressore (esclude ventilatore,
+#   circolatore ed elettronica) e il valore misurato dalla pompa (HeishaMon
+#   heat/cool_power_consumption), come gia' pdc_risparmio_accumulo. Prima il
+#   consumo era sottostimato e il COP gonfiato (audit clima E5). Il valore
+#   alimenta panasonic_consumata_oggi/_mese e il nuovo sensor.panasonic_cop_6h.
 #
 # v6 (14/10/2026): pdc_risparmio_accumulo usa in Cool il consumo misurato
 #   dalla pompa (HeishaMon cool_power_consumption, ora abilitato), come gia'
@@ -59,10 +66,21 @@
               {{ (states('input_number.panasonic_energia_prodotta_acc') | float(0) +
                   states('sensor.panasonic_potenza_prodotta_calcolata') | float(0) / 1000 / 60)
                  | round(4) }}
+    # v7: consumo = maggiore fra stima compressore e misura della pompa.
+    - variables:
+        modo: "{{ states('select.panasonic_heat_pump_main_operating_mode_state') }}"
+        w_consumo: >-
+          {% set stima = states('sensor.panasonic_potenza_consumata_calcolata') | float(0) %}
+          {% if 'Cool' in modo %}
+            {% set pompa = states('sensor.panasonic_heat_pump_main_cool_power_consumption') | float(0) %}
+          {% elif 'Heat' in modo %}
+            {% set pompa = states('sensor.panasonic_heat_pump_main_heat_power_consumption') | float(0) %}
+          {% else %}
+            {% set pompa = 0 %}
+          {% endif %}
+          {{ [stima, pompa] | max }}
     - if:
-        - condition: numeric_state
-          entity_id: sensor.panasonic_potenza_consumata_calcolata
-          above: 0
+        - "{{ w_consumo | float(0) > 0 }}"
       then:
         - action: input_number.set_value
           target:
@@ -70,7 +88,7 @@
           data:
             value: >
               {{ (states('input_number.panasonic_energia_consumata_acc') | float(0) +
-                  states('sensor.panasonic_potenza_consumata_calcolata') | float(0) / 1000 / 60)
+                  w_consumo | float(0) / 1000 / 60)
                  | round(4) }}
 
 #==================================================================================

@@ -1,4 +1,10 @@
-# config_caldaia_7.yaml
+# config_caldaia_9.yaml
+# v9 (21/10/2026): sensor.pdc_costo_kwh_termico usa sensor.panasonic_cop_6h
+#   (energia prodotta / consumata nelle ultime 6 ore) al posto del COP
+#   istantaneo. Il COP istantaneo oscillava fra circa 1 e 13 fra avvii e
+#   arresti del compressore: un campione basso all'avvio bastava a far
+#   scegliere la caldaia a fonte_controllo_periodico, uno alto la pompa.
+#   Fuori da 1-8 o non disponibile: COP di riserva.
 # v7 (08/10/2026): nuovo input_boolean.caldaia_manuale (gestione manuale del
 #   riscaldamento a caldaia, stesso schema di pdc_manuale e dei fancoil).
 # Package Casa Ginepro - Caldaia Baxi / OTGW: DHW, costi termici, scelta fonte caldaia-PdC
@@ -54,8 +60,8 @@ template:
           {% set eta = states('input_number.caldaia_rendimento') | float(0) %}
           {{ (prezzo / (11.0078 * eta)) | round(4) }}
 
-      # PdC: prezzo elettricità effettivo / COP. Usa il COP reale
-      # quando la pompa lavora, altrimenti il COP di riserva.
+      # PdC: prezzo elettricità effettivo / COP. Usa il COP delle ultime
+      # 6 ore (v9) quando disponibile, altrimenti il COP di riserva.
       # configuration_161: con surplus FV (binary_sensor.pv_surplus on)
       # il prezzo effettivo è il mancato incasso GSE, non il P1.
       - name: "PdC Costo KWh Termico"
@@ -65,15 +71,15 @@ template:
         icon: mdi:heat-pump
         availability: >-
           {{ states('input_number.elettricita_prezzo_kwh') | float(0) > 0
-             and (has_value('sensor.panasonic_cop_calcolato')
+             and (has_value('sensor.panasonic_cop_6h')
                   or states('input_number.pdc_cop_fallback') | float(0) > 0) }}
         state: >-
           {% set surplus = is_state('binary_sensor.pv_surplus', 'on') %}
           {% set gse = states('input_number.gse_prezzo_kwh_stima') | float(0) %}
           {% set p1 = states('input_number.elettricita_prezzo_kwh') | float(0) %}
           {% set prezzo = gse if (surplus and gse > 0) else p1 %}
-          {% set cop_reale = states('sensor.panasonic_cop_calcolato') | float(0) %}
-          {% set cop = cop_reale if cop_reale > 0.8
+          {% set cop_reale = states('sensor.panasonic_cop_6h') | float(0) %}
+          {% set cop = cop_reale if 1 <= cop_reale <= 8
                        else states('input_number.pdc_cop_fallback') | float(0) %}
           {{ (prezzo / cop) | round(4) }}
 

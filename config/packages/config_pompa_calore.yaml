@@ -1,4 +1,11 @@
-# config_pompa_calore_4.yaml
+# config_pompa_calore_5.yaml
+# v5 (21/10/2026): COP su energia invece che su potenza istantanea.
+#   Nuovi sensor.panasonic_prodotta_6h / panasonic_consumata_6h (statistics,
+#   variazione degli accumulatori nelle ultime 6 ore), sensor.panasonic_cop_6h
+#   e sensor.panasonic_cop_oggi. Il COP istantaneo resta solo come
+#   diagnostica: con DT mandata/ritorno di 0,5-1 C e sensori a passi di
+#   0,25 C un solo scatto cambia il valore del 25-50%, e all'avvio e
+#   all'arresto del compressore DT e corrente sono sfasati (picchi 1-13).
 # v4 (14/10/2026): bilancio economico della pompa di calore (plancia Casa
 #   Ginepro, sezione "Risparmio pompa"). Nuovi helper pdc_costo_impianto,
 #   pdc_incentivi_euro, pdc_risparmio_estate/inverno/storico_euro; nuovi
@@ -34,6 +41,35 @@ template:
         icon: mdi:lightning-bolt
         availability: "{{ has_value('input_number.panasonic_energia_consumata_acc') }}"
         state: "{{ states('input_number.panasonic_energia_consumata_acc') | float(0) | round(4) }}"
+      # v5: COP mobile 6 ore = energia prodotta / energia consumata nelle
+      # ultime 6 ore (variazione degli accumulatori, sensor statistics sotto).
+      # Assorbe cicli on/off, avvii e risoluzione del DT. Disponibile solo con
+      # almeno 0,3 kWh elettrici nella finestra (circa 20 minuti di lavoro):
+      # sotto quella soglia il rapporto non e' significativo.
+      # E' il COP usato da sensor.pdc_costo_kwh_termico (config_caldaia).
+      - name: "Panasonic COP 6h"
+        unique_id: "panasonic_cop_6h"
+        state_class: measurement
+        icon: mdi:chart-line
+        availability: >-
+          {{ has_value('sensor.panasonic_prodotta_6h')
+             and states('sensor.panasonic_consumata_6h') | float(0) >= 0.3 }}
+        state: >-
+          {{ (states('sensor.panasonic_prodotta_6h') | float(0)
+              / states('sensor.panasonic_consumata_6h') | float(1)) | round(2) }}
+
+      # v5: COP del giorno dagli utility meter giornalieri.
+      - name: "Panasonic COP Oggi"
+        unique_id: "panasonic_cop_oggi"
+        state_class: measurement
+        icon: mdi:calendar-today
+        availability: >-
+          {{ has_value('sensor.panasonic_prodotta_oggi')
+             and states('sensor.panasonic_consumata_oggi') | float(0) >= 0.3 }}
+        state: >-
+          {{ (states('sensor.panasonic_prodotta_oggi') | float(0)
+              / states('sensor.panasonic_consumata_oggi') | float(1)) | round(2) }}
+
   - sensor:
       # Potenza termica prodotta: calcolata da flow e delta T
       # Usa Main_Outlet_Temp (mandata) e Main_Inlet_Temp (ritorno)
@@ -71,7 +107,10 @@ template:
             0
           {% endif %}
 
-      # COP reale: potenza prodotta / potenza consumata
+      # COP istantaneo: potenza prodotta / potenza consumata.
+      # v5: solo diagnostica (plancia Panasonic, grafico). Non usarlo per
+      # decisioni: e' molto rumoroso e non disponibile a compressore fermo.
+      # Per i confronti c'e' sensor.panasonic_cop_6h.
       - name: "Panasonic COP Calcolato"
         unique_id: "panasonic_cop_calcolato"
         state_class: measurement
@@ -325,6 +364,31 @@ input_number:
     unit_of_measurement: "€"
     mode: box
     icon: mdi:history
+
+sensor:
+  # v5: energia prodotta e consumata nelle ultime 6 ore (variazione degli
+  # accumulatori). Gli accumulatori cambiano al massimo una volta al minuto:
+  # 500 campioni coprono le 6 ore con margine. Con la pompa ferma da oltre
+  # 6 ore la variazione e' 0 e sensor.panasonic_cop_6h non e' disponibile.
+  - platform: statistics
+    name: "Panasonic Prodotta 6h"
+    unique_id: panasonic_prodotta_6h
+    entity_id: sensor.panasonic_energia_prodotta_acc_sensor
+    state_characteristic: change
+    max_age:
+      hours: 6
+    sampling_size: 500
+    keep_last_sample: true
+
+  - platform: statistics
+    name: "Panasonic Consumata 6h"
+    unique_id: panasonic_consumata_6h
+    entity_id: sensor.panasonic_energia_consumata_acc_sensor
+    state_characteristic: change
+    max_age:
+      hours: 6
+    sampling_size: 500
+    keep_last_sample: true
 
 utility_meter:
 

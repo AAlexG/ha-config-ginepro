@@ -21,15 +21,14 @@ config:
           action: navigate
           navigation_path: /dashboard-fotovoltaico/fotovoltaico
         type: button
-      - content: '{% set d = states.sensor.condensatore_celle_differenza %}{% if d
-          is none or d.state in [''unknown'',''unavailable''] %}_Nessuna lettura_{%
-          else %}{% set t = as_timestamp(d.last_reported) %}Ultima lettura **{{ t
-          | timestamp_custom(''%d/%m %H:%M'') }}** ({{ ((as_timestamp(now()) - t)
-          / 60) | round(0) | int }} min fa){% endif %}'
+      - entity: sensor.condensatore_bms_soh
+        features_position: bottom
         grid_options:
-          columns: full
-          rows: 1
-        type: markdown
+          columns: 8
+          rows: auto
+        name: SOH (state of health)
+        type: tile
+        vertical: false
       - content: '{% set a = states(''sensor.condensatore_bms_allarmi'') %}{% if a
           in [''unknown'',''unavailable''] %}**Allarmi BMS:** _nessuna lettura_{%
           elif a == ''Nessuno'' %}**Allarmi BMS:** nessuno{% else %}<ha-alert alert-type="warning">**Allarmi
@@ -44,14 +43,6 @@ config:
           columns: full
           rows: auto
         type: markdown
-      - entity: sensor.condensatore_bms_soh
-        features_position: bottom
-        grid_options:
-          columns: full
-          rows: auto
-        name: SOH (state of health)
-        type: tile
-        vertical: false
       - entity: sensor.condensatore_bms_capacita
         features_position: bottom
         grid_options:
@@ -121,12 +112,20 @@ config:
       - heading: 'CELLE: ULTIME 14 LETTURE'
         heading_style: title
         type: heading
+      - entity: button.uflex_bms_leggi_ora
+        features:
+        - type: button
+        features_position: inline
+        grid_options:
+          columns: 4
+          rows: 1
+        name: Leggi ora
+        type: tile
+        vertical: false
       - content: "{% set L = state_attr('sensor.condensatore_celle_riepilogo', 'letture')\
           \ %}{% if not L %}_Nessuna lettura_{% else %}{% set L = L | reverse | list\
-          \ %}mV di distacco dalla cella pi\xF9 alta (0 = pi\xF9 alta) \xB7 colonne\
-          \ dalla lettura pi\xF9 recente \xB7 **\u2B07 grassetto** = cella pi\xF9\
-          \ bassa \xB7 \u2022 = in bilanciamento \xB7 RSSI = segnale Bluetooth in\
-          \ dBm (\u2013 = lettura dal telefono o precedente)\n<div style=\"overflow-x:auto;font-size:11px\"\
+          \ %}mV di distacco dalla cella pi\xF9 alta (0 = pi\xF9 alta). **\u2B07 grassetto**\
+          \ = cella pi\xF9 bassa \xB7 \u2022 = in bilanciamento\n<div style=\"overflow-x:auto;font-size:11px\"\
           ><table style=\"border-collapse:collapse;white-space:nowrap\"><tr><th style=\"\
           padding:2px 4px;border:1px solid #444\">Cella</th>{% for r in L %}<th style=\"\
           padding:2px 4px;border:1px solid #444\">{{ r.t[6:] }}</th>{% endfor %}</tr><tr><td\
