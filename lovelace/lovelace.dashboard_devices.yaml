@@ -1,5 +1,5 @@
 config:
-  title: Devices v.3
+  title: Devices v.4
   views:
   - cards: []
     header: {}
@@ -540,21 +540,31 @@ config:
         type: statistics-graph
       type: grid
     - cards:
-      - heading: Lenzuola sotto via Tapo
+      - heading: Lenzuola
         heading_style: title
+        icon: mdi:bed
         type: heading
       - entity: switch.lenzuola_sotto
-        features:
-        - type: toggle
-        features_position: bottom
-        name: Stato
+        icon: mdi:bed
+        name: Lenzuola
         type: tile
         vertical: false
-      - entity: sensor.camerageorgi_lenzuola_sotto_intensita_del_segnale
-        features_position: bottom
-        name: 'WiFi '
-        type: tile
-        vertical: false
+      - entities:
+        - entity: sensor.lenzuola_ora_media_a_letto
+          name: Media a letto
+        - entity: input_number.lenzuola_tempo_addormentamento
+          name: Addormentarsi
+        - entity: sensor.lenzuola_accensione_prevista
+          name: Accensione
+        - entity: sensor.lenzuola_spegnimento_previsto
+          name: Spegnimento
+        - entity: input_datetime.lenzuola_ultimo_spegnimento_cucina
+          name: Luci cucina
+        - entity: counter.lenzuola_notti_registrate
+          name: Notti registrate
+        - entity: counter.lenzuola_notti_garmin
+          name: Notti Garmin
+        type: entities
       type: grid
     title: Altri Devices
     type: sections

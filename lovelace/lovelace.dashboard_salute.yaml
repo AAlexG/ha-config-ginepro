@@ -1,5 +1,5 @@
 config:
-  title: Salute v.2
+  title: Salute v.3
   views:
   - icon: mdi:heart-pulse
     max_columns: 3
@@ -58,33 +58,6 @@ config:
           name: Sveglio
         - entity: sensor.garmin_connect_average_sleep_respiration
           name: Respirazione media
-        type: entities
-      type: grid
-    - cards:
-      - heading: Lenzuola
-        heading_style: title
-        icon: mdi:bed
-        type: heading
-      - entity: switch.lenzuola_sotto
-        icon: mdi:bed
-        name: Lenzuola
-        type: tile
-        vertical: false
-      - entities:
-        - entity: sensor.lenzuola_ora_media_a_letto
-          name: Media a letto
-        - entity: input_number.lenzuola_tempo_addormentamento
-          name: Addormentarsi
-        - entity: sensor.lenzuola_accensione_prevista
-          name: Accensione
-        - entity: sensor.lenzuola_spegnimento_previsto
-          name: Spegnimento
-        - entity: input_datetime.lenzuola_ultimo_spegnimento_cucina
-          name: Luci cucina
-        - entity: counter.lenzuola_notti_registrate
-          name: Notti registrate
-        - entity: counter.lenzuola_notti_garmin
-          name: Notti Garmin
         type: entities
       type: grid
     title: Salute
