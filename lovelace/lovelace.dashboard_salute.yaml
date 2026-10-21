@@ -1,5 +1,5 @@
 config:
-  title: Salute v.1
+  title: Salute v.2
   views:
   - icon: mdi:heart-pulse
     max_columns: 3
@@ -66,20 +66,21 @@ config:
         icon: mdi:bed
         type: heading
       - entity: switch.lenzuola_sotto
+        icon: mdi:bed
         name: Lenzuola
         type: tile
         vertical: false
       - entities:
-        - entity: sensor.lenzuola_ora_media_letto
-          name: Ora media a letto
+        - entity: sensor.lenzuola_ora_media_a_letto
+          name: Media a letto
         - entity: input_number.lenzuola_tempo_addormentamento
-          name: Tempo per addormentarsi
+          name: Addormentarsi
         - entity: sensor.lenzuola_accensione_prevista
-          name: Accensione prevista
+          name: Accensione
         - entity: sensor.lenzuola_spegnimento_previsto
-          name: Spegnimento previsto
+          name: Spegnimento
         - entity: input_datetime.lenzuola_ultimo_spegnimento_cucina
-          name: Ultimo spegnimento cucina
+          name: Luci cucina
         - entity: counter.lenzuola_notti_registrate
           name: Notti registrate
         - entity: counter.lenzuola_notti_garmin
