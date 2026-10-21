@@ -5,6 +5,8 @@
 #   arresti del compressore: un campione basso all'avvio bastava a far
 #   scegliere la caldaia a fonte_controllo_periodico, uno alto la pompa.
 #   Fuori da 1-8 o non disponibile: COP di riserva.
+# v8 (08/10/2026): commento di caldaia_manuale allineato: i comandi
+#   accendi/spegni caldaia non cambiano il flag.
 # v7 (08/10/2026): nuovo input_boolean.caldaia_manuale (gestione manuale del
 #   riscaldamento a caldaia, stesso schema di pdc_manuale e dei fancoil).
 # Package Casa Ginepro - Caldaia Baxi / OTGW: DHW, costi termici, scelta fonte caldaia-PdC
@@ -259,10 +261,10 @@ input_boolean:
     icon: mdi:bell-check
 
   # --- GESTIONE MANUALE CALDAIA (riscaldamento via SAT) ---
-  # Stesso schema di pdc_manuale e dei fancoil. Lo alzano i comandi manuali
-  # della caldaia in plancia (script caldaia_manuale_accendi / _spegni) o il
-  # tile del flag; lo abbassa SOLO l'utente dalla plancia. Con il flag alzato
-  # nessuna automazione tocca il SAT (accensione, spegnimento, target, preset).
+  # Stesso schema di pdc_manuale e dei fancoil. Lo alza e lo abbassa SOLO
+  # l'utente dal suo tile in plancia; i comandi accendi/spegni caldaia non lo
+  # cambiano. Con il flag alzato nessuna automazione tocca il SAT
+  # (accensione, spegnimento, target, preset).
   # Il controllo fonte_sicurezza resta comunque attivo. Promemoria alle 10:00 e
   # alle 22:00 se resta alzato da oltre un'ora (flag_manuali_promemoria).
   # Nessuna chiave initial: al riavvio HA ripristina lo stato salvato.
