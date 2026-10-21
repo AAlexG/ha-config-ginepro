@@ -1,4 +1,19 @@
-# automations_tende_6.yaml
+# automations_tende_8.yaml
+# v8 (20/10/2026): apertura per pioggia anche con raffica fra 40 e 50 km/h,
+#   ma solo al 65% (tenda_apertura_pioggia). Sotto 40 resta l'85%, sopra 50
+#   non parte (la tenda la chiude il vento). Il blocco di 30 minuti dopo
+#   l'ultimo intervento del vento resta invariato.
+# v7 (20/10/2026): tenda giardino, vento a due soglie (tenda_chiusura_vento,
+#   id invariato):
+#   - raffica 40-50 km/h: tenda portata al 65% se e' piu' aperta, invece di
+#     chiuderla; se e' gia' al 65% o meno resta dov'e';
+#   - raffica oltre 50 km/h: chiusura completa.
+#   Aggiunto il trigger sopra 50: senza, una raffica che sale da 45 a 55
+#   senza scendere sotto 40 non farebbe scattare la chiusura.
+#   Notifica del 65%: una al giorno (tenda_notifica_vento_oggi, come prima).
+#   Notifica di chiusura: sempre, anche se oggi c'e' gia' stata quella del 65%.
+#   Pioggia e sole restano bloccati con raffica >= 40 e per 30 minuti
+#   dall'ultimo intervento del vento: non possono riportarla all'85%.
 # v6 (19/10/2026): la pergola si riapre 20 minuti dopo l'ultima vaschetta,
 #   non piu' circa 80. Il 19/10 si e' visto che hourly_rain e' una somma
 #   mobile di 60 minuti, non un accumulo che si azzera ogni ora: resta > 0
@@ -426,62 +441,91 @@
         value: "Nessun allarme – rientrato alle {{ now().strftime('%H:%M') }}"
 
 #==================================================================================
-# TENDA GIARDINO - Chiusura automatica per vento pericoloso
+# TENDA GIARDINO - Vento: 65% fra 40 e 50 km/h, chiusa oltre 50 km/h
 #
-# Soglia: 40 km/h (raffiche) - margine di sicurezza rispetto alla Classe 3
-# UNI EN 13561 (49 km/h). Stessa soglia di raffica della pergola.
+# v7 (tende) - Due soglie di raffica al posto della chiusura unica a 40:
+#   - 40-50 km/h  : posizione 65% (solo se la tenda e' piu' aperta del 65%);
+#   - oltre 50    : chiusura completa.
+# La soglia 40 e' la stessa della pergola e dei blocchi di pioggia e sole.
+# NOTA: la vecchia soglia unica a 40 era scelta come margine rispetto alla
+# Classe 3 UNI EN 13561 (49 km/h); con la v7 la tenda resta estesa al 65%
+# fino a 50 km/h di raffica, scelta dell'utente.
 # Sensore: sensor.hp1000se_pro_pro_v1_6_4_wind_gust
 #
 # v16 - Nuovo motore Somfy io al posto del vecchio RTS. L'entita' e' ora
 # cover.all_house_tenda_giardino_new, che riporta la posizione reale (0 = chiusa,
-# 100 = tutta estesa). Conseguenze:
-#   - eliminato input_boolean.tenda_giardino_aperta: lo stato logico non
-#     serve piu', lo stato arriva dal motore;
-#   - aggiunta la condizione current_position > 0: se la tenda e' gia'
-#     chiusa non parte nessun comando e nessuna notifica. Prima la chiusura
-#     veniva rimandata ad ogni raffica sopra soglia.
+# 100 = tutta estesa).
 #
-# La NOTIFICA resta limitata a 1 al giorno tramite
+# NOTIFICHE: quella del 65% al massimo 1 al giorno tramite
 # input_boolean.tenda_notifica_vento_oggi (reset a mezzanotte, vedi
-# automazione successiva).
+# automazione successiva); quella di chiusura sempre.
+#
+# L'id resta tenda_chiusura_vento: pioggia e sole leggono il suo
+# last_triggered per non riaprire la tenda nei 30 minuti successivi.
 #==================================================================================
 - id: tenda_chiusura_vento
-  alias: "Tenda Giardino - Chiusura automatica per raffiche di vento"
+  alias: "Tenda Giardino - Vento: 65% oltre 40 km/h, chiusura oltre 50 km/h"
   mode: single
   max_exceeded: silent
   triggers:
     - trigger: numeric_state
       entity_id: sensor.hp1000se_pro_pro_v1_6_4_wind_gust
       above: 40
-  conditions:
-    - condition: numeric_state
+    - trigger: numeric_state
       entity_id: sensor.hp1000se_pro_pro_v1_6_4_wind_gust
-      above: 40
-    - condition: numeric_state
-      entity_id: cover.all_house_tenda_giardino_new
-      attribute: current_position
-      above: 0
+      above: 50
+  conditions:
+    - condition: template
+      value_template: >-
+        {% set r = states('sensor.hp1000se_pro_pro_v1_6_4_wind_gust') | float(0) %}
+        {% set p = state_attr('cover.all_house_tenda_giardino_new', 'current_position') | int(-1) %}
+        {{ (r > 50 and p > 0) or (r > 40 and p > 65) }}
   actions:
-    - action: cover.close_cover
-      target:
-        entity_id: cover.all_house_tenda_giardino_new
-    - if:
-        - condition: state
-          entity_id: input_boolean.tenda_notifica_vento_oggi
-          state: "off"
-      then:
-        - action: notify.mobile_app_cph2653
-          data:
-            title: "💨 Tenda giardino chiusa - vento"
-            message: >-
-              Raffica di {{ states('sensor.hp1000se_pro_pro_v1_6_4_wind_gust') | float(0) | round(1) }} km/h rilevata.
-              Tenda giardino chiusa automaticamente.
-            data:
-              priority: high
-              ttl: 0
-        - action: input_boolean.turn_on
+    - variables:
+        raffica: "{{ states('sensor.hp1000se_pro_pro_v1_6_4_wind_gust') | float(0) }}"
+    - choose:
+        - conditions:
+            - condition: template
+              value_template: "{{ raffica > 50 }}"
+          sequence:
+            - action: cover.close_cover
+              target:
+                entity_id: cover.all_house_tenda_giardino_new
+            - action: notify.mobile_app_cph2653
+              data:
+                title: "💨 Tenda giardino chiusa - vento"
+                message: >-
+                  Raffica di {{ raffica | round(1) }} km/h rilevata.
+                  Tenda giardino chiusa automaticamente.
+                data:
+                  priority: high
+                  ttl: 0
+            - action: input_boolean.turn_on
+              target:
+                entity_id: input_boolean.tenda_notifica_vento_oggi
+      default:
+        - action: cover.set_cover_position
           target:
-            entity_id: input_boolean.tenda_notifica_vento_oggi
+            entity_id: cover.all_house_tenda_giardino_new
+          data:
+            position: 65
+        - if:
+            - condition: state
+              entity_id: input_boolean.tenda_notifica_vento_oggi
+              state: "off"
+          then:
+            - action: notify.mobile_app_cph2653
+              data:
+                title: "💨 Tenda giardino al 65% - vento"
+                message: >-
+                  Raffica di {{ raffica | round(1) }} km/h rilevata.
+                  Tenda giardino portata al 65%; si chiude se supera 50 km/h.
+                data:
+                  priority: high
+                  ttl: 0
+            - action: input_boolean.turn_on
+              target:
+                entity_id: input_boolean.tenda_notifica_vento_oggi
 
 #==================================================================================
 # TENDA GIARDINO - Reset notifiche giornaliere a mezzanotte
@@ -520,21 +564,26 @@
 #   event_rain volutamente NON usato: resta > 0 per ore dopo la pioggia.
 #   - sensore Tuya (v4): solo nei 30 minuti dal passaggio a "on" (v_tuya).
 #
-# PRIORITA' AL VENTO: se la raffica supera i 40 km/h l'apertura non parte.
-# E' la stessa soglia con cui tenda_chiusura_vento chiude la tenda, quindi le
-# due automazioni non possono rincorrersi. Quando la raffica rientra sotto
-# 40 e sta ancora piovendo, il ciclo dei 10 minuti riapre da solo.
+# PRIORITA' AL VENTO (v8 tende): posizione bersaglio secondo la raffica,
+# con le stesse soglie di tenda_chiusura_vento, quindi le due automazioni
+# non possono rincorrersi:
+#   - raffica < 40 km/h  : 85%
+#   - raffica 40-50 km/h : 65%
+#   - raffica >= 50 km/h : l'apertura non parte.
+# Quando la raffica rientra e sta ancora piovendo, il ciclo dei 10 minuti
+# porta la tenda al nuovo bersaglio.
 #
-# Se la tenda e' gia' oltre l'85% viene lasciata dov'e': la condizione
-# current_position < 85 blocca l'esecuzione, quindi nessun comando parte e
-# la tenda non viene mai richiusa da questa automazione.
+# Se la tenda e' gia' al bersaglio o oltre viene lasciata dov'e': la
+# condizione current_position < bersaglio blocca l'esecuzione, quindi
+# nessun comando parte e la tenda non viene mai richiusa da questa
+# automazione.
 #
 # Il ciclo periodico e' sfasato di 15 secondi rispetto a quello della
 # sicurezza meteo pergola (minuti /10, secondi 0 e 30) per non mandare
 # comandi simultanei allo stesso gateway.
 #==================================================================================
 - id: tenda_apertura_pioggia
-  alias: "Tenda Giardino - Apertura 85% per pioggia"
+  alias: "Tenda Giardino - Apertura per pioggia (85%, 65% con vento)"
   mode: single
   max_exceeded: silent
   triggers:
@@ -556,9 +605,10 @@
     - condition: state
       entity_id: input_boolean.vacanza
       state: "off"
+    # v8: fino a 50 km/h; fra 40 e 50 il bersaglio scende al 65%.
     - condition: numeric_state
       entity_id: sensor.hp1000se_pro_pro_v1_6_4_wind_gust
-      below: 40
+      below: 50
     # v21: priorita' al vento anche dopo la chiusura. Per 30 minuti dall'ultima
     # chiusura per vento (last_triggered di tenda_chiusura_vento, cercata per id)
     # la tenda non viene riaperta: prima bastava una singola lettura di raffica
@@ -569,10 +619,11 @@
                    | selectattr('attributes.id', 'eq', 'tenda_chiusura_vento') | list %}
         {% set t = a[0].attributes.last_triggered if a else none %}
         {{ t is none or (now() - t).total_seconds() > 1800 }}
-    - condition: numeric_state
-      entity_id: cover.all_house_tenda_giardino_new
-      attribute: current_position
-      below: 85
+    - condition: template
+      value_template: >-
+        {% set r = states('sensor.hp1000se_pro_pro_v1_6_4_wind_gust') | float(0) %}
+        {% set p = state_attr('cover.all_house_tenda_giardino_new', 'current_position') | int(-1) %}
+        {{ p >= 0 and p < (85 if r < 40 else 65) }}
   actions:
     - action: weather.get_forecasts
       target:
@@ -594,13 +645,16 @@
              | map('float', 0) | list) | max | default(0) }}
         # v25: posizione prima dell'apertura, riportata nella notifica.
         pos_prima: "{{ state_attr('cover.all_house_tenda_giardino_new', 'current_position') | int(-1) }}"
+        # v8: 85% con raffica sotto 40 km/h, 65% fra 40 e 50.
+        raffica: "{{ states('sensor.hp1000se_pro_pro_v1_6_4_wind_gust') | float(0) }}"
+        bersaglio: "{{ 85 if raffica < 40 else 65 }}"
     - condition: template
       value_template: "{{ v_tuya or v_rate > 0 or v_oraria > 0 or mm_previsti > 0 }}"
     - action: cover.set_cover_position
       target:
         entity_id: cover.all_house_tenda_giardino_new
       data:
-        position: 85
+        position: "{{ bersaglio | int }}"
     - if:
         - condition: state
           entity_id: input_boolean.tenda_notifica_pioggia_oggi
@@ -617,7 +671,7 @@
                     ("la stazione meteo ha misurato " ~ (v_oraria | round(1)) ~ " mm di pioggia nell'ora in corso") if v_oraria > 0 else none,
                     ('la previsione indica ' ~ (mm_previsti | round(1)) ~ ' mm di pioggia nelle prossime 3 ore') if mm_previsti > 0 else none ]
                   | reject('none') | list | join(', ')) | capitalize }}.
-              La tenda giardino e' stata aperta all'85%{% if pos_prima == 0 %} (prima era chiusa){% elif pos_prima > 0 %} (prima era al {{ pos_prima }}%){% endif %}.
+              La tenda giardino e' stata aperta al {{ bersaglio | int }}%{% if raffica >= 40 %}, non di piu' per il vento (raffica {{ raffica | round(1) }} km/h){% endif %}{% if pos_prima == 0 %} (prima era chiusa){% elif pos_prima > 0 %} (prima era al {{ pos_prima }}%){% endif %}.
             data:
               priority: high
               ttl: 0

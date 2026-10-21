@@ -18,7 +18,7 @@ config:
         grid_options:
           columns: 12
           rows: auto
-        name: Attuale apertura tenda %
+        name: Attuale apertura tenda (65-pioggia)
         state_content:
         - state
         - current_position

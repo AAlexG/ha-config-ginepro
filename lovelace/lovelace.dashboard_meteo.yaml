@@ -31,9 +31,9 @@ config:
         name: Pressione
         type: tile
         vertical: false
-      - entity: sensor.hp1000se_pro_pro_v1_6_4_daily_rain
+      - entity: sensor.hp1000se_pro_pro_v1_6_4_rain_rate
         features_position: bottom
-        name: Pioggia oggi
+        name: PioggiaOra
         type: tile
         vertical: false
       - entity: sensor.sensore_pioggia_tuya_rain_intensity
@@ -134,6 +134,11 @@ config:
         heading_style: subtitle
         icon: mdi:weather-rainy
         type: heading
+      - entity: sensor.hp1000se_pro_pro_v1_6_4_rain_rate
+        features_position: bottom
+        name: PioggiaOra
+        type: tile
+        vertical: false
       - entity: sensor.hp1000se_pro_pro_v1_6_4_daily_rain
         features_position: bottom
         name: Giorno
@@ -154,6 +159,29 @@ config:
         name: Anno
         type: tile
         vertical: false
+      - graph_span: 48h
+        grid_options:
+          columns: 12
+          rows: auto
+        header:
+          show: true
+          title: Pioggia 48ore, mm/ora
+        series:
+        - entity: sensor.hp1000se_pro_pro_v1_6_4_monthly_rain
+          name: pioggia giorno
+          statistics:
+            period: hour
+            type: change
+          type: column
+          yaxis_id: mm
+        type: custom:apexcharts-card
+        yaxis:
+        - apex_config:
+            title:
+              text: mm
+          decimals: 0
+          id: mm
+          min: 0
       - graph_span: 30days
         grid_options:
           columns: 12
@@ -257,6 +285,44 @@ config:
           decimals: 0
           id: mV
           min: 0
+          opposite: true
+      - graph_span: 72h
+        grid_options:
+          columns: 12
+          rows: auto
+        header:
+          show: true
+          title: Confronto pioggia da stazione e sensore
+        series:
+        - entity: sensor.hp1000se_pro_pro_v1_6_4_daily_rain
+          name: stazione meteo
+          statistics:
+            period: 5minute
+            type: change
+          stroke_width: 1
+          type: line
+          yaxis_id: mm
+        - entity: sensor.sensore_pioggia_tuya_rain_intensity
+          group_by:
+            duration: 5min
+            func: max
+          name: sensore pioggia Tuya
+          stroke_width: 1
+          type: line
+          yaxis_id: mV
+        type: custom:apexcharts-card
+        yaxis:
+        - apex_config:
+            title:
+              text: mV
+          decimals: 0
+          id: mV
+          min: 0
+        - apex_config:
+            title:
+              text: mm
+          decimals: 1
+          id: mm
           opposite: true
       type: grid
     title: Meteo

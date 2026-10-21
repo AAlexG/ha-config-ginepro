@@ -7,7 +7,7 @@ config:
     sections:
     - cards:
       - grid_options:
-          columns: 6
+          columns: full
           rows: auto
         hold_action:
           action: none
@@ -398,7 +398,63 @@ config:
           show_daily: true
         type: custom:sunsynk-power-flow-card
         wide: false
-      - heading: Ora
+      - heading: Produzione
+        heading_style: subtitle
+        icon: ''
+        type: heading
+      - entity: sensor.inverter_uflex_pv_power
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        name: Ora
+        type: tile
+        vertical: false
+      - entity: sensor.scafale_fotovoltaico_system_181233_production_today
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        name: Oggi
+        type: tile
+        vertical: false
+      - entity: sensor.produzione_mese
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        name: Mese
+        type: tile
+        vertical: false
+      - entity: sensor.produzione_anno
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        name: Anno
+        type: tile
+        vertical: false
+      - heading: Da rete e A rete
+        heading_style: subtitle
+        icon: ''
+        type: heading
+      - entity: sensor.inverter_uflex_today_energy_import
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        name: Da rete oggi
+        type: tile
+        vertical: false
+      - entity: sensor.inverter_uflex_today_energy_export
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        name: A rete oggi
+        type: tile
+        vertical: false
+      - heading: Consumo Ora
         heading_style: subtitle
         icon: ''
         type: heading
@@ -483,7 +539,7 @@ config:
         name: Altri apparecchi incluso lavatrice
         type: tile
         vertical: false
-      - heading: Oggi
+      - heading: Consumo Oggi
         heading_style: subtitle
         icon: ''
         type: heading
@@ -740,28 +796,109 @@ config:
           \ }}\xB0C\n  {% endif %}\n{% endif %} &nbsp;&nbsp; *({{ stagione }} / {{\
           \ mod }})*\n"
         grid_options:
-          columns: 9
+          columns: full
           rows: auto
         type: markdown
-      - grid_options:
-          columns: 3
-          rows: auto
-        icon: mdi:heat-pump
-        icon_height: 20px
-        name: Clima
-        show_icon: true
-        show_name: true
-        show_state: false
-        tap_action:
-          action: navigate
-          navigation_path: /dashboard-clima/clima
-        type: button
       type: grid
     - cards:
       - heading: 'CALDAIA A GAS - Baxi '
         heading_style: title
         icon: mdi:gas-burner
         type: heading
+      - entities:
+        - entity: sensor.opentherm_gateway_otgw_otgw_boiler_flow_water_temperature
+          name: Sanitaria ora
+        grid_options:
+          columns: 6
+          rows: 3
+        hours_to_show: 24
+        refresh_interval: 60
+        type: history-graph
+      - entity: binary_sensor.opentherm_gateway_otgw_otgw_flame
+        features_position: bottom
+        grid_options:
+          columns: 3
+          rows: 1
+        icon_tap_action:
+          action: navigate
+          navigation_path: /otgw-caldaia/otgw
+        name: Fiamma
+        type: tile
+        vertical: false
+      - entity: sensor.opentherm_gateway_otgw_otgw_relative_modulation_level
+        features_position: bottom
+        grid_options:
+          columns: 3
+          rows: 1
+        icon_tap_action:
+          action: navigate
+          navigation_path: /otgw-caldaia/otgw
+        name: Modulazione
+        type: tile
+        vertical: false
+      - entity: sensor.smart_autotune_thermostat_heating_curve_living_room
+        features_position: bottom
+        grid_options:
+          columns: 3
+          rows: auto
+        icon: mdi:heating-coil
+        icon_tap_action:
+          action: navigate
+          navigation_path: /otgw-caldaia/otgw
+        name: RiscalCalcolata
+        type: tile
+        vertical: false
+      - entity: input_number.caldaia_dhw_setpoint
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        icon_tap_action:
+          action: navigate
+          navigation_path: /otgw-caldaia/otgw
+        name: SanitTarget
+        type: tile
+        vertical: false
+      - entity: sensor.gas_oggi_mc
+        features_position: bottom
+        grid_options:
+          columns: 3
+          rows: 1
+        icon_tap_action:
+          action: navigate
+          navigation_path: /otgw-caldaia/otgw
+        name: Gas oggi
+        type: tile
+        vertical: false
+      - entity: sensor.gas_mese_mc
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        icon_tap_action:
+          action: navigate
+          navigation_path: /otgw-caldaia/otgw
+        name: Gas mese
+        type: tile
+        vertical: false
+      - card:
+          grid_options:
+            columns: 3
+            rows: 1
+          icon: mdi:water-boiler
+          name: Sanitaria ON
+          tap_action:
+            action: perform-action
+            perform_action: script.caldaia_dhw_on
+          type: button
+        conditions:
+        - condition: state
+          entity: input_boolean.caldaia_dhw_override
+          state: 'off'
+        grid_options:
+          columns: 3
+          rows: auto
+        type: conditional
       - card:
           grid_options:
             columns: 3
@@ -784,16 +921,19 @@ config:
           grid_options:
             columns: 3
             rows: 1
-          icon: mdi:water-boiler
-          name: Sanitaria ON
+          icon: mdi:radiator-off
+          name: Caldaia OFF
           tap_action:
             action: perform-action
-            perform_action: script.caldaia_dhw_on
+            confirmation:
+              text: 'Spengo il riscaldamento a caldaia. Il flag Caldaia manuale non
+                cambia: senza flag alzato le automazioni possono riaccenderla. Confermi?'
+            perform_action: script.caldaia_spegni
           type: button
         conditions:
         - condition: state
-          entity: input_boolean.caldaia_dhw_override
-          state: 'off'
+          entity: climate.smart_autotune_thermostat_living_room
+          state: heat
         grid_options:
           columns: 3
           rows: auto
@@ -820,142 +960,6 @@ config:
           columns: 3
           rows: auto
         type: conditional
-      - card:
-          grid_options:
-            columns: 3
-            rows: 1
-          icon: mdi:radiator-off
-          name: Caldaia OFF
-          tap_action:
-            action: perform-action
-            confirmation:
-              text: 'Spengo il riscaldamento a caldaia. Il flag Caldaia manuale non
-                cambia: senza flag alzato le automazioni possono riaccenderla. Confermi?'
-            perform_action: script.caldaia_spegni
-          type: button
-        conditions:
-        - condition: state
-          entity: climate.smart_autotune_thermostat_living_room
-          state: heat
-        grid_options:
-          columns: 3
-          rows: auto
-        type: conditional
-      - entity: sensor.smart_autotune_thermostat_heating_curve_living_room
-        features_position: bottom
-        grid_options:
-          columns: 3
-          rows: auto
-        icon: mdi:heating-coil
-        icon_tap_action:
-          action: navigate
-          navigation_path: /otgw-caldaia/otgw
-        name: Riscaldamento calcolata
-        type: tile
-        vertical: false
-      - entities:
-        - entity: sensor.opentherm_gateway_otgw_otgw_boiler_flow_water_temperature
-          name: Sanitaria ora
-        grid_options:
-          columns: 6
-          rows: 3
-        hours_to_show: 24
-        refresh_interval: 60
-        type: history-graph
-      - entity: input_number.caldaia_dhw_setpoint
-        features_position: bottom
-        grid_options:
-          columns: 6
-          rows: 1
-        icon_tap_action:
-          action: navigate
-          navigation_path: /otgw-caldaia/otgw
-        name: Sanitaria desiderata
-        type: tile
-        vertical: false
-      - entity: binary_sensor.opentherm_gateway_otgw_otgw_flame
-        features_position: bottom
-        grid_options:
-          columns: 3
-          rows: 1
-        icon_tap_action:
-          action: navigate
-          navigation_path: /otgw-caldaia/otgw
-        name: Fiamma
-        type: tile
-        vertical: false
-      - entity: sensor.opentherm_gateway_otgw_otgw_relative_modulation_level
-        features_position: bottom
-        grid_options:
-          columns: 3
-          rows: 1
-        icon_tap_action:
-          action: navigate
-          navigation_path: /otgw-caldaia/otgw
-        name: Modulazione
-        type: tile
-        vertical: false
-      - entity: sensor.gas_oggi_mc
-        features_position: bottom
-        grid_options:
-          columns: 3
-          rows: 1
-        icon_tap_action:
-          action: navigate
-          navigation_path: /otgw-caldaia/otgw
-        name: Gas oggi
-        type: tile
-        vertical: false
-      - entity: sensor.gas_mese_mc
-        features_position: bottom
-        grid_options:
-          columns: 6
-          rows: 1
-        icon_tap_action:
-          action: navigate
-          navigation_path: /otgw-caldaia/otgw
-        name: Gas mese
-        type: tile
-        vertical: false
-      - grid_options:
-          columns: 3
-          rows: auto
-        icon: mdi:thermostat-box
-        icon_height: 20px
-        name: Caldaia
-        show_icon: true
-        show_name: true
-        show_state: false
-        tap_action:
-          action: navigate
-          navigation_path: /otgw-caldaia/otgw
-        type: button
-      - grid_options:
-          columns: 3
-          rows: auto
-        icon: mdi:file-table
-        icon_height: 20px
-        name: Consumi
-        show_icon: true
-        show_name: true
-        show_state: false
-        tap_action:
-          action: navigate
-          navigation_path: /dashboard-consumi/gas
-        type: button
-      - grid_options:
-          columns: 3
-          rows: auto
-        icon: mdi:heat-pump
-        icon_height: 20px
-        name: Clima
-        show_icon: true
-        show_name: true
-        show_state: false
-        tap_action:
-          action: navigate
-          navigation_path: /dashboard-clima/clima
-        type: button
       - content: "{% set code = states('sensor.opentherm_gateway_otgw_otgw_oemfaultcode')\
           \ | int(-1) %} {% set fault = states('binary_sensor.opentherm_gateway_otgw_otgw_fault')\
           \ %} {% set faults = {\n  9:   ['E09', 'Errore collegamento valvola gas',\
@@ -1103,32 +1107,6 @@ config:
         name: Produ.oggi
         type: tile
         vertical: false
-      - grid_options:
-          columns: 3
-          rows: auto
-        icon: mdi:heat-pump
-        icon_height: 20px
-        name: Pompa
-        show_icon: true
-        show_name: true
-        show_state: false
-        tap_action:
-          action: navigate
-          navigation_path: /dashboard-panasonic/panasonic
-        type: button
-      - grid_options:
-          columns: 3
-          rows: auto
-        icon: mdi:heat-pump
-        icon_height: 20px
-        name: Clima
-        show_icon: true
-        show_name: true
-        show_state: false
-        tap_action:
-          action: navigate
-          navigation_path: /dashboard-clima/clima
-        type: button
       - content: "{% set code = states('sensor.panasonic_heat_pump_main_error') |\
           \ upper | trim %} {% set errors = {\n  'H00': '\u2705 Nessun guasto rilevato\
           \ | Nessuna azione necessaria',\n  'H11': '\U0001F4E1 Errore comunicazione\
@@ -1297,45 +1275,6 @@ config:
           columns: 12
           rows: auto
         type: markdown
-      - grid_options:
-          columns: 3
-          rows: auto
-        icon: mdi:file-table
-        icon_height: 20px
-        name: Consumi
-        show_icon: true
-        show_name: true
-        show_state: false
-        tap_action:
-          action: navigate
-          navigation_path: /dashboard-consumi/acqua
-        type: button
-      - grid_options:
-          columns: 3
-          rows: auto
-        icon: mdi:weather-partly-cloudy
-        icon_height: 20px
-        name: Meteo
-        show_icon: true
-        show_name: true
-        show_state: false
-        tap_action:
-          action: navigate
-          navigation_path: /dashboard-meteo/meteo
-        type: button
-      - grid_options:
-          columns: 6
-          rows: auto
-        icon: mdi:sprinkler-variant
-        icon_height: 20px
-        name: Irrigazione
-        show_icon: true
-        show_name: true
-        show_state: false
-        tap_action:
-          action: navigate
-          navigation_path: /dashboard-irrigazione/irrigazione
-        type: button
       - heading: Solo Irrigazione oggi
         heading_style: subtitle
         type: heading
@@ -1353,7 +1292,7 @@ config:
         grid_options:
           columns: 3
           rows: 1
-        name: Consumo Irrigazione
+        name: Consumo
         type: tile
         vertical: false
       - heading: Solo Acqua Sanitaria oggi
@@ -1364,7 +1303,7 @@ config:
         grid_options:
           columns: 6
           rows: 1
-        name: Durata caldaia
+        name: DurataCaldaia
         type: tile
         vertical: false
       - entity: sensor.acqua_sanitaria_calda_stimata
@@ -1380,7 +1319,7 @@ config:
         grid_options:
           columns: 6
           rows: 1
-        name: 'Sanitaria totale '
+        name: SanitTotale
         type: tile
         vertical: false
       type: grid
