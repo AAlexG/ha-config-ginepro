@@ -15,7 +15,7 @@ config:
         heading_style: title
         icon: ''
         type: heading
-      - heading: Pompa, caldaia, auto, pergola, ResMed, sauna
+      - heading: Pompa, caldaia e altri apparecchi
         heading_style: subtitle
         icon: ''
         type: heading
@@ -128,11 +128,6 @@ config:
         name: ResMedManuale
         tap_action:
           action: toggle
-        type: tile
-        vertical: false
-      - entity: switch.solo_sauna_contatore_interruttore
-        features_position: inline
-        name: Sauna
         type: tile
         vertical: false
       type: grid

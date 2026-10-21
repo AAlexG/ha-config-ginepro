@@ -125,7 +125,8 @@ config:
           \ %}{% if not L %}_Nessuna lettura_{% else %}{% set L = L | reverse | list\
           \ %}mV di distacco dalla cella pi\xF9 alta (0 = pi\xF9 alta) \xB7 colonne\
           \ dalla lettura pi\xF9 recente \xB7 **\u2B07 grassetto** = cella pi\xF9\
-          \ bassa \xB7 \u2022 = in bilanciamento\n<div style=\"overflow-x:auto;font-size:11px\"\
+          \ bassa \xB7 \u2022 = in bilanciamento \xB7 RSSI = segnale Bluetooth in\
+          \ dBm (\u2013 = lettura dal telefono o precedente)\n<div style=\"overflow-x:auto;font-size:11px\"\
           ><table style=\"border-collapse:collapse;white-space:nowrap\"><tr><th style=\"\
           padding:2px 4px;border:1px solid #444\">Cella</th>{% for r in L %}<th style=\"\
           padding:2px 4px;border:1px solid #444\">{{ r.t[6:] }}</th>{% endfor %}</tr><tr><td\
@@ -135,18 +136,21 @@ config:
           \ style=\"padding:2px 4px;border:1px solid #333\"><b>SOC%</b></td>{% for\
           \ r in L %}<td style=\"padding:2px 4px;border:1px solid #333;text-align:right\"\
           ><b>{{ r.s | round(1) }}</b></td>{% endfor %}</tr><tr><td style=\"padding:2px\
-          \ 4px;border:1px solid #333\"><b>Vmax</b></td>{% for r in L %}<td style=\"\
-          padding:2px 4px;border:1px solid #333;text-align:right\">{{ '%.3f' | format((r.c\
-          \ | max) / 1000) }}</td>{% endfor %}</tr>{% for k in range(14) %}<tr><td\
-          \ style=\"padding:2px 4px;border:1px solid #333;text-align:right\"><b>{{\
-          \ k + 1 }}</b></td>{% for r in L %}{% set v = r.c[k] - r.c | max %}<td style=\"\
-          padding:2px 4px;border:1px solid #333;text-align:right\">{% if r.c[k] ==\
-          \ r.c | min %}<b>\u2B07{{ v }}</b>{% else %}{{ v }}{% endif %}{% if ((r.b\
-          \ | default(0)) // 2 ** k) % 2 == 1 %}\u2022{% endif %}</td>{% endfor %}</tr>{%\
-          \ endfor %}<tr><td style=\"padding:2px 4px;border:1px solid #333\"><b>\u0394\
-          </b></td>{% for r in L %}<td style=\"padding:2px 4px;border:1px solid #333;text-align:right\"\
-          ><b>{{ r.c | max - r.c | min }}</b></td>{% endfor %}</tr></table></div>{%\
-          \ endif %}"
+          \ 4px;border:1px solid #333\"><b>RSSI</b></td>{% for r in L %}<td style=\"\
+          padding:2px 4px;border:1px solid #333;text-align:right\">{{ r.get('r') if\
+          \ r.get('r') is not none else '\u2013' }}</td>{% endfor %}</tr><tr><td style=\"\
+          padding:2px 4px;border:1px solid #333\"><b>Vmax</b></td>{% for r in L %}<td\
+          \ style=\"padding:2px 4px;border:1px solid #333;text-align:right\">{{ '%.3f'\
+          \ | format((r.c | max) / 1000) }}</td>{% endfor %}</tr>{% for k in range(14)\
+          \ %}<tr><td style=\"padding:2px 4px;border:1px solid #333;text-align:right\"\
+          ><b>{{ k + 1 }}</b></td>{% for r in L %}{% set v = r.c[k] - r.c | max %}<td\
+          \ style=\"padding:2px 4px;border:1px solid #333;text-align:right\">{% if\
+          \ r.c[k] == r.c | min %}<b>\u2B07{{ v }}</b>{% else %}{{ v }}{% endif %}{%\
+          \ if ((r.b | default(0)) // 2 ** k) % 2 == 1 %}\u2022{% endif %}</td>{%\
+          \ endfor %}</tr>{% endfor %}<tr><td style=\"padding:2px 4px;border:1px solid\
+          \ #333\"><b>\u0394</b></td>{% for r in L %}<td style=\"padding:2px 4px;border:1px\
+          \ solid #333;text-align:right\"><b>{{ r.c | max - r.c | min }}</b></td>{%\
+          \ endfor %}</tr></table></div>{% endif %}"
         grid_options:
           columns: full
           rows: auto

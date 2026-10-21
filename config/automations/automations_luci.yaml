@@ -1,4 +1,9 @@
-# automations_luci_3.yaml
+# automations_luci_5.yaml
+# v5 (21/10/2026): riconsegna della v4, mai arrivata in HA (installata
+#   risultava la v3). Contenuto identico alla v4.
+# v4 (21/10/2026): si usa anche il Garmin. Media aggiornata dopo la
+#   sincronizzazione del mattino (non piu' alle 04:00), tempo medio per
+#   addormentarsi, spegnimento delle lenzuola dopo l'addormentamento.
 # v3 (21/10/2026): accensione di switch.lenzuola_sotto 30 minuti prima
 #   dell'ora media a letto, solo con la pompa in Heat.
 # v2 (21/10/2026): statistiche dell'ora in cui Alex va a letto, ricavate
@@ -47,12 +52,17 @@
         message: "spenti {{ accesi | map('state_attr', 'friendly_name') | join(', ') }}"
 
 #==================================================================================
-# LENZUOLA: ORA IN CUI ALEX VA A LETTO
+# LENZUOLA RISCALDATE (switch.lenzuola_sotto) - helper in config_lenzuola
 #==================================================================================
-# Alex spegne le luci cucina subito prima di andare a dormire.
-# Si registra l'ultimo spegnimento fra le 20:30 e le 03:00, solo se fatto a mano
-# (pulsante, plancia, app, voce): uno spegnimento da automazione ha un
-# context.parent_id e viene ignorato. Esclude cosi' "Spegni tutto alle 01:00".
+# Due fonti:
+# - luci cucina: Alex le spegne subito prima di andare a letto (ora a letto);
+# - Garmin, sensor.garmin_connect_bedtime: ora di addormentamento. Arriva solo
+#   dopo la sincronizzazione dell'orologio al mattino.
+# Differenza fra le due = tempo per addormentarsi.
+
+# Ultimo spegnimento manuale delle luci cucina fra le 20:30 e le 03:00.
+# Uno spegnimento da automazione ha un context.parent_id e viene ignorato:
+# esclude "Spegni tutto alle 01:00".
 - id: luci_cucina_registra_spegnimento
   alias: "Luci - Registra spegnimento serale cucina"
   mode: queued
@@ -77,32 +87,93 @@
       data:
         timestamp: "{{ now().timestamp() | int }}"
 
-# Alle 04:00 aggiunge l'ultimo spegnimento della notte alla media.
-# Se stanotte non c'e' stato (fuori casa, luci non accese) non cambia nulla.
-# Media in minuti dalle 18:00: prime notti peso 1/n, poi peso fisso 0,2.
+# Aggiorna le medie con la notte appena passata.
+# Scatta quando il Garmin pubblica un nuovo bedtime e alle 14:00 (notti senza
+# Garmin sincronizzato). Una notte entra una sola volta nella media dell'ora a
+# letto (lenzuola_ultima_registrazione nelle ultime 16 ore = gia' fatta).
+# Ora a letto: luci cucina; se mancano, Garmin meno il tempo medio per
+# addormentarsi (solo con almeno 3 notti Garmin).
+# Tempo per addormentarsi: Garmin - cucina, solo fra 0 e 180 minuti.
+# Medie: prime notti peso 1/n, poi peso fisso 0,2. Ora a letto in minuti
+# dalle 18:00 (evita il salto della mezzanotte).
 - id: lenzuola_aggiorna_ora_letto
   alias: "Lenzuola - Aggiorna ora media a letto"
-  mode: single
+  mode: queued
   triggers:
+    - trigger: state
+      entity_id: sensor.garmin_connect_bedtime
+      not_to: ["unknown", "unavailable"]
     - trigger: time
-      at: "04:00:00"
+      at: "14:00:00"
   actions:
     - variables:
-        t: >-
+        adesso: "{{ now().timestamp() }}"
+        c_ts: >-
           {{ as_timestamp(states('input_datetime.lenzuola_ultimo_spegnimento_cucina'), 0) }}
+        g_ts: "{{ as_timestamp(states('sensor.garmin_connect_bedtime'), 0) }}"
+        g_usato: >-
+          {{ as_timestamp(states('input_datetime.lenzuola_ultimo_bedtime_garmin'), 0) }}
+        c_ok: "{{ c_ts > 0 and adesso - c_ts < 18 * 3600 }}"
+        g_ok: "{{ g_ts > 0 and adesso - g_ts < 18 * 3600 and g_ts != g_usato }}"
+        gia_fatta: >-
+          {{ adesso - as_timestamp(states('input_datetime.lenzuola_ultima_registrazione'), 0)
+             < 16 * 3600 }}
+        attesa: "{{ ((g_ts - c_ts) / 60) | round(0) | int if c_ok and g_ok else -1 }}"
+        n_g: "{{ states('counter.lenzuola_notti_garmin') | int(0) }}"
+        media_attesa: "{{ states('input_number.lenzuola_tempo_addormentamento') | float(0) }}"
+        letto_ts: >-
+          {% if c_ok %}{{ c_ts }}
+          {% elif g_ok and n_g >= 3 %}{{ g_ts - media_attesa * 60 }}
+          {% else %}0{% endif %}
+
+    # --- Tempo per addormentarsi ---
+    - if:
+        - condition: template
+          value_template: "{{ 0 <= attesa <= 180 }}"
+      then:
+        - variables:
+            n: "{{ n_g + 1 }}"
+            nuova_attesa: >-
+              {{ attesa if n == 1
+                 else (media_attesa + [1 / n, 0.2] | max * (attesa - media_attesa))
+                      | round(0) | int }}
+        - action: input_number.set_value
+          target:
+            entity_id: input_number.lenzuola_tempo_addormentamento
+          data:
+            value: "{{ nuova_attesa }}"
+        - action: counter.increment
+          target:
+            entity_id: counter.lenzuola_notti_garmin
+        - action: logbook.log
+          data:
+            name: "Lenzuola - addormentamento"
+            message: >-
+              stanotte {{ attesa }} min dopo le luci cucina, media
+              {{ nuova_attesa }} min su {{ n }} notti
+    - if:
+        - condition: template
+          value_template: "{{ g_ok }}"
+      then:
+        - action: input_datetime.set_datetime
+          target:
+            entity_id: input_datetime.lenzuola_ultimo_bedtime_garmin
+          data:
+            timestamp: "{{ g_ts | int }}"
+
+    # --- Ora a letto ---
     - condition: template
-      value_template: "{{ t > 0 and now().timestamp() - t < 8 * 3600 }}"
+      value_template: "{{ not gia_fatta and letto_ts | float > 0 }}"
     - variables:
-        ora: "{{ as_local(as_datetime(t)).strftime('%H:%M') }}"
+        ora: "{{ as_local(as_datetime(letto_ts | float)).strftime('%H:%M') }}"
         minuti: >-
-          {% set d = as_local(as_datetime(t)) %}
+          {% set d = as_local(as_datetime(letto_ts | float)) %}
           {{ (d.hour * 60 + d.minute - 1080) % 1440 }}
         n: "{{ states('counter.lenzuola_notti_registrate') | int(0) + 1 }}"
         vecchia: "{{ states('input_number.lenzuola_ora_media_letto') | float(minuti) }}"
-        peso: "{{ [1 / n, 0.2] | max }}"
         nuova: >-
           {{ minuti if n == 1
-             else (vecchia + peso * (minuti - vecchia)) | round(0) | int }}
+             else (vecchia + [1 / n, 0.2] | max * (minuti - vecchia)) | round(0) | int }}
     - action: input_number.set_value
       target:
         entity_id: input_number.lenzuola_ora_media_letto
@@ -111,18 +182,22 @@
     - action: counter.increment
       target:
         entity_id: counter.lenzuola_notti_registrate
+    - action: input_datetime.set_datetime
+      target:
+        entity_id: input_datetime.lenzuola_ultima_registrazione
+      data:
+        timestamp: "{{ adesso | int }}"
     - action: logbook.log
       data:
         name: "Lenzuola - ora a letto"
         message: >-
           {% set h = ((nuova + 1080) % 1440) %}
-          stanotte {{ ora }}, media
+          stanotte {{ ora }} ({{ 'luci cucina' if c_ok else 'Garmin' }}), media
           {{ '%02d:%02d' | format(h // 60, h % 60) }} su {{ n }} notti
 
 # Accende le lenzuola 30 minuti prima dell'ora media a letto.
 # Solo con la pompa in Heat (nelle altre stagioni mai), Alex a casa e almeno
 # 5 notti registrate (prima la media non e' affidabile).
-# Lo spegnimento per ora resta quello di "Spegni tutto alle 01:00".
 - id: lenzuola_accensione_sera
   alias: "Lenzuola - Accensione prima di dormire"
   mode: single
@@ -154,3 +229,33 @@
       data:
         name: "Lenzuola"
         message: "accese 30 minuti prima dell'ora media a letto"
+
+# Spegne le lenzuola 30 minuti dopo l'addormentamento stimato:
+# spegnimento luci cucina di stasera + tempo medio per addormentarsi + 30 min.
+# Serve un tempo medio da almeno 3 notti Garmin. Senza spegnimento cucina
+# stasera resta lo "Spegni tutto alle 01:00".
+- id: lenzuola_spegnimento_notte
+  alias: "Lenzuola - Spegnimento dopo l'addormentamento"
+  mode: single
+  triggers:
+    - trigger: template
+      value_template: >-
+        {% set c = as_timestamp(states('input_datetime.lenzuola_ultimo_spegnimento_cucina'), 0) %}
+        {% set attesa = states('input_number.lenzuola_tempo_addormentamento') | float(0) %}
+        {{ is_state('switch.lenzuola_sotto', 'on')
+           and c > 0 and now().timestamp() - c < 6 * 3600
+           and now().timestamp() >= c + (attesa + 30) * 60 }}
+  conditions:
+    - condition: numeric_state
+      entity_id: counter.lenzuola_notti_garmin
+      above: 2
+  actions:
+    - action: switch.turn_off
+      target:
+        entity_id: switch.lenzuola_sotto
+    - action: logbook.log
+      data:
+        name: "Lenzuola"
+        message: >-
+          spente {{ states('input_number.lenzuola_tempo_addormentamento') | int(0) + 30 }}
+          minuti dopo le luci cucina

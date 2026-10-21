@@ -1,4 +1,7 @@
-# config_celle_bms_8.yaml
+# config_celle_bms_9.yaml
+# v9 (21/10/2026): ogni lettura dell'attributo letture salva anche 'r',
+#   la potenza del segnale Bluetooth (RSSI in dBm) mandata dall'integrazione
+#   uflex_bms insieme alla risposta. Le letture del OnePlus 8 non la hanno.
 # v8 (18/10/2026): riepilogo con attributo bilanciamento (ultimi 7 giorni:
 #   per ogni cella quante letture era in bilanciamento, ora di inizio e fine,
 #   distacco della cella 13 a inizio e fine, corrente all'ultima lettura)
@@ -404,7 +407,8 @@ template:
             {%- set soc = (h[120:124] | int(base=16)) / 10 -%}
             {%- set vecchie = this.attributes.letture | default([]) -%}
             {%- set m = (h[206:208] | int(base=16)) + 256 * (h[208:210] | int(base=16)) -%}
-            {{ (vecchie + [{'t': now().strftime('%d/%m %H:%M'), 's': soc, 'c': ns.c, 'b': m}])[-14:] }}
+            {%- set rssi = trigger.json.rssi | default(none) -%}
+            {{ (vecchie + [{'t': now().strftime('%d/%m %H:%M'), 's': soc, 'c': ns.c, 'b': m, 'r': rssi}])[-14:] }}
           bilanciamento: >-
             {%- set h = trigger.json.hex -%}
             {%- set m = (h[206:208] | int(base=16)) + 256 * (h[208:210] | int(base=16)) -%}
