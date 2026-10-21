@@ -36,6 +36,9 @@ config:
         features:
         - type: trend-graph
         features_position: bottom
+        grid_options:
+          columns: full
+          rows: auto
         name: Punteggio sonno
         type: tile
         vertical: false
@@ -59,6 +62,93 @@ config:
         - entity: sensor.garmin_connect_average_sleep_respiration
           name: Respirazione media
         type: entities
+      type: grid
+    - cards:
+      - heading: Passi
+        heading_style: subtitle
+        icon: mdi:human-male
+        type: heading
+      - entity: sensor.garmin_connect_steps
+        features_position: bottom
+        name: Oggi
+        type: tile
+        vertical: false
+      - entity: sensor.garmin_connect_yesterday_steps
+        features_position: bottom
+        name: Ieri
+        type: tile
+        vertical: false
+      - entity: sensor.garmin_connect_lifetime_steps
+        features_position: bottom
+        grid_options:
+          columns: full
+          rows: auto
+        name: Lifetime
+        type: tile
+        vertical: false
+      - heading: Respirazione
+        heading_style: subtitle
+        icon: mdi:molecule-co2
+        type: heading
+      - entity: sensor.garmin_connect_highest_respiration
+        features:
+        - type: trend-graph
+        features_position: bottom
+        grid_options:
+          columns: full
+          rows: auto
+        name: Highest
+        type: tile
+        vertical: false
+      - entity: sensor.garmin_connect_lowest_respiration
+        features:
+        - type: trend-graph
+        features_position: bottom
+        grid_options:
+          columns: full
+          rows: auto
+        name: Lowest
+        type: tile
+        vertical: false
+      - entity: sensor.garmin_connect_latest_respiration
+        features:
+        - type: trend-graph
+        features_position: bottom
+        grid_options:
+          columns: full
+          rows: auto
+        name: Ultima
+        type: tile
+        vertical: false
+      - heading: "Intensit\xE0 esercizi "
+        heading_style: subtitle
+        icon: mdi:run
+        type: heading
+      - entity: sensor.garmin_connect_intensity_minutes
+        features:
+        - type: trend-graph
+        features_position: bottom
+        grid_options:
+          columns: full
+          rows: auto
+        name: Totale
+        type: tile
+        vertical: false
+      - entity: sensor.garmin_connect_moderate_intensity_minutes
+        features:
+        - type: trend-graph
+        features_position: bottom
+        grid_options:
+          columns: full
+          rows: auto
+        name: Moderate
+        type: tile
+        vertical: false
+      - entity: sensor.garmin_connect_vigorous_intensity_minutes
+        features_position: bottom
+        name: Vigorose
+        type: tile
+        vertical: false
       type: grid
     title: Salute
     type: sections

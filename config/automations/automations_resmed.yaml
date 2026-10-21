@@ -1,4 +1,9 @@
-# automations_resmed_1.yaml
+# automations_resmed_2.yaml
+#
+# v2 (21/10/2026): nuovo flag input_boolean.resmed_manuale (config_resmed).
+#   Con il flag alzato accensione, verifica delle 22:06 e spegnimento non
+#   fanno nulla. Nessuna automazione abbassa il flag; il promemoria delle
+#   10:00 / 22:00 (automations_clima) lo segnala se resta alzato.
 #
 # ResMed Tania: accensione/spegnimento programmato della presa.
 # File creato il 30/09/2026 dalla riorganizzazione "un argomento = automations_X + config_X".
@@ -42,7 +47,7 @@
   description: >-
     Accende la presa della ResMed in Camera Tania alle 22:00, con quattro ulteriori
     tentativi al minuto fino alle 22:04 se la presa non risulta accesa. Sempre,
-    esclusa solo la vacanza.
+    esclusa la vacanza e la gestione manuale (input_boolean.resmed_manuale).
   mode: single
   triggers:
     - trigger: time
@@ -64,6 +69,9 @@
     - condition: state
       entity_id: input_boolean.vacanza
       state: "off"
+    - condition: state
+      entity_id: input_boolean.resmed_manuale
+      state: "off"
   actions:
     - action: switch.turn_on
       target:
@@ -73,7 +81,8 @@
   alias: "Camera Tania – presa ResMed verifica accensione"
   description: >-
     Alle 22:06 controlla che la presa della ResMed sia accesa. In caso contrario
-    avvisa Alex e Tania, perche' la presa va accesa a mano.
+    avvisa Alex e Tania, perche' la presa va accesa a mano. Non avvisa con la
+    gestione manuale alzata.
   mode: single
   triggers:
     - trigger: time
@@ -86,6 +95,9 @@
           state: "on"
     - condition: state
       entity_id: input_boolean.vacanza
+      state: "off"
+    - condition: state
+      entity_id: input_boolean.resmed_manuale
       state: "off"
   actions:
     - action: notify.mobile_app_cph2653
@@ -106,7 +118,8 @@
   alias: "Camera Tania – presa ResMed spegnimento programmato"
   description: >-
     Spegne la presa della ResMed in Camera Tania alle 10:00, con quattro ulteriori
-    tentativi al minuto fino alle 10:04 se la presa non risulta spenta.
+    tentativi al minuto fino alle 10:04 se la presa non risulta spenta. Non
+    agisce con la gestione manuale alzata (input_boolean.resmed_manuale).
   mode: single
   triggers:
     - trigger: time
@@ -125,6 +138,9 @@
         - condition: state
           entity_id: switch.cameratania_resmed_tania_presa_tuya_socket_1
           state: "off"
+    - condition: state
+      entity_id: input_boolean.resmed_manuale
+      state: "off"
   actions:
     - action: switch.turn_off
       target:

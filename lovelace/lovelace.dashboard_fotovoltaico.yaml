@@ -274,12 +274,8 @@ config:
           \ | timestamp_custom('%d/%m %H:%M') if a and a.attributes.last_triggered\
           \ else 'mai' }} |\n| In attesa di riarmo | {{ 's\xEC' if a and a.attributes.current\
           \ | default(0) > 0 else 'no' }} |\n| Automazione | {{ ('attiva' if a.state\
-          \ == 'on' else 'DISATTIVATA') if a else 'non trovata' }} |\n\n**Condizioni**\
-          \ (automazione *Elettricit\xE0 - DG CASA scattato*)\n- **Scattato**: carico\
-          \ casa sotto **50 W** per **30 s**\n- **Riarmato**: sopra **50 W** per **30\
-          \ s**, entro 24 h\n- Sensore: `sensor.inverter_uflex_load_power`, uscita\
-          \ backup dell'inverter UFLEX (unica utenza: DG CASA)\n- Se HA si riavvia\
-          \ durante l'attesa, l'avviso di riarmo non parte\n"
+          \ == 'on' else 'DISATTIVATA') if a else 'non trovata' }} |\n\n- **Scattato**:\
+          \ carico casa sotto **50 W** per **30 s**\n\n"
         grid_options:
           columns: full
           rows: auto

@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
-# installa_3.py
+# installa_4.py
 #
+# v4 (21/10/2026): con piu' versioni dello stesso file in da_installare si
+#   installa la piu' alta (prima vinceva la prima in ordine alfabetico,
+#   cioe' la piu' vecchia).
 # v3 (21/10/2026): un package nuovo (prima non esisteva) si confronta con un
 #   file vuoto invece di dare "confronto non riuscito": se contiene solo
 #   domini ricaricabili basta il Riavvio rapido.
@@ -236,8 +239,15 @@ def prepara():
         r = annulla(silenzioso=True)
         avvisi.append("installazione precedente interrotta: originali ripristinati "
                       f"({', '.join(r['ripristinati']) or 'nessuno'})")
-    nomi = sorted(n for n in os.listdir(IN)
-                  if not n.startswith(".") and os.path.isfile(os.path.join(IN, n)))
+    nomi = [n for n in os.listdir(IN)
+            if not n.startswith(".") and os.path.isfile(os.path.join(IN, n))]
+
+    # Stesso file in piu' versioni: la piu' alta va esaminata per prima,
+    # le altre vengono scartate come doppioni.
+    def _ordine(n):
+        m = RE_NOME.match(n) or RE_ESPHOME.match(n)
+        return (m.group("base"), -int(m.group("v"))) if m else (n, 0)
+    nomi.sort(key=_ordine)
     if not nomi:
         esci({"totale": 0, "installati": [], "scartati": [], "avvisi": avvisi})
 
@@ -252,7 +262,7 @@ def prepara():
             continue
         tipo, base, v, dest, sotto, nome_arch = c
         if base in viste:
-            scartati.append(f"{nome}: piu' versioni dello stesso file, ne va copiata una")
+            scartati.append(f"{nome}: superato dalla versione piu' alta dello stesso file, va tolto")
             continue
         viste.add(base)
         va = versione_archiviata(base, sotto)

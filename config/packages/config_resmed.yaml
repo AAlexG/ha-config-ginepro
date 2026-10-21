@@ -1,0 +1,19 @@
+# config_resmed_1.yaml
+# v1 (21/10/2026): file nuovo. Flag di gestione manuale della ResMed di
+#   Tania (presa switch.cameratania_resmed_tania_presa_tuya_socket_1).
+# Package Casa Ginepro - ResMed Tania. Automazioni in automations_resmed.
+
+input_boolean:
+
+  # Stessa logica di tutti i flag manuali: quando e' ON le automazioni di
+  # automations_resmed (accensione 22:00, verifica 22:06, spegnimento 10:00)
+  # non fanno nulla e nessuna automazione lo abbassa; lo abbassa solo
+  # l'utente dalla plancia Manual Settings. Accendere e spegnere la presa
+  # restano comandi separati e non cambiano il flag. Il promemoria delle
+  # 10:00 / 22:00 (automations_clima) lo segnala se resta alzato.
+  # Nessuna chiave di valore iniziale: Home Assistant ripristina allo start lo
+  # stato precedente allo stop. Fonte:
+  # https://www.home-assistant.io/integrations/input_boolean/ (Restore state)
+  resmed_manuale:
+    name: "ResMed Tania - Gestione Manuale"
+    icon: mdi:hand-back-right

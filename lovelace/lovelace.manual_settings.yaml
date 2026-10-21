@@ -1,5 +1,5 @@
 config:
-  title: Manuale v.1
+  title: Manuale v.2
   views:
   - cards: []
     header: {}
@@ -15,7 +15,7 @@ config:
         heading_style: title
         icon: ''
         type: heading
-      - heading: Pompa, caldaia, auto, pergola, sauna
+      - heading: Pompa, caldaia, auto, pergola, ResMed, sauna
         heading_style: subtitle
         icon: ''
         type: heading
@@ -108,6 +108,24 @@ config:
         icon_tap_action:
           action: toggle
         name: PergolaManuale
+        tap_action:
+          action: toggle
+        type: tile
+        vertical: false
+      - entity: switch.cameratania_resmed_tania_presa_tuya_socket_1
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        name: ResMed ora
+        type: tile
+        vertical: false
+      - entity: input_boolean.resmed_manuale
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        name: ResMedManuale
         tap_action:
           action: toggle
         type: tile
@@ -216,7 +234,7 @@ config:
         grid_options:
           columns: 6
           rows: 1
-        name: TaniaManuale
+        name: ArmadioManuale
         tap_action:
           action: toggle
         type: tile
