@@ -1,4 +1,4 @@
-# uflex_bms_1 - __init__.py
+# uflex_bms_2 - __init__.py
 """UFLEX BMS (BP00, Enjie EMU110x): legge le celle via Bluetooth.
 
 Ogni 15 minuti (o col pulsante Leggi ora) si collega al BMS, scrive il
@@ -125,7 +125,7 @@ class BmsReader:
     async def _post(self, h: str) -> None:
         url = f"http://127.0.0.1:{self.hass.http.server_port}/api/webhook/{WEBHOOK}"
         s = async_get_clientsession(self.hass)
-        async with s.post(url, json={"hex": h}, timeout=10) as r:
+        async with s.post(url, json={"hex": h, "rssi": self.rssi}, timeout=10) as r:
             self.http = r.status
 
 
