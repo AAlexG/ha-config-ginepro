@@ -1,0 +1,43 @@
+# config_lenzuola_1.yaml
+# v1 (21/10/2026): file nuovo. Helper per stimare l'ora in cui Alex va a
+#   dormire dall'ultimo spegnimento serale delle luci cucina
+#   (switch.presa_luci_cucina_socket_1). Automazioni in automations_luci.
+# Package Casa Ginepro - Lenzuola riscaldate (switch.lenzuola_sotto).
+#
+# Nessuna chiave initial: al riavvio HA ripristina i valori salvati
+# (initial sovrascriverebbe la media a ogni riavvio).
+
+input_datetime:
+
+  # Ultimo spegnimento manuale delle luci cucina fra le 20:30 e le 03:00.
+  # Scritto da luci_cucina_registra_spegnimento, letto alle 04:00 da
+  # lenzuola_aggiorna_ora_letto.
+  lenzuola_ultimo_spegnimento_cucina:
+    name: "Lenzuola - Ultimo spegnimento cucina"
+    has_date: true
+    has_time: true
+    icon: mdi:lightbulb-off-outline
+
+input_number:
+
+  # Ora media in cui Alex va a letto, in minuti dalle 18:00
+  # (180 = 21:00, 300 = 23:00, 420 = 01:00). Contare dalle 18:00 evita il
+  # salto della mezzanotte nella media.
+  # Prime notti: media semplice (peso 1/n). Dalla quinta notte: media mobile
+  # esponenziale con peso 0,2 (contano soprattutto le ultime 5-10 sere).
+  lenzuola_ora_media_letto:
+    name: "Lenzuola - Ora media a letto (min dalle 18)"
+    min: 0
+    max: 540
+    step: 1
+    mode: box
+    unit_of_measurement: min
+    icon: mdi:bed-clock
+
+counter:
+
+  # Notti registrate nella media. Serve per il peso 1/n delle prime notti.
+  lenzuola_notti_registrate:
+    name: "Lenzuola - Notti registrate"
+    step: 1
+    icon: mdi:counter

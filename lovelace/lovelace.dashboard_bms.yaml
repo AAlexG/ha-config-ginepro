@@ -28,7 +28,7 @@ config:
           / 60) | round(0) | int }} min fa){% endif %}'
         grid_options:
           columns: full
-          rows: auto
+          rows: 1
         type: markdown
       - content: '{% set a = states(''sensor.condensatore_bms_allarmi'') %}{% if a
           in [''unknown'',''unavailable''] %}**Allarmi BMS:** _nessuna lettura_{%
@@ -116,53 +116,6 @@ config:
         name: "\u0394 celle ora"
         type: tile
         vertical: false
-      - graph_span: 7d
-        grid_options:
-          columns: 12
-          rows: auto
-        header:
-          show: true
-          title: Temperature BMS 48h
-        series:
-        - color: '#D55E00'
-          entity: sensor.condensatore_bms_temperatura_5
-          name: T5
-          stroke_width: 2
-          type: line
-          yaxis_id: C
-        - color: '#0072B2'
-          entity: sensor.condensatore_bms_temperatura_6
-          name: T6
-          stroke_width: 2
-          type: line
-          yaxis_id: C
-        - entity: sensor.condensatore_bms_temperatura_1
-          name: T1
-          stroke_width: 2
-          type: line
-          yaxis_id: C
-        - entity: sensor.condensatore_bms_temperatura_2
-          name: T2
-          stroke_width: 2
-          type: line
-          yaxis_id: C
-        - entity: sensor.condensatore_bms_temperatura_3
-          name: T3
-          stroke_width: 2
-          type: line
-          yaxis_id: C
-        - entity: sensor.condensatore_bms_temperatura_4
-          name: T4
-          stroke_width: 2
-          type: line
-          yaxis_id: C
-        type: custom:apexcharts-card
-        yaxis:
-        - apex_config:
-            title:
-              text: C
-          decimals: 1
-          id: C
       type: grid
     - cards:
       - heading: 'CELLE: ULTIME 14 LETTURE'
@@ -275,6 +228,53 @@ config:
           show_daily: true
         type: custom:sunsynk-power-flow-card
         wide: false
+      - graph_span: 7d
+        grid_options:
+          columns: 12
+          rows: auto
+        header:
+          show: true
+          title: Temperature BMS 48h
+        series:
+        - color: '#D55E00'
+          entity: sensor.condensatore_bms_temperatura_5
+          name: T5
+          stroke_width: 2
+          type: line
+          yaxis_id: C
+        - color: '#0072B2'
+          entity: sensor.condensatore_bms_temperatura_6
+          name: T6
+          stroke_width: 2
+          type: line
+          yaxis_id: C
+        - entity: sensor.condensatore_bms_temperatura_1
+          name: T1
+          stroke_width: 2
+          type: line
+          yaxis_id: C
+        - entity: sensor.condensatore_bms_temperatura_2
+          name: T2
+          stroke_width: 2
+          type: line
+          yaxis_id: C
+        - entity: sensor.condensatore_bms_temperatura_3
+          name: T3
+          stroke_width: 2
+          type: line
+          yaxis_id: C
+        - entity: sensor.condensatore_bms_temperatura_4
+          name: T4
+          stroke_width: 2
+          type: line
+          yaxis_id: C
+        type: custom:apexcharts-card
+        yaxis:
+        - apex_config:
+            title:
+              text: C
+          decimals: 1
+          id: C
       - graph_span: 7d
         grid_options:
           columns: 12

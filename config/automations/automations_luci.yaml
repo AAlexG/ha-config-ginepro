@@ -1,4 +1,9 @@
-# automations_luci_1.yaml
+# automations_luci_3.yaml
+# v3 (21/10/2026): accensione di switch.lenzuola_sotto 30 minuti prima
+#   dell'ora media a letto, solo con la pompa in Heat.
+# v2 (21/10/2026): statistiche dell'ora in cui Alex va a letto, ricavate
+#   dall'ultimo spegnimento manuale serale delle luci cucina (helper in
+#   config_lenzuola). Servono alla futura accensione di switch.lenzuola_sotto.
 #
 # Luci e prese: spegnimento notturno.
 # File creato il 30/09/2026: sostituisce la routine Google Home "Spegni tutto alla 1 di notte".
@@ -40,3 +45,112 @@
       data:
         name: "Spegni tutto alle 01:00"
         message: "spenti {{ accesi | map('state_attr', 'friendly_name') | join(', ') }}"
+
+#==================================================================================
+# LENZUOLA: ORA IN CUI ALEX VA A LETTO
+#==================================================================================
+# Alex spegne le luci cucina subito prima di andare a dormire.
+# Si registra l'ultimo spegnimento fra le 20:30 e le 03:00, solo se fatto a mano
+# (pulsante, plancia, app, voce): uno spegnimento da automazione ha un
+# context.parent_id e viene ignorato. Esclude cosi' "Spegni tutto alle 01:00".
+- id: luci_cucina_registra_spegnimento
+  alias: "Luci - Registra spegnimento serale cucina"
+  mode: queued
+  triggers:
+    - trigger: state
+      entity_id: switch.presa_luci_cucina_socket_1
+      from: "on"
+      to: "off"
+  conditions:
+    - condition: time
+      after: "20:30:00"
+      before: "03:00:00"
+    - condition: state
+      entity_id: person.alex
+      state: home
+    - condition: template
+      value_template: "{{ trigger.to_state.context.parent_id is none }}"
+  actions:
+    - action: input_datetime.set_datetime
+      target:
+        entity_id: input_datetime.lenzuola_ultimo_spegnimento_cucina
+      data:
+        timestamp: "{{ now().timestamp() | int }}"
+
+# Alle 04:00 aggiunge l'ultimo spegnimento della notte alla media.
+# Se stanotte non c'e' stato (fuori casa, luci non accese) non cambia nulla.
+# Media in minuti dalle 18:00: prime notti peso 1/n, poi peso fisso 0,2.
+- id: lenzuola_aggiorna_ora_letto
+  alias: "Lenzuola - Aggiorna ora media a letto"
+  mode: single
+  triggers:
+    - trigger: time
+      at: "04:00:00"
+  actions:
+    - variables:
+        t: >-
+          {{ as_timestamp(states('input_datetime.lenzuola_ultimo_spegnimento_cucina'), 0) }}
+    - condition: template
+      value_template: "{{ t > 0 and now().timestamp() - t < 8 * 3600 }}"
+    - variables:
+        ora: "{{ as_local(as_datetime(t)).strftime('%H:%M') }}"
+        minuti: >-
+          {% set d = as_local(as_datetime(t)) %}
+          {{ (d.hour * 60 + d.minute - 1080) % 1440 }}
+        n: "{{ states('counter.lenzuola_notti_registrate') | int(0) + 1 }}"
+        vecchia: "{{ states('input_number.lenzuola_ora_media_letto') | float(minuti) }}"
+        peso: "{{ [1 / n, 0.2] | max }}"
+        nuova: >-
+          {{ minuti if n == 1
+             else (vecchia + peso * (minuti - vecchia)) | round(0) | int }}
+    - action: input_number.set_value
+      target:
+        entity_id: input_number.lenzuola_ora_media_letto
+      data:
+        value: "{{ nuova }}"
+    - action: counter.increment
+      target:
+        entity_id: counter.lenzuola_notti_registrate
+    - action: logbook.log
+      data:
+        name: "Lenzuola - ora a letto"
+        message: >-
+          {% set h = ((nuova + 1080) % 1440) %}
+          stanotte {{ ora }}, media
+          {{ '%02d:%02d' | format(h // 60, h % 60) }} su {{ n }} notti
+
+# Accende le lenzuola 30 minuti prima dell'ora media a letto.
+# Solo con la pompa in Heat (nelle altre stagioni mai), Alex a casa e almeno
+# 5 notti registrate (prima la media non e' affidabile).
+# Lo spegnimento per ora resta quello di "Spegni tutto alle 01:00".
+- id: lenzuola_accensione_sera
+  alias: "Lenzuola - Accensione prima di dormire"
+  mode: single
+  triggers:
+    - trigger: template
+      value_template: >-
+        {% set m = (now().hour * 60 + now().minute - 1080) % 1440 %}
+        {% set media = states('input_number.lenzuola_ora_media_letto') | int(-1) %}
+        {{ media >= 30 and m == media - 30 }}
+  conditions:
+    - condition: template
+      value_template: >-
+        {{ states('select.panasonic_heat_pump_main_operating_mode_state')
+           in ['Heat', 'Heat only'] }}
+    - condition: numeric_state
+      entity_id: counter.lenzuola_notti_registrate
+      above: 4
+    - condition: state
+      entity_id: person.alex
+      state: home
+    - condition: state
+      entity_id: switch.lenzuola_sotto
+      state: "off"
+  actions:
+    - action: switch.turn_on
+      target:
+        entity_id: switch.lenzuola_sotto
+    - action: logbook.log
+      data:
+        name: "Lenzuola"
+        message: "accese 30 minuti prima dell'ora media a letto"

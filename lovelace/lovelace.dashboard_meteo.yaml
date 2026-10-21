@@ -255,44 +255,7 @@ config:
           rows: auto
         header:
           show: true
-          title: Confronto Illuminazione da stazione e sensore
-        series:
-        - entity: sensor.hp1000se_pro_pro_v1_6_4_solar_radiation
-          name: stazione meteo
-          statistics:
-            period: hour
-            type: max
-          type: line
-          yaxis_id: Wm2
-        - entity: sensor.sensore_pioggia_tuya_illuminance_raw
-          name: sensore pioggia Tuya
-          statistics:
-            period: hour
-            type: min
-          type: line
-          yaxis_id: mV
-        type: custom:apexcharts-card
-        yaxis:
-        - apex_config:
-            title:
-              text: W/m2
-          decimals: 0
-          id: Wm2
-          min: 0
-        - apex_config:
-            title:
-              text: mV
-          decimals: 0
-          id: mV
-          min: 0
-          opposite: true
-      - graph_span: 72h
-        grid_options:
-          columns: 12
-          rows: auto
-        header:
-          show: true
-          title: Confronto pioggia da stazione e sensore
+          title: Pioggia-stazione Vs sensore pioggia
         series:
         - entity: sensor.hp1000se_pro_pro_v1_6_4_daily_rain
           name: stazione meteo
@@ -323,6 +286,45 @@ config:
               text: mm
           decimals: 1
           id: mm
+          opposite: true
+      - graph_span: 72h
+        grid_options:
+          columns: 12
+          rows: auto
+        header:
+          show: true
+          title: Illuminazione-stazione Vs sensore pooggia
+        series:
+        - entity: sensor.hp1000se_pro_pro_v1_6_4_solar_radiation
+          name: stazione meteo
+          statistics:
+            period: hour
+            type: max
+          stroke_width: 1
+          type: line
+          yaxis_id: Wm2
+        - entity: sensor.sensore_pioggia_tuya_illuminance_raw
+          name: sensore pioggia Tuya
+          statistics:
+            period: hour
+            type: min
+          stroke_width: 1
+          type: line
+          yaxis_id: mV
+        type: custom:apexcharts-card
+        yaxis:
+        - apex_config:
+            title:
+              text: W/m2
+          decimals: 0
+          id: Wm2
+          min: 0
+        - apex_config:
+            title:
+              text: mV
+          decimals: 0
+          id: mV
+          min: 0
           opposite: true
       type: grid
     title: Meteo

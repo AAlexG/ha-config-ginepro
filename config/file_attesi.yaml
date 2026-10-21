@@ -1,4 +1,7 @@
-# file_attesi_9.yaml
+# file_attesi_11.yaml
+# v11 (21/10/2026): automations_luci.yaml passa a 4 automazioni.
+# v10 (21/10/2026): nuovo packages/config_lenzuola.yaml;
+#   automations_luci.yaml passa a 3 automazioni.
 # v9 (20/10/2026): aggiunta l'integrazione uflex_bms (lettura Bluetooth
 #   del BMS del condensatore direttamente da HA).
 # v8 (18/10/2026): tolta l'integrazione ftp (rimossa, ora si lavora via Samba).
@@ -38,7 +41,7 @@ file:
   automations/automations_gas.yaml: 1
   automations/automations_irrigazione.yaml: 9
   automations/automations_lavatrice.yaml: 1
-  automations/automations_luci.yaml: 1
+  automations/automations_luci.yaml: 4
   automations/automations_meteo.yaml: 5
   automations/automations_pompa_calore.yaml: 9
   automations/automations_resmed.yaml: 3
@@ -60,6 +63,7 @@ file:
   packages/config_gas.yaml:
   packages/config_irrigazione.yaml:
   packages/config_lavatrice.yaml:
+  packages/config_lenzuola.yaml:
   packages/config_meteo.yaml:
   packages/config_pompa_calore.yaml:
   packages/config_rete.yaml:

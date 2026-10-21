@@ -539,5 +539,22 @@ config:
         - state
         type: statistics-graph
       type: grid
+    - cards:
+      - heading: Lenzuola sotto via Tapo
+        heading_style: title
+        type: heading
+      - entity: switch.lenzuola_sotto
+        features:
+        - type: toggle
+        features_position: bottom
+        name: Stato
+        type: tile
+        vertical: false
+      - entity: sensor.camerageorgi_lenzuola_sotto_intensita_del_segnale
+        features_position: bottom
+        name: 'WiFi '
+        type: tile
+        vertical: false
+      type: grid
     title: Altri Devices
     type: sections
