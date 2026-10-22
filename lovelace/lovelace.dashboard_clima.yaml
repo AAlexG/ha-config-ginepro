@@ -556,32 +556,32 @@ config:
       - entity: input_number.panasonic_heat_base_text_fredda
         features_position: bottom
         grid_options:
-          columns: 6
-          rows: 1
-        name: T esterna fredda
+          columns: full
+          rows: auto
+        name: Temp esterna fredda
         type: tile
         vertical: false
       - entity: input_number.panasonic_heat_base_mandata_fredda
         features_position: bottom
         grid_options:
-          columns: 6
-          rows: 1
+          columns: full
+          rows: auto
         name: Mandata al freddo
         type: tile
         vertical: false
       - entity: input_number.panasonic_heat_base_text_mite
         features_position: bottom
         grid_options:
-          columns: 6
-          rows: 1
-        name: T esterna mite
+          columns: full
+          rows: auto
+        name: Temp esterna mite
         type: tile
         vertical: false
       - entity: input_number.panasonic_heat_base_mandata_mite
         features_position: bottom
         grid_options:
-          columns: 6
-          rows: 1
+          columns: full
+          rows: auto
         name: Mandata col mite
         type: tile
         vertical: false

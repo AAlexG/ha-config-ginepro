@@ -1,4 +1,11 @@
-# automations_clima_81.yaml
+# automations_clima_82.yaml
+#
+# v82 (22/10/2026): isteresi anche sulla soglia acqua dei fancoil (sala e
+#   camere). Un fancoil spento parte con l'acqua almeno 6 C sopra il target
+#   (inverno) o 4 C sotto (estate); acceso resta tale finche' l'acqua e'
+#   almeno 4 C sopra (inverno) o 2 C sotto (estate). Prima la soglia era
+#   unica: alle 00:03 del 22/10 il fancoil Georgi e' partito con mandata 28,00
+#   (soglia 28), l'acqua e' scesa a 27,50 e alle 00:05 e' stato spento.
 #
 # v81 (21/10/2026): fancoil_georgi_controllo e fancoil_sala_controllo girano
 #   anche a ogni nuova lettura dei termometri (camere Georgi e Tania, sala),
@@ -464,11 +471,16 @@
         target_estate_tania: "{{ states('input_number.maxtemp_notte_estate_tania') | float(25) }}"
         target_inverno_tania: "{{ states('input_number.mintemp_notte_inverno_tania') | float(22) }}"
         # Efficacia acqua: calcolata sul target della singola camera
-        # (estate: almeno 4 C sotto; inverno: almeno 6 C sopra)
-        acqua_ok_georgi_estate: "{{ outlet <= target_estate_georgi - 4 }}"
-        acqua_ok_georgi_inverno: "{{ outlet >= target_inverno_georgi + 6 }}"
-        acqua_ok_tania_estate: "{{ outlet <= target_estate_tania - 4 }}"
-        acqua_ok_tania_inverno: "{{ outlet >= target_inverno_tania + 6 }}"
+        # (estate: almeno 4 C sotto; inverno: almeno 6 C sopra).
+        # v82: isteresi 2 C. Fancoil acceso: basta 2 C sotto (estate) o 4 C
+        # sopra (inverno), altrimenti all'accensione l'acqua si raffredda di
+        # qualche decimo e il fancoil viene rispento al giro dopo.
+        georgi_on_ora: "{{ is_state('switch.camerageorgi_shelly_fancoil_georgi_2', 'on') }}"
+        tania_on_ora: "{{ is_state('switch.camerageorgi_shelly_fancoil_georgi', 'on') }}"
+        acqua_ok_georgi_estate: "{{ outlet <= target_estate_georgi - (2 if georgi_on_ora else 4) }}"
+        acqua_ok_georgi_inverno: "{{ outlet >= target_inverno_georgi + (4 if georgi_on_ora else 6) }}"
+        acqua_ok_tania_estate: "{{ outlet <= target_estate_tania - (2 if tania_on_ora else 4) }}"
+        acqua_ok_tania_inverno: "{{ outlet >= target_inverno_tania + (4 if tania_on_ora else 6) }}"
         # Free cooling/heating naturale attivo: fancoil sempre spenti,
         # in ogni fascia oraria (prelavoro 21-23 e notte 23-07)
         freecooling_on: "{{ is_state('input_boolean.clima_freecooling_attivo', 'on') }}"
@@ -617,9 +629,12 @@
              if fonte_caldaia
              else states('sensor.panasonic_heat_pump_main_main_outlet_temp') | float(20) }}
         target_sala_estate: "{{ states('input_number.maxtemp_giorno_estate_sala') | float(25) }}"
-        soglia_acqua_estate: "{{ states('input_number.maxtemp_giorno_estate_sala') | float(25) - 4 }}"
+        # v82: isteresi 2 C sull'acqua come per le camere (acceso: 2 sotto in
+        # estate, 4 sopra in inverno; spento: 4 sotto, 6 sopra).
+        sala_on_ora: "{{ is_state('switch.sala_fancoil_sala_shelly_1gen4', 'on') }}"
+        soglia_acqua_estate: "{{ states('input_number.maxtemp_giorno_estate_sala') | float(25) - (2 if sala_on_ora else 4) }}"
         target_sala_inverno: "{{ states('input_number.mintemp_giorno_inverno_sala') | float(22) }}"
-        soglia_acqua_inverno: "{{ states('input_number.mintemp_giorno_inverno_sala') | float(22) + 6 }}"
+        soglia_acqua_inverno: "{{ states('input_number.mintemp_giorno_inverno_sala') | float(22) + (4 if sala_on_ora else 6) }}"
         acqua_efficace_estate: "{{ outlet <= soglia_acqua_estate }}"
         acqua_efficace_inverno: "{{ outlet >= soglia_acqua_inverno }}"
         # v66: isteresi 0,3 C come per le camere. Acceso resta acceso fino a
