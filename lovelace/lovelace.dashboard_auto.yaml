@@ -1,5 +1,5 @@
 config:
-  title: Auto v.5
+  title: Auto v.6
   views:
   - max_columns: 2
     path: auto
@@ -26,21 +26,34 @@ config:
         name: Gestione manuale (blocca lo stacco automatico)
         type: tile
         vertical: false
-      - heading: "Parametri ricarica (detagli - vedi pi\xF9 giu)"
-        heading_style: title
-        type: heading
       - entity: input_boolean.auto_staccata_da_previsione
-        features_position: bottom
         grid_options:
           columns: 12
         name: Staccata dalla previsione (si riaccende da sola)
         type: tile
         vertical: false
+      - entity: binary_sensor.ricarica_auto_fv_sufficiente
+        grid_options:
+          columns: 6
+        name: FV basta per auto e casa
+        type: tile
+        vertical: false
+      - entity: binary_sensor.condensatore_in_scarica
+        grid_options:
+          columns: 6
+        name: Condensatore in scarica
+        type: tile
+        vertical: false
+      - entity: sensor.inverter_uflex_battery
+        grid_options:
+          columns: 6
+        name: SoC condensatore
+        type: tile
+        vertical: false
       - entity: sensor.solo_auto_contattore_potenza_di_fase_a
-        features_position: bottom
         grid_options:
           columns: 4
-        name: PotenzaOra
+        name: Potenza auto
         type: tile
         vertical: false
       - entity: sensor.auto_energia_oggi
@@ -50,10 +63,9 @@ config:
         type: tile
         vertical: false
       - entity: sensor.auto_energia_mese
-        features_position: bottom
         grid_options:
           columns: 4
-        name: EnergiaMese
+        name: Energia mese
         type: tile
         vertical: false
       - content: '**Gestione manuale alzata**: l''automazione non stacca mai la ricarica,
@@ -61,8 +73,11 @@ config:
           sole alto e l''auto oltre 1 kW, se la previsione resta "non raggiungibile"
           per 5 minuti il contattore viene staccato e viene alzato "Staccata dalla
           previsione". Quando la previsione torna "raggiungibile" o "pieno" per 10
-          minuti (almeno 20 minuti dopo lo stacco) il contattore viene riacceso. Uno
-          spegnimento fatto a mano o dal distacco carichi non viene mai annullato.'
+          minuti (almeno 20 minuti dopo lo stacco), con il condensatore sopra la soglia
+          di avvio oppure il FV che basta da solo per auto e casa, il contattore viene
+          riacceso. Di giorno l''auto viene staccata anche se il condensatore e''
+          sotto la soglia di stacco e si sta scaricando da 5 minuti. Uno spegnimento
+          fatto a mano o dal distacco carichi non viene mai annullato.'
         type: markdown
       type: grid
     - cards:
@@ -228,8 +243,7 @@ config:
           type: numeric-input
         features_position: bottom
         grid_options:
-          columns: full
-          rows: auto
+          columns: 6
         name: Energia SC dal vuoto al pieno
         type: tile
         vertical: false
@@ -239,8 +253,7 @@ config:
           type: numeric-input
         features_position: bottom
         grid_options:
-          columns: full
-          rows: auto
+          columns: 6
         name: Margine previsione
         type: tile
         vertical: false
@@ -250,9 +263,28 @@ config:
           type: numeric-input
         features_position: bottom
         grid_options:
-          columns: full
-          rows: auto
-        name: Soglia Valutabilita'
+          columns: 6
+        name: Soglia valutabilita'
+        type: tile
+        vertical: false
+      - entity: input_number.ricarica_auto_soc_avvio
+        features:
+        - style: buttons
+          type: numeric-input
+        features_position: bottom
+        grid_options:
+          columns: 6
+        name: SoC condensatore per avvio
+        type: tile
+        vertical: false
+      - entity: input_number.ricarica_auto_soc_stacco
+        features:
+        - style: buttons
+          type: numeric-input
+        features_position: bottom
+        grid_options:
+          columns: 6
+        name: SoC condensatore per stacco
         type: tile
         vertical: false
       - entity: input_number.ricarica_auto_potenza
@@ -261,29 +293,25 @@ config:
           type: numeric-input
         features_position: bottom
         grid_options:
-          columns: full
-          rows: auto
-        name: 'Potenza Carica auto standard '
+          columns: 6
+        name: Potenza auto in carica
         type: tile
         vertical: false
       - entity: sensor.carico_casa_media_15_min
         grid_options:
-          columns: full
-          rows: auto
+          columns: 6
         name: Carico casa media 15 min
         type: tile
         vertical: false
       - entity: sensor.pv_profilo_sereno
         grid_options:
-          columns: full
-          rows: auto
+          columns: 6
         name: Giornata serena (totale)
         type: tile
         vertical: false
       - entity: sensor.inverter_uflex_battery_voltage
         grid_options:
-          columns: full
-          rows: auto
+          columns: 6
         name: Tensione SC
         type: tile
         vertical: false

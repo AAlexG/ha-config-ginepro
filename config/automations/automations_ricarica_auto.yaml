@@ -1,5 +1,15 @@
-# automations_ricarica_auto_5.yaml
+# automations_ricarica_auto_6.yaml
 #
+# v6 (22/10/2026): il 22/10 R3 ha riacceso l'auto alle 09:10 con il SC al 26 %
+#   e il FV a 1,7 kW (previsione "raggiungibile": c'era tutto il giorno per
+#   riempirlo). Il SC e' sceso al 15 % e alle 10:00 la casa ha preso 3,1 kW
+#   dalla rete. Ora:
+#   - R3 riaccende solo se il SoC supera ricarica_auto_soc_avvio OPPURE il FV
+#     copre da solo auto e casa (binary_sensor.ricarica_auto_fv_sufficiente).
+#     Il 22/10 sarebbe partita verso le 10:30.
+#   - nuova R1b: stacca se il SoC e' sotto ricarica_auto_soc_stacco E il SC si
+#     sta scaricando da 5 minuti; con SoC basso ma FV sufficiente l'auto
+#     continua a caricare. Alza il flag di stacco, cosi' R3 la riaccende.
 # v5 (14/10/2026): R3 non si caricava: HA non accetta "for" in una condizione
 #   state con una lista di stati. Sostituita da una condizione template con
 #   last_changed. Il passaggio pieno <-> raggiungibile riazzera i 10 minuti:
@@ -96,6 +106,65 @@
           ttl: 0
 
 #==================================================================================
+# R1b. STACCO PER CONDENSATORE QUASI VUOTO (v6)
+#
+# Con il SC sotto la soglia di stacco E in scarica da 5 minuti il FV non basta:
+# l'auto svuoterebbe il SC e poi prenderebbe dalla rete. Solo di giorno, come R1: la ricarica serale o
+# notturna decisa da te non viene toccata. Il flag di stacco permette a R3 di
+# riaccendere quando il SoC torna sopra la soglia di avvio.
+#==================================================================================
+- id: ricarica_auto_stacco_sc_scarico
+  alias: "Ricarica auto - Stacco con condensatore quasi vuoto"
+  description: >
+    Di giorno, con l'auto in carica, stacca il contattore se il SoC del
+    condensatore e' sotto la soglia di stacco e si sta scaricando da 5 minuti.
+  mode: single
+  max_exceeded: silent
+  triggers:
+    - trigger: time_pattern
+      minutes: "/5"
+  conditions:
+    - condition: state
+      entity_id: sun.sun
+      state: above_horizon
+    - condition: state
+      entity_id: input_boolean.auto_manuale
+      state: "off"
+    - condition: state
+      entity_id: switch.solo_auto_contattore_interruttore
+      state: "on"
+    - condition: numeric_state
+      entity_id: sensor.solo_auto_contattore_potenza_di_fase_a
+      above: 1
+    - condition: numeric_state
+      entity_id: sensor.inverter_uflex_battery
+      below: input_number.ricarica_auto_soc_stacco
+    - condition: state
+      entity_id: binary_sensor.condensatore_in_scarica
+      state: "on"
+  actions:
+    - action: switch.turn_off
+      continue_on_error: true
+      target:
+        entity_id: switch.solo_auto_contattore_interruttore
+    - action: input_boolean.turn_on
+      target:
+        entity_id: input_boolean.auto_staccata_da_previsione
+    - action: notify.mobile_app_cph2653
+      continue_on_error: true
+      data:
+        title: "Ricarica auto staccata"
+        message: >
+          Condensatore al {{ states('sensor.inverter_uflex_battery') }}%, sotto la
+          soglia di {{ states('input_number.ricarica_auto_soc_stacco') | int }}%, e in scarica.
+          Si riaccende da sola quando il FV basta per auto e casa o il
+          condensatore supera il {{ states('input_number.ricarica_auto_soc_avvio') | int }}%.
+        data:
+          tag: ricarica_auto_sc
+          priority: high
+          ttl: 0
+
+#==================================================================================
 # R2. PROFILO SERENO FV - ricalcolo notturno e all'avvio
 # Il profilo cambia lentamente con la stagione: una volta al giorno basta.
 #==================================================================================
@@ -152,6 +221,15 @@
     - condition: state
       entity_id: sun.sun
       state: above_horizon
+    # v6: SC con carica sufficiente, oppure FV che basta da solo per auto e casa.
+    - condition: or
+      conditions:
+        - condition: numeric_state
+          entity_id: sensor.inverter_uflex_battery
+          above: input_number.ricarica_auto_soc_avvio
+        - condition: state
+          entity_id: binary_sensor.ricarica_auto_fv_sufficiente
+          state: "on"
     - condition: template
       value_template: >-
         {{ states('sensor.condensatore_previsione_pieno') in ['raggiungibile', 'pieno']
@@ -169,7 +247,8 @@
       data:
         title: "Ricarica auto riaccesa"
         message: >
-          Il condensatore puo' di nuovo riempirsi anche con l'auto in carica.
+          Il condensatore e' al {{ states('sensor.inverter_uflex_battery') }}% e puo'
+          riempirsi anche con l'auto in carica.
           Nel SC {{ c.livello_kwh | default('?') }} kWh,
           stato {{ states('sensor.condensatore_previsione_pieno') }},
           produzione residua prevista {{ c.produzione_residua_kwh | default('?') }} kWh.

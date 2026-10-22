@@ -1,4 +1,13 @@
-# config_ricarica_auto_6.yaml
+# config_ricarica_auto_7.yaml
+# v7 (22/10/2026): il 22/10 l'auto e' stata riaccesa alle 09:10 con il SC al
+#   26 % e il FV a 1,7 kW: il SC e' sceso al 15 % e alle 10:00 la casa ha
+#   prelevato 3,1 kW dalla rete. Aggiunti (usati da automations_ricarica_auto v6):
+#   - soglie SoC del condensatore (dal BMS): ricarica_auto_soc_avvio e
+#     ricarica_auto_soc_stacco
+#   - FV Potenza Media 10 min
+#   - binary_sensor Ricarica Auto FV Sufficiente: il FV copre da solo auto e
+#     casa (FV medio - casa senza auto >= potenza auto) da 5 minuti
+#   - binary_sensor Condensatore In Scarica: il SC cede piu' di 500 W da 5 minuti
 # v6 (14/10/2026): stessa domanda sia con l'auto accesa sia con l'auto spenta:
 #   "se l'auto carica per i prossimi 15 minuti e poi si stacca, il SC si
 #   riempie ancora?". Con l'auto spenta la simulazione aggiunge nei primi 15
@@ -121,6 +130,16 @@ sensor:
       minutes: 15
     sampling_size: 1000
 
+  # v7: media 10 minuti della produzione FV (W), per non reagire alle nuvole.
+  - platform: statistics
+    name: "FV Potenza Media 10 min"
+    unique_id: fv_potenza_media_10_min
+    entity_id: sensor.inverter_uflex_pv_power
+    state_characteristic: mean
+    max_age:
+      minutes: 10
+    sampling_size: 1000
+
 command_line:
   # Profilo orario sereno (kWh per ora, 24 valori, ora locale). Il JSON e'
   # scritto dallo shell_command calcola_pv_profilo_sereno.
@@ -175,6 +194,28 @@ input_number:
     mode: box
     icon: mdi:car-electric
 
+  # v7: con il SoC sopra questa soglia l'auto si puo' riaccendere anche se il
+  # FV non basta da solo. Da impostare a 60.
+  ricarica_auto_soc_avvio:
+    name: "Ricarica auto - SoC SC per avvio"
+    min: 10
+    max: 100
+    step: 5
+    unit_of_measurement: "%"
+    mode: box
+    icon: mdi:battery-arrow-up
+
+  # v7: sotto questo SoC, se il SC si sta scaricando, l'auto viene staccata
+  # (di giorno). Da impostare a 20.
+  ricarica_auto_soc_stacco:
+    name: "Ricarica auto - SoC SC per stacco"
+    min: 5
+    max: 95
+    step: 5
+    unit_of_measurement: "%"
+    mode: box
+    icon: mdi:battery-arrow-down
+
   ricarica_auto_soglia_sereno:
     name: "Ricarica auto - Soglia valutabilita'"
     min: 0.5
@@ -194,6 +235,28 @@ input_boolean:
     icon: mdi:car-clock
 
 template:
+  # v7: condizioni di avvio e stacco usate da automations_ricarica_auto v6.
+  - binary_sensor:
+      # Il FV copre da solo auto e casa. Casa senza auto = media 15 min casa
+      # meno media 15 min auto; auto = potenza nominale (input_number).
+      - name: "Ricarica Auto FV Sufficiente"
+        unique_id: ricarica_auto_fv_sufficiente
+        icon: mdi:solar-power-variant
+        delay_on: "00:05:00"
+        delay_off: "00:05:00"
+        state: >-
+          {% set fv = states('sensor.fv_potenza_media_10_min') | float(0) / 1000 %}
+          {% set casa = [states('sensor.carico_casa_media_15_min') | float(0) / 1000
+                         - states('sensor.auto_potenza_media_15_min') | float(0), 0] | max %}
+          {{ fv - casa >= states('input_number.ricarica_auto_potenza') | float(3.5) }}
+      # Il SC cede energia. battery_power positivo = scarica (verificato:
+      # negativo = carica, dati 01-08/10/2026).
+      - name: "Condensatore In Scarica"
+        unique_id: condensatore_in_scarica
+        icon: mdi:battery-arrow-down-outline
+        delay_on: "00:05:00"
+        state: "{{ states('sensor.inverter_uflex_battery_power') | float(0) > 500 }}"
+
   - triggers:
       - trigger: time_pattern
         minutes: "/5"
