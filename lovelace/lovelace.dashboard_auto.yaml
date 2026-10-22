@@ -1,5 +1,5 @@
 config:
-  title: Auto v.6
+  title: Auto v.7
   views:
   - max_columns: 2
     path: auto
@@ -69,15 +69,16 @@ config:
         type: tile
         vertical: false
       - content: '**Gestione manuale alzata**: l''automazione non stacca mai la ricarica,
-          anche se il condensatore non arriverebbe al pieno. **Abbassata**: con il
-          sole alto e l''auto oltre 1 kW, se la previsione resta "non raggiungibile"
-          per 5 minuti il contattore viene staccato e viene alzato "Staccata dalla
-          previsione". Quando la previsione torna "raggiungibile" o "pieno" per 10
-          minuti (almeno 20 minuti dopo lo stacco), con il condensatore sopra la soglia
-          di avvio oppure il FV che basta da solo per auto e casa, il contattore viene
-          riacceso. Di giorno l''auto viene staccata anche se il condensatore e''
-          sotto la soglia di stacco e si sta scaricando da 5 minuti. Uno spegnimento
-          fatto a mano o dal distacco carichi non viene mai annullato.'
+          anche se il condensatore non arriverebbe al pieno. **Abbassata**: di notte
+          l''auto viene staccata appena comincia a consumare. Di giorno, con l''auto
+          oltre 1 kW, se la previsione resta "non raggiungibile" per 5 minuti il contattore
+          viene staccato e viene alzato "Staccata dalla previsione". Quando la previsione
+          torna "raggiungibile" o "pieno" per 10 minuti (almeno 20 minuti dopo lo
+          stacco), con il condensatore sopra la soglia di avvio oppure il FV che basta
+          da solo per auto e casa, il contattore viene riacceso. Di giorno l''auto
+          viene staccata anche se il condensatore e'' sotto la soglia di stacco e
+          si sta scaricando da 5 minuti. Per caricare di notte alza la gestione manuale.
+          Uno spegnimento fatto a mano o dal distacco carichi non viene mai annullato.'
         type: markdown
       type: grid
     - cards:

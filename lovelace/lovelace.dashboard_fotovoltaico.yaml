@@ -223,7 +223,7 @@ config:
           rows: auto
         icon_tap_action:
           action: more-info
-        name: Stop scarica (Low Batt)
+        name: Stop scarica (Battery Low)
         tap_action:
           action: more-info
         type: tile
@@ -250,7 +250,7 @@ config:
           rows: auto
         icon_tap_action:
           action: more-info
-        name: Limite potenza FV
+        name: Limite potenza max produzione FV
         tap_action:
           action: more-info
         type: tile
@@ -285,54 +285,17 @@ config:
       - heading: CONDENSATORE
         heading_style: title
         type: heading
-      - graph_span: 48hour
+      - graph_span: 30d
         grid_options:
           columns: 12
           rows: auto
         header:
           show: true
-          title: Tensione max/ora 48h
-        series:
-        - color: '#0072B2'
-          entity: sensor.condensatore_tensione_collegato
-          name: tensione
-          statistics:
-            period: hour
-            type: max
-          stroke_width: 2
-          type: line
-          yaxis_id: volt
-        - color: '#0072B2'
-          entity: sensor.inverter_uflex_battery_voltage
-          name: Absorption
-          show:
-            in_legend: false
-          statistics:
-            period: day
-            type: max
-          stroke_dash: 6
-          stroke_width: 2
-          transform: return parseFloat(hass.states['number.inverter_uflex_battery_absorption'].state);
-          type: line
-          yaxis_id: volt
-        type: custom:apexcharts-card
-        yaxis:
-        - apex_config:
-            title:
-              text: max tens.V
-          decimals: 2
-          id: volt
-      - graph_span: 60d
-        grid_options:
-          columns: 12
-          rows: auto
-        header:
-          show: true
-          title: Tensione max/giorno 60gg
+          title: Tensione max/giorno 30gg
         series:
         - color: '#0072B2'
           entity: sensor.inverter_uflex_battery_voltage
-          name: tensione
+          name: tensione max oggi
           statistics:
             period: day
             type: max
@@ -359,17 +322,16 @@ config:
               text: max tens.V
           decimals: 2
           id: volt
-      - graph_span: 30d
+      - graph_span: 10d
         grid_options:
           columns: 12
           rows: auto
         header:
           show: true
-          title: Tensione min/giorno 30gg
+          title: Tensione min/giorno 10gg
         series:
-        - color: '#0072B2'
-          entity: sensor.inverter_uflex_battery_voltage
-          name: tensione
+        - entity: sensor.inverter_uflex_battery_voltage
+          name: min tensione
           statistics:
             period: day
             type: min
@@ -379,7 +341,7 @@ config:
         yaxis:
         - apex_config:
             title:
-              text: min tens.V
+              text: min tens.,V
           decimals: 2
           id: volt
       - graph_span: 3d

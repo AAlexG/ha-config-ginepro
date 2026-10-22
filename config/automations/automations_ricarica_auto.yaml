@@ -1,5 +1,14 @@
-# automations_ricarica_auto_6.yaml
+# automations_ricarica_auto_8.yaml
 #
+# v8 (22/10/2026): tolta da R3 la condizione del sole. Era superflua: di notte
+#   la previsione non puo' essere "raggiungibile" o "pieno" e il FV non basta,
+#   quindi la riaccensione dipende solo dalle sue condizioni.
+# v7 (22/10/2026): stacchi attivi anche di notte. Se l'auto comincia a
+#   consumare con il sole sotto l'orizzonte, R1 stacca il contattore e alza il
+#   flag di stacco: di notte il FV non c'e' e la previsione non puo' essere
+#   "raggiungibile". R3 la riaccende il mattino dopo con le regole del giorno.
+#   Tolta la condizione del sole anche da R1b. Per caricare di notte: alzare
+#   "Auto Contattore - Gestione Manuale".
 # v6 (22/10/2026): il 22/10 R3 ha riacceso l'auto alle 09:10 con il SC al 26 %
 #   e il FV a 1,7 kW (previsione "raggiungibile": c'era tutto il giorno per
 #   riempirlo). Il SC e' sceso al 15 % e alle 10:00 la casa ha preso 3,1 kW
@@ -39,8 +48,8 @@
 # contattore. "Non raggiungibile" significa: staccando l'auto fra 15 minuti il
 # SC non farebbe piu' in tempo a riempirsi (config_ricarica_auto v5).
 #
-# Solo con il sole sopra l'orizzonte: di notte il SC non puo' riempirsi in
-# nessun caso e staccare l'auto non darebbe nulla al SC.
+# v7: di notte stacca appena l'auto consuma: senza FV l'auto svuoterebbe il
+# SC e poi prenderebbe dalla rete. Si riaccende il mattino dopo (R3).
 #
 # Flag input_boolean.auto_manuale: se e' alzato l'automazione NON interviene.
 # E' il modo per dire "oggi carica comunque". Lo stacco NON alza il flag:
@@ -50,18 +59,15 @@
 - id: ricarica_auto_stacco_sc_non_pieno
   alias: "Ricarica auto - Stacco se il condensatore non arriva al pieno"
   description: >
-    Con l'auto in carica e il sole alto, stacca il contattore auto se la
-    previsione dice da 5 minuti che il condensatore non raggiungera' il pieno
-    prima della fine del surplus FV. Non interviene con auto_manuale alzato.
+    Con l'auto in carica stacca il contattore: di giorno se la previsione dice
+    da 5 minuti che il condensatore non raggiungera' il pieno, di notte
+    sempre. Non interviene con auto_manuale alzato.
   mode: single
   max_exceeded: silent
   triggers:
     - trigger: time_pattern
       minutes: "/5"
   conditions:
-    - condition: state
-      entity_id: sun.sun
-      state: above_horizon
     - condition: state
       entity_id: input_boolean.auto_manuale
       state: "off"
@@ -72,10 +78,17 @@
     - condition: numeric_state
       entity_id: sensor.solo_auto_contattore_potenza_di_fase_a
       above: 1
-    - condition: state
-      entity_id: sensor.condensatore_previsione_pieno
-      state: non raggiungibile
-      for: "00:05:00"
+    # v7: di giorno serve la previsione negativa da 5 minuti; di notte basta
+    # che l'auto consumi.
+    - condition: or
+      conditions:
+        - condition: state
+          entity_id: sun.sun
+          state: below_horizon
+        - condition: state
+          entity_id: sensor.condensatore_previsione_pieno
+          state: non raggiungibile
+          for: "00:05:00"
   actions:
     - variables:
         c: "{{ state_attr('sensor.condensatore_previsione_pieno', 'calcolo') or {} }}"
@@ -92,14 +105,21 @@
       data:
         title: "Ricarica auto staccata"
         message: >
-          Il condensatore non arriverebbe al pieno con l'auto in carica.
-          Nel SC {{ c.livello_kwh | default('?') }} kWh, ne mancano {{ c.energia_mancante_kwh | default('?') }} (margine compreso);
-          staccando l'auto fra 15 minuti ne entrerebbero {{ c.energia_sc_prevista_kwh | default('?') }} kWh
-          prima della fine del surplus ({{ c.fine_surplus or 'nessun surplus' }}).
-          Produzione di oggi al {{ ((c.scala | default(0)) * 100) | round(0) }}% del sereno,
-          residua prevista {{ c.produzione_residua_kwh | default('?') }} kWh, casa senza auto {{ c.carico_kw | default('?') }} kW, auto {{ c.auto_kw | default('?') }} kW.
-          Si riaccende da sola quando il SC torna in grado di riempirsi.
-          Per caricare subito: alza "Auto Contattore - Gestione Manuale" e riaccendi.
+          {% if is_state('sun.sun', 'below_horizon') %}
+          L'auto ha cominciato a caricare di notte: senza FV avrebbe svuotato
+          il condensatore (ora al {{ states('sensor.inverter_uflex_battery') }}%) e poi preso dalla rete.
+          Si riaccende da sola domattina. Per caricare stanotte alza
+          "Auto Contattore - Gestione Manuale" e riaccendi.
+          {% else %}
+            Il condensatore non arriverebbe al pieno con l'auto in carica.
+            Nel SC {{ c.livello_kwh | default('?') }} kWh, ne mancano {{ c.energia_mancante_kwh | default('?') }} (margine compreso);
+            staccando l'auto fra 15 minuti ne entrerebbero {{ c.energia_sc_prevista_kwh | default('?') }} kWh
+            prima della fine del surplus ({{ c.fine_surplus or 'nessun surplus' }}).
+            Produzione di oggi al {{ ((c.scala | default(0)) * 100) | round(0) }}% del sereno,
+            residua prevista {{ c.produzione_residua_kwh | default('?') }} kWh, casa senza auto {{ c.carico_kw | default('?') }} kW, auto {{ c.auto_kw | default('?') }} kW.
+            Si riaccende da sola quando il SC torna in grado di riempirsi.
+            Per caricare subito: alza "Auto Contattore - Gestione Manuale" e riaccendi.
+          {% endif %}
         data:
           tag: ricarica_auto_sc
           priority: high
@@ -109,8 +129,8 @@
 # R1b. STACCO PER CONDENSATORE QUASI VUOTO (v6)
 #
 # Con il SC sotto la soglia di stacco E in scarica da 5 minuti il FV non basta:
-# l'auto svuoterebbe il SC e poi prenderebbe dalla rete. Solo di giorno, come R1: la ricarica serale o
-# notturna decisa da te non viene toccata. Il flag di stacco permette a R3 di
+# l'auto svuoterebbe il SC e poi prenderebbe dalla rete. Dalla v7 vale anche
+# di notte, come R1. Il flag di stacco permette a R3 di
 # riaccendere quando il SoC torna sopra la soglia di avvio.
 #==================================================================================
 - id: ricarica_auto_stacco_sc_scarico
@@ -124,9 +144,6 @@
     - trigger: time_pattern
       minutes: "/5"
   conditions:
-    - condition: state
-      entity_id: sun.sun
-      state: above_horizon
     - condition: state
       entity_id: input_boolean.auto_manuale
       state: "off"
@@ -194,8 +211,9 @@
 # riaccendendola ora R1 non scatterebbe. Isteresi:
 #   - stato favorevole da almeno 10 minuti (lo stacco richiede 5 minuti)
 #   - almeno 20 minuti dall'ultimo stacco
-# Solo con il sole sopra l'orizzonte: di notte il contattore resta spento e
-# il flag resta alzato, quindi l'auto puo' ripartire il mattino dopo.
+# v8: nessuna condizione sul sole. Di notte la previsione non e' mai
+# "raggiungibile" o "pieno", quindi il contattore resta spento con il flag
+# alzato e l'auto riparte appena le condizioni tornano vere.
 #==================================================================================
 - id: ricarica_auto_riaccensione_condizioni_ok
   alias: "Ricarica auto - Riaccensione quando il condensatore puo' riempirsi"
@@ -218,9 +236,6 @@
     - condition: state
       entity_id: switch.solo_auto_contattore_interruttore
       state: "off"
-    - condition: state
-      entity_id: sun.sun
-      state: above_horizon
     # v6: SC con carica sufficiente, oppure FV che basta da solo per auto e casa.
     - condition: or
       conditions:
