@@ -1,5 +1,5 @@
 config:
-  title: consumi v.57
+  title: consumi v.58
   views:
   - cards: []
     header: {}
@@ -845,6 +845,21 @@ config:
         stat_types:
         - max
         type: statistics-graph
+      - heading: "PUN \u20AC/kWh mese (bolletta o fine mese)"
+        heading_style: subtitle
+        type: heading
+      - chart_type: bar
+        days_to_show: 730
+        entities:
+        - entity: prezzi:pun_mese
+          name: PUN
+        grid_options:
+          columns: 12
+          rows: auto
+        period: month
+        stat_types:
+        - mean
+        type: statistics-graph
       type: grid
     - cards:
       - heading: ANNI
@@ -1557,6 +1572,21 @@ config:
         stat_types:
         - change
         title: Gas, Euro/mese
+        type: statistics-graph
+      - heading: "PSV \u20AC/Smc mese (ARERA)"
+        heading_style: subtitle
+        type: heading
+      - chart_type: bar
+        days_to_show: 730
+        entities:
+        - entity: prezzi:psv_mese
+          name: PSV
+        grid_options:
+          columns: 12
+          rows: auto
+        period: month
+        stat_types:
+        - mean
         type: statistics-graph
       - chart_type: bar
         days_to_show: 730

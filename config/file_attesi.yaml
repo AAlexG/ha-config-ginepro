@@ -1,4 +1,6 @@
-# file_attesi_16.yaml
+# file_attesi_17.yaml
+# v17 (24/10/2026): nuovo prezzi_mensili.py (PSV ARERA, PUN mensile);
+#   automations_gas.yaml 3 automazioni.
 # v16 (23/10/2026): nuovo bollette.py (lettura bollette PDF, usato da
 #   installa.py) e la libreria pypdf in lib/pypdf.
 # v15 (23/10/2026): audit clima 23/10. scripts.yaml 28 script (nuovo
@@ -49,7 +51,7 @@ file:
   automations/automations_deumidificatori.yaml: 4
   automations/automations_elettricita.yaml: 6
   automations/automations_fotovoltaico.yaml: 6
-  automations/automations_gas.yaml: 1
+  automations/automations_gas.yaml: 3
   automations/automations_irrigazione.yaml: 9
   automations/automations_lavatrice.yaml: 1
   automations/automations_luci.yaml: 5
@@ -87,6 +89,7 @@ file:
   controllo_file.py:
   installa.py:
   bollette.py:
+  prezzi_mensili.py:
   lib/pypdf/__init__.py:
   lavatrice_programmi.py:
   pv_giorni_senza_sole.py:

@@ -1,4 +1,11 @@
-# bollette_2.py
+# bollette_3.py
+# v3 (24/10/2026): Plenitude restituisce anche "indici" (per mese: PUN dal
+#   Corrispettivo Luce Index / 1,1 e Corrispettivo Gas Index in EUR/Smc,
+#   dalla tabella "Mese di riferimento" del box offerta) e "gas_base"
+#   (prezzo gas a consumo, Gas Index e mese dell'ultimo mese fatturato).
+#   Il prezzo gas NON e' piu' fra i parametri: input_number.gas_prezzo_mc
+#   lo scrive ora sensor.gas_prezzo_smc_variabile (config_gas), che parte
+#   da gas_base e segue il PSV mensile ARERA (prezzi_mensili.py).
 # v2 (23/10/2026): IRETI con riconguaglio anno solare (escluso, righe senza
 #   date) e restituzione di acconti su mesi precedenti al periodo (ripartita
 #   sui suoi giorni, mesi precedenti come correzioni); Plenitude in formato
@@ -230,9 +237,41 @@ def _plenitude(righe, tutto):
         else:
             pg = _prezzo_gas(in_ultimo, iva_pct)
             if pg:
-                out["parametri"]["input_number.gas_prezzo_mc"] = pg
+                out["gas_base"] = {"prezzo": pg, "mese": ultimo}
             else:
                 out["note"].append("prezzo gas non aggiornato (nessun consumo nell'ultimo mese)")
+    out["indici"] = _indici(righe)
+    if "gas_base" in out:
+        ig = out["indici"].get(out["gas_base"]["mese"], {}).get("gas_indice")
+        if ig:
+            out["gas_base"]["indice"] = ig
+        else:
+            del out["gas_base"]
+            out["note"].append("Gas Index dell'ultimo mese non trovato")
+    return out
+
+
+MESI_NOMI = {n.capitalize(): i + 1 for i, n in enumerate(MESI)}
+RE_IND_LUCE = re.compile(r"(?:^| )([A-Z][a-z]+) (\d{4}) (\d+,\d+) €/kWh (\d+,\d+) €/kWh (\d+,\d+) €/kWh$")
+RE_IND_GAS = re.compile(r"(?:^| )([A-Z][a-z]+) (\d{4}) (\d+,\d+) €/smc (\d+,\d+) €/smc$")
+
+
+def _indici(righe):
+    """Tabelle "Mese di riferimento" del box offerta: per ogni mese PUN
+    (Corrispettivo Luce Index * 1,1 diviso 1,1) e Corrispettivo Gas Index,
+    in EUR IVA esclusa."""
+    out = {}
+    for r in righe:
+        r = r.strip()
+        m = RE_IND_LUCE.search(r)
+        if m and m[1] in MESI_NOMI:
+            k = f"{m[2]}-{MESI_NOMI[m[1]]:02d}"
+            out.setdefault(k, {})["pun"] = round(num(m[3]) / 1.1, 6)
+            continue
+        m = RE_IND_GAS.search(r)
+        if m and m[1] in MESI_NOMI:
+            k = f"{m[2]}-{MESI_NOMI[m[1]]:02d}"
+            out.setdefault(k, {})["gas_indice"] = num(m[3])
     return out
 
 

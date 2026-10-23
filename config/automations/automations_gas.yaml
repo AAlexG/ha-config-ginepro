@@ -1,4 +1,10 @@
-# automations_gas_1.yaml
+# automations_gas_2.yaml
+#
+# v2 (24/10/2026): prezzo gas che segue il PSV (config_gas_3).
+#   gas_prezzi_mensili_aggiorna: ogni mattina e all'avvio aggiorna PSV/PUN
+#   (script.prezzi_mensili_aggiorna); gas_prezzo_aggiorna_da_psv: copia
+#   sensor.gas_prezzo_smc_variabile in input_number.gas_prezzo_mc, come la
+#   luce con elettricita_prezzo_aggiorna_da_pun.
 #
 # Gas: accumulo del consumo stimato della caldaia.
 # File creato il 30/09/2026 dalla riorganizzazione "un argomento = automations_X + config_X".
@@ -62,3 +68,46 @@
             entity_id: input_number.caldaia_gas_totale_acc
           data:
             value: "{{ (precedente + (q_min + (q_max - q_min) * (mod / 100)) / 60) | round(4) }}"
+
+#==================================================================================
+# PREZZI MENSILI – PSV ARERA e PUN (v2)
+# ARERA pubblica il PSV del mese entro i primi 2 giorni lavorativi del mese
+# dopo: un controllo al giorno basta. Anche all'avvio di HA.
+#==================================================================================
+- id: gas_prezzi_mensili_aggiorna
+  alias: "Gas – aggiorna prezzi mensili (PSV, PUN)"
+  mode: single
+  triggers:
+    - trigger: time
+      at: "06:17:00"
+    - trigger: homeassistant
+      event: start
+  actions:
+    - delay: "00:01:00"
+    - action: script.prezzi_mensili_aggiorna
+
+#==================================================================================
+# GAS – prezzo a consumo da PSV (v2)
+# Copia sensor.gas_prezzo_smc_variabile in input_number.gas_prezzo_mc, letto
+# da tutti i sensori di costo gas e dalla caldaia.
+#==================================================================================
+- id: gas_prezzo_aggiorna_da_psv
+  alias: "Gas – aggiorna prezzo m³ da PSV"
+  mode: single
+  triggers:
+    - trigger: state
+      entity_id: sensor.gas_prezzo_smc_variabile
+      not_to:
+        - unavailable
+        - unknown
+    - trigger: homeassistant
+      event: start
+  conditions:
+    - condition: template
+      value_template: "{{ states('sensor.gas_prezzo_smc_variabile') | float(0) > 0 }}"
+  actions:
+    - action: input_number.set_value
+      target:
+        entity_id: input_number.gas_prezzo_mc
+      data:
+        value: "{{ states('sensor.gas_prezzo_smc_variabile') | float(0) | round(4) }}"

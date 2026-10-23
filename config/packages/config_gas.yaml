@@ -1,4 +1,15 @@
-# config_gas_2.yaml
+# config_gas_3.yaml
+# v3 (24/10/2026): prezzo gas a consumo che segue il mercato.
+#   sensor.gas_prezzo_smc_variabile = prezzo dell'ultima bolletta Plenitude
+#   + variazione del Corrispettivo Gas Index stimata dal PSV mensile ARERA
+#   (Gas Index x (PSV ultimo / PSV del mese della bolletta - 1)), IVA 22%.
+#   Verificato sulle bollette: Gas Index Plenitude / PSV ARERA = 1,0288 a
+#   giugno e a luglio 2026. Il PSV del mese in corso si conosce solo a mese
+#   finito: nel mese si usa l'ultimo pubblicato.
+#   automations_gas copia il sensore in input_number.gas_prezzo_mc (come la
+#   luce); i quattro valori di partenza li scrive script.prezzi_mensili_aggiorna
+#   da prezzi_mensili.py (ARERA + bollette in SORGENTI/BOLLETTE), che crea
+#   anche le statistiche mensili prezzi:pun_mese e prezzi:psv_mese.
 # v2 (23/10/2026): gas_prezzo_mc e gas_quota_fissa_mese aggiornati in
 #   automatico dall'importazione delle bollette PDF (installa.py +
 #   bollette.py). Solo commenti.
@@ -42,6 +53,24 @@ template:
         icon: mdi:meter-gas
 
 
+      # v3: prezzo a consumo che segue il PSV (vedi intestazione).
+      - name: "Gas Prezzo Smc Variabile"
+        unique_id: "gas_prezzo_smc_variabile"
+        unit_of_measurement: "€/m³"
+        state_class: measurement
+        icon: mdi:currency-eur
+        availability: >-
+          {{ states('input_number.gas_prezzo_mc_bolletta') | float(0) > 0
+             and states('input_number.gas_indice_smc') | float(0) > 0
+             and states('input_number.gas_psv_smc') | float(0) > 0
+             and states('input_number.gas_psv_rif_smc') | float(0) > 0 }}
+        state: >-
+          {% set base = states('input_number.gas_prezzo_mc_bolletta') | float(0) %}
+          {% set indice = states('input_number.gas_indice_smc') | float(0) %}
+          {% set psv = states('input_number.gas_psv_smc') | float(0) %}
+          {% set rif = states('input_number.gas_psv_rif_smc') | float(0) %}
+          {{ (base + indice * (psv / rif - 1) * 1.22) | round(4) }}
+
       - name: "Gas Oggi Euro"
         unique_id: "gas_oggi_euro"
         state: >-
@@ -68,6 +97,43 @@ template:
         icon: mdi:currency-eur
 
 input_number:
+
+  # --- v3: prezzo gas da PSV (scritti da script.prezzi_mensili_aggiorna) ---
+  gas_prezzo_mc_bolletta:
+    name: "Gas – Prezzo a consumo ultima bolletta €/m³"
+    min: 0
+    max: 5
+    step: 0.0001
+    unit_of_measurement: "€/m³"
+    mode: box
+    icon: mdi:receipt-text-outline
+
+  gas_indice_smc:
+    name: "Gas – Gas Index ultima bolletta €/Smc"
+    min: 0
+    max: 5
+    step: 0.00000001
+    unit_of_measurement: "€/Smc"
+    mode: box
+    icon: mdi:chart-line
+
+  gas_psv_smc:
+    name: "Gas – PSV ARERA ultimo mese €/Smc"
+    min: 0
+    max: 5
+    step: 0.000001
+    unit_of_measurement: "€/Smc"
+    mode: box
+    icon: mdi:chart-line
+
+  gas_psv_rif_smc:
+    name: "Gas – PSV ARERA mese ultima bolletta €/Smc"
+    min: 0
+    max: 5
+    step: 0.000001
+    unit_of_measurement: "€/Smc"
+    mode: box
+    icon: mdi:chart-line
 
   # ============================================================
   # TOTALI STORICI – aggiornati dallo script totali_consumi.py
@@ -100,6 +166,8 @@ input_number:
     mode: box
     icon: mdi:meter-gas
 
+  # v3: scritto da automations_gas (gas_prezzo_aggiorna_da_psv) con il valore
+  # di sensor.gas_prezzo_smc_variabile; la bolletta scrive gas_prezzo_mc_bolletta.
   # Prezzo marginale a consumo (Corrispettivo Gas Index + contributo +
   # rete + oneri + accisa + addizionale allo scaglione piu' alto raggiunto,
   # IVA 22% inclusa; C = 1, Smc = m³). Aggiornata in automatico dall'importazione delle bollette PDF
@@ -173,3 +241,50 @@ utility_meter:
     name: Gas Caldaia Mensile
     source: input_number.caldaia_gas_totale_acc
     cycle: monthly
+
+# --- v3: prezzi mensili (ARERA PSV, PUN) ---
+shell_command:
+  prezzi_mensili: "python3 /config/prezzi_mensili.py"
+
+script:
+  # Legge prezzi_mensili.py e scrive i quattro valori di partenza del prezzo
+  # gas. Chiamato da automations_gas (ogni mattina e all'avvio) e da
+  # installa_e_riavvia dopo l'importazione di bollette.
+  prezzi_mensili_aggiorna:
+    alias: "Prezzi mensili – aggiorna PSV e PUN"
+    icon: mdi:chart-line
+    mode: single
+    max_exceeded: silent
+    sequence:
+      - action: shell_command.prezzi_mensili
+        response_variable: r
+      - variables:
+          p: >-
+            {%- if r.returncode == 0 -%}{{ r.stdout | from_json }}
+            {%- else -%}{{ {'errori': [(r.stderr or r.stdout or 'nessun output')[-200:]]} }}
+            {%- endif -%}
+          valori:
+            input_number.gas_prezzo_mc_bolletta: "{{ p.gas_prezzo_bolletta | default(0) }}"
+            input_number.gas_indice_smc: "{{ p.gas_indice_bolletta | default(0) }}"
+            input_number.gas_psv_smc: "{{ p.psv_smc | default(0) }}"
+            input_number.gas_psv_rif_smc: "{{ p.psv_rif_smc | default(0) }}"
+      - repeat:
+          for_each: "{{ valori | dictsort | list }}"
+          sequence:
+            - if:
+                - "{{ repeat.item[1] | float(0) > 0 }}"
+              then:
+                - action: input_number.set_value
+                  continue_on_error: true
+                  target:
+                    entity_id: "{{ repeat.item[0] }}"
+                  data:
+                    value: "{{ repeat.item[1] | float(0) }}"
+      - if:
+          - "{{ p.errori | default([]) | count > 0 }}"
+        then:
+          - action: persistent_notification.create
+            data:
+              title: "Prezzi mensili"
+              notification_id: prezzi_mensili
+              message: "{{ p.errori | join('; ') }}"

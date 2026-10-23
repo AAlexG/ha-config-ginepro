@@ -1,4 +1,7 @@
-# config_sistema_11.yaml
+# config_sistema_12.yaml
+# v12 (24/10/2026): dopo l'importazione di bollette anche
+# script.prezzi_mensili_aggiorna (config_gas): il prezzo gas riparte
+# dall'ultima bolletta archiviata.
 # v11 (23/10/2026): installa_e_riavvia non chiama piu' homeassistant.reload_all
 # da se stesso. Quando installava una nuova versione di questo package, il
 # Riavvio rapido ricaricava anche lo script in esecuzione: lo script veniva
@@ -187,6 +190,8 @@ script:
                 value_template: "{{ cr.bollette | default([]) | count > 0 }}"
             then:
               - action: script.aggiorna_totali_consumi
+                continue_on_error: true
+              - action: script.prezzi_mensili_aggiorna
                 continue_on_error: true
           - variables:
               testo: >-
