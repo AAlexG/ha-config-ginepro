@@ -1,4 +1,18 @@
-# totali_consumi_14.py
+# totali_consumi_16.py
+# v16 (23/10/2026): statistiche cumulate anche per elettricita' EUR, gas EUR e
+#   rete/GSE EUR (rilevato e bolletta). I grafici mensili della plancia
+#   Consumi passano tutti a queste statistiche con stat_types change: prima
+#   mostravano il MAX del sensore mensile, che il giorno 1 riportava il
+#   totale del mese precedente.
+# v15 (23/10/2026): il rilevato mensile (sensor.*_mese_*) non conta piu'
+#   l'ora 00:00-01:00 del giorno 1. Le statistiche orarie includono il valore
+#   in vigore all'inizio dell'ora, cioe' il totale del mese PRIMA
+#   dell'azzeramento: il MAX del mese nuovo diventava il totale del mese
+#   precedente (acqua: settembre 2026 = 32,65 m3 come agosto, vero 24,2).
+#   Nessun consumo si perde: nella prima ora il contatore del mese e' a zero
+#   (acqua) o quel consumo ricompare nel massimo delle ore successive
+#   (utility_meter). Le serie input_number.bolletta_* (una riga al giorno 1
+#   alle 00:00) restano lette come prima.
 # Calcola totali storici rilevato/bollette dalla tabella statistics del DB HA.
 # Stampa un JSON su stdout con i valori, letto dall'automazione
 # calcola_totali_consumi che aggiorna gli helper input_number della plancia.
@@ -50,6 +64,7 @@ SELECT strftime('%Y-%m', datetime(start_ts, 'unixepoch', 'localtime')) AS mese,
        IFNULL(MAX(max), 0) AS v
 FROM statistics
 WHERE metadata_id=(SELECT id FROM statistics_meta WHERE statistic_id=?)
+  AND NOT (? = 1 AND strftime('%d %H', datetime(start_ts, 'unixepoch', 'localtime')) = '01 00')
 GROUP BY mese
 HAVING v > 0
 """
@@ -84,7 +99,11 @@ COSTO_IMPIANTO = 25500.0
 
 def serie_mensile(cur, entity):
     """dict {mese: valore} dei soli mesi con valore > 0."""
-    rows = cur.execute(MENSILE_SQL, (entity,)).fetchall()
+    # v15: per i sensori rilevati si salta la prima ora del mese (riporto
+    # del totale del mese precedente); le bollette iniettate stanno proprio
+    # in quell'ora e si leggono tutte.
+    salta = 1 if entity.startswith("sensor.") else 0
+    rows = cur.execute(MENSILE_SQL, (entity, salta)).fetchall()
     return {mese: float(v) for mese, v in rows}
 
 
@@ -123,6 +142,13 @@ CUMULATI = [
     ("acqua_mc_bolletta",   "input_number.bolletta_acqua_mc",    "m³",  "volume", "Acqua m³ bolletta cumulato"),
     ("acqua_euro_rilevato", "sensor.acqua_mese_euro",            "€",   None,     "Acqua € rilevato cumulato"),
     ("acqua_euro_bolletta", "input_number.bolletta_acqua_euro",  "€",   None,     "Acqua € bolletta cumulato"),
+    # v16
+    ("elec_euro_rilevato",  "sensor.elettricita_mese_euro",      "€",   None,     "Elettricità € rilevato cumulato"),
+    ("elec_euro_bolletta",  "input_number.bolletta_elec_euro",   "€",   None,     "Elettricità € bolletta cumulato"),
+    ("gas_euro_rilevato",   "sensor.gas_mese_euro",              "€",   None,     "Gas € rilevato cumulato"),
+    ("gas_euro_bolletta",   "input_number.bolletta_gas_euro",    "€",   None,     "Gas € bolletta cumulato"),
+    ("gse_euro_stimato",    "sensor.a_rete_mese_euro",           "€",   None,     "Rete € stimato cumulato"),
+    ("gse_euro_bolletta",   "input_number.bolletta_gse_euro",    "€",   None,     "GSE € pagato cumulato"),
 ]
 CUMULATI_SOURCE = "totali_consumi"
 

@@ -1,6 +1,12 @@
 #!/usr/bin/env python3
-# installa_6.py
+# installa_7.py
 #
+# v7 (23/10/2026): una bolletta gia' importata non si reimporta. Prima la
+#   stessa fattura copiata due volte (o gia' in SORGENTI/BOLLETTE) veniva
+#   salvata di nuovo e le sue correzioni dei mesi precedenti si sommavano
+#   una seconda volta all'archivio (IRETI 11502600027477, 09/2025 +4,9 m3
+#   contato due volte il 23/10). Ora resta in da_installare fra gli
+#   scartati con "gia' importata".
 # v6 (23/10/2026): bollette IRETI con mesi prima del periodo fatturato
 #   (restituzione di acconti, consumi reali che partono prima): quei mesi
 #   sono correzioni del valore gia' in archivio (meno acconto, piu' reale),
@@ -375,10 +381,17 @@ def prepara():
             except Exception as e:
                 scartati.append(f"{nome}: {e}")
                 continue
+            arch_b = f"{dati['fornitore']}_{dati['fattura']}.pdf"
+            if (arch_b in viste
+                    or os.path.exists(os.path.join(ARCH, sotto, arch_b))):
+                scartati.append(f"{nome}: bolletta {dati['fornitore']} "
+                                f"{dati['fattura']} gia' importata, va tolta")
+                continue
+            viste.add(arch_b)
             fatti.append({"nome": nome, "tipo": "bolletta", "base": base, "v": 0,
                           "prima": None, "dest": None, "copia": None,
                           "sotto": sotto,
-                          "arch": f"{dati['fornitore']}_{dati['fattura']}.pdf",
+                          "arch": arch_b,
                           "riavvio": "nessuno",
                           "motivo": "", "dati": dati})
             continue
