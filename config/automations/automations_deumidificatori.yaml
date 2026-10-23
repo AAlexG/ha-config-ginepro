@@ -1,4 +1,7 @@
-# automations_deumidificatori_9.yaml
+# automations_deumidificatori_10.yaml
+# v10 (23/10/2026): i due controlli FV non riaccendono il deumidificatore
+#   staccato dal distacco carichi (input_boolean.distacco_deum_cantina /
+#   _armadio), che non alza piu' i flag manuali.
 #
 # ALLARME SERBATOIO PIENO – DEUMIDIFICATORI
 #
@@ -106,7 +109,8 @@
 # criterio fotovoltaico (comportamento precedente): un sensore che sparisce non
 # deve bloccare la deumidificazione.
 #
-# Rispetta input_boolean.deumidificatore_cantina_manuale.
+# Rispetta input_boolean.deumidificatore_cantina_manuale e lo stato di
+# distacco input_boolean.distacco_deum_cantina (v10).
 #==================================================================================
 - id: deumidificatore_cantina_controllo
   alias: "Deumidificatore Cantina – Controllo Periodico FV"
@@ -121,6 +125,9 @@
   conditions:
     - condition: state
       entity_id: input_boolean.deumidificatore_cantina_manuale
+      state: "off"
+    - condition: state
+      entity_id: input_boolean.distacco_deum_cantina
       state: "off"
   actions:
     - variables:
@@ -156,7 +163,8 @@
 # macchina lavora finche' e' alimentata, quindi l'allarme serbatoio pieno
 # qui sopra vale anche per questo deumidificatore. Nessun controllo di
 # umidita' da HA: solo produzione FV.
-# Rispetta input_boolean.deumidificatore_armadio_manuale.
+# Rispetta input_boolean.deumidificatore_armadio_manuale e lo stato di
+# distacco input_boolean.distacco_deum_armadio (v10).
 #==================================================================================
 - id: deumidificatore_armadio_controllo
   alias: "Deumidificatore armadio  – Controllo Periodico FV"
@@ -170,6 +178,9 @@
   conditions:
     - condition: state
       entity_id: input_boolean.deumidificatore_armadio_manuale
+      state: "off"
+    - condition: state
+      entity_id: input_boolean.distacco_deum_armadio
       state: "off"
   actions:
     - variables:

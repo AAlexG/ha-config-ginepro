@@ -1,4 +1,8 @@
-# config_elettricita_19.yaml
+# config_elettricita_20.yaml
+# v20 (23/10/2026): audit clima A9. Nuovi input_boolean distacco_auto,
+#   distacco_pompa, distacco_deum_cantina, distacco_deum_armadio: stato del
+#   distacco carichi, separato dai flag manuali (che il distacco non tocca
+#   piu'). Commento di auto_manuale aggiornato.
 # v19 (16/10/2026): Altri Apparecchi Oggi, mezzanotte. Gli utility meter
 #   giornalieri si azzerano alle 00:00:00, il carico giornaliero dell'inverter
 #   2-3 minuti dopo (aggiorna ogni 10-15 min). In quei minuti Altri valeva il
@@ -276,17 +280,38 @@ template:
 input_boolean:
 
   # --- GESTIONE MANUALE CONTATTORE AUTO ---
-  # Lucchetto del contattore di ricarica auto (config_elettricita_12).
-  # Oggi nessuna automazione comanda switch.solo_auto_contattore_interruttore,
-  # quindi il flag non blocca nulla: serve a rendere esplicito che il contattore
-  # e' nello stato scelto a mano ed e' il presidio per automatismi futuri.
-  # Viene alzato in automatico dal distacco carichi (automations_elettricita) quando
-  # l'auto viene staccata per prelievo di rete oltre soglia. Lo abbassa solo
-  # l'utente; promemoria alle 10:00 e 22:00 (flag_manuali_promemoria).
+  # Lucchetto del contattore di ricarica auto (config_elettricita_12): con il
+  # flag alzato le automazioni di ricarica (automations_ricarica_auto) non
+  # toccano switch.solo_auto_contattore_interruttore.
+  # Lo alza e lo abbassa solo l'utente (v20: il distacco carichi usa
+  # input_boolean.distacco_auto); promemoria alle 10:00 e 22:00
+  # (flag_manuali_promemoria).
   # Nessuna chiave initial: al riavvio HA ripristina lo stato salvato.
   auto_manuale:
     name: "Auto Contattore - Gestione Manuale"
     icon: mdi:hand-back-right
+
+  # --- STATI DEL DISTACCO CARICHI (v20, audit clima A9) ---
+  # Non sono flag manuali: li accende carichi_distacco_prelievo_alto quando
+  # stacca il carico e li spegne carichi_distacco_rilascio quando il prelievo
+  # e' sceso abbastanza (o l'utente dalla plancia Manual Settings). Finche'
+  # sono accesi le automazioni di quel carico non lo riaccendono.
+  # Nessuna chiave initial: al riavvio HA ripristina lo stato salvato.
+  distacco_auto:
+    name: "Distacco carichi - Auto"
+    icon: mdi:car-off
+
+  distacco_pompa:
+    name: "Distacco carichi - Pompa di calore"
+    icon: mdi:heat-pump-outline
+
+  distacco_deum_cantina:
+    name: "Distacco carichi - Deumidificatore cantina"
+    icon: mdi:air-humidifier-off
+
+  distacco_deum_armadio:
+    name: "Distacco carichi - Deumidificatore armadio"
+    icon: mdi:air-humidifier-off
 
 input_number:
 

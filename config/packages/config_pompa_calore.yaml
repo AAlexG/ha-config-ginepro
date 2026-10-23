@@ -1,4 +1,21 @@
-# config_pompa_calore_6.yaml
+# config_pompa_calore_7.yaml
+# v7 (23/10/2026): audit clima 23/10.
+#   A4: potenza prodotta con il segno secondo il modo pompa (Heat: mandata -
+#     ritorno, Cool: ritorno - mandata). Prima la differenza era in valore
+#     assoluto e lo sbrinamento (ritorno piu' caldo della mandata in Heat)
+#     veniva contato come calore prodotto, gonfiando COP, risparmio inverno e
+#     la convenienza della pompa nella scelta della fonte. Il calore tolto
+#     durante lo sbrinamento va nel nuovo input_number.panasonic_sbrinamento_debito
+#     e viene scalato dalla produzione successiva (panasonic_accumulo_energia).
+#   A5: nuovo sensor.panasonic_cop_stimato, retta COP vs temperatura esterna
+#     (4 nuovi input_number panasonic_cop_*), usato da pdc_costo_kwh_termico
+#     quando il COP delle ultime 6 ore non e' disponibile.
+#   A6: nuovo input_boolean.antigelo_avviso_sensore (stato interno
+#     dell'antigelo: avviso "sensore sala assente" gia' inviato).
+#   A8: rimossi panasonic_pid_errore_prec e panasonic_pid_heat_errore_prec:
+#     il derivativo dei due PID e' calcolato sulla variazione della
+#     temperatura misurata (sensori di variazione in config_clima).
+#   C: modi pompa letti per contenuto ('Heat' / 'Cool' nel nome).
 # v6 (21/10/2026): base del PID heating dalla temperatura esterna.
 #   Nuovi input_number panasonic_heat_base_text_fredda/_mite e
 #   panasonic_heat_base_mandata_fredda/_mite (retta mandata base vs T esterna,
@@ -103,6 +120,28 @@ template:
           {{ (states('sensor.panasonic_prodotta_oggi') | float(0)
               / states('sensor.panasonic_consumata_oggi') | float(1)) | round(2) }}
 
+      # v7 (A5): COP atteso in riscaldamento in funzione della temperatura
+      # esterna, retta fra due punti (T esterna, COP) limitata agli estremi.
+      # Serve alla scelta della fonte quando la pompa e' ferma da oltre 6 ore
+      # e sensor.panasonic_cop_6h non e' disponibile (prima: COP di riserva
+      # fisso). I due punti si tarano dai COP giornalieri registrati.
+      - name: "Panasonic COP Stimato"
+        unique_id: "panasonic_cop_stimato"
+        state_class: measurement
+        icon: mdi:chart-bell-curve
+        availability: >-
+          {{ has_value('sensor.hp1000se_pro_pro_v1_6_4_outdoor_temperature')
+             and states('input_number.panasonic_cop_text_mite') | float(0)
+                 > states('input_number.panasonic_cop_text_fredda') | float(0) }}
+        state: >-
+          {% set t = states('sensor.hp1000se_pro_pro_v1_6_4_outdoor_temperature') | float(0) %}
+          {% set t1 = states('input_number.panasonic_cop_text_fredda') | float(0) %}
+          {% set c1 = states('input_number.panasonic_cop_fredda') | float(3) %}
+          {% set t2 = states('input_number.panasonic_cop_text_mite') | float(15) %}
+          {% set c2 = states('input_number.panasonic_cop_mite') | float(3) %}
+          {% set tc = [[t, t1] | max, t2] | min %}
+          {{ (c1 + (tc - t1) * (c2 - c1) / (t2 - t1)) | round(2) }}
+
   # v6: compressore in moto (frequenza > 0). delay_off 60 s: un campione a 0
   # isolato non conta come arresto e riavvio.
   - binary_sensor:
@@ -117,6 +156,9 @@ template:
       # Potenza termica prodotta: calcolata da flow e delta T
       # Usa Main_Outlet_Temp (mandata) e Main_Inlet_Temp (ritorno)
       # Formula: flow (l/min) * delta_T (K) * 69.77 (W per l/min per K per acqua)
+      # v7 (A4): con il segno secondo il modo. Heat: mandata - ritorno.
+      # Cool: ritorno - mandata. Negativa = calore tolto all'impianto nel modo
+      # corrente (in Heat lo sbrinamento). Modo diverso da Heat/Cool: 0.
       - name: "Panasonic Potenza Prodotta Calcolata"
         unique_id: "panasonic_potenza_prodotta_calcolata"
         unit_of_measurement: "W"
@@ -124,11 +166,13 @@ template:
         state_class: measurement
         icon: mdi:heat-pump
         state: >-
+          {% set m = states('select.panasonic_heat_pump_main_operating_mode_state') %}
           {% set flow = states('sensor.panasonic_heat_pump_main_pump_flow') | float(0) %}
           {% set t_out = states('sensor.panasonic_heat_pump_main_main_outlet_temp') | float(0) %}
           {% set t_in = states('sensor.panasonic_heat_pump_main_main_inlet_temp') | float(0) %}
-          {% set delta = (t_in - t_out) | abs %}
-          {% if flow > 0 and delta > 0.2 %}
+          {% set delta = (t_out - t_in) if 'Heat' in m
+                         else ((t_in - t_out) if 'Cool' in m else 0) %}
+          {% if flow > 0 and delta | abs > 0.2 %}
             {{ (flow * delta * 69.77) | round(0) }}
           {% else %}
             0
@@ -158,20 +202,15 @@ template:
         unique_id: "panasonic_cop_calcolato"
         state_class: measurement
         icon: mdi:chart-line
+        # v7: stessa potenza con segno del sensore qui sopra; disponibile
+        # solo con produzione utile (> 0) e compressore in moto.
         availability: >-
-          {% set flow = states('sensor.panasonic_heat_pump_main_pump_flow') | float(-1) %}
-          {% set t_out = states('sensor.panasonic_heat_pump_main_main_outlet_temp') | float(-1) %}
-          {% set t_in = states('sensor.panasonic_heat_pump_main_main_inlet_temp') | float(-1) %}
+          {% set p = states('sensor.panasonic_potenza_prodotta_calcolata') | float(0) %}
           {% set current = states('sensor.panasonic_heat_pump_main_compressor_current') | float(-1) %}
-          {% set delta = (t_in - t_out) | abs %}
-          {{ flow > 0 and delta > 0.2 and current > 0 and t_out >= 0 and t_in >= 0 }}
+          {{ p > 0 and current > 0 }}
         state: >-
-          {% set flow = states('sensor.panasonic_heat_pump_main_pump_flow') | float(0) %}
-          {% set t_out = states('sensor.panasonic_heat_pump_main_main_outlet_temp') | float(0) %}
-          {% set t_in = states('sensor.panasonic_heat_pump_main_main_inlet_temp') | float(0) %}
-          {% set delta = (t_in - t_out) | abs %}
+          {% set prod = states('sensor.panasonic_potenza_prodotta_calcolata') | float(0) %}
           {% set current = states('sensor.panasonic_heat_pump_main_compressor_current') | float(0) %}
-          {% set prod = flow * delta * 69.77 %}
           {% set cons = current * 220 * 0.85 %}
           {{ (prod / cons) | round(2) }}
 
@@ -229,13 +268,7 @@ input_number:
     mode: box
     icon: mdi:sigma
 
-  panasonic_pid_heat_errore_prec:
-    name: "Panasonic PID Heat Errore Precedente"
-    min: -20
-    max: 20
-    step: 0.001
-    mode: box
-    icon: mdi:delta
+  # panasonic_pid_heat_errore_prec rimosso in v7 (derivativo sulla misura).
 
   panasonic_pid_setpoint_heat:
     name: "Panasonic Setpoint Mandata Riscaldamento"
@@ -285,6 +318,55 @@ input_number:
     mode: box
     icon: mdi:thermometer-water
 
+  # v7 (A5): retta del COP stimato (sensor.panasonic_cop_stimato).
+  # Default (lotto 4 di clima_inizializzazione): 3,0 a entrambi gli estremi,
+  # cioe' lo stesso valore del COP di riserva finche' non vengono tarati.
+  panasonic_cop_text_fredda:
+    name: "COP stimato – T esterna fredda"
+    min: -20
+    max: 20
+    step: 0.5
+    unit_of_measurement: "°C"
+    mode: box
+    icon: mdi:snowflake-thermometer
+
+  panasonic_cop_fredda:
+    name: "COP stimato – COP al freddo"
+    min: 1
+    max: 8
+    step: 0.1
+    mode: box
+    icon: mdi:heat-pump
+
+  panasonic_cop_text_mite:
+    name: "COP stimato – T esterna mite"
+    min: -10
+    max: 25
+    step: 0.5
+    unit_of_measurement: "°C"
+    mode: box
+    icon: mdi:sun-thermometer
+
+  panasonic_cop_mite:
+    name: "COP stimato – COP col mite"
+    min: 1
+    max: 8
+    step: 0.1
+    mode: box
+    icon: mdi:heat-pump
+
+  # v7 (A4): calore tolto all'impianto durante lo sbrinamento (kWh) e non
+  # ancora recuperato. panasonic_accumulo_energia lo aumenta con la potenza
+  # negativa e lo scala dalla produzione positiva prima di sommarla.
+  panasonic_sbrinamento_debito:
+    name: "Panasonic Debito Sbrinamento"
+    min: 0
+    max: 100
+    step: 0.0001
+    unit_of_measurement: "kWh"
+    mode: box
+    icon: mdi:snowflake-melt
+
   # --- PID COOLING – stato interno ---
   panasonic_pid_kp:
     name: "Panasonic PID Kp"
@@ -318,13 +400,7 @@ input_number:
     mode: box
     icon: mdi:sigma
 
-  panasonic_pid_errore_prec:
-    name: "Panasonic PID Errore Precedente"
-    min: -20
-    max: 20
-    step: 0.001
-    mode: box
-    icon: mdi:delta
+  # panasonic_pid_errore_prec rimosso in v7 (derivativo sulla misura).
 
   # --- LIMITI DI MANDATA IN RAFFRESCAMENTO ---
   # Sostituiscono i valori 10 e 18 che erano cablati dentro il PID cooling.
@@ -516,3 +592,12 @@ utility_meter:
     cycle: monthly
 
 # input_boolean.clima_pid_attivo rimosso in v3: il PID e' sempre attivo.
+
+input_boolean:
+  # v7 (A6): stato interno di panasonic_antigelo_vacanze. Acceso quando parte
+  # il push "Antigelo senza sensore", spento quando il sensore sala torna.
+  # Sostituisce il controllo su states.persistent_notification, sempre vuoto
+  # da HA 2023.6 (le notifiche persistenti non sono piu' entita').
+  antigelo_avviso_sensore:
+    name: "Antigelo – Avviso sensore inviato"
+    icon: mdi:bell-check

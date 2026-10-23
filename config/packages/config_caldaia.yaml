@@ -1,4 +1,19 @@
-# config_caldaia_9.yaml
+# config_caldaia_10.yaml
+# v10 (23/10/2026): audit clima 23/10.
+#   A5: sensor.pdc_costo_kwh_termico usa il COP delle ultime 6 ore; se non e'
+#     disponibile (pompa ferma da oltre 6 ore, per esempio con la fonte su
+#     caldaia) il nuovo sensor.panasonic_cop_stimato (retta su T esterna,
+#     config_pompa_calore); il COP di riserva resta solo senza stazione meteo.
+#     Prima il ritorno Caldaia -> Pompa si decideva sempre sul COP fisso.
+#     Attributi cop e origine_cop per la plancia.
+#   C: sensor.riscaldamento_fonte_conveniente applica l'isteresi rispetto alla
+#     posizione attuale della valvola, come fonte_controllo_periodico; prima
+#     poteva indicare una fonte diversa da quella che la gestione sceglie.
+#     Attributo ore_minime_ok.
+#   C: caldaia_dhw_override senza initial: true (al riavvio in vacanza
+#     mostrava la sanitaria accesa con HW=0). Lo aggiornano solo
+#     script.caldaia_dhw_on / caldaia_dhw_off, usati ora da tutte le
+#     automazioni che mandano HW.
 # v9 (21/10/2026): sensor.pdc_costo_kwh_termico usa sensor.panasonic_cop_6h
 #   (energia prodotta / consumata nelle ultime 6 ore) al posto del COP
 #   istantaneo. Il COP istantaneo oscillava fra circa 1 e 13 fra avvii e
@@ -62,8 +77,9 @@ template:
           {% set eta = states('input_number.caldaia_rendimento') | float(0) %}
           {{ (prezzo / (11.0078 * eta)) | round(4) }}
 
-      # PdC: prezzo elettricità effettivo / COP. Usa il COP delle ultime
-      # 6 ore (v9) quando disponibile, altrimenti il COP di riserva.
+      # PdC: prezzo elettricità effettivo / COP. COP delle ultime 6 ore (v9)
+      # se disponibile e fra 1 e 8; altrimenti COP stimato dalla temperatura
+      # esterna (v10); ultimo ripiego il COP di riserva.
       # configuration_161: con surplus FV (binary_sensor.pv_surplus on)
       # il prezzo effettivo è il mancato incasso GSE, non il P1.
       - name: "PdC Costo KWh Termico"
@@ -74,20 +90,36 @@ template:
         availability: >-
           {{ states('input_number.elettricita_prezzo_kwh') | float(0) > 0
              and (has_value('sensor.panasonic_cop_6h')
+                  or has_value('sensor.panasonic_cop_stimato')
                   or states('input_number.pdc_cop_fallback') | float(0) > 0) }}
         state: >-
           {% set surplus = is_state('binary_sensor.pv_surplus', 'on') %}
           {% set gse = states('input_number.gse_prezzo_kwh_stima') | float(0) %}
           {% set p1 = states('input_number.elettricita_prezzo_kwh') | float(0) %}
           {% set prezzo = gse if (surplus and gse > 0) else p1 %}
-          {% set cop_reale = states('sensor.panasonic_cop_6h') | float(0) %}
-          {% set cop = cop_reale if 1 <= cop_reale <= 8
-                       else states('input_number.pdc_cop_fallback') | float(0) %}
+          {% set c6 = states('sensor.panasonic_cop_6h') | float(0) %}
+          {% set cs = states('sensor.panasonic_cop_stimato') | float(0) %}
+          {% set cop = c6 if 1 <= c6 <= 8
+                       else (cs if 1 <= cs <= 8
+                             else states('input_number.pdc_cop_fallback') | float(3)) %}
           {{ (prezzo / cop) | round(4) }}
+        attributes:
+          cop: >-
+            {% set c6 = states('sensor.panasonic_cop_6h') | float(0) %}
+            {% set cs = states('sensor.panasonic_cop_stimato') | float(0) %}
+            {{ c6 if 1 <= c6 <= 8 else (cs if 1 <= cs <= 8
+               else states('input_number.pdc_cop_fallback') | float(3)) }}
+          origine_cop: >-
+            {% set c6 = states('sensor.panasonic_cop_6h') | float(0) %}
+            {% set cs = states('sensor.panasonic_cop_stimato') | float(0) %}
+            {{ 'ultime 6 ore' if 1 <= c6 <= 8 else ('stimato da T esterna'
+               if 1 <= cs <= 8 else 'riserva') }}
 
-      # Verdetto: fonte più conveniente adesso. Attributi con i due
-      # costi e il risparmio %. Solo informativo: le automazioni di
-      # controllo (con isteresi) arriveranno in un passo successivo.
+      # Verdetto: fonte su cui la gestione automatica (fonte_controllo_periodico)
+      # starebbe adesso, a parte le ore minime. v10: con l'isteresi rispetto
+      # alla posizione della valvola: si indica l'altra fonte solo se costa
+      # almeno fonte_isteresi_pct % in meno. Attributi con i due costi, il
+      # risparmio % e se le ore minime dall'ultima manovra sono passate.
       - name: "Riscaldamento Fonte Conveniente"
         unique_id: "riscaldamento_fonte_conveniente"
         icon: mdi:scale-balance
@@ -97,8 +129,20 @@ template:
         state: >-
           {% set pdc = states('sensor.pdc_costo_kwh_termico') | float(0) %}
           {% set cal = states('sensor.caldaia_costo_kwh_termico') | float(0) %}
-          {{ 'PdC' if pdc <= cal else 'Caldaia' }}
+          {% set ist = states('input_number.fonte_isteresi_pct') | float(15) / 100 %}
+          {% if is_state('switch.shelly_box', 'on') %}
+            {{ 'Caldaia' if (cal > 0 and cal <= pdc * (1 - ist)) else 'PdC' }}
+          {% elif is_state('switch.shelly_box', 'off') %}
+            {{ 'PdC' if (pdc > 0 and pdc <= cal * (1 - ist)) else 'Caldaia' }}
+          {% else %}
+            {{ 'PdC' if pdc <= cal else 'Caldaia' }}
+          {% endif %}
         attributes:
+          ore_minime_ok: >-
+            {% set ultima = states('input_datetime.fonte_ultima_commutazione') %}
+            {% set ore = states('input_number.fonte_ore_minime') | float(3) %}
+            {{ ultima in ['unknown', 'unavailable', '']
+               or (now().timestamp() - as_timestamp(ultima, 0)) > ore * 3600 }}
           surplus_pv: "{{ is_state('binary_sensor.pv_surplus', 'on') }}"
           pdc_eur_kwht: "{{ states('sensor.pdc_costo_kwh_termico') | float(0) }}"
           caldaia_eur_kwht: "{{ states('sensor.caldaia_costo_kwh_termico') | float(0) }}"
@@ -188,8 +232,8 @@ input_number:
     mode: box
     icon: mdi:fire
 
-  # COP usato quando la PdC è ferma e il COP reale non è disponibile
-  # (media stagionale stimata, da affinare con i dati).
+  # COP di riserva: usato solo se mancano sia il COP delle ultime 6 ore sia
+  # il COP stimato dalla temperatura esterna (v10).
   pdc_cop_fallback:
     name: "PdC – COP di riserva"
     min: 1
@@ -250,9 +294,11 @@ input_boolean:
     name: "Fonte – Gestione automatica"
     icon: mdi:swap-horizontal-circle
 
+  # Stato dell'ultimo comando HW mandato all'OTGW (on = HW=1). Lo scrivono
+  # solo script.caldaia_dhw_on / caldaia_dhw_off (v10, senza initial: al
+  # riavvio HA ripristina lo stato salvato).
   caldaia_dhw_override:
     name: "Caldaia – DHW Override"
-    initial: true
     icon: mdi:water-boiler
 
   caldaia_fault_notificato:

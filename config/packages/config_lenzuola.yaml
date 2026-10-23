@@ -1,4 +1,6 @@
-# config_lenzuola_3.yaml
+# config_lenzuola_4.yaml
+# v4 (23/10/2026): modo pompa letto per contenuto ('Heat' nel nome), come
+#   nelle automazioni clima (audit clima 23/10).
 # v3 (21/10/2026): sensori template in ora leggibile (HH:MM) per la plancia
 #   Salute: ora media a letto, accensione prevista, spegnimento previsto.
 # v2 (21/10/2026): si usa anche l'orologio Garmin (sensor.garmin_connect_bedtime,
@@ -101,8 +103,7 @@ template:
         state: >-
           {% if states('counter.lenzuola_notti_registrate') | int(0) < 5 %}
             In attesa ({{ states('counter.lenzuola_notti_registrate') | int(0) }}/5 notti)
-          {% elif states('select.panasonic_heat_pump_main_operating_mode_state')
-                  not in ['Heat', 'Heat only'] %}
+          {% elif 'Heat' not in states('select.panasonic_heat_pump_main_operating_mode_state') %}
             Non in Heat
           {% else %}
             {% set h = (states('input_number.lenzuola_ora_media_letto') | int(0) + 1050) % 1440 %}

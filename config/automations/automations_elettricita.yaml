@@ -1,4 +1,9 @@
-# automations_elettricita_2.yaml
+# automations_elettricita_3.yaml
+# v3 (23/10/2026): audit clima A9. Il distacco carichi non alza piu' i flag
+#   manuali (auto_manuale, pdc_manuale, deumidificatori): usa gli stati
+#   separati input_boolean.distacco_auto / _pompa / _deum_cantina /
+#   _deum_armadio (config_elettricita_20), rispettati dalle automazioni dei
+#   carichi. Nuova carichi_distacco_rilascio.
 #
 # Elettricita': distacco carichi su prelievo alto, prezzo kWh da PUN,
 # avviso di scatto del DG CASA.
@@ -29,10 +34,14 @@
 # valido solo se il prelievo e' ancora oltre 5900 W e lo resta per altri
 # 30 secondi (stessa tenuta del trigger principale).
 #
-# Ogni distacco spegne il dispositivo E alza il suo flag manuale, cosi' il
-# carico resta fermo: senza il flag le automazioni FV e clima lo
-# riaccenderebbero entro pochi minuti. I flag si abbassano a mano dalla
-# plancia fancoil, quando decidi tu.
+# Ogni distacco spegne il dispositivo E accende il suo stato di distacco
+# (input_boolean.distacco_auto / _pompa / _deum_cantina / _deum_armadio,
+# config_elettricita), cosi' il carico resta fermo: senza, le automazioni FV
+# e clima lo riaccenderebbero entro pochi minuti.
+# v3 (23/10/2026): i flag manuali NON vengono piu' toccati (regola: li cambia
+# solo l'utente). Lo stato di distacco lo spegne carichi_distacco_rilascio
+# quando il prelievo e' sceso abbastanza da riaccendere quel carico senza
+# superare di nuovo la soglia, oppure l'utente dalla plancia Manual Settings.
 #
 # La seconda automazione copre il caso in cui non ci sia piu' nulla da
 # staccare: i 5900 W arrivano da forno, piano a induzione, lavatrice o ferro,
@@ -46,8 +55,8 @@
   alias: "Carichi - Distacco progressivo su prelievo alto"
   description: >
     Quando il prelievo da rete supera 5900 W per 30 secondi stacca un carico
-    alla volta, dal piu' grande al piu' piccolo, alzando il relativo flag
-    manuale. Notifica push a ogni gradino.
+    alla volta, dal piu' grande al piu' piccolo, accendendo il relativo stato
+    di distacco (non i flag manuali). Notifica push a ogni gradino.
   mode: single
   max_exceeded: silent
   triggers:
@@ -89,7 +98,7 @@
                 entity_id: switch.solo_auto_contattore_interruttore
             - action: input_boolean.turn_on
               target:
-                entity_id: input_boolean.auto_manuale
+                entity_id: input_boolean.distacco_auto
             - action: notify.mobile_app_cph2653
               continue_on_error: true
               data:
@@ -115,7 +124,7 @@
                 entity_id: switch.panasonic_heat_pump_main_heatpump_state
             - action: input_boolean.turn_on
               target:
-                entity_id: input_boolean.pdc_manuale
+                entity_id: input_boolean.distacco_pompa
             - action: notify.mobile_app_cph2653
               continue_on_error: true
               data:
@@ -123,8 +132,8 @@
                 message: >
                   Prelievo da rete {{ prelievo }} W oltre 5900 W per 30 s.
                   Contattore auto gia' fermo, staccata la pompa di calore
-                  (circa 2000 W) e alzato il flag manuale. Nessuna automazione
-                  clima o fonte la riaccendera' finche' il flag resta alzato.
+                  (circa 2000 W). Resta ferma finche' il prelievo scende sotto
+                  3400 W per 10 minuti; in Heat nel frattempo scalda la caldaia.
                 data:
                   tag: distacco_carichi
                   priority: high
@@ -142,7 +151,7 @@
                 entity_id: switch.box_deumidificatore_cantina_sonoff
             - action: input_boolean.turn_on
               target:
-                entity_id: input_boolean.deumidificatore_cantina_manuale
+                entity_id: input_boolean.distacco_deum_cantina
             - action: notify.mobile_app_cph2653
               continue_on_error: true
               data:
@@ -150,7 +159,8 @@
                 message: >
                   Prelievo da rete {{ prelievo }} W oltre 5900 W per 30 s.
                   Auto e pompa gia' ferme, staccato il deumidificatore cantina
-                  (circa 200 W) e alzato il flag manuale.
+                  (circa 200 W). Resta fermo finche' il prelievo scende sotto
+                  5200 W per 10 minuti.
                 data:
                   tag: distacco_carichi
                   priority: high
@@ -168,7 +178,7 @@
                 entity_id: switch.deumidificatore_armadio_zigbee
             - action: input_boolean.turn_on
               target:
-                entity_id: input_boolean.deumidificatore_armadio_manuale
+                entity_id: input_boolean.distacco_deum_armadio
             - action: notify.mobile_app_cph2653
               continue_on_error: true
               data:
@@ -176,11 +186,76 @@
                 message: >
                   Prelievo da rete {{ prelievo }} W oltre 5900 W per 30 s.
                   Staccato l'ultimo carico gestibile, il deumidificatore
-                  armadio (circa 200 W), e alzato il flag manuale.
+                  armadio (circa 200 W). Resta fermo finche' il prelievo scende
+                  sotto 5200 W per 10 minuti.
                 data:
                   tag: distacco_carichi
                   priority: high
                   ttl: 0
+
+#==================================================================================
+# C1b. RILASCIO DEL DISTACCO (v3, 23/10/2026)
+# Ogni stato di distacco si spegne quando il prelievo e' sotto
+# 5900 W - potenza del carico - 500 W di margine per 10 minuti di fila:
+#   auto 3600 W -> sotto 1800 W    pompa 2000 W -> sotto 3400 W
+#   deumidificatori 200 W -> sotto 5200 W
+# cosi' la riaccensione del carico non riporta subito il prelievo oltre
+# soglia. Dopo il rilascio pompa e deumidificatori ripartono dalle loro
+# automazioni; il contattore auto resta spento finche' non lo riaccendi tu
+# (come prima). L'utente puo' anche spegnere lo stato a mano dalla plancia.
+# Sensore del prelievo non disponibile: nessun rilascio (stato fermo).
+#==================================================================================
+- id: carichi_distacco_rilascio
+  alias: "Carichi - Rilascio distacco a prelievo basso"
+  description: >
+    Spegne lo stato di distacco di un carico quando il prelievo da rete resta
+    per 10 minuti abbastanza basso da riaccenderlo senza superare 5900 W.
+  mode: queued
+  triggers:
+    - trigger: template
+      value_template: >
+        {{ is_state('input_boolean.distacco_auto', 'on')
+           and has_value('sensor.inverter_uflex_external_ct1_power')
+           and states('sensor.inverter_uflex_external_ct1_power') | float(0) < 1800 }}
+      for: "00:10:00"
+      id: input_boolean.distacco_auto
+    - trigger: template
+      value_template: >
+        {{ is_state('input_boolean.distacco_pompa', 'on')
+           and has_value('sensor.inverter_uflex_external_ct1_power')
+           and states('sensor.inverter_uflex_external_ct1_power') | float(0) < 3400 }}
+      for: "00:10:00"
+      id: input_boolean.distacco_pompa
+    - trigger: template
+      value_template: >
+        {{ is_state('input_boolean.distacco_deum_cantina', 'on')
+           and has_value('sensor.inverter_uflex_external_ct1_power')
+           and states('sensor.inverter_uflex_external_ct1_power') | float(0) < 5200 }}
+      for: "00:10:00"
+      id: input_boolean.distacco_deum_cantina
+    - trigger: template
+      value_template: >
+        {{ is_state('input_boolean.distacco_deum_armadio', 'on')
+           and has_value('sensor.inverter_uflex_external_ct1_power')
+           and states('sensor.inverter_uflex_external_ct1_power') | float(0) < 5200 }}
+      for: "00:10:00"
+      id: input_boolean.distacco_deum_armadio
+  actions:
+    - action: input_boolean.turn_off
+      target:
+        entity_id: "{{ trigger.id }}"
+    - action: notify.mobile_app_cph2653
+      continue_on_error: true
+      data:
+        title: "Distacco carichi - rilasciato"
+        message: >
+          {{ state_attr(trigger.id, 'friendly_name') }}: prelievo sceso a
+          {{ states('sensor.inverter_uflex_external_ct1_power') | float(0) | round(0) }} W da 10 minuti.
+          {{ "Il contattore auto resta spento: riaccendilo dalla plancia quando vuoi."
+             if trigger.id == 'input_boolean.distacco_auto'
+             else "Il carico torna alle sue automazioni." }}
+        data:
+          tag: distacco_carichi
 
 #==================================================================================
 # C2. NESSUN CARICO GESTIBILE: AVVISO PUSH + VOCALE

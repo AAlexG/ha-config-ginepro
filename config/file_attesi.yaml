@@ -1,4 +1,9 @@
-# file_attesi_14.yaml
+# file_attesi_15.yaml
+# v15 (23/10/2026): audit clima 23/10. scripts.yaml 28 script (nuovo
+#   otgw_comando); automations_caldaia.yaml 16 (fonte_caldaia_riaccensione,
+#   fonte_valvola_non_disponibile); automations_elettricita.yaml 6
+#   (carichi_distacco_rilascio); automations_ricarica_auto.yaml allineato
+#   alle 5 automazioni presenti.
 # v14 (21/10/2026): nuovo packages/config_resmed.yaml; automations_resmed.yaml
 #   resta a 3 automazioni.
 # v13 (21/10/2026): aggiunte l'integrazione garmin_connect e la plancia Salute.
@@ -30,17 +35,17 @@
 file:
   # --- Configurazione principale ---
   configuration.yaml:
-  scripts.yaml: 27
+  scripts.yaml: 28
   scenes.yaml:
   secrets.yaml:
   # --- Automazioni (numero = automazioni minime nel file) ---
   automations/automations_acqua.yaml: 4
-  automations/automations_caldaia.yaml: 14
+  automations/automations_caldaia.yaml: 16
   automations/automations_cantinetta.yaml: 4
   automations/automations_clima.yaml: 15
   automations/automations_consumi.yaml: 3
   automations/automations_deumidificatori.yaml: 4
-  automations/automations_elettricita.yaml: 5
+  automations/automations_elettricita.yaml: 6
   automations/automations_fotovoltaico.yaml: 6
   automations/automations_gas.yaml: 1
   automations/automations_irrigazione.yaml: 9
@@ -50,7 +55,7 @@ file:
   automations/automations_pompa_calore.yaml: 9
   automations/automations_resmed.yaml: 3
   automations/automations_rete.yaml: 4
-  automations/automations_ricarica_auto.yaml: 4
+  automations/automations_ricarica_auto.yaml: 5
   automations/automations_sicurezza.yaml: 13
   automations/automations_sistema.yaml: 9
   automations/automations_tende.yaml: 7

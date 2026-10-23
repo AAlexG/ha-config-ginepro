@@ -1,4 +1,25 @@
-# automations_clima_82.yaml
+# automations_clima_83.yaml
+#
+# v83 (23/10/2026): audit clima 23/10.
+#   C: clima_inizializzazione: tolti dai default gli helper rimossi
+#      (maxtemp_giorno_estate_letto, maxtemp_notte_estate_sala,
+#      mintemp_giorno_inverno_letto, panasonic_pid_heat_errore_prec); lotto 4
+#      con la retta del COP stimato (config_pompa_calore_7).
+#   C: modi pompa letti per contenuto ('Heat' / 'Cool' nel nome): valgono
+#      anche Auto(Heat), Heat+DHW, Auto(Cool), Cool+DHW; tolti i valori
+#      "Cool"/"Heat" semplici che HeishaMon non produce.
+#   B: commutazione stagionale di notte come il PID: verso Heat conta la
+#      camera piu' fredda fra Georgi e Tania (ognuna col proprio minimo),
+#      verso Cool solo Georgi (in raffrescamento dalle 23 conta solo Georgi).
+#   B: rientro vacanza non accende piu' ne' pompa ne' caldaia: lo fanno il PID
+#      heating (con isteresi) e fonte_caldaia_riaccensione (automations_caldaia_4)
+#      secondo la valvola; tolta la condizione ripetuta sul modo pompa.
+#   C: sanitaria (HW) a inizio e fine vacanza tramite script.caldaia_dhw_off /
+#      _on, che aggiornano anche input_boolean.caldaia_dhw_override.
+#   D: promemoria e commenti: i flag manuali non li alza piu' il distacco
+#      carichi (stato separato input_boolean.distacco_*); sintassi
+#      trigger/conditions/actions uniforme in rientro, inizio vacanza e
+#      riaccensione fancoil dopo free cooling.
 #
 # v82 (22/10/2026): isteresi anche sulla soglia acqua dei fancoil (sala e
 #   camere). Un fancoil spento parte con l'acqua almeno 6 C sopra il target
@@ -105,7 +126,7 @@
       event: start
   actions:
     - variables:
-        versione_attesa: 3
+        versione_attesa: 4
         versione_applicata: "{{ states('input_number.clima_default_versione') | int(2) }}"
         # Terne [lotto, entita', valore]
         valori_default:
@@ -116,17 +137,13 @@
           - [1, input_number.panasonic_pid_ki, 0.05]
           - [1, input_number.panasonic_pid_kd, 0.2]
           - [1, input_number.maxtemp_giorno_estate_sala, 25]
-          - [1, input_number.maxtemp_giorno_estate_letto, 29]
-          - [1, input_number.maxtemp_notte_estate_sala, 29]
           - [1, input_number.maxtemp_notte_estate_letto, 25]
           - [1, input_number.maxtemp_notte_estate_tania, 25]
           - [1, input_number.mintemp_giorno_inverno_sala, 22]
-          - [1, input_number.mintemp_giorno_inverno_letto, 20]
           - [1, input_number.mintemp_notte_inverno_letto, 22]
           - [1, input_number.mintemp_notte_inverno_tania, 22]
           - [1, input_number.clima_target_emergenza_antigelo, 15]
           - [1, input_number.panasonic_pid_heat_integrale, 0]
-          - [1, input_number.panasonic_pid_heat_errore_prec, 0]
           - [1, input_number.clima_delta_naturale_base, 3]
           - [1, input_number.clima_delta_naturale_vento_bonus, 2]
           - [1, input_number.clima_soglia_vento_naturale, 6]
@@ -140,6 +157,12 @@
           - [3, input_number.panasonic_heat_base_mandata_fredda, 35]
           - [3, input_number.panasonic_heat_base_text_mite, 15]
           - [3, input_number.panasonic_heat_base_mandata_mite, 30]
+          # --- Lotto 4: retta COP stimato (v83). COP 3,0 ai due estremi =
+          # stesso valore del COP di riserva finche' non vengono tarati.
+          - [4, input_number.panasonic_cop_text_fredda, 0]
+          - [4, input_number.panasonic_cop_fredda, 3.0]
+          - [4, input_number.panasonic_cop_text_mite, 15]
+          - [4, input_number.panasonic_cop_mite, 3.0]
         da_applicare: >
           {% set ns = namespace(elenco=[]) %}
           {% for v in valori_default %}
@@ -282,8 +305,7 @@
     # passaggio a giorno delle 07:00 resta a clima_modalita_giorno.
     - variables:
         cool: >
-          {{ states('select.panasonic_heat_pump_main_operating_mode_state')
-             in ['Cool', 'Cool only'] }}
+          {{ 'Cool' in states('select.panasonic_heat_pump_main_operating_mode_state') }}
         inizio_notte: "{{ 21 if cool else 23 }}"
         ora: "{{ now().hour }}"
         nuova: "{{ 'notte' if (ora >= inizio_notte or ora < 7) else 'giorno' }}"
@@ -303,8 +325,9 @@
 # In plancia fancoil ogni switch ha accanto il proprio input_boolean.*_manuale
 # (tile con toggle diretto). Con il flag alzato tutte le automazioni di
 # controllo lasciano l'attuatore com'e'. Il flag lo alza e lo abbassa solo
-# l'utente (oppure il distacco carichi, che lo alza): nessuna automazione lo
-# abbassa a orario. Il promemoria qui sotto segnala i flag dimenticati.
+# l'utente: nessuna automazione lo alza o lo abbassa (il distacco carichi usa
+# gli stati separati input_boolean.distacco_*, v83). Il promemoria qui sotto
+# segnala i flag dimenticati.
 #==================================================================================
 
 #==================================================================================
@@ -338,9 +361,7 @@
       - input_boolean.deumidificatore_armadio_manuale
       - input_boolean.portone_box_manuale
       - input_boolean.cancello_grande_manuale
-      # v74: pompa e auto, alzati anche dal distacco carichi. Con pdc_manuale
-      # alzato in inverno la casa resta senza riscaldamento (anche la gestione
-      # fonte si ferma).
+      # v74: pompa e auto. v83: il distacco carichi non li alza piu'.
       - input_boolean.pdc_manuale
       - input_boolean.auto_manuale
       # v77: caldaia (riscaldamento via SAT)
@@ -439,7 +460,7 @@
     - condition: template
       value_template: >
         {% set caldaia = is_state('switch.shelly_box', 'off')
-           and states('select.panasonic_heat_pump_main_operating_mode_state') in ['Heat', 'Heat only'] %}
+           and 'Heat' in states('select.panasonic_heat_pump_main_operating_mode_state') %}
         {{ has_value('sensor.opentherm_gateway_otgw_otgw_boiler_flow_water_temperature') if caldaia
            else has_value('sensor.panasonic_heat_pump_main_main_outlet_temp') }}
   actions:
@@ -448,7 +469,7 @@
         # v76 (A6): mandata della fonte che scalda il circuito. Con la valvola
         # su Caldaia (switch.shelly_box off) in Heat la PdC e' ferma e la sua
         # mandata non dice nulla: si usa la mandata caldaia letta dall'OTGW.
-        fonte_caldaia: "{{ is_state('switch.shelly_box', 'off') and mode in ['Heat', 'Heat only'] }}"
+        fonte_caldaia: "{{ is_state('switch.shelly_box', 'off') and 'Heat' in mode }}"
         outlet: >
           {{ states('sensor.opentherm_gateway_otgw_otgw_boiler_flow_water_temperature') | float(20)
              if fonte_caldaia
@@ -504,10 +525,10 @@
         fancoil_georgi_on: >
           {% if not georgi_vivo %}
             false
-          {% elif mode in ['Cool', 'Cool only'] %}
+          {% elif 'Cool' in mode %}
             {{ t_georgi > soglia_estate_georgi and acqua_ok_georgi_estate
                and not freecooling_on and not latch_notte }}
-          {% elif mode in ['Heat', 'Heat only'] %}
+          {% elif 'Heat' in mode %}
             {{ t_georgi < soglia_inverno_georgi and acqua_ok_georgi_inverno
                and not freeheating_on }}
           {% else %}
@@ -517,10 +538,10 @@
         fancoil_tania_on: >
           {% if not tania_viva %}
             false
-          {% elif mode in ['Cool', 'Cool only'] %}
+          {% elif 'Cool' in mode %}
             {{ t_tania > soglia_estate_tania and acqua_ok_tania_estate
                and not freecooling_on and not latch_notte }}
-          {% elif mode in ['Heat', 'Heat only'] %}
+          {% elif 'Heat' in mode %}
             {{ t_tania < soglia_inverno_tania and acqua_ok_tania_inverno
                and not freeheating_on }}
           {% else %}
@@ -550,7 +571,7 @@
     # lo spegne clima_modalita_giorno alle 07:00.
     - if:
         - condition: template
-          value_template: "{{ periodo_prelavoro or mode in ['Heat', 'Heat only'] }}"
+          value_template: "{{ periodo_prelavoro or 'Heat' in mode }}"
         - condition: state
           entity_id: input_boolean.fancoil_georgi_manuale
           state: "off"
@@ -614,7 +635,7 @@
       # v76 (A6): in Heat con valvola su Caldaia l'acqua e' la mandata caldaia.
       value_template: >
         {% set caldaia = is_state('switch.shelly_box', 'off')
-           and states('select.panasonic_heat_pump_main_operating_mode_state') in ['Heat', 'Heat only'] %}
+           and 'Heat' in states('select.panasonic_heat_pump_main_operating_mode_state') %}
         {{ has_value('sensor.hp1000se_pro_pro_v1_6_4_indoor_temperature')
            and (has_value('sensor.opentherm_gateway_otgw_otgw_boiler_flow_water_temperature') if caldaia
                 else has_value('sensor.panasonic_heat_pump_main_main_outlet_temp')) }}
@@ -623,7 +644,7 @@
         mode: "{{ states('select.panasonic_heat_pump_main_operating_mode_state') }}"
         t_sala: "{{ states('sensor.hp1000se_pro_pro_v1_6_4_indoor_temperature') | float(25) }}"
         # v76 (A6): mandata della fonte che scalda il circuito (vedi camere).
-        fonte_caldaia: "{{ is_state('switch.shelly_box', 'off') and mode in ['Heat', 'Heat only'] }}"
+        fonte_caldaia: "{{ is_state('switch.shelly_box', 'off') and 'Heat' in mode }}"
         outlet: >
           {{ states('sensor.opentherm_gateway_otgw_otgw_boiler_flow_water_temperature') | float(20)
              if fonte_caldaia
@@ -649,9 +670,9 @@
         freecooling_on: "{{ is_state('input_boolean.clima_freecooling_attivo', 'on') }}"
         freeheating_on: "{{ is_state('input_boolean.clima_freeheating_attivo', 'on') }}"
         fancoil_sala_on: >
-          {% if mode in ['Cool', 'Cool only'] %}
+          {% if 'Cool' in mode %}
             {{ temp_sala_fuori_target_estate and acqua_efficace_estate and not freecooling_on }}
-          {% elif mode in ['Heat', 'Heat only'] %}
+          {% elif 'Heat' in mode %}
             {{ temp_sala_fuori_target_inverno and acqua_efficace_inverno and not freeheating_on }}
           {% else %}
             false
@@ -717,8 +738,7 @@
     # tutta la notte (fancoil_georgi_controllo) e conta nel PID heating.
     - condition: template
       value_template: >
-        {{ states('select.panasonic_heat_pump_main_operating_mode_state')
-           not in ['Heat', 'Heat only'] }}
+        {{ 'Heat' not in states('select.panasonic_heat_pump_main_operating_mode_state') }}
     # Gestione manuale: il fancoil resta come l'ha lasciato l'utente.
     - condition: state
       entity_id: input_boolean.fancoil_georgi_manuale
@@ -806,7 +826,7 @@
         # --- ATTIVA: solo in Cool, condizione soddisfatta, flag spento ---
         - conditions:
             - condition: template
-              value_template: "{{ t_ext_ok and giorno_on and not vacanza_on and mode in ['Cool', 'Cool only'] and cond_on and not flag_on }}"
+              value_template: "{{ t_ext_ok and giorno_on and not vacanza_on and 'Cool' in mode and cond_on and not flag_on }}"
           sequence:
             - action: input_boolean.turn_on
               target:
@@ -859,8 +879,8 @@
                    (not t_ext_ok
                     or not giorno_on
                     or vacanza_on
-                    or (mode in ['Cool', 'Cool only'] and cond_off)
-                    or (mode not in ['Cool', 'Cool only', 'unavailable', 'unknown', 'none'])) }}
+                    or ('Cool' in mode and cond_off)
+                    or ('Cool' not in mode and mode not in ['unavailable', 'unknown', 'none'])) }}
           sequence:
             - action: input_boolean.turn_off
               target:
@@ -883,13 +903,13 @@
     cooling, per ricordare di chiudere le porte finestre.
   mode: single
   triggers:
-    - platform: state
+    - trigger: state
       entity_id:
         - switch.camerageorgi_shelly_fancoil_georgi
         - switch.camerageorgi_shelly_fancoil_georgi_2
         - switch.sala_fancoil_sala_shelly_1gen4
       to: "on"
-  condition:
+  conditions:
     - condition: state
       entity_id: input_boolean.clima_freecooling_finestre
       state: "on"
@@ -929,10 +949,13 @@
 #
 # Zona comandante, come il PID (segue input_select.clima_modalita):
 #   giorno -> sala          sensor.hp1000se_pro_pro_v1_6_4_indoor_temperature
-#   notte  -> camera Georgi sensor.termometro_georgi_zigbee_temperature
+#   notte  -> verso Heat: la piu' fredda fra camera Georgi e camera Tania,
+#             ognuna col proprio minimo (come PID heating di notte);
+#             verso Cool: camera Georgi (come PID cooling dalle 23) (v83)
 # Passaggi:
 #   Cool -> Heat: zona sotto il minimo invernale
-#                 (mintemp_giorno_inverno_sala / mintemp_notte_inverno_letto)
+#                 (mintemp_giorno_inverno_sala / mintemp_notte_inverno_letto
+#                  e mintemp_notte_inverno_tania)
 #                 per 5 ore di fila
 #   Heat -> Cool: zona sopra il massimo estivo
 #                 (maxtemp_giorno_estate_sala / maxtemp_notte_estate_letto)
@@ -960,8 +983,9 @@
 - id: clima_commutazione_stagionale
   alias: "Clima – Commutazione Stagionale (temperatura interna)"
   description: >
-    Ogni 5 minuti conta da quanto la zona comandante (sala di giorno, camera
-    Georgi di notte) e' sotto il minimo invernale o sopra il massimo estivo.
+    Ogni 5 minuti conta da quanto la zona comandante (sala di giorno; di notte
+    verso Heat la camera piu' fredda fra Georgi e Tania, verso Cool Georgi) e'
+    sotto il minimo invernale o sopra il massimo estivo.
     Dopo 5 ore di fila mette la pompa in Heat only o Cool only.
   mode: single
   triggers:
@@ -970,17 +994,32 @@
   variables:
     durata_min: 300
     modo: "{{ states('select.panasonic_heat_pump_main_operating_mode_state') }}"
-    in_cool: "{{ modo in ['Cool', 'Cool only'] }}"
-    in_heat: "{{ modo in ['Heat', 'Heat only'] }}"
+    in_cool: "{{ 'Cool' in modo }}"
+    in_heat: "{{ 'Heat' in modo }}"
     notte: "{{ is_state('input_select.clima_modalita', 'notte') }}"
-    zona: "{{ 'camera Georgi' if notte else 'sala' }}"
-    sensore: >
-      {{ 'sensor.termometro_georgi_zigbee_temperature' if notte
-         else 'sensor.hp1000se_pro_pro_v1_6_4_indoor_temperature' }}
-    ent_min: >
-      {{ 'input_number.mintemp_notte_inverno_letto' if notte
-         else 'input_number.mintemp_giorno_inverno_sala' }}
-    ent_max: >
+    s_sala: sensor.hp1000se_pro_pro_v1_6_4_indoor_temperature
+    s_georgi: sensor.termometro_georgi_zigbee_temperature
+    s_tania: sensor.termometro_tania_zigbee_temperature
+    # v83: di notte, verso Heat, comanda la camera piu' fredda rispetto al
+    # proprio minimo fra Georgi e Tania (camera muta esclusa); verso Cool
+    # resta Georgi. Di giorno la sala in entrambi i versi.
+    d_georgi: >-
+      {{ (states('input_number.mintemp_notte_inverno_letto') | float(0)
+          - states(s_georgi) | float(0)) if has_value(s_georgi) else -99 }}
+    d_tania: >-
+      {{ (states('input_number.mintemp_notte_inverno_tania') | float(0)
+          - states(s_tania) | float(0)) if has_value(s_tania) else -99 }}
+    camera_heat: "{{ 'tania' if d_tania > d_georgi else 'georgi' }}"
+    zona: >-
+      {{ ('camera Tania' if (in_cool and camera_heat == 'tania') else 'camera Georgi')
+         if notte else 'sala' }}
+    sensore: >-
+      {{ (s_tania if zona == 'camera Tania' else s_georgi) if notte else s_sala }}
+    ent_min: >-
+      {{ ('input_number.mintemp_notte_inverno_tania' if zona == 'camera Tania'
+          else 'input_number.mintemp_notte_inverno_letto')
+         if notte else 'input_number.mintemp_giorno_inverno_sala' }}
+    ent_max: >-
       {{ 'input_number.maxtemp_notte_estate_letto' if notte
          else 'input_number.maxtemp_giorno_estate_sala' }}
     dati_ok: >
@@ -1147,7 +1186,7 @@
         # --- ATTIVA: solo in Heat, condizione soddisfatta, flag spento ---
         - conditions:
             - condition: template
-              value_template: "{{ t_ext_ok and not vacanza_on and mode in ['Heat', 'Heat only'] and cond_on and not flag_on }}"
+              value_template: "{{ t_ext_ok and not vacanza_on and 'Heat' in mode and cond_on and not flag_on }}"
           sequence:
             - action: input_boolean.turn_on
               target:
@@ -1174,8 +1213,8 @@
                 {{ flag_on and
                    (not t_ext_ok
                     or vacanza_on
-                    or (mode in ['Heat', 'Heat only'] and cond_off)
-                    or (mode not in ['Heat', 'Heat only', 'unavailable', 'unknown', 'none'])) }}
+                    or ('Heat' in mode and cond_off)
+                    or ('Heat' not in mode and mode not in ['unavailable', 'unknown', 'none'])) }}
           sequence:
             - action: input_boolean.turn_off
               target:
@@ -1203,22 +1242,21 @@
   alias: "Clima - rientro vacanza"
   description: >
     Parte quando input_boolean.vacanza viene spento a mano dalla plancia clima:
-    ripristina la casa con qualsiasi temperatura, riattiva acqua sanitaria e
-    canto degli uccelli. Con la pompa in Heat riaccende la fonte su cui e' la
-    valvola (PdC o SAT); con la pompa in Cool la riaccensione la fa
-    panasonic_cooling_riaccensione (v66). Fancoil e pergola NON
-    vengono comandati direttamente: ripartono da soli dalle rispettive
-    automazioni una volta spento il flag.
+    imposta la modalita clima in base all'ora, riattiva acqua sanitaria e
+    canto degli uccelli. Pompa, caldaia, fancoil e pergola NON vengono
+    comandati direttamente: ripartono dalle loro automazioni una volta spento
+    il flag (v83: PID heating con isteresi o fonte_caldaia_riaccensione
+    secondo la valvola in Heat, panasonic_cooling_riaccensione in Cool).
     Dalla v55 il trigger orario delle 15:00 con condizione sul calendario e'
     stato eliminato: il rientro puo' avvenire a qualsiasi ora, quindi la
     modalita' clima viene scelta in base all'ora e alla stagione invece di
     essere forzata a "giorno".
-  trigger:
-    - platform: state
+  triggers:
+    - trigger: state
       entity_id: input_boolean.vacanza
       from: "on"
       to: "off"
-  action:
+  actions:
     # Modalita' coerente con l'ora del rientro: in raffrescamento la notte
     # inizia alle 21:00, in riscaldamento alle 23:00 (vedi clima_modalita_notte).
     - action: input_select.select_option
@@ -1226,76 +1264,26 @@
         entity_id: input_select.clima_modalita
       data:
         option: >
-          {% set cool = states('select.panasonic_heat_pump_main_operating_mode_state')
-                        in ['Cool', 'Cool only'] %}
+          {% set cool = 'Cool' in states('select.panasonic_heat_pump_main_operating_mode_state') %}
           {% set h = now().hour %}
           {% set inizio_notte = 21 if cool else 23 %}
           {{ 'notte' if (h >= inizio_notte or h < 7) else 'giorno' }}
-    - action: mqtt.publish
-      data:
-        topic: "OTGW/set/otgw-84CCA8ADE1AD/command"
-        payload: "HW=1"
+    # v83: tramite script, che aggiorna anche caldaia_dhw_override
+    - action: script.caldaia_dhw_on
     # Riavvia canto uccelli (volume 20% + play)
     - action: script.riaggancia_yamaha
-    # Ramo riscaldamento. v66: deciso dal modo operativo della pompa
-    # (sorgente unica della stagione), non piu' da T esterna < 17 C.
-    - if:
-        - condition: template
-          value_template: >
-            {{ states('select.panasonic_heat_pump_main_operating_mode_state')
-               in ['Heat', 'Heat only'] }}
-      then:
-        # Una sola fonte alla volta (v63), decisa dalla valvola switch.shelly_box
-        # come nella gestione fonte: su Pompa si riaccende la PdC, su Caldaia il
-        # SAT. Prima venivano accesi entrambi.
-        - if:
-            - condition: state
-              entity_id: switch.shelly_box
-              state: "on"
-          then:
-            - if:
-                - condition: template
-                  value_template: >
-                    {{ states('select.panasonic_heat_pump_main_operating_mode_state')
-                       in ['Heat', 'Heat only'] }}
-                # Lucchetto manuale pompa (automations_clima_59)
-                - condition: state
-                  entity_id: input_boolean.pdc_manuale
-                  state: "off"
-              then:
-                - action: switch.turn_on
-                  target:
-                    entity_id: switch.panasonic_heat_pump_main_heatpump_state
-          else:
-            # v76: prima il preset "home" (in vacanza era "away"), poi
-            # l'accensione: all'accensione del SAT clima_sync_sat_target
-            # (automations_caldaia_2) imposta il target della zona comandante.
-            # v77: solo se la caldaia non e' in gestione manuale.
-            - if:
-                - condition: state
-                  entity_id: input_boolean.caldaia_manuale
-                  state: "off"
-              then:
-                - action: climate.set_preset_mode
-                  target:
-                    entity_id: climate.smart_autotune_thermostat_living_room
-                  data:
-                    preset_mode: "home"
-                - action: climate.set_hvac_mode
-                  target:
-                    entity_id: climate.smart_autotune_thermostat_living_room
-                  data:
-                    hvac_mode: "heat"
-    # Ramo raffrescamento (v66): la pompa non viene piu' accesa qui.
-    # panasonic_cooling_riaccensione riparte da sola appena vacanza e' spento e
-    # una zona e' oltre target + 0,5 C, e prima porta la valvola su Pompa se
-    # serve. Accenderla qui scavalcava sia l'isteresi sia la valvola.
+    # v83: nessuna accensione diretta di pompa o caldaia. In Heat la fonte
+    # su cui e' la valvola riparte da sola: la pompa dal PID heating (con
+    # l'isteresi di 0,5 C, prima veniva accesa anche con la casa in target),
+    # il SAT da fonte_caldaia_riaccensione, che lo trova spento dopo 5 minuti
+    # (preset "home" e target da clima_sync_sat_target all'accensione).
+    # In Cool la pompa la riaccende panasonic_cooling_riaccensione.
     - action: notify.mobile_app_cph2653
       data:
         title: "Rientro vacanza"
         message: >
           Casa ripristinata: modalita' clima impostata in base all'ora, acqua sanitaria riattivata,
-          canto uccelli riavviato. Clima riattivato in base al modo della pompa.
+          canto uccelli riavviato. Pompa o caldaia ripartono entro pochi minuti se servono.
           Fancoil e pergola ripartono dalle loro automazioni. Benvenuti a casa!
 
 #==================================================================================
@@ -1312,12 +1300,12 @@
     della parola "vacanza" negli eventi non era affidabile e l'automazione
     scattava a vuoto. Il flag e' ora l'unica sorgente di verita' e si comanda
     solo a mano.
-  trigger:
-    - platform: state
+  triggers:
+    - trigger: state
       entity_id: input_boolean.vacanza
       from: "off"
       to: "on"
-  action:
+  actions:
     # v77: SAT spento e "away" solo se la caldaia non e' in gestione manuale.
     - if:
         - condition: state
@@ -1334,10 +1322,8 @@
             entity_id: climate.smart_autotune_thermostat_living_room
           data:
             preset_mode: "away"
-    - action: mqtt.publish
-      data:
-        topic: "OTGW/set/otgw-84CCA8ADE1AD/command"
-        payload: "HW=0"
+    # v83: tramite script, che aggiorna anche caldaia_dhw_override
+    - action: script.caldaia_dhw_off
     # Lucchetto manuale pompa (automations_clima_59)
     - if:
         - condition: state

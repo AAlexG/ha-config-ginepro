@@ -231,6 +231,54 @@ config:
           show_daily: true
         type: custom:sunsynk-power-flow-card
         wide: false
+      - graph_span: 24h
+        grid_options:
+          columns: 12
+          rows: auto
+        header:
+          show: true
+          title: "Max \u0394 cella 13 e 4 e Max SOC %"
+        series:
+        - entity: sensor.condensatore_cella_13_distacco
+          name: "\u0394 n.13"
+          statistics:
+            period: 5minute
+            type: min
+          stroke_width: 1
+          transform: 'return x === null ? null : -x;'
+          type: line
+          yaxis_id: volt
+        - entity: sensor.condensatore_cella_04_distacco
+          name: "\u0394 n.4"
+          statistics:
+            period: 5minute
+            type: min
+          stroke_width: 1
+          transform: 'return x === null ? null : -x;'
+          type: line
+          yaxis_id: volt
+        - entity: sensor.condensatore_bms_soc
+          name: SOC
+          show:
+            in_legend: true
+          statistics:
+            period: 5minute
+            type: max
+          stroke_dash: 5
+          stroke_width: 1
+          type: line
+          yaxis_id: soc
+        type: custom:apexcharts-card
+        yaxis:
+        - apex_config:
+            title:
+              text: "\u0394 cella, mV"
+          decimals: 0
+          id: volt
+        - apex_config: null
+          decimals: 1
+          id: soc
+          opposite: true
       type: grid
     - cards:
       - heading: ULTIMI 7 GIORNI
@@ -242,54 +290,7 @@ config:
           rows: auto
         header:
           show: true
-          title: Temperature BMS
-        series:
-        - color: '#D55E00'
-          entity: sensor.condensatore_bms_temperatura_5
-          name: T5
-          stroke_width: 2
-          type: line
-          yaxis_id: C
-        - color: '#0072B2'
-          entity: sensor.condensatore_bms_temperatura_6
-          name: T6
-          stroke_width: 2
-          type: line
-          yaxis_id: C
-        - entity: sensor.condensatore_bms_temperatura_1
-          name: T1
-          stroke_width: 2
-          type: line
-          yaxis_id: C
-        - entity: sensor.condensatore_bms_temperatura_2
-          name: T2
-          stroke_width: 2
-          type: line
-          yaxis_id: C
-        - entity: sensor.condensatore_bms_temperatura_3
-          name: T3
-          stroke_width: 2
-          type: line
-          yaxis_id: C
-        - entity: sensor.condensatore_bms_temperatura_4
-          name: T4
-          stroke_width: 2
-          type: line
-          yaxis_id: C
-        type: custom:apexcharts-card
-        yaxis:
-        - apex_config:
-            title:
-              text: C
-          decimals: 1
-          id: C
-      - graph_span: 7d
-        grid_options:
-          columns: 12
-          rows: auto
-        header:
-          show: true
-          title: "Max \u0394 cella n.13 e Max SOC %"
+          title: "Max \u0394 cella 13 e 4 e Max SOC %"
         series:
         - entity: sensor.condensatore_cella_13_distacco
           name: "Max \u0394 n.13"
@@ -300,6 +301,15 @@ config:
           transform: 'return x === null ? null : -x;'
           type: line
           yaxis_id: volt
+        - entity: sensor.condensatore_cella_04_distacco
+          name: "Max \u0394 n.4"
+          statistics:
+            period: day
+            type: min
+          stroke_width: 2
+          transform: 'return x === null ? null : -x;'
+          type: line
+          yaxis_id: volt
         - entity: sensor.condensatore_bms_soc
           name: SOC
           show:
@@ -315,12 +325,10 @@ config:
         yaxis:
         - apex_config:
             title:
-              text: "\u0394 cella n.13, mV"
+              text: "\u0394 cella, mV"
           decimals: 0
           id: volt
-        - apex_config:
-            title:
-              text: SOC %
+        - apex_config: null
           decimals: 1
           id: soc
           opposite: true
@@ -330,10 +338,19 @@ config:
           rows: auto
         header:
           show: true
-          title: "Min \u0394 cella n.13 e Max SOC %"
+          title: "Min \u0394 celle 13 e 4 e Max SOC %"
         series:
         - entity: sensor.condensatore_cella_13_distacco
           name: "Min \u0394 n.13"
+          statistics:
+            period: day
+            type: max
+          stroke_width: 2
+          transform: 'return x === null ? null : -x;'
+          type: line
+          yaxis_id: volt
+        - entity: sensor.condensatore_cella_04_distacco
+          name: "Min \u0394 n.4"
           statistics:
             period: day
             type: max
@@ -356,15 +373,40 @@ config:
         yaxis:
         - apex_config:
             title:
-              text: "\u0394 cella n.13, mV"
+              text: "\u0394 cella, mV"
           decimals: 0
           id: volt
-        - apex_config:
-            title:
-              text: SOC %
+        - apex_config: null
           decimals: 1
           id: soc
           opposite: true
+      - graph_span: 7d
+        grid_options:
+          columns: 12
+          rows: auto
+        header:
+          show: true
+          title: Temperature BMS
+        series:
+        - color: '#D55E00'
+          entity: sensor.condensatore_bms_temperatura_5
+          name: T5
+          stroke_width: 1
+          type: line
+          yaxis_id: C
+        - color: '#0072B2'
+          entity: sensor.condensatore_bms_temperatura_6
+          name: T6
+          stroke_width: 1
+          type: line
+          yaxis_id: C
+        type: custom:apexcharts-card
+        yaxis:
+        - apex_config:
+            title:
+              text: C
+          decimals: 1
+          id: C
       type: grid
     - cards:
       - content: "C13 e C4 = distacco in mV dalla cella pi\xF9 alta (riferimento del\

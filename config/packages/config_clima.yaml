@@ -1,4 +1,13 @@
-# config_clima_16.yaml
+# config_clima_17.yaml
+# v17 (23/10/2026): audit clima 23/10.
+#   A8: nuovi sensori statistics clima_variazione_sala/georgi/tania_30min
+#     (variazione della temperatura negli ultimi 30 minuti): il derivativo dei
+#     PID e' calcolato su questi (automations_pompa_calore_9).
+#   C: rimossi maxtemp_giorno_estate_letto, maxtemp_notte_estate_sala e
+#     mintemp_giorno_inverno_letto: nessuna automazione li leggeva (le camere
+#     contano solo dalle 21, la sala solo di giorno). Tolti anche dalle plance.
+#   C: modo pompa letto per contenuto ('Cool' nel nome).
+#   D: commenti allineati (pdc_manuale, latch notturno, flag fancoil).
 # v16 (21/10/2026): binary_sensor.clima_condizione_free_cooling vale solo con
 #   la pompa in Cool. Prima guardava solo il meteo e d'inverno restava sempre
 #   on (T esterna < 28 C), mostrando "Acceso" in plancia Clima pur senza
@@ -143,8 +152,7 @@ template:
           {% set delta = t_ext - target %}
           {# v16: solo con la pompa in raffrescamento; il delay_on di 1 ora
              parte quindi anche dal passaggio a Cool #}
-          {% set cool = states('select.panasonic_heat_pump_main_operating_mode_state')
-                        in ['Cool', 'Cool only'] %}
+          {% set cool = 'Cool' in states('select.panasonic_heat_pump_main_operating_mode_state') %}
           {{ cool and (delta < base or (delta < (base + bonus) and vento >= soglia_vento)) }}
 
 sensor:
@@ -175,6 +183,41 @@ sensor:
     start: "{{ now().replace(hour=0, minute=0, second=0, microsecond=0).isoformat() }}"
     end: "{{ now().isoformat() }}"
 
+  # v17 (A8): variazione della temperatura delle tre zone negli ultimi 30
+  # minuti (ultima lettura - prima lettura nella finestra). I PID la
+  # moltiplicano per 2 per avere C/h. Con una sola lettura nella finestra
+  # (temperatura ferma) vale 0. Le letture piu' vecchie di 30 minuti escono
+  # da sole anche senza nuovi campioni (max_age).
+  - platform: statistics
+    name: "Clima Variazione Sala 30min"
+    unique_id: clima_variazione_sala_30min
+    entity_id: sensor.hp1000se_pro_pro_v1_6_4_indoor_temperature
+    state_characteristic: change
+    max_age:
+      minutes: 30
+    sampling_size: 100
+    keep_last_sample: true
+
+  - platform: statistics
+    name: "Clima Variazione Georgi 30min"
+    unique_id: clima_variazione_georgi_30min
+    entity_id: sensor.termometro_georgi_zigbee_temperature
+    state_characteristic: change
+    max_age:
+      minutes: 30
+    sampling_size: 100
+    keep_last_sample: true
+
+  - platform: statistics
+    name: "Clima Variazione Tania 30min"
+    unique_id: clima_variazione_tania_30min
+    entity_id: sensor.termometro_tania_zigbee_temperature
+    state_characteristic: change
+    max_age:
+      minutes: 30
+    sampling_size: 100
+    keep_last_sample: true
+
 input_number:
   # ============================================================
   # SISTEMA CLIMA COMPLETO – parametri PID e stato
@@ -196,23 +239,8 @@ input_number:
     mode: slider
     icon: mdi:thermometer
 
-  maxtemp_giorno_estate_letto:
-    name: "Max Temp Giorno Estate Letto"
-    min: 18
-    max: 32
-    step: 0.5
-    unit_of_measurement: "°C"
-    mode: slider
-    icon: mdi:bed-outline
-
-  maxtemp_notte_estate_sala:
-    name: "Max Temp Notte Estate Sala"
-    min: 18
-    max: 32
-    step: 0.5
-    unit_of_measurement: "°C"
-    mode: slider
-    icon: mdi:thermometer
+  # v17: rimossi maxtemp_giorno_estate_letto e maxtemp_notte_estate_sala
+  # (mai letti: di giorno comanda la sala, di notte le camere).
 
   maxtemp_notte_estate_letto:
     name: "Max Temp Notte Estate Letto"
@@ -246,14 +274,7 @@ input_number:
     mode: slider
     icon: mdi:thermometer
 
-  mintemp_giorno_inverno_letto:
-    name: "Min Temp Giorno Inverno Letto"
-    min: 14
-    max: 26
-    step: 0.5
-    unit_of_measurement: "°C"
-    mode: slider
-    icon: mdi:bed-outline
+  # v17: rimosso mintemp_giorno_inverno_letto (mai letto).
 
   mintemp_notte_inverno_letto:
     name: "Min Temp Notte Inverno Letto"
@@ -441,7 +462,8 @@ input_boolean:
   # clima_autotune_pid (automations_clima_64) e al tile in plancia clima.
 
   # --- GESTIONE MANUALE FANCOIL E DEUMIDIFICATORE ---
-  # Si attivano quando l'utente tocca lo switch a mano (toggle plancia o app Shelly).
+  # Li alza e li abbassa solo l'utente dal loro tile in plancia (nessuna
+  # automazione rileva il tocco dello switch o li cambia, v17).
   # Bloccano le automazioni di controllo finche' e' l'utente stesso ad abbassarli:
   # nessuna automazione li spegne piu', ne' il cambio giorno/notte ne' la partenza
   # per vacanza. Il promemoria delle 10:00 / 22:00 segnala quelli dimenticati.
@@ -466,12 +488,11 @@ input_boolean:
 
   # --- GESTIONE MANUALE POMPA DI CALORE ---
   # Lucchetto della Panasonic (config_clima_9). Quando e' ON nessuna automazione
-  # clima o fonte tocca switch.panasonic_heat_pump_main_heatpump_state: la pompa
-  # resta nello stato scelto a mano, acceso o spento che sia.
-  # Unica eccezione voluta: "Panasonic - Antigelo Vacanze Inverno" resta libera,
-  # perche' e' una protezione e non deve mai essere inibita.
-  # Viene alzato in automatico dal distacco carichi (automations_elettricita) quando
-  # la pompa viene staccata per prelievo di rete oltre soglia.
+  # clima, fonte o antigelo tocca switch.panasonic_heat_pump_main_heatpump_state:
+  # la pompa resta nello stato scelto a mano, acceso o spento che sia
+  # (l'antigelo in quel caso usa la caldaia).
+  # Lo alza e lo abbassa solo l'utente. Il distacco carichi non lo tocca piu'
+  # (v17): usa input_boolean.distacco_pompa (config_elettricita).
   pdc_manuale:
     name: "Pompa di Calore - Gestione Manuale"
     icon: mdi:hand-back-right
@@ -481,7 +502,8 @@ input_boolean:
   # rientra sotto il target: la pompa viene fermata e non deve piu' ripartire
   # fino alle 07:00, perche' con i fancoil fermi la stanza non risale in modo
   # significativo. Sblocco di sicurezza in panasonic_cooling_riaccensione se si
-  # superano comunque i target + 2 C. Spento ai cambi giorno/notte (07:00/23:00).
+  # superano comunque i target + 2 C. Lo spengono clima_modalita_giorno alle
+  # 07:00 e la riaccensione di sicurezza. Visibile in plancia Clima (v17).
   clima_pompa_latch_notte:
     name: "Clima – Latch Notturno Pompa"
     icon: mdi:lock-clock

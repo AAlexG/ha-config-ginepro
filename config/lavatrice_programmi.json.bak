@@ -1,0 +1,199 @@
+{
+ "cicli": [
+  {
+   "ts": 1788592594.4444451,
+   "data": "2026-09-05 09:16:34",
+   "programma": "express_20"
+  },
+  {
+   "ts": 1788597956.8759713,
+   "data": "2026-09-05 10:45:56",
+   "programma": "sportswear"
+  },
+  {
+   "ts": 1789049757.1339712,
+   "data": "2026-09-10 16:15:57",
+   "programma": "eco_40_60"
+  },
+  {
+   "ts": 1789198665.202521,
+   "data": "2026-09-12 09:37:45",
+   "programma": "outerwear"
+  },
+  {
+   "ts": 1789472450.1088388,
+   "data": "2026-09-15 13:40:50",
+   "programma": "express_20"
+  },
+  {
+   "ts": 1789477079.0324087,
+   "data": "2026-09-15 14:57:59",
+   "programma": "sportswear"
+  },
+  {
+   "ts": 1789478661.6526368,
+   "data": "2026-09-15 15:24:21",
+   "programma": "sconosciuto"
+  },
+  {
+   "ts": 1789494534.3240354,
+   "data": "2026-09-15 19:48:54",
+   "programma": "cottons"
+  },
+  {
+   "ts": 1790091126.4028578,
+   "data": "2026-09-22 17:32:06",
+   "programma": "cottons"
+  },
+  {
+   "ts": 1790093012.7330804,
+   "data": "2026-09-22 18:03:32",
+   "programma": "sconosciuto"
+  },
+  {
+   "ts": 1790157070.0292437,
+   "data": "2026-09-23 11:51:10",
+   "programma": "cottons"
+  },
+  {
+   "ts": 1790164897.6615596,
+   "data": "2026-09-23 14:01:37",
+   "programma": "sportswear"
+  },
+  {
+   "ts": 1790168127.7633877,
+   "data": "2026-09-23 14:55:27",
+   "programma": "express_20"
+  },
+  {
+   "ts": 1790338802.1418836,
+   "data": "2026-09-25 14:20:02",
+   "programma": "sportswear"
+  },
+  {
+   "ts": 1790344167.9736314,
+   "data": "2026-09-25 15:49:27",
+   "programma": "delicates"
+  },
+  {
+   "ts": 1790345932.6230938,
+   "data": "2026-09-25 16:18:52",
+   "programma": "sconosciuto"
+  },
+  {
+   "ts": 1790503277.6914625,
+   "data": "2026-09-27 12:01:17",
+   "programma": "outerwear"
+  },
+  {
+   "ts": 1790505627.7428067,
+   "data": "2026-09-27 12:40:27",
+   "programma": "separate_rinse_starch"
+  },
+  {
+   "ts": 1790521402.8512368,
+   "data": "2026-09-27 17:03:22",
+   "programma": "sportswear"
+  },
+  {
+   "ts": 1790678910.600619,
+   "data": "2026-09-29 12:48:30",
+   "programma": "cottons"
+  },
+  {
+   "ts": 1790693472.7057998,
+   "data": "2026-09-29 16:51:12",
+   "programma": "outerwear"
+  },
+  {
+   "ts": 1790763997.9121802,
+   "data": "2026-09-30 12:26:37",
+   "programma": "denim"
+  },
+  {
+   "ts": 1791017620.0656886,
+   "data": "2026-10-03 10:53:40",
+   "programma": "cottons"
+  },
+  {
+   "ts": 1791115742.7469494,
+   "data": "2026-10-04 14:09:02",
+   "programma": "sportswear"
+  },
+  {
+   "ts": 1791210711.0370104,
+   "data": "2026-10-05 16:31:51",
+   "programma": "cottons"
+  },
+  {
+   "ts": 1791293293.5632339,
+   "data": "2026-10-06 15:28:13",
+   "programma": "outerwear"
+  },
+  {
+   "ts": 1791627501.7408373,
+   "data": "2026-10-10 12:18:21",
+   "programma": "cottons"
+  },
+  {
+   "ts": 1791635156.715914,
+   "data": "2026-10-10 14:25:56",
+   "programma": "denim"
+  },
+  {
+   "ts": 1791809538.062694,
+   "data": "2026-10-12 14:52:18",
+   "programma": "down_filled_items"
+  },
+  {
+   "ts": 1791884342.4063349,
+   "data": "2026-10-13 11:39:02",
+   "programma": "cottons"
+  },
+  {
+   "ts": 1791894653.0172472,
+   "data": "2026-10-13 14:30:53",
+   "programma": "down_filled_items"
+  },
+  {
+   "ts": 1791901691.0445776,
+   "data": "2026-10-13 16:28:11",
+   "programma": "outerwear"
+  },
+  {
+   "ts": 1791987035.2901404,
+   "data": "2026-10-14 16:10:35",
+   "programma": "cottons"
+  },
+  {
+   "ts": 1792155471.4511452,
+   "data": "2026-10-16 14:57:51",
+   "programma": "sportswear",
+   "energia_kwh": 0.3,
+   "durata_min": 72,
+   "potenza_w": 250,
+   "temperatura": 40,
+   "acqua_l": 30.0
+  },
+  {
+   "ts": 1792327627.171048,
+   "data": "2026-10-18 14:47:07",
+   "programma": "cottons",
+   "energia_kwh": 0.5,
+   "durata_min": 177,
+   "potenza_w": 169,
+   "temperatura": 60,
+   "acqua_l": 48.0
+  },
+  {
+   "ts": 1792579296.2650335,
+   "data": "2026-10-21 12:41:36",
+   "programma": "outerwear",
+   "energia_kwh": 0.5,
+   "durata_min": 83,
+   "potenza_w": 361,
+   "temperatura": 40,
+   "acqua_l": 55.0
+  }
+ ]
+}

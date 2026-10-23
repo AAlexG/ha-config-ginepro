@@ -370,10 +370,10 @@ config:
           border-collapse:collapse;width:100%;white-space:nowrap\"> <thead><tr style=\"\
           position:sticky;top:0;background:#1A1A2E;color:#E0E0E0\"> <th style=\"padding:4px\
           \ 6px;border:1px solid #444444;text-align:left\">Programma</th> <th style=\"\
-          padding:4px 6px;border:1px solid #444444\">Totale</th> <th style=\"padding:4px\
-          \ 6px;border:1px solid #444444\">kWh/ciclo</th> <th style=\"padding:4px\
+          padding:4px 6px;border:1px solid #444444\">Tot</th> <th style=\"padding:4px\
+          \ 6px;border:1px solid #444444\">kWh ciclo</th> <th style=\"padding:4px\
           \ 6px;border:1px solid #444444\">W medi</th> <th style=\"padding:4px 6px;border:1px\
-          \ solid #444444\">Litri/ciclo</th> {% for x in m %}<th style=\"padding:4px\
+          \ solid #444444\">Litri ciclo</th> {% for x in m %}<th style=\"padding:4px\
           \ 6px;border:1px solid #444444\">{{ x }}</th>{% endfor %} </tr></thead>\
           \ <tbody> {% for row in r %} <tr> <td style=\"padding:3px 6px;border:1px\
           \ solid #333333\">{{ row.programma }}</td> <td style=\"padding:3px 6px;border:1px\

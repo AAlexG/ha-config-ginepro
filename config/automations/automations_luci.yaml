@@ -1,4 +1,7 @@
-# automations_luci_5.yaml
+# automations_luci_6.yaml
+# v6 (23/10/2026): modo pompa letto per contenuto ('Heat' nel nome), come
+#   nelle automazioni clima (audit clima 23/10): vale anche Auto(Heat) e
+#   Heat+DHW; tolto il valore "Heat" semplice che HeishaMon non produce.
 # v5 (21/10/2026): riconsegna della v4, mai arrivata in HA (installata
 #   risultava la v3). Contenuto identico alla v4.
 # v4 (21/10/2026): si usa anche il Garmin. Media aggiornata dopo la
@@ -210,8 +213,7 @@
   conditions:
     - condition: template
       value_template: >-
-        {{ states('select.panasonic_heat_pump_main_operating_mode_state')
-           in ['Heat', 'Heat only'] }}
+        {{ 'Heat' in states('select.panasonic_heat_pump_main_operating_mode_state') }}
     - condition: numeric_state
       entity_id: counter.lenzuola_notti_registrate
       above: 4

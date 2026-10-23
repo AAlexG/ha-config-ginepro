@@ -1,4 +1,33 @@
-# automations_pompa_calore_8.yaml
+# automations_pompa_calore_9.yaml
+#
+# v9 (23/10/2026): audit clima 23/10.
+#   A1: PID cooling, PID heating e riaccensione cooling non agiscono mentre
+#       script.fonte_imposta sta manovrando (stato "on"). Prima il PID heating
+#       poteva riaccendere la pompa nei 30 s fra lo spegnimento e lo
+#       spostamento della valvola verso Caldaia. Il PID heating accende la
+#       pompa tramite script.fonte_imposta come gli altri.
+#   A4: panasonic_accumulo_energia con la potenza prodotta con segno: il calore
+#       tolto in sbrinamento va in input_number.panasonic_sbrinamento_debito e
+#       viene scalato dalla produzione successiva. pdc_risparmio_accumulo usa
+#       la potenza con segno (lo sbrinamento riduce il risparmio).
+#   A6: antigelo con input_boolean.antigelo_avviso_sensore al posto di
+#       states.persistent_notification (vuoto da HA 2023.6): il push "sensore
+#       assente" partiva ogni 30 minuti.
+#   A8: derivativo dei due PID sulla variazione della temperatura della zona
+#       che comanda (sensor.clima_variazione_*_30min, config_clima), non piu'
+#       sull'errore: niente colpi al cambio di zona (21, 23, 07) e niente
+#       sentinella. Rimossi gli helper errore_prec.
+#   A9: la pompa staccata dal distacco carichi e' segnalata da
+#       input_boolean.distacco_pompa (config_elettricita), non piu' da
+#       pdc_manuale: PID, riaccensione e antigelo lo rispettano.
+#   B:  PID cooling solo con la valvola su Pompa, come il PID heating.
+#       clima_reset_pid spegne anche il flag boost solare (prima in Heat
+#       restava acceso dall'estate).
+#   C:  modi pompa letti per contenuto ('Heat' / 'Cool' nel nome), cosi'
+#       valgono anche Auto(Heat), Heat+DHW, Auto(Cool), Cool+DHW; tolti i
+#       valori "Cool"/"Heat" semplici che HeishaMon non produce. Riaccensione
+#       cooling con max_exceeded silent.
+#   D:  sintassi trigger/actions uniforme nel watchdog HeishaMon.
 #
 # v8 (21/10/2026): PID heating con mandata base da temperatura esterna
 #   (sensor.panasonic_pid_heat_base, config_pompa_calore_6) al posto di 35 C
@@ -56,19 +85,34 @@
   # condizione "prodotta > 0" valeva per entrambe: il consumo del compressore
   # con delta mandata/ritorno < 0,2 C o portata nulla (sbrinamento, avvio)
   # andava perso, sottostimando i kWh consumati e gonfiando il COP.
+  # v9 (A4): la potenza prodotta ha il segno. Negativa (sbrinamento): il
+  # calore tolto all'impianto si somma al debito. Positiva: prima si salda il
+  # debito, solo il resto entra nell'accumulatore (total_increasing, non puo'
+  # scendere). Cosi' COP e kWh prodotti sono al netto degli sbrinamenti.
   actions:
+    - variables:
+        kwh_p: "{{ states('sensor.panasonic_potenza_prodotta_calcolata') | float(0) / 60000 }}"
+        debito: "{{ states('input_number.panasonic_sbrinamento_debito') | float(0) }}"
+        netto: "{{ [kwh_p - debito, 0] | max if kwh_p > 0 else 0 }}"
+        nuovo_debito: >-
+          {{ (debito - kwh_p) if kwh_p < 0 else ([debito - kwh_p, 0] | max) }}
     - if:
-        - condition: numeric_state
-          entity_id: sensor.panasonic_potenza_prodotta_calcolata
-          above: 0
+        - "{{ (nuovo_debito - debito) | abs >= 0.0001 }}"
+      then:
+        - action: input_number.set_value
+          target:
+            entity_id: input_number.panasonic_sbrinamento_debito
+          data:
+            value: "{{ [nuovo_debito, 100] | min | round(4) }}"
+    - if:
+        - "{{ netto > 0 }}"
       then:
         - action: input_number.set_value
           target:
             entity_id: input_number.panasonic_energia_prodotta_acc
           data:
             value: >
-              {{ (states('input_number.panasonic_energia_prodotta_acc') | float(0) +
-                  states('sensor.panasonic_potenza_prodotta_calcolata') | float(0) / 1000 / 60)
+              {{ (states('input_number.panasonic_energia_prodotta_acc') | float(0) + netto)
                  | round(4) }}
     # v7: consumo = maggiore fra stima compressore e misura della pompa.
     - variables:
@@ -119,8 +163,9 @@
   variables:
     modo: "{{ states('select.panasonic_heat_pump_main_operating_mode_state') }}"
     cool: "{{ 'Cool' in modo }}"
-    heat: "{{ 'Heat' in modo and 'Cool' not in modo }}"
+    heat: "{{ 'Heat' in modo }}"
     p1: "{{ states('input_number.elettricita_prezzo_kwh') | float(0) }}"
+    # v9 (A4): con segno, lo sbrinamento riduce il risparmio.
     kwh_th: "{{ states('sensor.panasonic_potenza_prodotta_calcolata') | float(0) / 60000 }}"
     kwh_el: >-
       {% set stima = states('sensor.panasonic_potenza_consumata_calcolata') | float(0) %}
@@ -136,7 +181,7 @@
     - condition: state
       entity_id: switch.shelly_box
       state: "on"
-    - "{{ p1 > 0 and (kwh_th > 0 or kwh_el > 0) }}"
+    - "{{ p1 > 0 and (kwh_th != 0 or kwh_el > 0) }}"
   actions:
     - choose:
         - conditions:
@@ -186,13 +231,24 @@
     - condition: state
       entity_id: input_boolean.vacanza
       state: "off"
+    # v9 (A9): pompa staccata dal distacco carichi
+    - condition: state
+      entity_id: input_boolean.distacco_pompa
+      state: "off"
+    # v9 (A1): nessuna manovra pompa/caldaia/valvola in corso
+    - condition: state
+      entity_id: script.fonte_imposta
+      state: "off"
+    # v9 (B): valvola su Pompa, come il PID heating
+    - condition: state
+      entity_id: switch.shelly_box
+      state: "on"
     - condition: state
       entity_id: switch.panasonic_heat_pump_main_heatpump_state
       state: "on"
     - condition: template
       value_template: >
-        {{ states('select.panasonic_heat_pump_main_operating_mode_state')
-           in ['Cool', 'Cool only'] }}
+        {{ 'Cool' in states('select.panasonic_heat_pump_main_operating_mode_state') }}
     - condition: not
       conditions:
         - condition: state
@@ -236,23 +292,23 @@
         ki: "{{ states('input_number.panasonic_pid_ki') | float(0.05) }}"
         kd: "{{ states('input_number.panasonic_pid_kd') | float(0.2) }}"
         integrale_prec: "{{ states('input_number.panasonic_pid_integrale') | float(0) }}"
-        errore_prec: "{{ states('input_number.panasonic_pid_errore_prec') | float(0) }}"
-        # Se entrambi i termometri camera sono fuori uso si ripiega sulla sala,
+        # Zona che comanda: di notte la camera piu' lontana dal target; se
+        # entrambi i termometri camera sono fuori uso si ripiega sulla sala,
         # non si spegne la pompa.
-        errore: >
-          {% if mod == 'notte' %}
-            {% set e = [delta_georgi, delta_tania] | max %}
-            {{ delta_sala if e < -50 else e }}
-          {% else %}
-            {{ delta_sala }}
-          {% endif %}
+        zona: >-
+          {{ ('georgi' if delta_georgi >= delta_tania else 'tania')
+             if (mod == 'notte' and [delta_georgi, delta_tania] | max > -50)
+             else 'sala' }}
+        errore: >-
+          {{ {'sala': delta_sala, 'georgi': delta_georgi, 'tania': delta_tania}[zona] }}
         dt: 5
-        # v65: errore_prec = -20 (minimo dell'helper) e' la sentinella scritta
-        # da clima_reset_pid: primo ciclo dopo un reset, derivativo nullo.
-        # Prima il reset scriveva 0 e alla ripartenza il derivativo valeva
-        # errore x 12 (es. 0,6 C -> 7,2), spostando il primo setpoint di
-        # 7,2 x Kd gradi.
-        derivativo: "{{ 0 if errore_prec <= -19.9 else (errore - errore_prec) / (dt / 60) }}"
+        # v9 (A8): derivativo sulla misura. Variazione della temperatura della
+        # zona che comanda negli ultimi 30 minuti x 2 = C/h (in raffrescamento
+        # derivata dell'errore = derivata della temperatura). Prima era la
+        # differenza fra due errori successivi: al cambio di zona (21, 23, 07)
+        # dava un colpo di diversi gradi sulla mandata.
+        derivativo: >
+          {{ states('sensor.clima_variazione_' ~ zona ~ '_30min') | float(0) * 2 }}
         pompa_accesa: "{{ is_state('switch.panasonic_heat_pump_main_heatpump_state', 'on') }}"
         # --- Limiti di mandata, regolabili in plancia clima ---
         # Il minimo NON e' piu' cablato a 10 C. Acqua troppo fredda nel circuito
@@ -335,11 +391,6 @@
                 value: "{{ nuovo_integrale | round(3) }}"
             - action: input_number.set_value
               target:
-                entity_id: input_number.panasonic_pid_errore_prec
-              data:
-                value: "{{ errore | round(3) }}"
-            - action: input_number.set_value
-              target:
                 entity_id: input_number.panasonic_pid_setpoint_mandata
               data:
                 value: "{{ setpoint }}"
@@ -392,10 +443,19 @@
     - condition: state
       entity_id: switch.shelly_box
       state: "on"
+    # v9 (A9): pompa staccata dal distacco carichi
+    - condition: state
+      entity_id: input_boolean.distacco_pompa
+      state: "off"
+    # v9 (A1): nessuna manovra pompa/caldaia/valvola in corso. Prima nei 30 s
+    # fra lo spegnimento della pompa e lo spostamento della valvola verso
+    # Caldaia il PID poteva riaccenderla.
+    - condition: state
+      entity_id: script.fonte_imposta
+      state: "off"
     - condition: template
       value_template: >
-        {{ states('select.panasonic_heat_pump_main_operating_mode_state')
-           in ['Heat', 'Heat only'] }}
+        {{ 'Heat' in states('select.panasonic_heat_pump_main_operating_mode_state') }}
     - condition: not
       conditions:
         - condition: state
@@ -435,7 +495,6 @@
         ki: "{{ states('input_number.panasonic_pid_ki') | float(0.05) }}"
         kd: "{{ states('input_number.panasonic_pid_kd') | float(0.2) }}"
         integrale_prec: "{{ states('input_number.panasonic_pid_heat_integrale') | float(0) }}"
-        errore_prec: "{{ states('input_number.panasonic_pid_heat_errore_prec') | float(0) }}"
         # Se entrambi i termometri camera sono fuori uso si ripiega sulla sala,
         # non si spegne la pompa.
         # v3: fascia serale 21-23 in Heat (modalita ancora "giorno"): le
@@ -443,22 +502,20 @@
         # i loro fancoil che lavorano gia' dalle 21. Una camera con termometro
         # non disponibile resta esclusa (-99).
         serale: "{{ now().hour >= 21 and now().hour < 23 }}"
-        errore: >
-          {% if mod == 'notte' %}
-            {% set e = [delta_georgi, delta_tania] | max %}
-            {{ delta_sala if e < -50 else e }}
-          {% elif serale %}
-            {{ [delta_sala, delta_georgi, delta_tania] | max }}
-          {% else %}
-            {{ delta_sala }}
-          {% endif %}
+        zona: >-
+          {{ ('georgi' if delta_georgi >= delta_tania else 'tania')
+             if ((mod == 'notte' and [delta_georgi, delta_tania] | max > -50)
+                 or (mod != 'notte' and serale
+                     and [delta_georgi, delta_tania] | max > delta_sala))
+             else 'sala' }}
+        errore: >-
+          {{ {'sala': delta_sala, 'georgi': delta_georgi, 'tania': delta_tania}[zona] }}
         dt: 5
-        # v65: errore_prec = -20 (minimo dell'helper) e' la sentinella scritta
-        # da clima_reset_pid: primo ciclo dopo un reset, derivativo nullo.
-        # Prima il reset scriveva 0 e alla ripartenza il derivativo valeva
-        # errore x 12 (es. 0,6 C -> 7,2), spostando il primo setpoint di
-        # 7,2 x Kd gradi.
-        derivativo: "{{ 0 if errore_prec <= -19.9 else (errore - errore_prec) / (dt / 60) }}"
+        # v9 (A8): derivativo sulla misura della zona che comanda. In
+        # riscaldamento l'errore e' minimo - temperatura, quindi la sua
+        # derivata e' quella della temperatura cambiata di segno.
+        derivativo: >
+          {{ - (states('sensor.clima_variazione_' ~ zona ~ '_30min') | float(0) * 2) }}
         freeheating_on: "{{ is_state('input_boolean.clima_freeheating_attivo', 'on') }}"
         fh: >
           {{ states('input_number.clima_freeheating_setpoint_offset') | float(5) if freeheating_on else 0 }}
@@ -500,24 +557,32 @@
             - condition: template
               value_template: "{{ errore > 0.5 or (errore > 0 and pompa_accesa) }}"
           sequence:
+            # v9 (A1/B): accensione tramite script.fonte_imposta, come la
+            # riaccensione cooling e l'antigelo (valvola gia' su Pompa: spegne
+            # solo un eventuale SAT acceso e accende la pompa).
             - if:
                 - condition: template
                   value_template: "{{ not pompa_accesa }}"
               then:
-                - action: switch.turn_on
-                  target:
-                    entity_id: switch.panasonic_heat_pump_main_heatpump_state
+                - action: script.fonte_imposta
+                  data:
+                    fonte: pompa
+                    accendi: true
+                    chi: automatico
+                  response_variable: esito
+                # Accensione rifiutata (gia' notificata dallo script): niente
+                # setpoint ne' aggiornamento dell'integrale.
+                - if:
+                    - condition: template
+                      value_template: "{{ not esito.ok }}"
+                  then:
+                    - stop: "Pompa non accesa da fonte_imposta"
                 - delay: "00:00:30"
             - action: input_number.set_value
               target:
                 entity_id: input_number.panasonic_pid_heat_integrale
               data:
                 value: "{{ nuovo_integrale | round(3) }}"
-            - action: input_number.set_value
-              target:
-                entity_id: input_number.panasonic_pid_heat_errore_prec
-              data:
-                value: "{{ errore | round(3) }}"
             - action: input_number.set_value
               target:
                 entity_id: input_number.panasonic_pid_setpoint_heat
@@ -534,54 +599,40 @@
 - id: clima_reset_pid
   alias: "Clima – Reset PID (Cool + Heat)"
   description: "Azzera stato PID cooling e heating quando sistema si ferma o cambia"
+  # v9 (C): un solo trigger su qualsiasi cambio del modo pompa (prima un
+  # trigger per "Cool", "Cool only", "Heat", "Heat only": i valori semplici
+  # HeishaMon non li produce). Esclusi i passaggi da/verso unavailable/unknown
+  # (freeze HeishaMon): un glitch del select non deve azzerare il PID.
   triggers:
     - trigger: state
       entity_id: switch.panasonic_heat_pump_main_heatpump_state
       to: "off"
     - trigger: state
       entity_id: select.panasonic_heat_pump_main_operating_mode_state
-      from: "Cool"
-    - trigger: state
-      entity_id: select.panasonic_heat_pump_main_operating_mode_state
-      from: "Cool only"
-    - trigger: state
-      entity_id: select.panasonic_heat_pump_main_operating_mode_state
-      from: "Heat"
-    - trigger: state
-      entity_id: select.panasonic_heat_pump_main_operating_mode_state
-      from: "Heat only"
+      not_from:
+        - unavailable
+        - unknown
+      not_to:
+        - unavailable
+        - unknown
     - trigger: state
       entity_id: input_select.clima_modalita
       to: "manuale"
-  conditions:
-    # Ignora le transizioni verso 'unavailable'/'unknown' (freeze HeishaMon):
-    # un glitch transitorio del select non deve azzerare lo stato PID.
-    - condition: template
-      value_template: "{{ trigger.to_state.state not in ['unavailable', 'unknown'] }}"
   actions:
-    # v65: errore_prec va a -20 (minimo dell'helper), non a 0. E' la
-    # sentinella "primo ciclo dopo il reset": i due PID la riconoscono e
-    # usano derivativo nullo, poi la sovrascrivono con l'errore reale.
+    # v9 (A8): solo gli integrali. Il derivativo e' calcolato sulla misura e
+    # non ha stato da azzerare (rimossa la sentinella errore_prec = -20).
     - action: input_number.set_value
       target:
-        entity_id: input_number.panasonic_pid_integrale
+        entity_id:
+          - input_number.panasonic_pid_integrale
+          - input_number.panasonic_pid_heat_integrale
       data:
         value: 0
-    - action: input_number.set_value
+    # v9 (B): il boost solare esiste solo con la pompa accesa in Cool; prima
+    # in Heat la plancia mostrava l'ultimo stato estivo.
+    - action: input_boolean.turn_off
       target:
-        entity_id: input_number.panasonic_pid_errore_prec
-      data:
-        value: -20
-    - action: input_number.set_value
-      target:
-        entity_id: input_number.panasonic_pid_heat_integrale
-      data:
-        value: 0
-    - action: input_number.set_value
-      target:
-        entity_id: input_number.panasonic_pid_heat_errore_prec
-      data:
-        value: -20
+        entity_id: input_boolean.clima_boost_solare_attivo
 
 #==================================================================================
 # PANASONIC - RIACCENSIONE COOLING (ISTERESI)
@@ -595,6 +646,9 @@
     resterebbe ferma fino al successivo aggiornamento di un termometro, che con
     una stanza termicamente stabile puo' tardare parecchio.
   mode: single
+  # v9 (C): scatta a ogni lettura e la manovra della valvola puo' durare oltre
+  # 150 s: i trigger arrivati nel frattempo vengono scartati senza avviso.
+  max_exceeded: silent
   triggers:
     - trigger: state
       entity_id: sensor.hp1000se_pro_pro_v1_6_4_indoor_temperature
@@ -616,13 +670,20 @@
     - condition: state
       entity_id: input_boolean.vacanza
       state: "off"
+    # v9 (A9): pompa staccata dal distacco carichi
+    - condition: state
+      entity_id: input_boolean.distacco_pompa
+      state: "off"
+    # v9 (A1): nessuna manovra pompa/caldaia/valvola in corso
+    - condition: state
+      entity_id: script.fonte_imposta
+      state: "off"
     - condition: state
       entity_id: switch.panasonic_heat_pump_main_heatpump_state
       state: "off"
     - condition: template
       value_template: >
-        {{ states('select.panasonic_heat_pump_main_operating_mode_state')
-           in ['Cool', 'Cool only'] }}
+        {{ 'Cool' in states('select.panasonic_heat_pump_main_operating_mode_state') }}
     - condition: not
       conditions:
         - condition: state
@@ -731,8 +792,8 @@
   alias: "Panasonic - Antigelo Vacanze Inverno"
   description: >
     In vacanza tiene la sala sopra la soglia antigelo. Usa la pompa se non e'
-    in gestione manuale, altrimenti la caldaia se non e' in gestione manuale;
-    con entrambe in gestione manuale avvisa soltanto. Le manovre di valvola
+    in gestione manuale ne' staccata dal distacco carichi, altrimenti la
+    caldaia se non e' in gestione manuale; se nessuna e' libera avvisa soltanto. Le manovre di valvola
     passano da script.fonte_imposta.
   # v4: rispetta i flag manuali (prima ignorava pdc_manuale per accendere la
   # pompa). Se la pompa e' bloccata usa la caldaia; il SAT riceve come target
@@ -754,12 +815,16 @@
         soglia: "{{ states('input_number.clima_target_emergenza_antigelo') | float(15) }}"
         pompa_accesa: "{{ is_state('switch.panasonic_heat_pump_main_heatpump_state', 'on') }}"
         sat_acceso: "{{ is_state('climate.smart_autotune_thermostat_living_room', 'heat') }}"
-        pompa_libera: "{{ is_state('input_boolean.pdc_manuale', 'off') }}"
+        # v9 (A9): libera = non in gestione manuale e non staccata dal distacco
+        pompa_libera: >
+          {{ is_state('input_boolean.pdc_manuale', 'off')
+             and is_state('input_boolean.distacco_pompa', 'off') }}
         caldaia_libera: "{{ is_state('input_boolean.caldaia_manuale', 'off') }}"
         modo_iniziale: "{{ states('select.panasonic_heat_pump_main_operating_mode_state') }}"
-        in_heat: "{{ modo_iniziale in ['Heat', 'Heat only'] }}"
+        in_heat: "{{ 'Heat' in modo_iniziale }}"
         fonte: "{{ 'pompa' if pompa_libera else ('caldaia' if caldaia_libera else 'nessuna') }}"
-    # Sensore tornato: chiude l'eventuale avviso (nessun effetto se non c'e').
+    # Sensore tornato: chiude l'eventuale avviso (nessun effetto se non c'e')
+    # e riarma il push (v9).
     - if:
         - condition: template
           value_template: "{{ sala_ok }}"
@@ -767,19 +832,31 @@
         - action: persistent_notification.dismiss
           data:
             notification_id: antigelo_sensore_sala
+        - if:
+            - condition: state
+              entity_id: input_boolean.antigelo_avviso_sensore
+              state: "on"
+          then:
+            - action: input_boolean.turn_off
+              target:
+                entity_id: input_boolean.antigelo_avviso_sensore
     - choose:
         # Sensore sala assente: nessuna decisione, solo avviso.
         - conditions:
             - condition: template
               value_template: "{{ not sala_ok }}"
           sequence:
+            # v9 (A6): push una sola volta per assenza del sensore. Prima il
+            # controllo era su states.persistent_notification, sempre vuoto da
+            # HA 2023.6, e il push partiva ogni 30 minuti.
             - if:
-                - condition: template
-                  value_template: >-
-                    {{ states.persistent_notification
-                       | selectattr('attributes.notification_id', 'eq', 'antigelo_sensore_sala')
-                       | list | count == 0 }}
+                - condition: state
+                  entity_id: input_boolean.antigelo_avviso_sensore
+                  state: "off"
               then:
+                - action: input_boolean.turn_on
+                  target:
+                    entity_id: input_boolean.antigelo_avviso_sensore
                 - action: notify.mobile_app_cph2653
                   data:
                     title: "Antigelo senza sensore"
@@ -809,13 +886,14 @@
                   data:
                     title: "❄️ Antigelo bloccato"
                     message: >-
-                      Sala a {{ t_sala | round(1) }}C, sotto soglia {{ soglia }}C, ma pompa e
-                      caldaia sono entrambe in gestione manuale: nessuna accensione.
+                      Sala a {{ t_sala | round(1) }}C, sotto soglia {{ soglia }}C, ma la
+                      pompa non e' disponibile (gestione manuale o distacco carichi) e la
+                      caldaia e' in gestione manuale: nessuna accensione.
                     data:
                       priority: high
                       ttl: 0
                       channel: alarm_stream
-                - stop: "Pompa e caldaia in gestione manuale"
+                - stop: "Pompa e caldaia non disponibili"
             # Pompa in Cool (o altro modo) -> Heat only prima di tutto:
             # serve anche alla caldaia, che non si accende in raffrescamento.
             # "Heat only" = SetOperationMode 0 (integrazione HeishaMon).
@@ -862,7 +940,7 @@
                 title: "Antigelo attivato"
                 message: >-
                   Sala a {{ t_sala | round(1) }}C, sotto soglia {{ soglia }}C.
-                  {{ 'Pompa accesa' if fonte == 'pompa' else 'Caldaia accesa (pompa in gestione manuale)' }}.
+                  {{ 'Pompa accesa' if fonte == 'pompa' else 'Caldaia accesa (pompa in gestione manuale o staccata dal distacco carichi)' }}.
                   {% if not in_heat %}Modo pompa portato da {{ modo_iniziale }} a Heat only.{% endif %}
         # --- Sala risalita: spegne la fonte libera che sta scaldando ---
         - conditions:
@@ -904,11 +982,11 @@
   alias: "HeishaMon - Nessun dato ricevuto da 30 min"
   mode: single
   triggers:
-    - platform: state
+    - trigger: state
       entity_id: binary_sensor.panasonic_heat_pump_lwt
       to: "off"
       for: "00:30:00"
-  action:
+  actions:
     - action: notify.mobile_app_cph2653
       data:
         title: "🛑 HeishaMon - Nessun dato da 30 min"

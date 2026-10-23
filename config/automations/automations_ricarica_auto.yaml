@@ -1,5 +1,7 @@
-# automations_ricarica_auto_8.yaml
+# automations_ricarica_auto_9.yaml
 #
+# v9 (23/10/2026): R3 non riaccende l'auto con input_boolean.distacco_auto
+#   acceso (stato del distacco carichi, che non alza piu' auto_manuale).
 # v8 (22/10/2026): tolta da R3 la condizione del sole. Era superflua: di notte
 #   la previsione non puo' essere "raggiungibile" o "pieno" e il FV non basta,
 #   quindi la riaccensione dipende solo dalle sue condizioni.
@@ -232,6 +234,10 @@
       for: "00:20:00"
     - condition: state
       entity_id: input_boolean.auto_manuale
+      state: "off"
+    # v9: auto staccata dal distacco carichi
+    - condition: state
+      entity_id: input_boolean.distacco_auto
       state: "off"
     - condition: state
       entity_id: switch.solo_auto_contattore_interruttore

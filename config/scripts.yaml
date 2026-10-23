@@ -1,4 +1,14 @@
-# scripts_60.yaml
+# scripts_61.yaml
+# v61 (23/10/2026): audit clima 23/10.
+#   - nuovo otgw_comando: unico punto con il topic MQTT dei comandi OTGW
+#     (prima scritto a mano in 6 punti). caldaia_dhw_on/off lo usano; le
+#     automazioni che mandano HW usano caldaia_dhw_on/off, cosi'
+#     input_boolean.caldaia_dhw_override resta allineato.
+#   - fonte_imposta: la pompa staccata dal distacco carichi
+#     (input_boolean.distacco_pompa) conta come non libera, come pdc_manuale;
+#     modo pompa letto per contenuto ('Heat' nel nome). Lo usa ora anche il
+#     PID heating per accendere la pompa.
+#   - panasonic_set_target_mandata: modo pompa letto per contenuto.
 # v59 (08/10/2026): fonte_imposta, controllo del rele' valvola scritto come
 #   if/then (prima un if con solo else, rifiutato da Home Assistant).
 # v58 (08/10/2026): i comandi di pompa e caldaia (pompa_accendi/_spegni/_commuta,
@@ -620,13 +630,16 @@ riaggancia_yamaha:
 #
 # Unico punto che sposta la valvola pompa/caldaia (switch.shelly_box:
 # on = Pompa, off = Caldaia). Lo usano gestione fonte, riaccensione in
-# raffrescamento, antigelo e i comandi manuali delle plance.
+# raffrescamento, PID heating, antigelo e i comandi manuali delle plance.
+# Mentre gira il suo stato e' "on": PID, riaccensione cooling, sync SAT,
+# riaccensione caldaia e gestione fonte non agiscono (v61, audit A1).
 # Sequenza: spegne la fonte opposta -> 30 s -> valvola -> 120 s -> accende
 # la fonte scelta (se richiesto). Due fonti non sono mai accese insieme e
 # nessuna fonte si accende con la valvola nella posizione sbagliata.
 #
 # Flag manuali (li abbassa solo l'utente, lo script non li cambia mai):
 #   pdc_manuale     -> la pompa non viene toccata, salvo chi = manuale
+#   distacco_pompa  -> idem (stato del distacco carichi, non un flag manuale)
 #   caldaia_manuale -> il SAT non viene toccato, salvo chi = manuale
 # (chi = manuale: comando dell'utente dalle plance. L'antigelo usa
 # chi = antigelo e sceglie gia' una fonte libera.)
@@ -675,18 +688,20 @@ fonte_imposta:
         valvola_su_pompa: "{{ is_state('switch.shelly_box', 'on') }}"
         pompa_accesa: "{{ is_state('switch.panasonic_heat_pump_main_heatpump_state', 'on') }}"
         sat_acceso: "{{ is_state('climate.smart_autotune_thermostat_living_room', 'heat') }}"
-        pompa_libera: "{{ is_state('input_boolean.pdc_manuale', 'off') or da == 'manuale' }}"
+        pompa_libera: >
+          {{ (is_state('input_boolean.pdc_manuale', 'off')
+              and is_state('input_boolean.distacco_pompa', 'off'))
+             or da == 'manuale' }}
         caldaia_libera: "{{ is_state('input_boolean.caldaia_manuale', 'off') or da == 'manuale' }}"
         in_heat: >
-          {{ states('select.panasonic_heat_pump_main_operating_mode_state')
-             in ['Heat', 'Heat only'] }}
+          {{ 'Heat' in states('select.panasonic_heat_pump_main_operating_mode_state') }}
         sposta: "{{ valvola_ok and (valvola_su_pompa != (f == 'pompa')) }}"
         motivo: >-
           {% if f not in ['pompa', 'caldaia'] %}fonte non valida ({{ f }})
           {%- elif not valvola_ok %}valvola pompa/caldaia non disponibile
           {%- elif f == 'caldaia' and pompa_accesa and not pompa_libera %}la pompa e' accesa in gestione manuale
           {%- elif f == 'pompa' and sat_acceso and not caldaia_libera %}la caldaia e' accesa in gestione manuale
-          {%- elif acc and f == 'pompa' and not pompa_libera %}la pompa e' in gestione manuale
+          {%- elif acc and f == 'pompa' and not pompa_libera %}la pompa e' in gestione manuale o staccata dal distacco carichi
           {%- elif acc and f == 'caldaia' and not caldaia_libera %}la caldaia e' in gestione manuale
           {%- elif acc and f == 'caldaia' and not in_heat %}la pompa non e' in Heat: la caldaia non si accende in raffrescamento
           {%- endif %}
@@ -910,37 +925,56 @@ panasonic_set_target_mandata:
         # v55: topic secondo il modo operativo. Prima usava sempre il comando
         # del raffrescamento, anche con la pompa in riscaldamento.
         topic: >-
-          {% if states('select.panasonic_heat_pump_main_operating_mode_state') in ['Heat', 'Heat only'] %}panasonic_heat_pump/commands/SetZ1HeatRequestTemperature{% else %}panasonic_heat_pump/commands/SetZ1CoolRequestTemperature{% endif %}
+          {% if 'Heat' in states('select.panasonic_heat_pump_main_operating_mode_state') %}panasonic_heat_pump/commands/SetZ1HeatRequestTemperature{% else %}panasonic_heat_pump/commands/SetZ1CoolRequestTemperature{% endif %}
         payload: "{{ states('input_number.panasonic_target_mandata_manuale') | int(0) }}"
 
 #==================================================================================
+# SCRIPT: OTGW – COMANDO (v61)
+# Unico punto con il topic MQTT dei comandi OTGW. Topic confermato corretto
+# da Alex il 23/09/2026 (MQTT unique id della web UI OTGW).
+#==================================================================================
+otgw_comando:
+  alias: "OTGW – Invia comando"
+  mode: queued
+  fields:
+    comando:
+      name: Comando
+      description: "Comando OTGW, es. HW=1 o SW=50"
+      required: true
+      selector:
+        text:
+  sequence:
+    - action: mqtt.publish
+      data:
+        topic: "OTGW/set/otgw-84CCA8ADE1AD/command"
+        payload: "{{ comando }}"
+
+#==================================================================================
 # SCRIPT: CALDAIA DHW ON
-# Invia HW=1 via MQTT e aggiorna helper di stato
+# Invia HW=1 all'OTGW e aggiorna helper di stato
 #==================================================================================
 caldaia_dhw_on:
   alias: "Caldaia – Sanitaria ON"
   mode: single
   sequence:
-    - action: mqtt.publish
+    - action: script.otgw_comando
       data:
-        topic: "OTGW/set/otgw-84CCA8ADE1AD/command"
-        payload: "HW=1"
+        comando: "HW=1"
     - action: input_boolean.turn_on
       target:
         entity_id: input_boolean.caldaia_dhw_override
 
 #==================================================================================
 # SCRIPT: CALDAIA DHW OFF
-# Invia HW=0 via MQTT e aggiorna helper di stato
+# Invia HW=0 all'OTGW e aggiorna helper di stato
 #==================================================================================
 caldaia_dhw_off:
   alias: "Caldaia – Sanitaria OFF"
   mode: single
   sequence:
-    - action: mqtt.publish
+    - action: script.otgw_comando
       data:
-        topic: "OTGW/set/otgw-84CCA8ADE1AD/command"
-        payload: "HW=0"
+        comando: "HW=0"
     - action: input_boolean.turn_off
       target:
         entity_id: input_boolean.caldaia_dhw_override
