@@ -1,4 +1,7 @@
-# config_acqua_4.yaml
+# config_acqua_5.yaml
+# v5 (23/10/2026): acqua_tariffa e acqua_quota_fissa_mese aggiornati in
+#   automatico dall'importazione delle bollette PDF (installa.py +
+#   bollette.py). Solo commenti.
 # v4 (10/10/2026): tre totalizzatori per modo di utilizzo (lavatrice,
 #   irrigazione, sanitaria) con state_class total_increasing, per i grafici
 #   mensili e annuali della plancia Consumi > Acqua.
@@ -311,6 +314,8 @@ input_number:
   # configuration_175: acqua_tariffa diventa prezzo A CONSUMO €/m³
   # (variabile + fognatura + oneri, IVA 10% inclusa), media effettiva
   # da bolletta IRETI. Le quote fisse sono in acqua_quota_fissa_mese.
+  # Aggiornata in automatico dall'importazione delle bollette PDF
+  # (installa.py + bollette.py, ultimo mese della bolletta piu' recente).
   acqua_tariffa:
     name: "Acqua – Prezzo a consumo €/m³"
     min: 0.01
@@ -322,7 +327,8 @@ input_number:
 
   # NUOVO (configuration_175): quote fisse mensili acqua da bolletta
   # IRETI (Acquedotto + Fognatura Quota Fissa, €/unità/anno / 12,
-  # IVA 10% inclusa). Aggiornare quando cambiano le tariffe ARERA.
+  # IVA 10% inclusa). Aggiornata in automatico dall'importazione delle bollette PDF
+  # (installa.py + bollette.py, ultimo mese della bolletta piu' recente).
   acqua_quota_fissa_mese:
     name: "Acqua – Quota fissa €/mese"
     min: 0

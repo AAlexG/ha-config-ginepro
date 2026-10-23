@@ -1,4 +1,6 @@
-# file_attesi_15.yaml
+# file_attesi_16.yaml
+# v16 (23/10/2026): nuovo bollette.py (lettura bollette PDF, usato da
+#   installa.py) e la libreria pypdf in lib/pypdf.
 # v15 (23/10/2026): audit clima 23/10. scripts.yaml 28 script (nuovo
 #   otgw_comando); automations_caldaia.yaml 16 (fonte_caldaia_riaccensione,
 #   fonte_valvola_non_disponibile); automations_elettricita.yaml 6
@@ -84,6 +86,8 @@ file:
   # --- Script Python ---
   controllo_file.py:
   installa.py:
+  bollette.py:
+  lib/pypdf/__init__.py:
   lavatrice_programmi.py:
   pv_giorni_senza_sole.py:
   pv_profilo_sereno.py:

@@ -168,32 +168,7 @@ config:
         type: history-graph
       type: grid
     - cards:
-      - heading: STATO DEVICES PRINCIPALI
-        heading_style: title
-        icon: mdi:thermometer-check
-        type: heading
-      - heading: Fancoil & Deumidificatori
-        heading_style: title
-        icon: mdi:heat-pump
-        type: heading
-      - entities:
-        - entity: switch.camerageorgi_shelly_fancoil_georgi
-          name: Tania
-        - entity: switch.camerageorgi_shelly_fancoil_georgi_2
-          name: Georgi
-        - entity: switch.sala_fancoil_sala_shelly_1gen4
-          name: Sala
-        - entity: switch.deumidificatore_armadio_zigbee
-          name: Armadio
-        - entity: switch.box_deumidificatore_cantina_sonoff
-          name: Cantina
-        grid_options:
-          columns: full
-          rows: auto
-        hours_to_show: 168
-        refresh_interval: 300
-        type: history-graph
-      - heading: Pompa
+      - heading: STATO  POMPA
         heading_style: title
         icon: mdi:heat-pump
         type: heading
@@ -276,7 +251,32 @@ config:
         hours_to_show: 24
         refresh_interval: 60
         type: history-graph
-      - heading: Caldaia
+      type: grid
+    - cards:
+      - heading: STATO -FANCOIL & DEUMIDIFICATORI
+        heading_style: title
+        icon: mdi:heat-pump
+        type: heading
+      - entities:
+        - entity: switch.camerageorgi_shelly_fancoil_georgi
+          name: Tania
+        - entity: switch.camerageorgi_shelly_fancoil_georgi_2
+          name: Georgi
+        - entity: switch.sala_fancoil_sala_shelly_1gen4
+          name: Sala
+        - entity: switch.deumidificatore_armadio_zigbee
+          name: Armadio
+        - entity: switch.box_deumidificatore_cantina_sonoff
+          name: Cantina
+        grid_options:
+          columns: full
+          rows: auto
+        hours_to_show: 168
+        refresh_interval: 300
+        type: history-graph
+      type: grid
+    - cards:
+      - heading: STATO CALDAIA
         heading_style: title
         icon: mdi:water-boiler
         type: heading
@@ -347,90 +347,100 @@ config:
         type: history-graph
       type: grid
     - cards:
-      - heading: 'ESTATE: MAX TEMP DA NON SUPERARE'
+      - heading: LIMITE DELLE TEMPERATURE
         heading_style: title
+        icon: mdi:temperature-celsius
+        type: heading
+      - heading: 'ESTATE: MAX T.DA NON SUPERARE'
+        heading_style: subtitle
         icon: mdi:white-balance-sunny
         type: heading
-      - heading: "Giorno 07:00 \u2013 21:00"
+      - heading: 'Giorno:'
         heading_style: subtitle
         type: heading
       - entity: input_number.maxtemp_giorno_estate_sala
         features_position: bottom
         grid_options:
-          columns: 6
-          rows: 1
-        name: Sala
+          columns: full
+          rows: auto
+        name: " Sala 07:00 \u2013 23:00"
         type: tile
         vertical: false
-      - heading: "Notte 21:00 \u2013 07:00 (Tania solo fino alle 23)"
+      - heading: "Durante giorno T.camere non \xE8 importante"
+        heading_style: subtitle
+        type: heading
+      - heading: 'Notte:'
         heading_style: subtitle
         type: heading
       - entity: input_number.maxtemp_notte_estate_letto
         features_position: bottom
         grid_options:
-          columns: 6
-          rows: 1
-        name: Georgi
+          columns: full
+          rows: auto
+        name: Georgi 21:00 - 07:00
         type: tile
         vertical: false
       - entity: input_number.maxtemp_notte_estate_tania
         features_position: bottom
         grid_options:
-          columns: 6
-          rows: 1
-        name: Tania
+          columns: full
+          rows: auto
+        name: Tania 21:00 - 23:00
         type: tile
         vertical: false
+      - heading: "Durante la notte T.sala non \xE8 importante"
+        heading_style: subtitle
+        type: heading
       type: grid
     - cards:
       - heading: 'INVERNO: MIN TEMP DA TENERE'
-        heading_style: title
+        heading_style: subtitle
         icon: mdi:weather-snowy
         type: heading
-      - heading: "Giorno: sala 07:00 \u2013 23:00, camere 07:00 \u2013 21:00"
+      - heading: 'Giorno: '
         heading_style: subtitle
         type: heading
       - entity: input_number.mintemp_giorno_inverno_sala
         features_position: bottom
         grid_options:
-          columns: 6
-          rows: 1
-        name: Sala
-        type: tile
-        vertical: false
-      - entity: input_number.mintemp_giorno_inverno_letto
-        features_position: bottom
-        grid_options:
-          columns: 6
-          rows: 1
-        name: Georgi
+          columns: full
+          rows: auto
+        name: " Sala 07:00 \u2013 23:00"
         type: tile
         vertical: false
       - entity: input_number.mintemp_giorno_inverno_tania
         features_position: bottom
         grid_options:
-          columns: 6
-          rows: 1
-        name: Tania
+          columns: full
+          rows: auto
+        name: "Tania 07:00 \u2013 21:00"
         type: tile
         vertical: false
-      - heading: "Camere 21:00 \u2013 07:00"
+      - entity: input_number.mintemp_giorno_inverno_letto
+        features_position: bottom
+        grid_options:
+          columns: full
+          rows: auto
+        name: "Georgi 07:00 \u2013 21:00"
+        type: tile
+        vertical: false
+      - heading: 'Notte: '
         heading_style: subtitle
         type: heading
       - entity: input_number.mintemp_notte_inverno_letto
         features_position: bottom
         grid_options:
-          columns: 6
-          rows: 1
-        name: Georgi
+          columns: full
+          rows: auto
+        name: "Georgi 21:00 \u2013 07:00"
         type: tile
         vertical: false
       - entity: input_number.mintemp_notte_inverno_tania
         features_position: bottom
         grid_options:
-          columns: 6
-          rows: 1
-        name: Tania
+          columns: full
+          rows: auto
+        name: "Tania 21:00 \u2013 07:00"
         type: tile
         vertical: false
       type: grid
@@ -648,8 +658,8 @@ config:
       - entity: input_number.panasonic_pid_integrale
         features_position: bottom
         grid_options:
-          columns: 4
-          rows: 1
+          columns: full
+          rows: auto
         name: Integrale Cool
         type: tile
         vertical: false
@@ -667,8 +677,8 @@ config:
       - entity: input_number.panasonic_pid_heat_integrale
         features_position: bottom
         grid_options:
-          columns: 4
-          rows: 1
+          columns: full
+          rows: auto
         name: Integrale Heat
         type: tile
         vertical: false
@@ -708,17 +718,17 @@ config:
       - entity: input_boolean.fonte_auto_attiva
         features_position: bottom
         grid_options:
-          columns: 6
-          rows: 1
+          columns: full
+          rows: auto
         name: Stato gestione
         type: tile
         vertical: false
       - entity: sensor.riscaldamento_fonte_conveniente
         features_position: bottom
         grid_options:
-          columns: 6
-          rows: 1
-        name: Fonte conveniente
+          columns: full
+          rows: auto
+        name: "Fonte pi\xF9 conveniente"
         type: tile
         vertical: false
       - entity: sensor.pdc_costo_kwh_termico
@@ -731,25 +741,22 @@ config:
         vertical: false
       - entity: sensor.caldaia_costo_kwh_termico
         features_position: bottom
-        grid_options:
-          columns: 4
-          rows: 1
-        name: Prezzo Caldaia
+        name: PrezzoBaxi
         type: tile
         vertical: false
       - entity: input_number.gse_prezzo_kwh_stima
         features_position: bottom
         grid_options:
-          columns: 6
-          rows: 1
+          columns: full
+          rows: auto
         name: "Prezzo GSE \u20AC/kWh"
         type: tile
         vertical: false
       - entity: input_datetime.fonte_ultima_commutazione
         features_position: bottom
         grid_options:
-          columns: 4
-          rows: 1
+          columns: full
+          rows: auto
         name: Ultimo cambio
         type: tile
         vertical: false
@@ -772,68 +779,68 @@ config:
       - entity: input_number.caldaia_rendimento
         features_position: bottom
         grid_options:
-          columns: 6
-          rows: 1
+          columns: full
+          rows: auto
         name: 'Caldaia: rendimento'
         type: tile
         vertical: false
       - entity: input_number.pdc_cop_fallback
         features_position: bottom
         grid_options:
-          columns: 6
-          rows: 1
+          columns: full
+          rows: auto
         name: 'PdC: COP di riserva'
         type: tile
         vertical: false
       - entity: sensor.panasonic_cop_6h
         features_position: bottom
         grid_options:
-          columns: 6
-          rows: 1
+          columns: full
+          rows: auto
         name: 'PdC: COP ultime 6 ore'
         type: tile
         vertical: false
       - entity: sensor.panasonic_cop_stimato
         features_position: bottom
         grid_options:
-          columns: 6
-          rows: 1
+          columns: full
+          rows: auto
         name: 'PdC: COP stimato adesso'
         type: tile
         vertical: false
-      - heading: COP stimato da temperatura esterna
+      - heading: "COP stimato se COP 6h non \xE8 disponibile"
         heading_style: subtitle
         type: heading
       - entity: input_number.panasonic_cop_text_fredda
         features_position: bottom
         grid_options:
-          columns: 6
-          rows: 1
-        name: T esterna fredda
+          columns: full
+          rows: auto
+        name: T esterna da considerare come fredda
         type: tile
         vertical: false
       - entity: input_number.panasonic_cop_fredda
         features_position: bottom
         grid_options:
-          columns: 6
-          rows: 1
-        name: COP al freddo
+          columns: full
+          rows: auto
+        name: "COP quando \xE8 freddo"
         type: tile
         vertical: false
       - entity: input_number.panasonic_cop_text_mite
         features_position: bottom
         grid_options:
-          columns: 6
-          rows: 1
-        name: T esterna mite
+          columns: full
+          rows: auto
+        name: T esterna da considerare come mite
         type: tile
         vertical: false
       - entity: input_number.panasonic_cop_mite
         features_position: bottom
         grid_options:
-          columns: 6
-          rows: 1
-        name: COP col mite
+          columns: full
+          rows: auto
+        name: "COP quando temp \xE8 mite"
         type: tile
         vertical: false
       - entity: input_number.fonte_isteresi_pct

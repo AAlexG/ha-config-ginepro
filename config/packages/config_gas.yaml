@@ -1,4 +1,7 @@
-# config_gas_1.yaml
+# config_gas_2.yaml
+# v2 (23/10/2026): gas_prezzo_mc e gas_quota_fissa_mese aggiornati in
+#   automatico dall'importazione delle bollette PDF (installa.py +
+#   bollette.py). Solo commenti.
 # Package Casa Ginepro - Gas: consumi, costi e bolletta
 # Estratto da configuration_186.yaml. Nome file = nome del package.
 
@@ -97,6 +100,11 @@ input_number:
     mode: box
     icon: mdi:meter-gas
 
+  # Prezzo marginale a consumo (Corrispettivo Gas Index + contributo +
+  # rete + oneri + accisa + addizionale allo scaglione piu' alto raggiunto,
+  # IVA 22% inclusa; C = 1, Smc = m³). Aggiornata in automatico dall'importazione delle bollette PDF
+  # (installa.py + bollette.py, ultimo mese della bolletta piu' recente).
+  # Nota: la bolletta arriva circa due mesi dopo il mese di riferimento.
   gas_prezzo_mc:
     name: "Gas – Prezzo a consumo €/m³"
     min: 0
@@ -106,10 +114,10 @@ input_number:
     mode: box
     icon: mdi:currency-eur
 
-  # NUOVO (configuration_159): quota fissa mensile gas da bolletta
-  # (vendita + rete − oneri, IVA 22% inclusa). Fatturata da Eni in
-  # €/mese, indipendente dai giorni. Aggiornare quando cambiano le
-  # condizioni economiche o le tariffe ARERA.
+  # Quota fissa mensile gas da bolletta (vendita − sconto + rete − oneri,
+  # IVA 22% inclusa). Fatturata da Eni in €/mese, indipendente dai giorni.
+  # Aggiornata in automatico dall'importazione delle bollette PDF
+  # (installa.py + bollette.py, ultimo mese della bolletta piu' recente).
   gas_quota_fissa_mese:
     name: "Gas – Quota fissa €/mese"
     min: 0

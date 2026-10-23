@@ -373,7 +373,29 @@ config:
         name: Produz.Mese
         type: tile
         vertical: false
-      - heading: POMPA -TEMPERATURE ORA
+      type: grid
+    - cards:
+      - heading: STANZE - TEMPERATURE
+        heading_style: title
+        type: heading
+      - entities:
+        - entity: sensor.hp1000se_pro_pro_v1_6_4_indoor_temperature
+          name: Sala
+        - entity: sensor.termometro_georgi_zigbee_temperature
+          name: Georgi
+        - entity: sensor.termometro_tania_zigbee_temperature
+          name: Tania
+        - entity: sensor.termometro_cantina_zigbee_temperature
+          name: Cantina
+        grid_options:
+          columns: full
+          rows: auto
+        hours_to_show: 24
+        refresh_interval: 60
+        type: history-graph
+      type: grid
+    - cards:
+      - heading: 'POMPA -TEMPERATURE '
         heading_style: title
         icon: mdi:coolant-temperature
         type: heading

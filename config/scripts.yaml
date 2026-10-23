@@ -1,4 +1,6 @@
-# scripts_62.yaml
+# scripts_63.yaml
+# v63 (23/10/2026): commento di salva_bolletta: prezzi a consumo e quote
+#   fisse si aggiornano importando le bollette PDF (installa.py).
 # v62 (23/10/2026): commento di fonte_imposta: l'entity_id nel registro e'
 #   script.fonte_imposta_fonte_in_sicurezza (le automazioni ne leggono lo
 #   stato con quell'id; la chiamata resta action: script.fonte_imposta).
@@ -374,9 +376,11 @@ avviso_vocale_sovraccarico:
 # controllo. I prezzi A CONSUMO sono gestiti altrove:
 #   input_number.elettricita_prezzo_kwh -> automatico dal PUN
 #     (automations_elettricita, sensor.elettricita_prezzo_kwh_variabile)
-#   input_number.gas_prezzo_mc          -> manuale da bolletta
-#     (Corrispettivo Gas Index + contributo + rete + accise, IVA inclusa)
-# Le quote fisse mensili sono in input_number.*_quota_fissa_mese (manuali).
+#   input_number.gas_prezzo_mc          -> da bolletta PDF
+# Le quote fisse mensili (input_number.*_quota_fissa_mese), le componenti a
+# kWh della luce e il prezzo acqua si aggiornano importando le bollette PDF
+# in /config/da_installare (installa.py + bollette.py), che salvano anche i
+# mesi con salva_bolletta.py. Questo script resta per l'inserimento a mano.
 #==================================================================================
 salva_bolletta:
   alias: "Bollette – Salva nel DB"

@@ -1,6 +1,22 @@
 #!/usr/bin/env python3
-# installa_4.py
+# installa_6.py
 #
+# v6 (23/10/2026): bollette IRETI con mesi prima del periodo fatturato
+#   (restituzione di acconti, consumi reali che partono prima): quei mesi
+#   sono correzioni del valore gia' in archivio (meno acconto, piu' reale),
+#   lette dal DB al momento del salvataggio e in ordine di periodo. Se il
+#   mese non e' in archivio vale il solo consumo reale, ma solo se questa
+#   bolletta lo copre per intero; altrimenti non viene scritto e lo dice la
+#   notifica.
+# v5 (23/10/2026): bollette PDF. Un PDF in da_installare viene letto con
+#   bollette.py (Plenitude luce+gas, IRETI acqua): valori mensili e
+#   parametri. In conferma ogni mese va in salva_bolletta.py (stesso
+#   archivio dell'inserimento a mano, i valori a 0 non vengono toccati) e
+#   i parametri (quote fisse, componenti a kWh della luce, prezzo gas)
+#   tornano nel JSON di conferma: li applica script.installa_e_riavvia.
+#   Il PDF viene archiviato in SORGENTI/BOLLETTE (tutte le versioni).
+#   Una bolletta che non si legge o non torna con i totali resta in
+#   da_installare ed e' segnalata fra gli scartati. Nessun riavvio.
 # v4 (21/10/2026): con piu' versioni dello stesso file in da_installare si
 #   installa la piu' alta (prima vinceva la prima in ordine alfabetico,
 #   cioe' la piu' vecchia).
@@ -30,6 +46,7 @@
 #   X_N.py.txt / X_N.py   -> /config/X.py
 #   plancia_X_N.yaml      -> plancia X (.storage/lovelace.<id>)
 #   nome-N.yaml (ESPHome) -> solo archiviato: si carica dall'ESPHome
+#   *.pdf (bolletta)      -> letta da bollette.py, mesi in salva_bolletta.py
 # Ogni file installato viene archiviato con il numero in /config/SORGENTI
 # (sottocartella per tipo); per ogni file restano le ultime 5 versioni.
 #
@@ -52,7 +69,7 @@
 #   - YAML leggibile (plance: con la chiave views), Python compilabile.
 # Un file che non passa resta in da_installare e viene segnalato.
 
-import glob, json, os, re, shutil, subprocess, sys, datetime
+import glob, json, os, re, shutil, sqlite3, subprocess, sys, datetime
 import yaml
 
 CONFIG = os.environ.get("CONFIG_DIR", "/config")
@@ -62,6 +79,9 @@ RIPRISTINO = os.path.join(IN, ".ripristino")
 VERIFICA = os.path.join(IN, ".verifica.json")
 ARCH = os.path.join(CONFIG, "SORGENTI")
 TENERE = 5
+# Ultimo mese importato da bolletta per fornitore: i parametri si aggiornano
+# solo da una bolletta piu' recente (v5).
+ULTIMO = os.path.join(CONFIG, ".bollette_ultimo.json")
 
 # Plance: nome nel file (dopo "plancia_") -> id della plancia in HA.
 # I nomi non elencati valgono se esiste .storage/lovelace.<nome> oppure
@@ -114,6 +134,8 @@ def esci(dati):
 def classifica(nome):
     """Ritorna (tipo, base, versione, destinazione, sottocartella, nome_arch)
     oppure (None, motivo)."""
+    if nome.lower().endswith(".pdf"):
+        return ("bolletta", nome, 0, None, "BOLLETTE", nome)
     m = RE_NOME.match(nome)
     if m:
         base, v, ext = m["base"], int(m["v"]), m["ext"]
@@ -230,6 +252,90 @@ def riavvio_per(tipo, base, dest, src):
     return ("rapido" if cambiati else "nessuno"), ""
 
 
+def descr_bolletta(d):
+    """Riga di riepilogo: fornitore, fattura e valori per mese."""
+    parti = []
+    for k in sorted(d["mesi"]):
+        v = d["mesi"][k]
+        y, m = k.split("-")
+        voci = []
+        if "elec_kwh" in v:
+            voci.append(f"luce {v['elec_kwh']:g} kWh {v['elec_euro']:.2f} €")
+        if "gas_mc" in v:
+            voci.append(f"gas {v['gas_mc']:g} m³ {v['gas_euro']:.2f} €")
+        if "acqua_mc" in v:
+            voci.append(f"acqua {v['acqua_mc']:g} m³ {v['acqua_euro']:.2f} €")
+        parti.append(f"{m}/{y} " + ", ".join(voci))
+    for k, c in sorted(d.get("correzioni", {}).items()):
+        y, m = k.split("-")
+        parti.append(f"{m}/{y} correzione acqua "
+                     f"{c['reale_mc'] + c['acconto_mc']:+.1f} m³ "
+                     f"{c['reale_euro'] + c['acconto_euro']:+.2f} €")
+    return f"bolletta {d['fornitore']} {d['fattura']}: " + "; ".join(parti)
+
+
+def valore_archivio(statistic_id, ym):
+    """Valore mensile gia' salvato da salva_bolletta.py (None se manca)."""
+    y, m = map(int, ym.split("-"))
+    t = datetime.datetime(y, m, 1, tzinfo=datetime.timezone.utc).timestamp()
+    try:
+        con = sqlite3.connect(f"file:{os.path.join(CONFIG, 'home-assistant_v2.db')}?mode=ro",
+                              uri=True, timeout=30)
+        r = con.execute("""SELECT MAX(s.max) FROM statistics s
+            JOIN statistics_meta m ON s.metadata_id = m.id
+            WHERE m.statistic_id = ? AND s.start_ts = ?""", (statistic_id, t)).fetchone()
+        con.close()
+    except sqlite3.Error:
+        return None
+    return r[0] if r and r[0] is not None and r[0] > 0 else None
+
+
+def correggi_mesi(d):
+    """Mesi prima del periodo della bolletta (solo acqua): archivio meno
+    acconto restituito piu' consumo reale. Ritorna (mesi da salvare, note)."""
+    out, note = {}, []
+    for k, c in sorted(d.get("correzioni", {}).items()):
+        mc0 = valore_archivio("input_number.bolletta_acqua_mc", k)
+        eu0 = valore_archivio("input_number.bolletta_acqua_euro", k)
+        if mc0 is not None and eu0 is not None:
+            mc = mc0 + c["acconto_mc"] + c["reale_mc"]
+            eu = eu0 + c["acconto_euro"] + c["reale_euro"]
+        elif c["completo"]:
+            mc, eu = c["reale_mc"], c["reale_euro"]
+        else:
+            note.append(f"{k} non in archivio e coperto solo in parte: non scritto")
+            continue
+        if mc <= 0 or eu <= 0:
+            note.append(f"{k} correzione non scritta (valore risultante {mc:.1f} m³ {eu:.2f} €)")
+            continue
+        out[k] = {"acqua_mc": round(mc, 1), "acqua_euro": round(eu, 2)}
+    return out, note
+
+
+def salva_mesi(d):
+    """Un'esecuzione di salva_bolletta.py per mese, prima le correzioni dei
+    mesi precedenti. Ritorna (ok, errori, note)."""
+    errori = []
+    corr, note = correggi_mesi(d)
+    mesi = dict(corr)
+    mesi.update(d["mesi"])
+    for k in sorted(mesi):
+        v = mesi[k]
+        y, m = k.split("-")
+        args = [f"{m}/{y}"] + [str(v.get(c, 0)) for c in
+                ("elec_kwh", "elec_euro", "gas_mc", "gas_euro",
+                 "acqua_mc", "acqua_euro")] + ["0"]
+        r = subprocess.run([sys.executable, os.path.join(CONFIG, "salva_bolletta.py")]
+                           + args, capture_output=True, text=True, timeout=50)
+        try:
+            esito = json.loads(r.stdout.strip().splitlines()[-1])
+        except (ValueError, IndexError):
+            esito = {"ok": False, "errore": (r.stderr or "nessun output")[-200:]}
+        if not esito.get("ok"):
+            errori.append(f"{m}/{y}: {esito.get('errore')}")
+    return not errori, errori, note
+
+
 def prepara():
     os.makedirs(IN, exist_ok=True)
     avvisi = []
@@ -261,6 +367,21 @@ def prepara():
             scartati.append(f"{nome}: {c[1]}")
             continue
         tipo, base, v, dest, sotto, nome_arch = c
+        if tipo == "bolletta":
+            try:
+                sys.path.insert(0, CONFIG)
+                import bollette
+                dati = bollette.leggi(src)
+            except Exception as e:
+                scartati.append(f"{nome}: {e}")
+                continue
+            fatti.append({"nome": nome, "tipo": "bolletta", "base": base, "v": 0,
+                          "prima": None, "dest": None, "copia": None,
+                          "sotto": sotto,
+                          "arch": f"{dati['fornitore']}_{dati['fattura']}.pdf",
+                          "riavvio": "nessuno",
+                          "motivo": "", "dati": dati})
+            continue
         if base in viste:
             scartati.append(f"{nome}: superato dalla versione piu' alta dello stesso file, va tolto")
             continue
@@ -310,6 +431,8 @@ def prepara():
         json.dump({"fatti": fatti, "esphome": esphome}, f, ensure_ascii=False)
 
     def descr(x):
+        if x["tipo"] == "bolletta":
+            return descr_bolletta(x["dati"])
         corto = os.path.relpath(x["dest"], CONFIG)
         if x["tipo"] == "plancia":
             return f"plancia {x['base'][8:]} {x['v']}"
@@ -379,8 +502,39 @@ def conferma():
             st = json.load(f)
     except (OSError, ValueError):
         esci({"archiviati": [], "tolti": 0, "errore": "stato installazione assente"})
-    archiviati = []
+    archiviati, bollette, parametri, errori_b = [], [], {}, []
+    # Bollette: prima si salvano i mesi; un PDF con errori resta in
+    # da_installare. Parametri: solo da una bolletta piu' recente
+    # dell'ultima importata per quel fornitore (anche fra esecuzioni).
+    try:
+        with open(ULTIMO, encoding="utf-8") as f:
+            ultimo = json.load(f)
+    except (OSError, ValueError):
+        ultimo = {}
+    for x in sorted((x for x in st["fatti"] if x["tipo"] == "bolletta"),
+                    key=lambda x: max(x["dati"]["mesi"])):
+        ok, err, note = salva_mesi(x["dati"])
+        if ok:
+            d = x["dati"]
+            fine = max(d["mesi"])
+            testo = descr_bolletta(d)
+            if note:
+                testo += " (" + "; ".join(note) + ")"
+            if fine >= ultimo.get(d["fornitore"], ""):
+                parametri.update(d["parametri"])
+                ultimo[d["fornitore"]] = fine
+            else:
+                testo += " (parametri non aggiornati: bolletta meno recente)"
+            bollette.append(testo)
+        else:
+            errori_b.append(f"{x['nome']}: {'; '.join(err)}")
+            x["non_archiviare"] = True
+    if bollette:
+        with open(ULTIMO, "w", encoding="utf-8") as f:
+            json.dump(ultimo, f)
     for x in st["fatti"] + st["esphome"]:
+        if x.get("non_archiviare"):
+            continue
         cartella = os.path.join(ARCH, x["sotto"])
         os.makedirs(cartella, exist_ok=True)
         src = os.path.join(IN, x["nome"])
@@ -395,7 +549,9 @@ def conferma():
         except OSError:
             pass
     esci({"archiviati": archiviati, "tolti": tolti,
-          "esphome": [x["nome"] for x in st["esphome"]]})
+          "esphome": [x["nome"] for x in st["esphome"]],
+          "bollette": bollette, "parametri": parametri,
+          "errori_bollette": errori_b})
 
 
 def annulla(silenzioso=False):
@@ -406,6 +562,8 @@ def annulla(silenzioso=False):
         st = {"fatti": []}
     ripristinati = []
     for x in reversed(st["fatti"]):
+        if x["tipo"] == "bolletta":
+            continue   # niente da rimettere: le bollette si salvano in conferma
         if x["copia"] and os.path.exists(x["copia"]):
             shutil.copy2(x["copia"], x["dest"])
         elif not x["copia"] and os.path.exists(x["dest"]):

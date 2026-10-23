@@ -1,4 +1,12 @@
-# config_elettricita_20.yaml
+# config_elettricita_21.yaml
+# v21 (23/10/2026): prezzo luce a consumo con le componenti della bolletta in
+#   helper (elettricita_contributo_kwh, _dispacciamento_kwh, _rete_kwh,
+#   _oneri_kwh, _accisa_kwh) invece di costanti nel template. Le aggiorna
+#   l'importazione delle bollette PDF (installa.py + bollette.py). Corretto il
+#   contributo al consumo: in bolletta e' 0,02 €/kWh piu' il 10% di perdite
+#   (0,022), il template applicava le perdite due volte (0,022 x 1,1).
+#   Senza componenti valide il sensore non e' disponibile e
+#   input_number.elettricita_prezzo_kwh resta all'ultimo valore.
 # v20 (23/10/2026): audit clima A9. Nuovi input_boolean distacco_auto,
 #   distacco_pompa, distacco_deum_cantina, distacco_deum_armadio: stato del
 #   distacco carichi, separato dai flag manuali (che il distacco non tocca
@@ -103,14 +111,13 @@ template:
       # Contratto Plenitude "Trend Casa Base Luce" (monorario,
       # indice PUN Index GME, aggiornamento mensile).
       # Formula quota energia da bolletta:
-      #   Corrispettivo Luce Index x 1,1 (perdite)
-      #   + Contributo al consumo 0,022 x 1,1
-      #   + Dispacciamento 0,01752
-      # Componenti marginali aggiuntive (bolletta apr-mag 2026):
-      #   rete quota energia 0,01473
-      #   oneri ASOS 0,028657 + ARIM 0,0016380
-      #   accisa 0,0227
+      #   (Corrispettivo Luce Index + Contributo al consumo) x 1,1 (perdite)
+      #   + Dispacciamento
+      # Componenti marginali aggiuntive: rete quota energia, oneri
+      #   ASOS + ARIM quota energia, accisa.
       # Il tutto x 1,10 (IVA 10%).
+      # v21: componenti negli helper elettricita_*_kwh, aggiornati
+      # dall'importazione delle bollette PDF.
       # Il PUN Index GME mensile e' approssimato dalla media mensile
       # mono-oraria di sensor.pun_mono_orario (integrazione HACS
       # virtualdj/pun_sensor). Le costanti vanno riallineate quando
@@ -122,13 +129,18 @@ template:
         state_class: measurement
         icon: mdi:currency-eur
         availability: >-
-          {{ has_value('sensor.pun_mono_orario') }}
+          {{ has_value('sensor.pun_mono_orario')
+             and states('input_number.elettricita_contributo_kwh') | float(0) > 0
+             and states('input_number.elettricita_rete_kwh') | float(0) > 0
+             and states('input_number.elettricita_accisa_kwh') | float(0) > 0 }}
         state: >-
           {% set pun = states('sensor.pun_mono_orario') | float(0) %}
-          {% set vendita = pun * 1.1 + 0.022 * 1.1 + 0.01752 %}
-          {% set rete = 0.01473 %}
-          {% set oneri = 0.028657 + 0.0016380 %}
-          {% set accisa = 0.0227 %}
+          {% set contributo = states('input_number.elettricita_contributo_kwh') | float(0) %}
+          {% set disp = states('input_number.elettricita_dispacciamento_kwh') | float(0) %}
+          {% set vendita = (pun + contributo) * 1.1 + disp %}
+          {% set rete = states('input_number.elettricita_rete_kwh') | float(0) %}
+          {% set oneri = states('input_number.elettricita_oneri_kwh') | float(0) %}
+          {% set accisa = states('input_number.elettricita_accisa_kwh') | float(0) %}
           {{ ((vendita + rete + oneri + accisa) * 1.10) | round(4) }}
 
       # "Altri Apparecchi Oggi" spostato in un blocco trigger-based in fondo
@@ -342,15 +354,64 @@ input_number:
     mode: box
     icon: mdi:currency-eur
 
-  # NUOVO (configuration_159): quota fissa mensile elettricità da
-  # bolletta (fissa vendita/rete + quota potenza 4,5 kW, IVA 10%
-  # inclusa). Fatturata da Eni in €/mese, indipendente dai giorni.
+  # Quota fissa mensile elettricità da bolletta (fissa vendita/rete,
+  # sconto domiciliazione, dispacciamento fisso, quota potenza 4,5 kW,
+  # IVA 10% inclusa). Aggiornata in automatico dall'importazione delle bollette PDF
+  # (installa.py + bollette.py, ultimo mese della bolletta piu' recente).
   elettricita_quota_fissa_mese:
     name: "Elettricità – Quota fissa €/mese"
     min: 0
     max: 99
     step: 0.01
     unit_of_measurement: "€/mese"
+    mode: box
+    icon: mdi:currency-eur
+
+  # v21: componenti a kWh del prezzo luce (IVA esclusa) per
+  # sensor.elettricita_prezzo_kwh_variabile. Aggiornata in automatico dall'importazione delle bollette PDF
+  # (installa.py + bollette.py, ultimo mese della bolletta piu' recente).
+  elettricita_contributo_kwh:
+    name: "Elettricità – Contributo al consumo €/kWh"
+    min: 0
+    max: 1
+    step: 0.000001
+    unit_of_measurement: "€/kWh"
+    mode: box
+    icon: mdi:currency-eur
+
+  elettricita_dispacciamento_kwh:
+    name: "Elettricità – Dispacciamento €/kWh"
+    min: 0
+    max: 1
+    step: 0.000001
+    unit_of_measurement: "€/kWh"
+    mode: box
+    icon: mdi:currency-eur
+
+  elettricita_rete_kwh:
+    name: "Elettricità – Rete quota energia €/kWh"
+    min: 0
+    max: 1
+    step: 0.000001
+    unit_of_measurement: "€/kWh"
+    mode: box
+    icon: mdi:currency-eur
+
+  elettricita_oneri_kwh:
+    name: "Elettricità – Oneri ASOS+ARIM €/kWh"
+    min: 0
+    max: 1
+    step: 0.000001
+    unit_of_measurement: "€/kWh"
+    mode: box
+    icon: mdi:currency-eur
+
+  elettricita_accisa_kwh:
+    name: "Elettricità – Accisa €/kWh"
+    min: 0
+    max: 1
+    step: 0.000001
+    unit_of_measurement: "€/kWh"
     mode: box
     icon: mdi:currency-eur
 

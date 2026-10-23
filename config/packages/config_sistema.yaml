@@ -1,4 +1,8 @@
-# config_sistema_9.yaml
+# config_sistema_10.yaml
+# v10 (23/10/2026): installa_e_riavvia applica i parametri delle bollette PDF
+# importate (quote fisse, componenti luce, prezzi gas e acqua) restituiti da
+# installa.py conferma, aggiorna i totali dei consumi e riporta nella
+# notifica le bollette salvate o rifiutate.
 # v9 (16/10/2026): installa_e_riavvia sceglie il riavvio dai file installati
 # (installa.py, campo riavvio): RAPIDO = Riavvio rapido
 # (homeassistant.reload_all), COMPLETO = Riavvia Home Assistant
@@ -156,8 +160,32 @@ script:
           - action: shell_command.installa_conferma
             response_variable: c
           - variables:
+              cr: >-
+                {%- if c.returncode == 0 -%}{{ c.stdout | from_json }}
+                {%- else -%}{{ {'errori_bollette': ['conferma: ' ~ (c.stderr or c.stdout or 'nessun output')[-200:]]} }}
+                {%- endif -%}
+          # v10: parametri dalle bollette PDF importate
+          - repeat:
+              for_each: "{{ (cr.parametri | default({})).items() | list }}"
+              sequence:
+                - action: input_number.set_value
+                  continue_on_error: true
+                  target:
+                    entity_id: "{{ repeat.item[0] }}"
+                  data:
+                    value: "{{ repeat.item[1] }}"
+          - if:
+              - condition: template
+                value_template: "{{ cr.bollette | default([]) | count > 0 }}"
+            then:
+              - action: script.aggiorna_totali_consumi
+                continue_on_error: true
+          - variables:
               testo: >-
                 Installati: {{ r.installati | join(', ') or 'nessuno' }}.
+                {% if cr.errori_bollette | default([]) %}Bollette NON salvate (restano in da_installare): {{ cr.errori_bollette | join('; ') }}.
+                {% endif %}{% if cr.parametri | default({}) %}Parametri aggiornati dalle bollette: {{ cr.parametri | count }}.
+                {% endif %}
                 {% if r.esphome %}Archiviati, da caricare dall'ESPHome: {{ r.esphome | join(', ') }}.
                 {% endif %}{% if r.scartati %}Scartati (restano in da_installare): {{ r.scartati | join('; ') }}.
                 {% endif %}{{ r.avvisi | join(' ') }}
