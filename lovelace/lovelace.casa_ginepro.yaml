@@ -514,6 +514,24 @@ config:
         name: Cucina
         type: tile
         vertical: false
+      - color: '#7E57C2'
+        entity: sensor.presa_luci_cucina_potenza
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        hide_state: false
+        icon: mdi:home-lightning-bolt-outline
+        icon_tap_action:
+          action: navigate
+          navigation_path: /dashboard-consumi/elettricita
+        name: Di cui luciCucina
+        show_entity_picture: false
+        tap_action:
+          action: navigate
+          navigation_path: /dashboard-fancoil
+        type: tile
+        vertical: false
       - entity: sensor.solo_sauna_contatore_potenza_di_fase_a
         features_position: bottom
         grid_options:
@@ -639,6 +657,24 @@ config:
           action: navigate
           navigation_path: /dashboard-fancoil/fancoil
         name: Cucina
+        tap_action:
+          action: navigate
+          navigation_path: /dashboard-fancoil
+        type: tile
+        vertical: false
+      - color: '#7E57C2'
+        entity: sensor.presa_luci_cucina_energia_totale
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        hide_state: false
+        icon: mdi:home-lightning-bolt-outline
+        icon_tap_action:
+          action: navigate
+          navigation_path: /dashboard-consumi/elettricita
+        name: Di cui luciCucina
+        show_entity_picture: false
         tap_action:
           action: navigate
           navigation_path: /dashboard-fancoil

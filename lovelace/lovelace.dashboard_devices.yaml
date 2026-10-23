@@ -362,35 +362,45 @@ config:
         heading_style: subtitle
         icon: mdi:format-list-numbered
         type: heading
-      - content: '{% set r = state_attr(''sensor.lavatrice_tabella_programmi'', ''righe'')
-          %}
-
-          {% set m = state_attr(''sensor.lavatrice_tabella_programmi'', ''mesi'')
-          %}
-
-          {% set t = state_attr(''sensor.lavatrice_tabella_programmi'', ''totali'')
-          %}
-
-          {% if r is none or r | count == 0 %} _Nessun lavaggio registrato_ {% else
-          %}
-
-          <div style="overflow-x:auto;font-size:11px"> <table style="border-collapse:collapse;width:100%;white-space:nowrap">
-          <thead><tr style="position:sticky;top:0;background:#1A1A2E;color:#E0E0E0">
-          <th style="padding:4px 6px;border:1px solid #444444;text-align:left">Programma</th>
-          <th style="padding:4px 6px;border:1px solid #444444">Totale</th> {% for
-          x in m %}<th style="padding:4px 6px;border:1px solid #444444">{{ x }}</th>{%
-          endfor %} </tr></thead> <tbody> {% for row in r %} <tr> <td style="padding:3px
-          6px;border:1px solid #333333">{{ row.programma }}</td> <td style="padding:3px
-          6px;border:1px solid #333333;text-align:right;font-weight:bold">{{ row.totale
-          }}</td> {% for v in row.valori %}<td style="padding:3px 6px;border:1px solid
-          #333333;text-align:right">{{ v if v else '''' }}</td>{% endfor %} </tr>
-          {% endfor %} <tr style="font-weight:bold;background:#2A2A3E"> <td style="padding:3px
-          6px;border:1px solid #333333">TOTALE</td> <td style="padding:3px 6px;border:1px
-          solid #333333;text-align:right">{{ t.totale }}</td> {% for v in t.valori
-          %}<td style="padding:3px 6px;border:1px solid #333333;text-align:right">{{
-          v if v else '''' }}</td>{% endfor %} </tr> </tbody></table></div>
-
-          {% endif %}'
+      - content: "{% set r = state_attr('sensor.lavatrice_tabella_programmi', 'righe')\
+          \ %}\n{% set m = state_attr('sensor.lavatrice_tabella_programmi', 'mesi')\
+          \ %}\n{% set t = state_attr('sensor.lavatrice_tabella_programmi', 'totali')\
+          \ %}\n{% if r is none or r | count == 0 %} _Nessun lavaggio registrato_\
+          \ {% else %}\n<div style=\"overflow-x:auto;font-size:11px\"> <table style=\"\
+          border-collapse:collapse;width:100%;white-space:nowrap\"> <thead><tr style=\"\
+          position:sticky;top:0;background:#1A1A2E;color:#E0E0E0\"> <th style=\"padding:4px\
+          \ 6px;border:1px solid #444444;text-align:left\">Programma</th> <th style=\"\
+          padding:4px 6px;border:1px solid #444444\">Totale</th> <th style=\"padding:4px\
+          \ 6px;border:1px solid #444444\">kWh/ciclo</th> <th style=\"padding:4px\
+          \ 6px;border:1px solid #444444\">W medi</th> <th style=\"padding:4px 6px;border:1px\
+          \ solid #444444\">Litri/ciclo</th> {% for x in m %}<th style=\"padding:4px\
+          \ 6px;border:1px solid #444444\">{{ x }}</th>{% endfor %} </tr></thead>\
+          \ <tbody> {% for row in r %} <tr> <td style=\"padding:3px 6px;border:1px\
+          \ solid #333333\">{{ row.programma }}</td> <td style=\"padding:3px 6px;border:1px\
+          \ solid #333333;text-align:right;font-weight:bold\">{{ row.totale }}</td>\
+          \ <td style=\"padding:3px 6px;border:1px solid #333333;text-align:right\"\
+          >{{ (row.kwh ~ '') | replace('.',',') if row.kwh is not none else '' }}</td>\
+          \ <td style=\"padding:3px 6px;border:1px solid #333333;text-align:right\"\
+          >{{ row.w if row.w is not none else '' }}</td> <td style=\"padding:3px 6px;border:1px\
+          \ solid #333333;text-align:right\">{{ row.litri if row.litri is not none\
+          \ else '' }}</td> {% for v in row.valori %}<td style=\"padding:3px 6px;border:1px\
+          \ solid #333333;text-align:right\">{{ v if v else '' }}</td>{% endfor %}\
+          \ </tr> {% endfor %} <tr style=\"font-weight:bold;background:#2A2A3E\">\
+          \ <td style=\"padding:3px 6px;border:1px solid #333333\">TOTALE</td> <td\
+          \ style=\"padding:3px 6px;border:1px solid #333333;text-align:right\">{{\
+          \ t.totale }}</td> <td style=\"padding:3px 6px;border:1px solid #333333;text-align:right\"\
+          >{{ (t.kwh ~ '') | replace('.',',') if t.kwh is not none else '' }}</td>\
+          \ <td style=\"padding:3px 6px;border:1px solid #333333;text-align:right\"\
+          >{{ t.w if t.w is not none else '' }}</td> <td style=\"padding:3px 6px;border:1px\
+          \ solid #333333;text-align:right\">{{ t.litri if t.litri is not none else\
+          \ '' }}</td> {% for v in t.valori %}<td style=\"padding:3px 6px;border:1px\
+          \ solid #333333;text-align:right\">{{ v if v else '' }}</td>{% endfor %}\
+          \ </tr> </tbody></table></div>\n\n<span style=\"font-size:11px;color:#B0B0B0\"\
+          >kWh/ciclo, W medi e Litri/ciclo: media dei soli lavaggi misurati (energia\
+          \ {{ t.misurati | default(0) }}, acqua {{ t.misurati_acqua | default(0)\
+          \ }} su {{ t.totale }}). W medi = energia Miele (passi di 0,1 kWh) \xF7\
+          \ durata del ciclo: e' la potenza media, non quella di picco.</span>\n{%\
+          \ endif %}"
         grid_options:
           columns: full
           rows: auto

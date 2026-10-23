@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# lavatrice_programmi_4.py
+# lavatrice_programmi_6.py
 # Conta i cicli di lavaggio della Miele WCI870 per programma e per mese.
 #
 # PERCHE' ESISTE
@@ -36,6 +36,29 @@
 # possibile attribuire a un lavaggio il programma di quello prima. Se non c'e'
 # nessun valore utile: "sconosciuto", che e' un'informazione, non un errore.
 #
+# ENERGIA E POTENZA MEDIA (v5)
+# Per ogni ciclo si registrano anche:
+#   energia_kwh  energia del ciclo letta da Miele (passi di 0,1 kWh)
+#   durata_min   tempo trascorso del programma (sensore Miele, in minuti)
+#   potenza_w    energia / durata: potenza MEDIA del ciclo, non di picco
+#   temperatura  temperatura impostata
+#   acqua_l      litri del ciclo letti da Miele (dalla v6)
+# La Miele non espone la potenza istantanea (verificato il 23/10: nessuna
+# entita' in W sul dispositivo), quindi la media del ciclo e' l'unico dato
+# ricavabile. Con passi di 0,1 kWh l'errore e' fino a +-0,05 kWh per ciclo:
+# sui cicli brevi la potenza media va letta come indicativa.
+# Energia = massimo valore valido dall'avvio del ciclo a 15 minuti dopo la
+# fine (la Miele aggiorna a volte l'ultimo passo dopo program_ended), senza
+# superare l'avvio del ciclo successivo. Si scartano i valori del primo
+# minuto: all'accensione il sensore potrebbe mostrare ancora il lavaggio
+# precedente. Durata = massimo del tempo trascorso nella stessa finestra.
+# I cicli gia' in registro senza energia vengono completati finche' sono
+# ancora nel recorder (7 giorni); quelli piu' vecchi restano senza misura.
+# La tabella mostra per programma la media dei soli cicli misurati.
+# v6: aggiunta l'acqua per ciclo, con la stessa finestra e lo stesso scarto
+# iniziale dell'energia. Energia e acqua si completano in modo indipendente:
+# i cicli misurati dalla v5 ricevono l'acqua finche' sono nel recorder.
+#
 # OUTPUT
 #   /config/lavatrice_programmi.json  -> registro dei cicli (scritto qui)
 #   stdout                            -> tabella per il sensore command_line
@@ -48,6 +71,13 @@ LOCK  = "/config/lavatrice_programmi.lock"
 
 STATO = "sensor.lavatricemielewci870"
 PROG  = "sensor.lavatricemielewci870_programma"
+ENER  = "sensor.lavatricemielewci870_consumo_energia"
+ACQUA = "sensor.lavatricemielewci870_consumo_acqua"
+TRASC = "sensor.lavatricemielewci870_tempo_trascorso"
+TEMP  = "sensor.lavatricemielewci870_temperatura_impostata"
+
+DOPO_FINE   = 900   # secondi dopo program_ended in cui leggere l'energia
+SCARTA_INIZ = 60    # secondi iniziali scartati (possibile valore vecchio)
 
 MESI_TABELLA = 12   # colonne mostrate nella plancia
 
@@ -189,6 +219,62 @@ def etichetta(pr_hist, da_ts, a_ts):
     return scelto
 
 
+def numeri(hist, da_ts, a_ts):
+    out = []
+    for t, v in hist:
+        if t > a_ts:
+            break
+        if t < da_ts:
+            continue
+        try:
+            out.append(float(v))
+        except (TypeError, ValueError):
+            pass
+    return out
+
+
+def misura(en_hist, tr_hist, te_hist, avvio, fine, limite):
+    # Ritorna i campi di misura del ciclo, oppure {} se l'energia manca.
+    a = avvio + SCARTA_INIZ
+    b = min(fine + DOPO_FINE, limite)
+    e = numeri(en_hist, a, b)
+    if not e or max(e) <= 0:
+        return {}
+    kwh = round(max(e), 3)
+    d = numeri(tr_hist, a, b)
+    dur = int(max(d)) if d and max(d) > 0 else None
+    t = numeri(te_hist, avvio, fine)
+    out = {"energia_kwh": kwh, "durata_min": dur,
+           "potenza_w": round(kwh * 60000 / dur) if dur else None}
+    if t:
+        out["temperatura"] = int(t[-1])
+    return out
+
+
+def misura_acqua(aq_hist, avvio, fine, limite):
+    a = avvio + SCARTA_INIZ
+    b = min(fine + DOPO_FINE, limite)
+    v = numeri(aq_hist, a, b)
+    if not v or max(v) <= 0:
+        return {}
+    return {"acqua_l": round(max(v), 1)}
+
+
+def media_acqua(lista):
+    m = [c["acqua_l"] for c in lista if c.get("acqua_l")]
+    return (round(sum(m) / len(m)), len(m)) if m else (None, 0)
+
+
+def medie(lista):
+    # Media su cicli con energia e durata: (kWh medi, W medi, n)
+    m = [c for c in lista if c.get("energia_kwh") and c.get("durata_min")]
+    if not m:
+        return None, None, 0
+    kwh = sum(c["energia_kwh"] for c in m) / len(m)
+    w = sum(c["energia_kwh"] for c in m) * 60000 / sum(c["durata_min"] for c in m)
+    return round(kwh, 2), round(w), len(m)
+
+
 def elenco_mesi(n):
     oggi = datetime.date.today()
     anno, mese = oggi.year, oggi.month
@@ -210,15 +296,24 @@ def main():
     cur = con.cursor()
     st_hist = storia(cur, STATO)
     pr_hist = storia(cur, PROG)
+    en_hist = storia(cur, ENER)
+    tr_hist = storia(cur, TRASC)
+    te_hist = storia(cur, TEMP)
+    aq_hist = storia(cur, ACQUA)
     con.close()
+
+    per_ts = {int(c["ts"]): c for c in cicli}
+    fini = [i for i, (_, s) in enumerate(st_hist) if s == "program_ended"]
+    avvii = {i: inizio_ciclo(st_hist, i) for i in fini}
 
     fine_precedente = 0.0
     nuovi = 0
-    for i, (ts, st) in enumerate(st_hist):
-        if st != "program_ended":
-            continue
+    misurati = 0
+    for k, i in enumerate(fini):
+        ts = st_hist[i][0]
+        avvio = avvii[i]
+        limite = avvii[fini[k + 1]] if k + 1 < len(fini) else ts + DOPO_FINE
         if int(ts) not in noti:
-            avvio = inizio_ciclo(st_hist, i)
             prog = etichetta(pr_hist, avvio, ts)
             if prog is None:
                 # Niente dentro il ciclo: si allarga fino al ciclo concluso
@@ -230,13 +325,26 @@ def main():
                                          .strftime("%Y-%m-%d %H:%M:%S"),
                 "programma": prog,
             })
+            per_ts[int(ts)] = cicli[-1]
             noti.add(int(ts))
             nuovi += 1
+        c = per_ts[int(ts)]
+        if "energia_kwh" not in c:
+            m = misura(en_hist, tr_hist, te_hist, avvio, ts, limite)
+            if m:
+                c.update(m)
+                misurati += 1
+        if "acqua_l" not in c:
+            m = misura_acqua(aq_hist, avvio, ts, limite)
+            if m:
+                c.update(m)
+                misurati += 1
         fine_precedente = ts
 
-    if nuovi:
+    if nuovi or misurati:
         salva_registro(cicli)
-        print(f"Registrati {nuovi} nuovi cicli.", file=sys.stderr)
+        print(f"Registrati {nuovi} nuovi cicli, misure aggiunte {misurati}.",
+              file=sys.stderr)
 
     # --- tabella ricalcolata dal registro, non incrementata ---
     conteggi = {}
@@ -258,18 +366,32 @@ def main():
         # resta visibile nella colonna Totale.
         totale = sum(conteggi[m].get(p, 0) for m in conteggi)
         valori = [conteggi.get(m, {}).get(p, 0) for m in mesi]
+        kwh, w, n = medie([c for c in cicli if c["programma"] == p])
+        litri, na = media_acqua([c for c in cicli if c["programma"] == p])
         righe.append({
             "programma": NOMI.get(p, p),
             "totale":    totale,
             "valori":    valori,
+            "kwh":       kwh,
+            "w":         w,
+            "misurati":  n,
+            "litri":     litri,
+            "misurati_acqua": na,
         })
 
     righe.sort(key=lambda r: (-r["totale"], r["programma"]))
 
+    kwh, w, n = medie(cicli)
+    litri, na = media_acqua(cicli)
     totali = {
         "programma": "TOTALE",
         "totale":    sum(r["totale"] for r in righe),
         "valori":    [sum(r["valori"][i] for r in righe) for i in range(len(mesi))],
+        "kwh":       kwh,
+        "w":         w,
+        "misurati":  n,
+        "litri":     litri,
+        "misurati_acqua": na,
     }
 
     etichette = [f"{m[5:7]}/{m[2:4]}" for m in mesi]
@@ -284,4 +406,4 @@ if __name__ == "__main__":
         main()
     except Exception as e:
         print(f"ERRORE: {e}", file=sys.stderr)
-        sys.exit(1)
+        sys.exit(1)
