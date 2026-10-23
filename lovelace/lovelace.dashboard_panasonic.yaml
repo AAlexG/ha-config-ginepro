@@ -1,6 +1,6 @@
 config:
   path: panasonic
-  title: Panasonic/Heishamon v.28
+  title: Panasonic/Heishamon v.30
   views:
   - cards: []
     icon: mdi:heat-pump
@@ -139,6 +139,10 @@ config:
         name: Target TempOut Pompa Manuale
         type: tile
         vertical: false
+        visibility:
+        - condition: state
+          entity: input_boolean.pdc_manuale
+          state: 'on'
       - grid_options:
           columns: 3
           rows: auto
@@ -152,6 +156,10 @@ config:
           action: perform-action
           perform_action: script.panasonic_set_target_mandata
         type: button
+        visibility:
+        - condition: state
+          entity: input_boolean.pdc_manuale
+          state: 'on'
       - entity: select.panasonic_heat_pump_main_operating_mode_state
         features_position: bottom
         grid_options:

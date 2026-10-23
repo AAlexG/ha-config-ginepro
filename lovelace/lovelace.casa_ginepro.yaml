@@ -1,5 +1,5 @@
 config:
-  title: Casa Ginepro v.57
+  title: Casa Ginepro v.59
   views:
   - cards: []
     max_columns: 2
@@ -816,21 +816,19 @@ config:
         hours_to_show: 24
         refresh_interval: 60
         type: history-graph
-      - content: "{% set mod = states('input_select.clima_modalita') %} {% set cool\
-          \ = states('select.panasonic_heat_pump_main_operating_mode_state') in ['Cool',\
-          \ 'Cool only'] %}{% set stagione = 'estate' if cool else 'inverno' %} {%\
-          \ if stagione == 'estate' %}\n  {% if mod == 'notte' %}\n    **Sala max\
-          \ disiderata:** {{ states('input_number.maxtemp_notte_estate_sala') }}\xB0\
-          C\n    **Georgi max disiderata:** {{ states('input_number.maxtemp_notte_estate_letto')\
-          \ }}\xB0C\n  {% else %}\n    **Sala max disiderata:** {{ states('input_number.maxtemp_giorno_estate_sala')\
-          \ }}\xB0C\n    **Georgi max disiderata:** {{ states('input_number.maxtemp_giorno_estate_letto')\
-          \ }}\xB0C\n  {% endif %}\n{% else %}\n  {% if mod == 'notte' %}\n    **Tania\
-          \ min disiderata:** {{ states('input_number.mintemp_notte_inverno_tania')\
-          \ }}\xB0C\n    **Georgi min disiderata:** {{ states('input_number.mintemp_notte_inverno_letto')\
-          \ }}\xB0C\n  {% else %}\n    **Sala min disiderata:** {{ states('input_number.mintemp_giorno_inverno_sala')\
-          \ }}\xB0C\n    **Georgi min disiderata:** {{ states('input_number.mintemp_giorno_inverno_letto')\
-          \ }}\xB0C\n  {% endif %}\n{% endif %} &nbsp;&nbsp; *({{ stagione }} / {{\
-          \ mod }})*\n"
+      - content: "{% set mod = states('input_select.clima_modalita') %}{% set cool\
+          \ = 'Cool' in states('select.panasonic_heat_pump_main_operating_mode_state')\
+          \ %}{% set stagione = 'estate' if cool else 'inverno' %}{% if cool %}\n\
+          \  {% if mod == 'notte' %}\n    **Georgi max desiderata:** {{ states('input_number.maxtemp_notte_estate_letto')\
+          \ }}\xB0C\n    **Tania max desiderata:** {{ states('input_number.maxtemp_notte_estate_tania')\
+          \ }}\xB0C (fino alle 23)\n  {% else %}\n    **Sala max desiderata:** {{\
+          \ states('input_number.maxtemp_giorno_estate_sala') }}\xB0C\n  {% endif\
+          \ %}\n{% else %}\n  {% if mod == 'notte' or now().hour >= 21 %}\n    **Georgi\
+          \ min desiderata:** {{ states('input_number.mintemp_notte_inverno_letto')\
+          \ }}\xB0C\n    **Tania min desiderata:** {{ states('input_number.mintemp_notte_inverno_tania')\
+          \ }}\xB0C\n  {% endif %}\n  {% if mod != 'notte' %}\n    **Sala min desiderata:**\
+          \ {{ states('input_number.mintemp_giorno_inverno_sala') }}\xB0C\n  {% endif\
+          \ %}\n{% endif %} &nbsp;&nbsp; *({{ stagione }} / {{ mod }})*\n"
         grid_options:
           columns: full
           rows: auto
@@ -1543,5 +1541,5 @@ config:
         type: tile
         vertical: false
       type: grid
-    title: 'Casa Ginepro '
+    title: Casa Ginepro
     type: sections

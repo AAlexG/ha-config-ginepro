@@ -350,6 +350,31 @@
    "potenza_w": 361,
    "temperatura": 40,
    "acqua_l": 55.0
+  },
+  {
+   "ts": 1792751760.5536828,
+   "data": "2026-10-23 12:36:00",
+   "programma": "cottons",
+   "energia_kwh": 0.6,
+   "durata_min": 161,
+   "potenza_w": 224,
+   "temperatura": 50,
+   "acqua_l": 46.0
+  },
+  {
+   "ts": 1792752511.3596027,
+   "data": "2026-10-23 12:48:31",
+   "programma": "sconosciuto"
+  },
+  {
+   "ts": 1792757269.0772948,
+   "data": "2026-10-23 14:07:49",
+   "programma": "sportswear",
+   "energia_kwh": 0.4,
+   "durata_min": 73,
+   "potenza_w": 329,
+   "temperatura": 40,
+   "acqua_l": 32.0
   }
  ]
 }
