@@ -1,6 +1,6 @@
 config:
   path: clima
-  title: Clima v.28
+  title: Clima v.29
   views:
   - cards: []
     max_columns: 2
@@ -387,7 +387,7 @@ config:
         heading_style: title
         icon: mdi:weather-snowy
         type: heading
-      - heading: "Giorno 07:00 \u2013 23:00 (dalle 21 anche le camere)"
+      - heading: "Giorno: sala 07:00 \u2013 23:00, camere 07:00 \u2013 21:00"
         heading_style: subtitle
         type: heading
       - entity: input_number.mintemp_giorno_inverno_sala
@@ -398,7 +398,23 @@ config:
         name: Sala
         type: tile
         vertical: false
-      - heading: "Notte 23:00 \u2013 07:00"
+      - entity: input_number.mintemp_giorno_inverno_letto
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        name: Georgi
+        type: tile
+        vertical: false
+      - entity: input_number.mintemp_giorno_inverno_tania
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        name: Tania
+        type: tile
+        vertical: false
+      - heading: "Camere 21:00 \u2013 07:00"
         heading_style: subtitle
         type: heading
       - entity: input_number.mintemp_notte_inverno_letto
@@ -512,7 +528,7 @@ config:
         grid_options:
           columns: 6
           rows: 1
-        name: Soglia Solare
+        name: SogliaSolare
         type: tile
         vertical: false
       - entity: input_number.clima_boost_solare_delta

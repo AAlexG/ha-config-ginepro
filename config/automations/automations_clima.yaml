@@ -1,4 +1,10 @@
-# automations_clima_83.yaml
+# automations_clima_84.yaml
+#
+# v84 (23/10/2026): minimo diurno delle camere (config_clima_18).
+#   clima_inizializzazione lotto 5: mintemp_giorno_inverno_letto e
+#   mintemp_giorno_inverno_tania a 20. Free heating di giorno (07-21) sul
+#   minimo piu' alto fra sala, Georgi e Tania (giorno), come dalle 21 con i
+#   minimi notturni. Commutazione stagionale invariata (di giorno la sala).
 #
 # v83 (23/10/2026): audit clima 23/10.
 #   C: clima_inizializzazione: tolti dai default gli helper rimossi
@@ -126,7 +132,7 @@
       event: start
   actions:
     - variables:
-        versione_attesa: 4
+        versione_attesa: 5
         versione_applicata: "{{ states('input_number.clima_default_versione') | int(2) }}"
         # Terne [lotto, entita', valore]
         valori_default:
@@ -163,6 +169,9 @@
           - [4, input_number.panasonic_cop_fredda, 3.0]
           - [4, input_number.panasonic_cop_text_mite, 15]
           - [4, input_number.panasonic_cop_mite, 3.0]
+          # --- Lotto 5: minimi diurni invernali delle camere (v84) ---
+          - [5, input_number.mintemp_giorno_inverno_letto, 20]
+          - [5, input_number.mintemp_giorno_inverno_tania, 20]
         da_applicare: >
           {% set ns = namespace(elenco=[]) %}
           {% for v in valori_default %}
@@ -1169,7 +1178,10 @@
                  states('input_number.mintemp_notte_inverno_letto') | float(22),
                  states('input_number.mintemp_notte_inverno_tania') | float(22) ] | max }}
           {% else %}
-            {{ states('input_number.mintemp_giorno_inverno_sala') | float(22) }}
+            {# v84: di giorno anche le camere, col loro minimo diurno #}
+            {{ [ states('input_number.mintemp_giorno_inverno_sala') | float(22),
+                 states('input_number.mintemp_giorno_inverno_letto') | float(20),
+                 states('input_number.mintemp_giorno_inverno_tania') | float(20) ] | max }}
           {% endif %}
         base: "{{ states('input_number.clima_delta_naturale_base') | float(3) }}"
         delta: "{{ target - t_ext }}"

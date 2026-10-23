@@ -51,6 +51,26 @@ config:
         heading_style: title
         icon: mdi:air-humidifier
         type: heading
+      - entity: input_boolean.distacco_deum_cantina
+        features_position: bottom
+        grid_options:
+          columns: full
+          rows: auto
+        name: D.cantina spento x prelievo>5800w
+        tap_action:
+          action: toggle
+        type: tile
+        vertical: false
+      - entity: input_boolean.distacco_deum_armadio
+        features_position: bottom
+        grid_options:
+          columns: full
+          rows: auto
+        name: D.armadio spento x prelievo>5800w
+        tap_action:
+          action: toggle
+        type: tile
+        vertical: false
       - entity: sensor.box_deumidificatore_cantina_sonoff_wifi
         features:
         - type: trend-graph

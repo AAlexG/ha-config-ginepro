@@ -1,4 +1,7 @@
-# scripts_61.yaml
+# scripts_62.yaml
+# v62 (23/10/2026): commento di fonte_imposta: l'entity_id nel registro e'
+#   script.fonte_imposta_fonte_in_sicurezza (le automazioni ne leggono lo
+#   stato con quell'id; la chiamata resta action: script.fonte_imposta).
 # v61 (23/10/2026): audit clima 23/10.
 #   - nuovo otgw_comando: unico punto con il topic MQTT dei comandi OTGW
 #     (prima scritto a mano in 6 punti). caldaia_dhw_on/off lo usano; le
@@ -631,7 +634,8 @@ riaggancia_yamaha:
 # Unico punto che sposta la valvola pompa/caldaia (switch.shelly_box:
 # on = Pompa, off = Caldaia). Lo usano gestione fonte, riaccensione in
 # raffrescamento, PID heating, antigelo e i comandi manuali delle plance.
-# Mentre gira il suo stato e' "on": PID, riaccensione cooling, sync SAT,
+# Mentre gira il suo stato e' "on" (entity_id nel registro:
+# script.fonte_imposta_fonte_in_sicurezza): PID, riaccensione cooling, sync SAT,
 # riaccensione caldaia e gestione fonte non agiscono (v61, audit A1).
 # Sequenza: spegne la fonte opposta -> 30 s -> valvola -> 120 s -> accende
 # la fonte scelta (se richiesto). Due fonti non sono mai accese insieme e

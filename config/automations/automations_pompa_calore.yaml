@@ -1,4 +1,20 @@
-# automations_pompa_calore_9.yaml
+# automations_pompa_calore_11.yaml
+#
+# v11 (23/10/2026): PID heating di giorno (07-21) segue la zona piu' fredda
+#   fra sala, camera Georgi e camera Tania, ognuna col proprio minimo diurno
+#   (mintemp_giorno_inverno_sala / _letto / _tania, config_clima_18), come
+#   dalle 21 alle 23 con i minimi notturni delle camere. Prima di giorno
+#   contava solo la sala: con la sala calda la pompa restava ferma anche con
+#   una camera fredda.
+#
+# v10 (23/10/2026): correzione della v9. Lo script fonte_imposta nel registro
+#   di HA ha entity_id script.fonte_imposta_fonte_in_sicurezza, non
+#   script.fonte_imposta: la condizione "script.fonte_imposta = off" era
+#   sempre falsa (entita' inesistente = unknown) e fermava PID cooling, PID
+#   heating e riaccensione cooling dall'installazione della v9. Ora la
+#   condizione usa l'entity_id reale ed e' "non in esecuzione" (stato
+#   diverso da on): un'entita' mancante non puo' piu' bloccare il clima.
+#   La chiamata action: script.fonte_imposta resta valida (usa la chiave YAML).
 #
 # v9 (23/10/2026): audit clima 23/10.
 #   A1: PID cooling, PID heating e riaccensione cooling non agiscono mentre
@@ -236,9 +252,8 @@
       entity_id: input_boolean.distacco_pompa
       state: "off"
     # v9 (A1): nessuna manovra pompa/caldaia/valvola in corso
-    - condition: state
-      entity_id: script.fonte_imposta
-      state: "off"
+    - condition: template
+      value_template: "{{ not is_state('script.fonte_imposta_fonte_in_sicurezza', 'on') }}"
     # v9 (B): valvola su Pompa, come il PID heating
     - condition: state
       entity_id: switch.shelly_box
@@ -417,9 +432,10 @@
 - id: panasonic_pid_heating_completo
   alias: "Panasonic - PID Heating Dual-Zone"
   description: >
-    Giorno: sala vs mintemp_giorno_inverno_sala; dalle 21 alle 23 (v3) anche
-    camera Georgi e camera Tania vs i loro minimi notturni, comanda la zona
-    piu' fredda rispetto al proprio minimo.
+    Giorno: la zona piu' fredda rispetto al proprio minimo fra sala
+    (mintemp_giorno_inverno_sala), camera Georgi e camera Tania; le camere
+    usano il minimo diurno dalle 07 alle 21 (v11) e il minimo notturno dalle
+    21 alle 23 (v3).
     Notte: camera Georgi e camera Tania, ognuna col proprio termometro e col
     proprio target; comanda la camera piu' lontana dal target.
     Isteresi 0.5C, topic SetZ1HeatRequestTemperature.
@@ -450,9 +466,8 @@
     # v9 (A1): nessuna manovra pompa/caldaia/valvola in corso. Prima nei 30 s
     # fra lo spegnimento della pompa e lo spostamento della valvola verso
     # Caldaia il PID poteva riaccenderla.
-    - condition: state
-      entity_id: script.fonte_imposta
-      state: "off"
+    - condition: template
+      value_template: "{{ not is_state('script.fonte_imposta_fonte_in_sicurezza', 'on') }}"
     - condition: template
       value_template: >
         {{ 'Heat' in states('select.panasonic_heat_pump_main_operating_mode_state') }}
@@ -479,12 +494,19 @@
         # Di notte comandano DUE camere indipendenti: l'errore che pilota il PID
         # e' quello della camera piu' fredda rispetto al proprio target (caso
         # peggiore). Una camera con termometro non disponibile e' esclusa (-99).
+        # v11: camere col minimo notturno di notte e dalle 21, col minimo
+        # diurno dalle 07 alle 21.
+        min_camere_notte: "{{ mod == 'notte' or now().hour >= 21 or now().hour < 7 }}"
         delta_georgi: >
-          {{ (states('input_number.mintemp_notte_inverno_letto') | float(22)
+          {% set m = 'input_number.mintemp_notte_inverno_letto' if min_camere_notte
+                     else 'input_number.mintemp_giorno_inverno_letto' %}
+          {{ (states(m) | float(22)
               - states('sensor.termometro_georgi_zigbee_temperature') | float(20))
              if has_value('sensor.termometro_georgi_zigbee_temperature') else -99 }}
         delta_tania: >
-          {{ (states('input_number.mintemp_notte_inverno_tania') | float(22)
+          {% set m = 'input_number.mintemp_notte_inverno_tania' if min_camere_notte
+                     else 'input_number.mintemp_giorno_inverno_tania' %}
+          {{ (states(m) | float(22)
               - states('sensor.termometro_tania_zigbee_temperature') | float(20))
              if has_value('sensor.termometro_tania_zigbee_temperature') else -99 }}
         delta_sala: >
@@ -497,15 +519,16 @@
         integrale_prec: "{{ states('input_number.panasonic_pid_heat_integrale') | float(0) }}"
         # Se entrambi i termometri camera sono fuori uso si ripiega sulla sala,
         # non si spegne la pompa.
-        # v3: fascia serale 21-23 in Heat (modalita ancora "giorno"): le
-        # camere contano come la sala, ognuna col proprio minimo notturno, come
-        # i loro fancoil che lavorano gia' dalle 21. Una camera con termometro
-        # non disponibile resta esclusa (-99).
-        serale: "{{ now().hour >= 21 and now().hour < 23 }}"
+        # v3/v11: in Heat con modalita "giorno" (07-23) le camere contano come
+        # la sala, ognuna col proprio minimo: diurno fino alle 21, notturno
+        # dalle 21 (quando partono anche i loro fancoil). Una camera con
+        # termometro non disponibile resta esclusa (-99).
+        # v11: di giorno (tutta la fascia, non solo 21-23) la zona piu'
+        # fredda fra sala e camere.
         zona: >-
           {{ ('georgi' if delta_georgi >= delta_tania else 'tania')
              if ((mod == 'notte' and [delta_georgi, delta_tania] | max > -50)
-                 or (mod != 'notte' and serale
+                 or (mod != 'notte'
                      and [delta_georgi, delta_tania] | max > delta_sala))
              else 'sala' }}
         errore: >-
@@ -675,9 +698,8 @@
       entity_id: input_boolean.distacco_pompa
       state: "off"
     # v9 (A1): nessuna manovra pompa/caldaia/valvola in corso
-    - condition: state
-      entity_id: script.fonte_imposta
-      state: "off"
+    - condition: template
+      value_template: "{{ not is_state('script.fonte_imposta_fonte_in_sicurezza', 'on') }}"
     - condition: state
       entity_id: switch.panasonic_heat_pump_main_heatpump_state
       state: "off"

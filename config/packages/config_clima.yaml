@@ -1,4 +1,11 @@
-# config_clima_17.yaml
+# config_clima_18.yaml
+# v18 (23/10/2026): minimo diurno invernale anche per le camere. Tornano
+#   input_number.mintemp_giorno_inverno_letto (camera Georgi) e nuovo
+#   mintemp_giorno_inverno_tania (default 20, lotto 5 di clima_inizializzazione):
+#   in Heat dalle 07 alle 21 PID heating, SAT e free heating seguono la zona
+#   piu' fredda fra sala, Georgi e Tania, come gia' dalle 21 alle 23 con i
+#   minimi notturni. Prima di giorno contava solo la sala e una camera poteva
+#   scendere senza limite con la sala gia' calda.
 # v17 (23/10/2026): audit clima 23/10.
 #   A8: nuovi sensori statistics clima_variazione_sala/georgi/tania_30min
 #     (variazione della temperatura negli ultimi 30 minuti): il derivativo dei
@@ -274,7 +281,26 @@ input_number:
     mode: slider
     icon: mdi:thermometer
 
-  # v17: rimosso mintemp_giorno_inverno_letto (mai letto).
+  # v18: minimi diurni delle camere (07-21 in Heat). Le camere si scaldano
+  # con i termosifoni sullo stesso circuito; i loro fancoil di giorno restano
+  # spenti (lavorano solo dalle 21).
+  mintemp_giorno_inverno_letto:
+    name: "Min Temp Giorno Inverno Georgi"
+    min: 14
+    max: 26
+    step: 0.5
+    unit_of_measurement: "°C"
+    mode: slider
+    icon: mdi:bed-outline
+
+  mintemp_giorno_inverno_tania:
+    name: "Min Temp Giorno Inverno Tania"
+    min: 14
+    max: 26
+    step: 0.5
+    unit_of_measurement: "°C"
+    mode: slider
+    icon: mdi:bed-outline
 
   mintemp_notte_inverno_letto:
     name: "Min Temp Notte Inverno Letto"

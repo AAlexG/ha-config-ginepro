@@ -32,6 +32,16 @@ config:
         name: Staccata dalla previsione (si riaccende da sola)
         type: tile
         vertical: false
+      - entity: input_boolean.distacco_auto
+        features_position: bottom
+        grid_options:
+          columns: full
+          rows: auto
+        name: Distacco auto x prelievo > 5800w
+        tap_action:
+          action: toggle
+        type: tile
+        vertical: false
       - entity: binary_sensor.ricarica_auto_fv_sufficiente
         grid_options:
           columns: 6

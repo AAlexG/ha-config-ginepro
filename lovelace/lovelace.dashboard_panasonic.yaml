@@ -65,6 +65,16 @@ config:
         heading_style: title
         icon: mdi:heat-pump
         type: heading
+      - entity: input_boolean.distacco_pompa
+        features_position: bottom
+        grid_options:
+          columns: full
+          rows: auto
+        name: Pompa spenta x prelievo >5800w
+        tap_action:
+          action: toggle
+        type: tile
+        vertical: false
       - double_tap_action:
           action: none
         entity: switch.panasonic_heat_pump_main_heatpump_state
@@ -76,7 +86,7 @@ config:
           action: none
         icon_tap_action:
           action: none
-        name: Stato Pompa
+        name: StatoPompa
         tap_action:
           action: none
         type: tile
@@ -86,7 +96,7 @@ config:
         grid_options:
           columns: 6
           rows: 1
-        name: Pompa Online
+        name: PompaOnline
         type: tile
         vertical: false
       - grid_options:

@@ -1,4 +1,16 @@
-# automations_caldaia_4.yaml
+# automations_caldaia_6.yaml
+#
+# v6 (23/10/2026): clima_sync_sat_target come il PID heating
+#   (automations_pompa_calore_11): di giorno la zona piu' fredda fra sala,
+#   Georgi e Tania con i minimi diurni delle camere (07-21), dalle 21 con i
+#   minimi notturni. Trigger anche sui due nuovi minimi diurni.
+#
+# v5 (23/10/2026): correzione della v4. Condizioni e trigger sullo stato dello
+#   script fonte_imposta con l'entity_id reale del registro,
+#   script.fonte_imposta_fonte_in_sicurezza (script.fonte_imposta non esiste
+#   come entita': la condizione "= off" era sempre falsa e fermava sync SAT,
+#   gestione fonte e riaccensione caldaia). Condizione "non in esecuzione"
+#   (stato diverso da on) invece di "spento".
 #
 # v4 (23/10/2026): audit clima 23/10.
 #   A1: clima_sync_sat_target e fonte_controllo_periodico non agiscono mentre
@@ -48,9 +60,9 @@
     la caldaia segua la stessa zona del PID heating della pompa. Il SAT misura
     solo la sala: riceve target = T sala + errore della zona comandante, cosi'
     il suo errore interno coincide con quello della zona.
-    Giorno: sala vs mintemp_giorno_inverno_sala (target = minimo sala).
-    21-23: la zona piu' fredda fra sala, camera Georgi e camera Tania, ognuna
-    col proprio minimo. Notte 23-07: la piu' fredda fra Georgi e Tania.
+    Giorno: la zona piu' fredda fra sala, camera Georgi e camera Tania, ognuna
+    col proprio minimo (camere: minimo diurno 07-21, notturno 21-23, v6).
+    Notte 23-07: la piu' fredda fra Georgi e Tania.
   # v2 (A7): prima di notte il SAT seguiva la sala a mintemp_notte_inverno_sala,
   # mentre la pompa seguiva le camere: il comfort notturno cambiava con la
   # fonte. Ora ricalcolo ogni 5 minuti (la temperatura delle camere cambia
@@ -65,6 +77,8 @@
     - trigger: state
       entity_id:
         - input_number.mintemp_giorno_inverno_sala
+        - input_number.mintemp_giorno_inverno_letto
+        - input_number.mintemp_giorno_inverno_tania
         - input_number.mintemp_notte_inverno_letto
         - input_number.mintemp_notte_inverno_tania
         - input_select.clima_modalita
@@ -77,16 +91,15 @@
     # v4 (A1): fine di una manovra della fonte. fonte_imposta accende il SAT
     # come ultimo passo, quando lo script e' ancora "on": il target arriva qui.
     - trigger: state
-      entity_id: script.fonte_imposta
+      entity_id: script.fonte_imposta_fonte_in_sicurezza
       to: "off"
   conditions:
     - condition: template
       value_template: >
         {{ 'Heat' in states('select.panasonic_heat_pump_main_operating_mode_state') }}
     # v4 (A1): nessuna manovra pompa/caldaia/valvola in corso
-    - condition: state
-      entity_id: script.fonte_imposta
-      state: "off"
+    - condition: template
+      value_template: "{{ not is_state('script.fonte_imposta_fonte_in_sicurezza', 'on') }}"
     - condition: state
       entity_id: climate.smart_autotune_thermostat_living_room
       state: "heat"
@@ -101,29 +114,31 @@
   actions:
     - variables:
         mod: "{{ states('input_select.clima_modalita') }}"
-        serale: "{{ now().hour >= 21 and now().hour < 23 }}"
         sala_ok: "{{ has_value('sensor.hp1000se_pro_pro_v1_6_4_indoor_temperature') }}"
         t_sala: "{{ states('sensor.hp1000se_pro_pro_v1_6_4_indoor_temperature') | float(20) }}"
         min_sala: "{{ states('input_number.mintemp_giorno_inverno_sala') | float(22) }}"
         # Errori = minimo - temperatura (positivo = zona fredda), come nel PID
         # heating. Camera con termometro non disponibile esclusa (-99).
         delta_sala: "{{ min_sala - t_sala }}"
+        min_camere_notte: "{{ mod == 'notte' or now().hour >= 21 or now().hour < 7 }}"
         delta_georgi: >
-          {{ (states('input_number.mintemp_notte_inverno_letto') | float(22)
+          {% set m = 'input_number.mintemp_notte_inverno_letto' if min_camere_notte
+                     else 'input_number.mintemp_giorno_inverno_letto' %}
+          {{ (states(m) | float(22)
               - states('sensor.termometro_georgi_zigbee_temperature') | float(20))
              if has_value('sensor.termometro_georgi_zigbee_temperature') else -99 }}
         delta_tania: >
-          {{ (states('input_number.mintemp_notte_inverno_tania') | float(22)
+          {% set m = 'input_number.mintemp_notte_inverno_tania' if min_camere_notte
+                     else 'input_number.mintemp_giorno_inverno_tania' %}
+          {{ (states(m) | float(22)
               - states('sensor.termometro_tania_zigbee_temperature') | float(20))
              if has_value('sensor.termometro_tania_zigbee_temperature') else -99 }}
         errore: >
           {% if mod == 'notte' %}
             {% set e = [delta_georgi, delta_tania] | max %}
             {{ delta_sala if e < -50 else e }}
-          {% elif serale %}
-            {{ [delta_sala, delta_georgi, delta_tania] | max }}
           {% else %}
-            {{ delta_sala }}
+            {{ [delta_sala, delta_georgi, delta_tania] | max }}
           {% endif %}
         # Senza temperatura sala il SAT non regola comunque: si lascia il
         # minimo della sala, come prima della v2. Passo 0,5 e limiti 7-35 C
@@ -479,9 +494,8 @@
       entity_id: input_boolean.vacanza
       state: "off"
     # v4 (A1): nessuna manovra gia' in corso (es. comando dalla plancia)
-    - condition: state
-      entity_id: script.fonte_imposta
-      state: "off"
+    - condition: template
+      value_template: "{{ not is_state('script.fonte_imposta_fonte_in_sicurezza', 'on') }}"
     # Valvola e pompa devono essere vive
     - condition: template
       value_template: >-
@@ -695,9 +709,8 @@
         - condition: state
           entity_id: input_select.clima_modalita
           state: "manuale"
-    - condition: state
-      entity_id: script.fonte_imposta
-      state: "off"
+    - condition: template
+      value_template: "{{ not is_state('script.fonte_imposta_fonte_in_sicurezza', 'on') }}"
     # Sicurezza: mai con la pompa accesa (fonte_sicurezza la gestisce)
     - condition: state
       entity_id: switch.panasonic_heat_pump_main_heatpump_state
