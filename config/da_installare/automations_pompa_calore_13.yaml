@@ -1,4 +1,9 @@
-# automations_pompa_calore_12.yaml
+# automations_pompa_calore_13.yaml
+#
+# v13 (23/10/2026): la v12 non bastava. Home Assistant lascia come testo
+#   anche i numeri a decimali fissi ("0.00001234"), quindi gli errori
+#   continuavano. Ora ogni variabile in kWh passa da | float(0) nel punto in
+#   cui viene usata, qualunque forma abbia il testo.
 #
 # v12 (23/10/2026): panasonic_accumulo_energia e pdc_risparmio_accumulo in
 #   errore a ogni minuto con potenze piccole. L'energia di un minuto in kWh
@@ -117,26 +122,26 @@
         # v12: '%.8f' = decimali fissi, mai notazione scientifica (vedi sopra).
         kwh_p: "{{ '%.8f' % (states('sensor.panasonic_potenza_prodotta_calcolata') | float(0) / 60000) }}"
         debito: "{{ '%.8f' % (states('input_number.panasonic_sbrinamento_debito') | float(0)) }}"
-        netto: "{{ '%.8f' % (([kwh_p - debito, 0] | max) if kwh_p > 0 else 0) }}"
+        netto: "{{ '%.8f' % (([(kwh_p | float(0)) - (debito | float(0)), 0] | max) if (kwh_p | float(0)) > 0 else 0) }}"
         nuovo_debito: >-
-          {{ '%.8f' % ((debito - kwh_p) if kwh_p < 0 else ([debito - kwh_p, 0] | max)) }}
+          {{ '%.8f' % (((debito | float(0)) - (kwh_p | float(0))) if (kwh_p | float(0)) < 0 else ([(debito | float(0)) - (kwh_p | float(0)), 0] | max)) }}
     - if:
-        - "{{ (nuovo_debito - debito) | abs >= 0.0001 }}"
+        - "{{ ((nuovo_debito | float(0)) - (debito | float(0))) | abs >= 0.0001 }}"
       then:
         - action: input_number.set_value
           target:
             entity_id: input_number.panasonic_sbrinamento_debito
           data:
-            value: "{{ [nuovo_debito, 100] | min | round(4) }}"
+            value: "{{ [(nuovo_debito | float(0)), 100] | min | round(4) }}"
     - if:
-        - "{{ netto > 0 }}"
+        - "{{ (netto | float(0)) > 0 }}"
       then:
         - action: input_number.set_value
           target:
             entity_id: input_number.panasonic_energia_prodotta_acc
           data:
             value: >
-              {{ (states('input_number.panasonic_energia_prodotta_acc') | float(0) + netto)
+              {{ (states('input_number.panasonic_energia_prodotta_acc') | float(0) + (netto | float(0)))
                  | round(4) }}
     # v7: consumo = maggiore fra stima compressore e misura della pompa.
     - variables:
@@ -205,7 +210,7 @@
     - condition: state
       entity_id: switch.shelly_box
       state: "on"
-    - "{{ p1 > 0 and (kwh_th != 0 or kwh_el > 0) }}"
+    - "{{ p1 > 0 and ((kwh_th | float(0)) != 0 or (kwh_el | float(0)) > 0) }}"
   actions:
     - choose:
         - conditions:
@@ -218,7 +223,7 @@
                 value: >-
                   {% set gas = states('sensor.caldaia_costo_kwh_termico') | float(0) %}
                   {{ (states('input_number.pdc_risparmio_inverno_euro') | float(0)
-                      + kwh_th * gas - kwh_el * p1) | round(4) }}
+                      + (kwh_th | float(0)) * gas - (kwh_el | float(0)) * p1) | round(4) }}
         - conditions:
             - "{{ cool and has_value('sensor.pdc_eer_vecchio_refrigeratore') }}"
           sequence:
@@ -229,7 +234,7 @@
                 value: >-
                   {% set eer = states('sensor.pdc_eer_vecchio_refrigeratore') | float(3) %}
                   {{ (states('input_number.pdc_risparmio_estate_euro') | float(0)
-                      + (kwh_th / eer - kwh_el) * p1) | round(4) }}
+                      + ((kwh_th | float(0)) / eer - (kwh_el | float(0))) * p1) | round(4) }}
 
 #==================================================================================
 # PANSONIC - PID – RAFFRESCAMENTO COMPLETO (PID con D)

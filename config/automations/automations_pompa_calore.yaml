@@ -1,4 +1,11 @@
-# automations_pompa_calore_11.yaml
+# automations_pompa_calore_12.yaml
+#
+# v12 (23/10/2026): panasonic_accumulo_energia e pdc_risparmio_accumulo in
+#   errore a ogni minuto con potenze piccole. L'energia di un minuto in kWh
+#   (W/60000) sotto 0,0001 veniva scritta in notazione scientifica (5e-05):
+#   Home Assistant lascia quel risultato come testo e il calcolo successivo
+#   falliva ("can't multiply sequence by non-int of type 'float'"), saltando
+#   il minuto. Ora le variabili in kWh sono scritte con 8 decimali fissi.
 #
 # v11 (23/10/2026): PID heating di giorno (07-21) segue la zona piu' fredda
 #   fra sala, camera Georgi e camera Tania, ognuna col proprio minimo diurno
@@ -107,11 +114,12 @@
   # scendere). Cosi' COP e kWh prodotti sono al netto degli sbrinamenti.
   actions:
     - variables:
-        kwh_p: "{{ states('sensor.panasonic_potenza_prodotta_calcolata') | float(0) / 60000 }}"
-        debito: "{{ states('input_number.panasonic_sbrinamento_debito') | float(0) }}"
-        netto: "{{ [kwh_p - debito, 0] | max if kwh_p > 0 else 0 }}"
+        # v12: '%.8f' = decimali fissi, mai notazione scientifica (vedi sopra).
+        kwh_p: "{{ '%.8f' % (states('sensor.panasonic_potenza_prodotta_calcolata') | float(0) / 60000) }}"
+        debito: "{{ '%.8f' % (states('input_number.panasonic_sbrinamento_debito') | float(0)) }}"
+        netto: "{{ '%.8f' % (([kwh_p - debito, 0] | max) if kwh_p > 0 else 0) }}"
         nuovo_debito: >-
-          {{ (debito - kwh_p) if kwh_p < 0 else ([debito - kwh_p, 0] | max) }}
+          {{ '%.8f' % ((debito - kwh_p) if kwh_p < 0 else ([debito - kwh_p, 0] | max)) }}
     - if:
         - "{{ (nuovo_debito - debito) | abs >= 0.0001 }}"
       then:
@@ -182,7 +190,7 @@
     heat: "{{ 'Heat' in modo }}"
     p1: "{{ states('input_number.elettricita_prezzo_kwh') | float(0) }}"
     # v9 (A4): con segno, lo sbrinamento riduce il risparmio.
-    kwh_th: "{{ states('sensor.panasonic_potenza_prodotta_calcolata') | float(0) / 60000 }}"
+    kwh_th: "{{ '%.8f' % (states('sensor.panasonic_potenza_prodotta_calcolata') | float(0) / 60000) }}"
     kwh_el: >-
       {% set stima = states('sensor.panasonic_potenza_consumata_calcolata') | float(0) %}
       {% if heat %}
@@ -192,7 +200,7 @@
       {% else %}
         {% set pompa = 0 %}
       {% endif %}
-      {{ ([stima, pompa] | max) / 60000 }}
+      {{ '%.8f' % (([stima, pompa] | max) / 60000) }}
   conditions:
     - condition: state
       entity_id: switch.shelly_box

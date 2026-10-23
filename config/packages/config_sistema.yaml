@@ -1,4 +1,10 @@
-# config_sistema_10.yaml
+# config_sistema_11.yaml
+# v11 (23/10/2026): installa_e_riavvia non chiama piu' homeassistant.reload_all
+# da se stesso. Quando installava una nuova versione di questo package, il
+# Riavvio rapido ricaricava anche lo script in esecuzione: lo script veniva
+# fermato e la sua entita' restava bloccata su "on" (pulsante muto fino al
+# riavvio di HA, 23/10 22:31). Ora avvia script.installa_ricarica senza
+# aspettarlo e termina; installa_ricarica attende 3 s e fa il Riavvio rapido.
 # v10 (23/10/2026): installa_e_riavvia applica i parametri delle bollette PDF
 # importate (quote fisse, componenti luce, prezzi gas e acqua) restituiti da
 # installa.py conferma, aggiorna i totali dei consumi e riporta nella
@@ -116,7 +122,9 @@ script:
           - condition: template
             value_template: "{{ r.totale == 0 }}"
         then:
-          - action: homeassistant.reload_all
+          - action: script.turn_on
+            target:
+              entity_id: script.installa_ricarica
           - stop: "nessun file da installare"
       - if:
           - condition: template
@@ -213,7 +221,9 @@ script:
                   - condition: template
                     value_template: "{{ r.riavvio == 'rapido' }}"
                 sequence:
-                  - action: homeassistant.reload_all
+                  - action: script.turn_on
+                    target:
+                      entity_id: script.installa_ricarica
         else:
           - action: shell_command.installa_annulla
           - variables:
@@ -235,3 +245,19 @@ script:
               title: "📦 Installazione annullata"
               notification_id: installa_e_riavvia
               message: "{{ testo }}"
+
+  # ============================================================
+  # RIAVVIO RAPIDO DOPO L'INSTALLAZIONE
+  # Avviato da installa_e_riavvia con script.turn_on (non bloccante): parte
+  # quando installa_e_riavvia ha gia' finito, cosi' il ricaricamento degli
+  # script non interrompe lo script che lo ha chiesto. Se si cambia questo
+  # script serve Riavvia Home Assistant al posto del Riavvio rapido.
+  # ============================================================
+  installa_ricarica:
+    alias: "Installa - riavvio rapido"
+    icon: mdi:reload
+    mode: single
+    max_exceeded: silent
+    sequence:
+      - delay: "00:00:03"
+      - action: homeassistant.reload_all
