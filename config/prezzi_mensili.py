@@ -1,4 +1,7 @@
-# prezzi_mensili_1.py
+# prezzi_mensili_2.py
+# v2 (24/10/2026): indirizzo ARERA con www (arera.it senza www non si
+#   risolve dalla rete di casa: gaierror -3) ed errori di rete riportati per
+#   intero, non solo il tipo.
 #
 # Prezzi di riferimento mensili di Casa Ginepro, per i grafici e per il
 # prezzo del gas a consumo. Chiamato da shell_command.prezzi_mensili
@@ -9,7 +12,7 @@
 #   PSV gas  - ARERA, "Valore CMEM vulnerabili": media mensile del PSV day
 #              ahead in EUR/Smc, pubblicata entro i primi 2 giorni lavorativi
 #              del mese successivo.
-#              https://arera.it/area-operatori/prezzi-e-tariffe/valore-cmemm-vulnerabili
+#              https://www.arera.it/area-operatori/prezzi-e-tariffe/valore-cmemm-vulnerabili
 #   PUN luce - mesi gia' fatturati: dalla bolletta Plenitude (Corrispettivo
 #              Luce Index / 1,1, cioe' il PUN applicato); mesi chiusi non
 #              ancora fatturati: ultimo valore del mese di
@@ -47,7 +50,7 @@ CONFIG = "/config"
 DB = os.path.join(CONFIG, "home-assistant_v2.db")
 BOLLETTE = os.path.join(CONFIG, "SORGENTI", "BOLLETTE")
 CACHE = os.path.join(CONFIG, ".prezzi_cache.json")
-URL_ARERA = "https://arera.it/area-operatori/prezzi-e-tariffe/valore-cmemm-vulnerabili"
+URL_ARERA = "https://www.arera.it/area-operatori/prezzi-e-tariffe/valore-cmemm-vulnerabili"
 SOURCE = "prezzi"
 
 MESI = ["gennaio", "febbraio", "marzo", "aprile", "maggio", "giugno", "luglio",
@@ -86,7 +89,7 @@ def psv_arera(cache):
         with urllib.request.urlopen(req, timeout=20) as r:
             pagina = r.read().decode("utf-8", errors="replace")
     except Exception as e:
-        errori.append(f"ARERA non raggiungibile ({e.__class__.__name__}), uso la copia")
+        errori.append(f"ARERA non raggiungibile ({e!r:.150}), uso la copia")
         return cache.get("arera", {})
     testo = re.sub(r"<[^>]+>", "\n", pagina)
     righe = [html.unescape(x).strip().strip("*").strip() for x in testo.splitlines()]

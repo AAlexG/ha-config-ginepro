@@ -529,6 +529,24 @@ config:
           columns: full
           rows: auto
         type: markdown
+      - heading: "PUN \u20AC/kWh mese (bolletta o fine mese)"
+        heading_style: subtitle
+        type: heading
+      - heading: Il prezzo base dal sito ARERA o da boletta
+        heading_style: subtitle
+        type: heading
+      - chart_type: bar
+        days_to_show: 730
+        entities:
+        - entity: prezzi:pun_mese
+          name: PUN
+        grid_options:
+          columns: 12
+          rows: auto
+        period: month
+        stat_types:
+        - mean
+        type: statistics-graph
       - entity: input_number.elettricita_prezzo_kwh
         grid_options:
           columns: 12
@@ -844,21 +862,6 @@ config:
         period: month
         stat_types:
         - max
-        type: statistics-graph
-      - heading: "PUN \u20AC/kWh mese (bolletta o fine mese)"
-        heading_style: subtitle
-        type: heading
-      - chart_type: bar
-        days_to_show: 730
-        entities:
-        - entity: prezzi:pun_mese
-          name: PUN
-        grid_options:
-          columns: 12
-          rows: auto
-        period: month
-        stat_types:
-        - mean
         type: statistics-graph
       type: grid
     - cards:
@@ -1573,21 +1576,6 @@ config:
         - change
         title: Gas, Euro/mese
         type: statistics-graph
-      - heading: "PSV \u20AC/Smc mese (ARERA)"
-        heading_style: subtitle
-        type: heading
-      - chart_type: bar
-        days_to_show: 730
-        entities:
-        - entity: prezzi:psv_mese
-          name: PSV
-        grid_options:
-          columns: 12
-          rows: auto
-        period: month
-        stat_types:
-        - mean
-        type: statistics-graph
       - chart_type: bar
         days_to_show: 730
         entities:
@@ -1602,6 +1590,21 @@ config:
         stat_types:
         - change
         title: "Gas, m\xB3/anno"
+        type: statistics-graph
+      - heading: PVC Prezzo 1 M3 dal sito ufficiale di ARERA
+        heading_style: subtitle
+        type: heading
+      - chart_type: bar
+        days_to_show: 730
+        entities:
+        - entity: prezzi:psv_mese
+          name: PSV mensile
+        grid_options:
+          columns: 12
+          rows: auto
+        period: month
+        stat_types:
+        - mean
         type: statistics-graph
       - entity: input_number.gas_prezzo_mc
         grid_options:

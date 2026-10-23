@@ -1,4 +1,32 @@
-# totali_consumi_16.py
+# totali_consumi_20.py
+# v20 (24/10/2026): verificato sul DB. Le variazioni sopra il limite sono
+#   recuperi reali: l'inverter non ha aggiornato il contatore per qualche
+#   ora e poi lo ha riallineato in un colpo (03/04 ore 18: produzione +40,9,
+#   immissione +31,0 kWh; 22/06 ore 12: produzione +19,2 kWh). Vanno contati.
+#   L'unica anomalia e' 09/05 ore 12, immissione -1.182,7 kWh dopo 13 ore
+#   senza dati: si scartano solo i cali oltre il limite. Le v18 e v19
+#   scartavano anche i recuperi (aprile 405 invece di 415, giugno 606
+#   invece di 625).
+# v19 (24/10/2026): si tengono anche le variazioni negative piccole (entro
+#   il limite orario) e si scartano solo i salti oltre il limite, in tutte e
+#   due le direzioni. Con la v18 un calo seguito dal recupero contava solo
+#   il recupero (giugno 2026: autoconsumo 606 kWh contro 625 della
+#   differenza fra inizio e fine mese). Il salto di maggio (-1.100 kWh)
+#   resta escluso.
+# v18 (24/10/2026): il limite di 10 kWh vale per ogni ora trascorsa: dopo
+#   un'interruzione delle statistiche (HA fermo) la prima variazione copre
+#   piu' ore e con la v17 veniva scartata, perdendo l'energia di quelle ore
+#   (giugno 606 kWh contro 625, luglio 750 contro 761).
+# v17 (24/10/2026): risparmio FV mese per mese. Prima: autoconsumo totale x
+#   prezzo di OGGI. Ora: per ogni mese autoconsumo del mese x prezzo luce
+#   del mese, ricostruito dal PUN mensile (prezzi:pun_mese, prezzi_mensili.py)
+#   con la formula Plenitude ((PUN + contributo) x 1,1 + dispacciamento +
+#   rete + oneri + accisa) x 1,1 e le componenti attuali; per i mesi senza
+#   PUN (il mese in corso) il prezzo corrente. L'autoconsumo mensile somma
+#   le variazioni orarie di produzione e immissione scartando quelle
+#   negative o sopra 10 kWh/ora: a maggio 2026 la statistica di immissione
+#   ha un salto all'indietro di circa 1.100 kWh che con MAX(sum)-MIN(sum)
+#   gonfiava l'autoconsumo. Il JSON riporta anche pv_mesi per il controllo.
 # v16 (23/10/2026): statistiche cumulate anche per elettricita' EUR, gas EUR e
 #   rete/GSE EUR (rilevato e bolletta). I grafici mensili della plancia
 #   Consumi passano tutti a queste statistiche con stat_types change: prima
@@ -123,12 +151,55 @@ def get_state(cur, eid):
     return r[0] if r else None
 
 
+MAX_KWH_ORA = 10.0   # impianto e contatore: oltre e' un salto dei dati
+
+
+def energia_mensile(cur, entity):
+    """{mese locale: kWh} dalle variazioni orarie di 'sum', scartando le
+    solo i cali oltre MAX_KWH_ORA per ogni ora trascorsa (gli aumenti grandi
+    sono recuperi dell'inverter e si contano)."""
+    righe = cur.execute("""SELECT s.start_ts, s.sum FROM statistics s
+        JOIN statistics_meta m ON s.metadata_id = m.id
+        WHERE m.statistic_id = ? AND s.sum IS NOT NULL
+        ORDER BY s.start_ts""", (entity,)).fetchall()
+    out, prec, prec_ts = {}, None, None
+    for ts, v in righe:
+        if prec is not None:
+            d = v - prec
+            ore = max(1.0, (ts - prec_ts) / 3600)
+            if d >= -MAX_KWH_ORA * ore:
+                k = datetime.fromtimestamp(ts).strftime("%Y-%m")
+                out[k] = out.get(k, 0.0) + d
+        prec, prec_ts = v, ts
+    return out
+
+
+def num_stato(cur, eid):
+    try:
+        return float(get_state(cur, eid))
+    except (TypeError, ValueError):
+        return 0.0
+
+
 def calc_pv_risparmio(cur, prezzo):
-    """Risparmio da autoconsumo = (produzione FV - export FV) * prezzo corrente."""
-    produzione = energia_totale(cur, PV_PRODUZIONE_ENTITY)
-    export     = energia_totale(cur, PV_EXPORT_ENTITY)
-    autoconsumo = max(0.0, produzione - export)
-    return round(autoconsumo * prezzo, 2)
+    """v17: somma mensile di autoconsumo x prezzo del mese.
+    Ritorna (risparmio, {mese: [kWh autoconsumo, EUR/kWh]})."""
+    prod = energia_mensile(cur, PV_PRODUZIONE_ENTITY)
+    exp = energia_mensile(cur, PV_EXPORT_ENTITY)
+    pun = serie_mensile(cur, "prezzi:pun_mese")
+    c = {k: num_stato(cur, f"input_number.elettricita_{k}_kwh")
+         for k in ("contributo", "dispacciamento", "rete", "oneri", "accisa")}
+    totale, mesi = 0.0, {}
+    for k in sorted(prod):
+        auto = max(0.0, prod[k] - exp.get(k, 0.0))
+        if k in pun and c["contributo"] > 0:
+            p = ((pun[k] + c["contributo"]) * 1.1 + c["dispacciamento"]
+                 + c["rete"] + c["oneri"] + c["accisa"]) * 1.1
+        else:
+            p = prezzo
+        totale += auto * p
+        mesi[k] = [round(auto, 1), round(p, 4)]
+    return round(totale, 2), mesi
 
 
 # ── Statistiche cumulate per i grafici annuali (v13) ────────────────────────
@@ -245,7 +316,8 @@ def main():
             prezzo = 0.0
 
         # ── Fotovoltaico: risparmio, GSE, totale, % recupero ──
-        pv_risparmio = calc_pv_risparmio(cur, prezzo)
+        pv_risparmio, pv_mesi = calc_pv_risparmio(cur, prezzo)
+        out["pv_mesi"] = pv_mesi
 
         gse_serie = serie_mensile(cur, "input_number.bolletta_gse_euro")
         pv_gse = round(sum(gse_serie.values()), 2)
