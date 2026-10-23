@@ -428,16 +428,14 @@ config:
         heading_style: title
         type: heading
       - entities:
-        - entity: sensor.panasonic_cop_6h
-          name: COP 6h
         - entity: sensor.panasonic_cop_oggi
           name: COP oggi
         - entity: sensor.panasonic_cop_calcolato
           name: COP istantaneo
         - entity: sensor.panasonic_potenza_prodotta_calcolata
-          name: Produzione ora
+          name: Produz.ora
         - entity: sensor.panasonic_potenza_consumata_calcolata
-          name: Consumo ora
+          name: ConsumoOra
         grid_options:
           columns: full
           rows: auto
@@ -502,6 +500,7 @@ config:
               text: kWh
           decimals: 1
           id: kwh
+          min: 0
       type: grid
     show_icon_and_title: true
     title: Pompa&Heisha

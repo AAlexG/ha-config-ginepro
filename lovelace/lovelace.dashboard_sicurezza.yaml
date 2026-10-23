@@ -41,6 +41,11 @@ config:
           action: toggle
         type: tile
         vertical: false
+      - entity: binary_sensor.persiana_box_sensore_zigbee_contact
+        features_position: bottom
+        name: Box Persiana
+        type: tile
+        vertical: false
       - heading: Portone box
         heading_style: subtitle
         type: heading
@@ -114,25 +119,6 @@ config:
           action: perform-action
           perform_action: script.apri_cancello_casa
         type: button
-      - entity: binary_sensor.cancello_entrata_zigbee_contact
-        features_position: bottom
-        name: CancelloEntrata
-        type: tile
-        vertical: false
-      - entity: binary_sensor.persiana_box_sensore_zigbee_contact
-        features_position: bottom
-        name: Box Persiana
-        type: tile
-        vertical: false
-      - entity: binary_sensor.persiana_tania_sensore_zigbee_contact
-        features_position: bottom
-        name: Tania pers
-        type: tile
-        vertical: false
-      - entity: binary_sensor.hp1000se_pro_pro_v1_6_4_leak_detection_4
-        features_position: bottom
-        type: tile
-        vertical: false
       type: grid
     - cards:
       - heading: Ingresso
@@ -254,9 +240,13 @@ config:
       - entity: sensor.cancello_grande_zigbee_linkquality
         features_position: bottom
         grid_options:
-          columns: 12
+          columns: 6
           rows: 1
         name: CancelloGrande
+        type: tile
+        vertical: false
+      - entity: binary_sensor.hp1000se_pro_pro_v1_6_4_leak_detection_4
+        features_position: bottom
         type: tile
         vertical: false
       - camera_view: live
