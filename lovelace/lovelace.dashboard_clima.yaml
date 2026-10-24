@@ -26,6 +26,35 @@ config:
           action: none
         type: tile
         vertical: false
+      - entity: input_boolean.vacanza
+        features_position: bottom
+        name: Vacanza
+        type: tile
+        vertical: false
+      - entity: input_select.clima_modalita
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        name: "Modalit\xE0"
+        type: tile
+        vertical: false
+      - entity: input_boolean.clima_freecooling_attivo
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        name: FreeCooling
+        type: tile
+        vertical: false
+      - entity: input_boolean.clima_freeheating_attivo
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        name: FreeHeating
+        type: tile
+        vertical: false
       - double_tap_action:
           action: none
         entity: climate.smart_autotune_thermostat_living_room
@@ -47,7 +76,7 @@ config:
         grid_options:
           columns: 6
           rows: 1
-        name: Caldaia manuale
+        name: CaldaiaManuale
         type: tile
         vertical: false
       - entity: switch.panasonic_heat_pump_main_heatpump_state
@@ -66,45 +95,7 @@ config:
         grid_options:
           columns: 6
           rows: 1
-        name: Pompa manuale
-        type: tile
-        vertical: false
-      - entity: input_boolean.distacco_pompa
-        features_position: bottom
-        grid_options:
-          columns: 6
-          rows: 1
-        name: Pompa staccata (distacco)
-        type: tile
-        vertical: false
-      - entity: input_boolean.clima_pompa_latch_notte
-        features_position: bottom
-        grid_options:
-          columns: 6
-          rows: 1
-        hold_action:
-          action: none
-        icon_tap_action:
-          action: none
-        name: Latch notte pompa
-        tap_action:
-          action: none
-        type: tile
-        vertical: false
-      - entity: input_boolean.vacanza
-        features_position: bottom
-        grid_options:
-          columns: 6
-          rows: 1
-        name: Vacanza
-        type: tile
-        vertical: false
-      - entity: input_select.clima_modalita
-        features_position: bottom
-        grid_options:
-          columns: 6
-          rows: 1
-        name: "Modalit\xE0"
+        name: PompaManuale
         type: tile
         vertical: false
       - entity: input_number.clima_minuti_verso_heat
@@ -121,22 +112,6 @@ config:
           columns: 12
           rows: 1
         name: Minuti verso Cool
-        type: tile
-        vertical: false
-      - entity: input_boolean.clima_freecooling_attivo
-        features_position: bottom
-        grid_options:
-          columns: 6
-          rows: 1
-        name: FreeCooling
-        type: tile
-        vertical: false
-      - entity: input_boolean.clima_freeheating_attivo
-        features_position: bottom
-        grid_options:
-          columns: 6
-          rows: 1
-        name: FreeHeating
         type: tile
         vertical: false
       - entities:
@@ -191,7 +166,7 @@ config:
           action: none
         icon_tap_action:
           action: none
-        name: Pompa On/Off
+        name: Pompa Ora
         tap_action:
           action: none
         type: tile
@@ -240,6 +215,30 @@ config:
         name: Boost Solare
         type: tile
         vertical: false
+      - entity: input_boolean.distacco_pompa
+        features_position: bottom
+        grid_options:
+          columns: full
+          rows: auto
+        hide_state: true
+        name: Pompa staccata (distacco)
+        show_entity_picture: true
+        type: tile
+        vertical: false
+      - entity: input_boolean.clima_pompa_latch_notte
+        features_position: bottom
+        grid_options:
+          columns: full
+          rows: auto
+        hold_action:
+          action: none
+        icon_tap_action:
+          action: none
+        name: Latch notte pompa
+        tap_action:
+          action: none
+        type: tile
+        vertical: false
       - entities:
         - entity: input_number.panasonic_pid_setpoint_mandata
           name: Target TempOut
@@ -280,6 +279,18 @@ config:
         heading_style: title
         icon: mdi:water-boiler
         type: heading
+      - entities:
+        - entity: binary_sensor.opentherm_gateway_otgw_otgw_flame
+          icon: mdi:fire
+          name: Fiamma
+        - entity: binary_sensor.opentherm_gateway_otgw_otgw_central_heating
+          icon: mdi:radiator
+          name: Riscaldamento attivo
+        - entity: binary_sensor.opentherm_gateway_otgw_otgw_domestic_hot_water_enable
+          icon: mdi:water-boiler
+          name: Acqua calda sanitaria
+        show_header_toggle: false
+        type: entities
       - grid_options:
           columns: 6
           rows: auto
@@ -316,18 +327,6 @@ config:
               cambia: senza flag alzato le automazioni possono riaccenderla. Confermi?'
           perform_action: script.caldaia_spegni
         type: button
-      - entities:
-        - entity: binary_sensor.opentherm_gateway_otgw_otgw_flame
-          icon: mdi:fire
-          name: Fiamma
-        - entity: binary_sensor.opentherm_gateway_otgw_otgw_central_heating
-          icon: mdi:radiator
-          name: Riscaldamento attivo
-        - entity: binary_sensor.opentherm_gateway_otgw_otgw_domestic_hot_water_enable
-          icon: mdi:water-boiler
-          name: Acqua calda sanitaria
-        show_header_toggle: false
-        type: entities
       - entities:
         - entity: sensor.opentherm_gateway_otgw_otgw_return_water_temperature
           name: Entrata
