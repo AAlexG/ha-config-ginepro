@@ -55,7 +55,7 @@ config:
         grid_options:
           columns: full
           rows: auto
-        name: SOC BMS ogni 15min
+        name: SOC (letto ogni 15min da BMS)
         type: tile
         vertical: false
       - entity: sensor.inverter_uflex_battery
@@ -63,7 +63,7 @@ config:
         grid_options:
           columns: 12
           rows: 1
-        name: 'SOC inverter momentanea '
+        name: SOC da inverter (momentanea)
         type: tile
         vertical: false
       - entity: sensor.inverter_uflex_battery_voltage
@@ -81,7 +81,7 @@ config:
         grid_options:
           columns: 12
           rows: 1
-        name: Scarica max oggi
+        name: Corrente max di carica oggi
         type: tile
         vertical: false
       - entity: sensor.condensatore_tensione_max_oggi
@@ -183,7 +183,7 @@ config:
           show_daily: true
         type: custom:sunsynk-power-flow-card
         wide: false
-      - heading: Corrente max condensatore
+      - heading: Corrente max SC
         heading_style: subtitle
         type: heading
       - entity: number.inverter_uflex_battery_max_charging_current
@@ -528,7 +528,7 @@ config:
             period: hour
             type: max
           stroke_width: 2
-          type: column
+          type: line
           yaxis_id: kwh
         type: custom:apexcharts-card
         yaxis:
@@ -565,7 +565,7 @@ config:
             period: hour
             type: change
           stroke_width: 2
-          type: column
+          type: line
           yaxis_id: kwh
         type: custom:apexcharts-card
         yaxis:
@@ -602,7 +602,7 @@ config:
             period: hour
             type: change
           stroke_width: 2
-          type: column
+          type: line
           yaxis_id: kwh
         type: custom:apexcharts-card
         yaxis:
@@ -980,7 +980,7 @@ config:
           rows: auto
         header:
           show: true
-          title: Max giornaliera 30gg, W
+          title: Max production durante giorno 30gg, kWh
         series:
         - entity: sensor.inverter_uflex_pv_power
           name: max production
@@ -993,7 +993,7 @@ config:
         yaxis:
         - apex_config:
             title:
-              text: max production,W
+              text: max production, kWh
           decimals: 0
           id: W
           min: 0
