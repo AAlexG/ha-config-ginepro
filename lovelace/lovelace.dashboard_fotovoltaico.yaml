@@ -1020,6 +1020,29 @@ config:
           decimals: 1
           id: kwh
           min: 0
+      - graph_span: 12month
+        grid_options:
+          columns: 12
+          rows: auto
+        header:
+          show: true
+          title: Total giornaliera 12 mesi, kWh
+        series:
+        - entity: sensor.inverter_uflex_today_production
+          name: production oggi
+          statistics:
+            period: day
+            type: change
+          type: column
+          yaxis_id: kwh
+        type: custom:apexcharts-card
+        yaxis:
+        - apex_config:
+            title:
+              text: total production,kWh
+          decimals: 1
+          id: kwh
+          min: 0
       - graph_span: 365d
         grid_options:
           columns: 12

@@ -237,8 +237,19 @@ config:
           rows: auto
         header:
           show: true
-          title: "Max \u0394 cella 13 e 4 e Max SOC %"
+          title: "Max SOC e Max \u0394 cella 13 e 4 oggi"
         series:
+        - entity: sensor.condensatore_bms_soc
+          name: Ora - SOC
+          show:
+            in_legend: true
+          statistics:
+            period: 5minute
+            type: max
+          stroke_dash: 5
+          stroke_width: 1
+          type: line
+          yaxis_id: soc
         - entity: sensor.condensatore_cella_13_distacco
           name: "\u0394 n.13"
           statistics:
@@ -257,28 +268,16 @@ config:
           transform: 'return x === null ? null : -x;'
           type: line
           yaxis_id: volt
-        - entity: sensor.condensatore_bms_soc
-          name: SOC
-          show:
-            in_legend: true
-          statistics:
-            period: 5minute
-            type: max
-          stroke_dash: 5
-          stroke_width: 1
-          type: line
-          yaxis_id: soc
         type: custom:apexcharts-card
         yaxis:
         - apex_config:
             title:
               text: "\u0394 cella, mV"
-          decimals: 0
           id: volt
+          opposite: true
         - apex_config: null
           decimals: 1
           id: soc
-          opposite: true
       type: grid
     - cards:
       - heading: ULTIMI 7 GIORNI
@@ -290,28 +289,10 @@ config:
           rows: auto
         header:
           show: true
-          title: "Max \u0394 cella 13 e 4 e Max SOC %"
+          title: "Max SOC e Max \u0394 cella 13 e 4, 7gg"
         series:
-        - entity: sensor.condensatore_cella_13_distacco
-          name: "Max \u0394 n.13"
-          statistics:
-            period: day
-            type: min
-          stroke_width: 2
-          transform: 'return x === null ? null : -x;'
-          type: line
-          yaxis_id: volt
-        - entity: sensor.condensatore_cella_04_distacco
-          name: "Max \u0394 n.4"
-          statistics:
-            period: day
-            type: min
-          stroke_width: 2
-          transform: 'return x === null ? null : -x;'
-          type: line
-          yaxis_id: volt
         - entity: sensor.condensatore_bms_soc
-          name: SOC
+          name: oggi Max - SOC
           show:
             in_legend: true
           statistics:
@@ -321,6 +302,15 @@ config:
           stroke_width: 1
           type: line
           yaxis_id: soc
+        - entity: sensor.condensatore_cella_13_distacco
+          name: "\u0394 n.13"
+          statistics:
+            period: day
+            type: min
+          stroke_width: 2
+          transform: 'return x === null ? null : -x;'
+          type: line
+          yaxis_id: volt
         type: custom:apexcharts-card
         yaxis:
         - apex_config:
@@ -328,38 +318,20 @@ config:
               text: "\u0394 cella, mV"
           decimals: 0
           id: volt
+          opposite: true
         - apex_config: null
           decimals: 1
           id: soc
-          opposite: true
       - graph_span: 7d
         grid_options:
           columns: 12
           rows: auto
         header:
           show: true
-          title: "Min \u0394 celle 13 e 4 e Max SOC %"
+          title: "Min SOC e Min \u0394 celle 13 e 4, 7gg"
         series:
-        - entity: sensor.condensatore_cella_13_distacco
-          name: "Min \u0394 n.13"
-          statistics:
-            period: day
-            type: max
-          stroke_width: 2
-          transform: 'return x === null ? null : -x;'
-          type: line
-          yaxis_id: volt
-        - entity: sensor.condensatore_cella_04_distacco
-          name: "Min \u0394 n.4"
-          statistics:
-            period: day
-            type: max
-          stroke_width: 2
-          transform: 'return x === null ? null : -x;'
-          type: line
-          yaxis_id: volt
         - entity: sensor.condensatore_bms_soc
-          name: SOC
+          name: oggi Min - SOC
           show:
             in_legend: true
           statistics:
@@ -369,6 +341,24 @@ config:
           stroke_width: 1
           type: line
           yaxis_id: soc
+        - entity: sensor.condensatore_cella_04_distacco
+          name: "\u0394 n.4"
+          statistics:
+            period: day
+            type: max
+          stroke_width: 2
+          transform: 'return x === null ? null : -x;'
+          type: line
+          yaxis_id: volt
+        - entity: sensor.condensatore_cella_13_distacco
+          name: "\u0394 n.13"
+          statistics:
+            period: day
+            type: max
+          stroke_width: 2
+          transform: 'return x === null ? null : -x;'
+          type: line
+          yaxis_id: volt
         type: custom:apexcharts-card
         yaxis:
         - apex_config:
@@ -376,10 +366,10 @@ config:
               text: "\u0394 cella, mV"
           decimals: 0
           id: volt
+          opposite: true
         - apex_config: null
           decimals: 1
           id: soc
-          opposite: true
       - graph_span: 7d
         grid_options:
           columns: 12

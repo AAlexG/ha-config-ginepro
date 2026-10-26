@@ -808,8 +808,8 @@ config:
           name: Tania
         - entity: sensor.termometro_cantina_zigbee_temperature
           name: Cantina
-        - entity: sensor.panasonic_heat_pump_main_outside_temp
-          name: Esterna
+        - entity: sensor.hp1000se_pro_pro_v1_6_4_outdoor_temperature
+          name: Esterna Terrazza
         grid_options:
           columns: full
           rows: auto
@@ -1062,7 +1062,7 @@ config:
         type: heading
       - entities:
         - entity: sensor.panasonic_heat_pump_main_outside_temp
-          name: Esterna
+          name: Esterna Pompa
         - entity: sensor.panasonic_heat_pump_main_main_inlet_temp
           name: Ingresso
         - entity: sensor.panasonic_heat_pump_main_main_outlet_temp
