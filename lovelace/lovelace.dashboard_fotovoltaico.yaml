@@ -564,8 +564,8 @@ config:
           statistics:
             period: hour
             type: change
-          stroke_width: 2
-          type: line
+          stroke_width: 1
+          type: column
           yaxis_id: kwh
         type: custom:apexcharts-card
         yaxis:
@@ -575,10 +575,8 @@ config:
           decimals: 2
           id: kwh
           opposite: true
-        - apex_config:
-            title:
-              text: SOC %
-          decimals: 2
+        - apex_config: null
+          decimals: 0
           id: perc
       - graph_span: 3d
         grid_options:
@@ -602,7 +600,7 @@ config:
             period: hour
             type: change
           stroke_width: 2
-          type: line
+          type: column
           yaxis_id: kwh
         type: custom:apexcharts-card
         yaxis:
@@ -612,10 +610,8 @@ config:
           decimals: 2
           id: kwh
           opposite: true
-        - apex_config:
-            title:
-              text: SOC %
-          decimals: 2
+        - apex_config: null
+          decimals: 0
           id: perc
       - graph_span: 12months
         grid_options:
