@@ -541,7 +541,7 @@ config:
         - apex_config:
             title:
               text: SOC %
-          decimals: 2
+          decimals: 1
           id: perc
       - graph_span: 3d
         grid_options:
@@ -572,7 +572,7 @@ config:
         - apex_config:
             title:
               text: a rete, kWh
-          decimals: 2
+          decimals: 1
           id: kwh
           opposite: true
         - apex_config: null

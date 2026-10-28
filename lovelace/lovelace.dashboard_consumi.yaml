@@ -1188,7 +1188,7 @@ config:
         vertical: false
       type: grid
     - cards:
-      - heading: Ultimi 12 mesi
+      - heading: Ultimi 24 mesi
         heading_style: title
         type: heading
       - chart_type: bar
