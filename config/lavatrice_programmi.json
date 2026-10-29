@@ -375,6 +375,16 @@
    "potenza_w": 329,
    "temperatura": 40,
    "acqua_l": 32.0
+  },
+  {
+   "ts": 1793268187.5294518,
+   "data": "2026-10-29 11:03:07",
+   "programma": "cottons",
+   "energia_kwh": 0.4,
+   "durata_min": 176,
+   "potenza_w": 136,
+   "temperatura": 60,
+   "acqua_l": 48.0
   }
  ]
 }

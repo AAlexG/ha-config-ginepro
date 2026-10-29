@@ -1,5 +1,5 @@
 config:
-  title: Manuale v.4
+  title: plancia_manual_settings_6.yaml
   views:
   - cards: []
     header: {}
@@ -89,7 +89,7 @@ config:
           action: toggle
         type: tile
         vertical: false
-      - entity: cover.all_house_tenda_giardino_new
+      - entity: cover.terrazzo_pergola_terrazza
         features_position: bottom
         grid_options:
           columns: 6
@@ -108,6 +108,29 @@ config:
         icon_tap_action:
           action: toggle
         name: PergolaManuale
+        tap_action:
+          action: toggle
+        type: tile
+        vertical: false
+      - entity: cover.all_house_tenda_giardino_new
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: auto
+        name: Tenda Ora
+        state_content:
+        - state
+        - current_position
+        type: tile
+        vertical: false
+      - entity: input_boolean.tenda_manuale
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: auto
+        icon_tap_action:
+          action: toggle
+        name: TendaManuale
         tap_action:
           action: toggle
         type: tile
