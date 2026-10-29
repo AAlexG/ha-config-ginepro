@@ -1,5 +1,5 @@
 config:
-  title: Auto v.7
+  title: Auto v.8
   views:
   - max_columns: 2
     path: auto
@@ -160,7 +160,7 @@ config:
           curve: stepline
           data_generator: 'const p = entity.attributes.profilo || [];
 
-            const d = new Date(); d.setHours(0, 0, 0, 0);
+            const d = new Date(); d.setUTCHours(0, 0, 0, 0);
 
             return p.map((v, h) => [d.getTime() + h * 3600000, v * 1000]);
 
@@ -179,7 +179,7 @@ config:
 
             const k = c.scala || 0;
 
-            const d = new Date(); d.setHours(0, 0, 0, 0);
+            const d = new Date(); d.setUTCHours(0, 0, 0, 0);
 
             return p.map((v, h) => [d.getTime() + h * 3600000, v * 1000 * k]);
 

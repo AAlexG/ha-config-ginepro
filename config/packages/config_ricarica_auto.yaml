@@ -1,4 +1,14 @@
-# config_ricarica_auto_8.yaml
+# config_ricarica_auto_9.yaml
+# v9 (29/10/2026): CORRETTO il modello di produzione. Il 29/10 alle 14:05 la
+#   previsione stimava 7,5 kWh di sole residuo, ne sono arrivati circa 3: l'auto
+#   e' stata riaccesa con il SC all'84 % e la sera il SC non e' arrivato al
+#   pieno. Cause:
+#   1. profilo sereno in ora locale, con giorni in ora legale e in ora solare
+#      mescolati: pomeriggio un'ora troppo lungo. Ora profilo e modello usano
+#      l'ora UTC (pv_profilo_sereno v2, "base": "UTC").
+#   2. scala calcolata solo dal mattino. Ora scala = minimo fra scala del
+#      giorno e scala dell'ultima ora (nuovo sensore FV Energia Ultima Ora):
+#      se il pomeriggio rende meno del previsto la stima scende subito.
 # v8 (29/10/2026): auto_staccata_da_previsione non decide piu' la
 #   riaccensione (automations_ricarica_auto v10): resta come informazione.
 # v7 (22/10/2026): il 22/10 l'auto e' stata riaccesa alle 09:10 con il SC al
@@ -142,8 +152,21 @@ sensor:
       minutes: 10
     sampling_size: 1000
 
+  # v9: energia prodotta negli ultimi 60 minuti (kWh), per la scala dell'ultima
+  # ora. "change" = ultimo valore meno il primo della finestra. Dopo un
+  # riavvio la finestra e' incompleta per un'ora: la scala dell'ultima ora
+  # risulta piu' bassa, cioe' prudente.
+  - platform: statistics
+    name: "FV Energia Ultima Ora"
+    unique_id: fv_energia_ultima_ora
+    entity_id: sensor.inverter_uflex_today_production
+    state_characteristic: change
+    max_age:
+      minutes: 60
+    sampling_size: 1000
+
 command_line:
-  # Profilo orario sereno (kWh per ora, 24 valori, ora locale). Il JSON e'
+  # Profilo orario sereno (kWh per ora, 24 valori, ora UTC dalla v9). Il JSON e'
   # scritto dallo shell_command calcola_pv_profilo_sereno.
   - sensor:
       name: PV Profilo Sereno
@@ -287,8 +310,9 @@ template:
           {%- set curva = [[43.5,0.0],[44.5,0.002],[45.5,0.008],[46.5,0.014],[47.5,0.026],[48.5,0.051],[49.5,0.114],[50.5,0.198],[51.5,0.322],[52.5,0.486],[53.5,0.625],[54.5,0.718],[55.5,0.789],[56.5,0.843],[56.7,0.871],[57.5,1.0]] -%}
           {%- set eu = states('input_number.condensatore_energia_utile') | float(6.5) -%}
           {%- set adesso = now() -%}
-          {%- set hf = adesso.hour + adesso.minute / 60 -%}
-          {%- set h = adesso.hour -%}
+          {%- set u = utcnow() -%}
+          {%- set hf = u.hour + u.minute / 60 -%}
+          {%- set h = u.hour -%}
           {%- set r = namespace(stato='non valutabile', d={}) -%}
           {%- if p is iterable and p is not string and p | count == 24 and cap >= 0 and vmin is not none -%}
             {%- set nv = namespace(f0=0) -%}
@@ -307,7 +331,13 @@ template:
             {%- set serve = mancante * (1 + states('input_number.ricarica_auto_margine') | float(10) / 100) -%}
             {%- set sereno_fatto = (p[:h] | sum) + p[h] * (hf - h) -%}
             {%- set prodotto = states('sensor.inverter_uflex_today_production') | float(0) -%}
-            {%- set scala = prodotto / sereno_fatto if sereno_fatto > 0 else 0 -%}
+            {%- set scala_giorno = prodotto / sereno_fatto if sereno_fatto > 0 else 0 -%}
+            {%- set h1 = [hf - 1, 0] | max -%}
+            {%- set sereno_prima = (p[:(h1 | int)] | sum) + p[h1 | int] * (h1 - (h1 | int)) -%}
+            {%- set sereno_ora = sereno_fatto - sereno_prima -%}
+            {%- set prod_ora = states('sensor.fv_energia_ultima_ora') | float(-1) -%}
+            {%- set scala_ora = prod_ora / sereno_ora if prod_ora >= 0 and sereno_ora >= 0.3 else scala_giorno -%}
+            {%- set scala = [scala_giorno, scala_ora] | min -%}
             {%- set carico = states('sensor.carico_casa_media_15_min') | float(states('sensor.inverter_uflex_load_power') | float(0)) / 1000 -%}
             {%- set auto_media = states('sensor.auto_potenza_media_15_min') | float(states('sensor.solo_auto_contattore_potenza_di_fase_a') | float(0)) -%}
             {%- set auto_on = is_state('switch.solo_auto_contattore_interruttore', 'on') -%}
@@ -358,6 +388,8 @@ template:
                  'prodotto_oggi_kwh': prodotto | round(2),
                  'sereno_fatto_kwh': sereno_fatto | round(2),
                  'scala': scala | round(2),
+                 'scala_giorno': scala_giorno | round(2),
+                 'scala_ultima_ora': scala_ora | round(2),
                  'produzione_residua_kwh': ns.pv | round(2),
                  'carico_kw': carico_senza | round(2),
                  'auto_kw': auto_kw | round(2),
@@ -380,8 +412,9 @@ template:
             {%- set curva = [[43.5,0.0],[44.5,0.002],[45.5,0.008],[46.5,0.014],[47.5,0.026],[48.5,0.051],[49.5,0.114],[50.5,0.198],[51.5,0.322],[52.5,0.486],[53.5,0.625],[54.5,0.718],[55.5,0.789],[56.5,0.843],[56.7,0.871],[57.5,1.0]] -%}
             {%- set eu = states('input_number.condensatore_energia_utile') | float(6.5) -%}
             {%- set adesso = now() -%}
-            {%- set hf = adesso.hour + adesso.minute / 60 -%}
-            {%- set h = adesso.hour -%}
+            {%- set u = utcnow() -%}
+            {%- set hf = u.hour + u.minute / 60 -%}
+            {%- set h = u.hour -%}
             {%- set r = namespace(stato='non valutabile', d={}) -%}
             {%- if p is iterable and p is not string and p | count == 24 and cap >= 0 and vmin is not none -%}
               {%- set nv = namespace(f0=0) -%}
@@ -400,7 +433,13 @@ template:
               {%- set serve = mancante * (1 + states('input_number.ricarica_auto_margine') | float(10) / 100) -%}
               {%- set sereno_fatto = (p[:h] | sum) + p[h] * (hf - h) -%}
               {%- set prodotto = states('sensor.inverter_uflex_today_production') | float(0) -%}
-              {%- set scala = prodotto / sereno_fatto if sereno_fatto > 0 else 0 -%}
+              {%- set scala_giorno = prodotto / sereno_fatto if sereno_fatto > 0 else 0 -%}
+              {%- set h1 = [hf - 1, 0] | max -%}
+              {%- set sereno_prima = (p[:(h1 | int)] | sum) + p[h1 | int] * (h1 - (h1 | int)) -%}
+              {%- set sereno_ora = sereno_fatto - sereno_prima -%}
+              {%- set prod_ora = states('sensor.fv_energia_ultima_ora') | float(-1) -%}
+              {%- set scala_ora = prod_ora / sereno_ora if prod_ora >= 0 and sereno_ora >= 0.3 else scala_giorno -%}
+              {%- set scala = [scala_giorno, scala_ora] | min -%}
               {%- set carico = states('sensor.carico_casa_media_15_min') | float(states('sensor.inverter_uflex_load_power') | float(0)) / 1000 -%}
               {%- set auto_media = states('sensor.auto_potenza_media_15_min') | float(states('sensor.solo_auto_contattore_potenza_di_fase_a') | float(0)) -%}
               {%- set auto_on = is_state('switch.solo_auto_contattore_interruttore', 'on') -%}
@@ -451,6 +490,8 @@ template:
                    'prodotto_oggi_kwh': prodotto | round(2),
                    'sereno_fatto_kwh': sereno_fatto | round(2),
                    'scala': scala | round(2),
+                   'scala_giorno': scala_giorno | round(2),
+                   'scala_ultima_ora': scala_ora | round(2),
                    'produzione_residua_kwh': ns.pv | round(2),
                    'carico_kw': carico_senza | round(2),
                    'auto_kw': auto_kw | round(2),
