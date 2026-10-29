@@ -1,4 +1,10 @@
-# automations_tende_8.yaml
+# automations_tende_9.yaml
+# v9 (29/10/2026): tenda_gestione_sole non apre per il sole con temperatura
+#   esterna sotto 23 C (sensor.hp1000se_pro_pro_v1_6_4_outdoor_temperature);
+#   con sensore non disponibile non apre. Nuovo trigger: temperatura sopra
+#   23 C per 15 minuti, cosi' la tenda si apre anche quando il sole c'e' gia'
+#   da prima e la temperatura sale dopo. Ramo di chiusura e apertura per
+#   pioggia invariati.
 # v8 (20/10/2026): apertura per pioggia anche con raffica fra 40 e 50 km/h,
 #   ma solo al 65% (tenda_apertura_pioggia). Sotto 40 resta l'85%, sopra 50
 #   non parte (la tenda la chiude il vento). Il blocco di 30 minuti dopo
@@ -687,6 +693,7 @@
 #
 # Due soglie con isteresi 3:1, per non far ballare la tenda a ogni nuvola:
 #   sopra 300 W/m2 per 15 minuti  -> apre all'85% (sole pieno, serve ombra)
+#                                    solo con T esterna >= 23 C (v9)
 #   sotto 100 W/m2 per 30 minuti  -> porta al 40% se asciutto (giorno)
 #                                    oppure a 0% se il sole e' sotto l'orizzonte
 # Riferimento: cielo sereno estivo a mezzogiorno sta sugli 800-1000 W/m2,
@@ -722,6 +729,11 @@
     - trigger: state
       entity_id: sun.sun
       to: "below_horizon"
+    # v9: il sole c'e' gia' e la temperatura sale sopra 23 C dopo.
+    - trigger: numeric_state
+      entity_id: sensor.hp1000se_pro_pro_v1_6_4_outdoor_temperature
+      above: 23
+      for: "00:15:00"
   conditions:
     - condition: state
       entity_id: input_boolean.vacanza
@@ -763,11 +775,16 @@
                  | map(attribute='precipitation')
                  | map('float', 0) | list) | max | default(0) > 0) }}
         bersaglio: "{{ 0 if notte else 40 }}"
+        # v9: protezione dal sole solo con T esterna >= 23 C; sensore non
+        # disponibile = niente apertura.
+        caldo: >-
+          {{ has_value('sensor.hp1000se_pro_pro_v1_6_4_outdoor_temperature')
+             and states('sensor.hp1000se_pro_pro_v1_6_4_outdoor_temperature') | float(0) >= 23 }}
     - choose:
-        # Sole pieno: apre all'85% se non c'e' gia'
+        # Sole pieno e caldo (v9): apre all'85% se non c'e' gia'
         - conditions:
             - condition: template
-              value_template: "{{ rad > 300 and pos >= 0 and pos < 85 }}"
+              value_template: "{{ rad > 300 and caldo and pos >= 0 and pos < 85 }}"
           sequence:
             - action: cover.set_cover_position
               target:
