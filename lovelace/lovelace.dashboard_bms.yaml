@@ -293,7 +293,7 @@ config:
           title: "Max SOC e Max \u0394 cella 13, 7gg"
         series:
         - entity: sensor.condensatore_bms_soc
-          name: oggi Max - SOC
+          name: ultimo gg Max - SOC
           show:
             in_legend: true
           statistics:
@@ -332,7 +332,7 @@ config:
           title: "Min SOC e Min \u0394 celle 13 e 4, 7gg"
         series:
         - entity: sensor.condensatore_bms_soc
-          name: oggi Min - SOC
+          name: ultimo gg Min - SOC
           show:
             in_legend: true
           statistics:

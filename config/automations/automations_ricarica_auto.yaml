@@ -1,5 +1,13 @@
-# automations_ricarica_auto_9.yaml
+# automations_ricarica_auto_10.yaml
 #
+# v10 (29/10/2026): R3 riaccende il contattore ogni volta che e' spento da 20
+#   minuti e le condizioni di ricarica sono soddisfatte, qualunque sia il
+#   motivo dello spegnimento (stacco, rilascio del distacco carichi, a mano,
+#   dispositivo tornato off dopo una disconnessione). Il 29/10 il contattore
+#   e' tornato off dopo 18 minuti unavailable e nessuno lo riaccendeva con SC
+#   al 99 % perche' il flag di stacco era abbassato. Il flag
+#   auto_staccata_da_previsione resta solo come informazione in plancia.
+#   Per tenere l'auto spenta: alzare "Auto Contattore - Gestione Manuale".
 # v9 (23/10/2026): R3 non riaccende l'auto con input_boolean.distacco_auto
 #   acceso (stato del distacco carichi, che non alza piu' auto_manuale).
 # v8 (22/10/2026): tolta da R3 la condizione del sole. Era superflua: di notte
@@ -54,9 +62,8 @@
 # SC e poi prenderebbe dalla rete. Si riaccende il mattino dopo (R3).
 #
 # Flag input_boolean.auto_manuale: se e' alzato l'automazione NON interviene.
-# E' il modo per dire "oggi carica comunque". Lo stacco NON alza il flag:
-# nessuna automazione riaccende l'auto, quindi non serve bloccarla, e cosi'
-# l'automazione resta attiva per i giorni successivi.
+# E' il modo per dire "oggi carica comunque". Lo stacco NON alza il flag: la
+# riaccensione la fa R3 quando le condizioni tornano favorevoli.
 #==================================================================================
 - id: ricarica_auto_stacco_sc_non_pieno
   alias: "Ricarica auto - Stacco se il condensatore non arriva al pieno"
@@ -204,15 +211,17 @@
         entity_id: sensor.pv_profilo_sereno
 
 #==================================================================================
-# R3. RIACCENSIONE QUANDO LE CONDIZIONI DELLO STACCO NON CI SONO PIU' (v4)
+# R3. RIACCENSIONE QUANDO LE CONDIZIONI DI RICARICA SONO SODDISFATTE (v4)
 #
-# Solo se lo stacco l'ha fatto R1 (flag auto_staccata_da_previsione alzato):
-# uno spegnimento a mano o dal distacco carichi non viene mai annullato.
+# v10: vale per qualunque spegnimento (R1, R1b, rilascio del distacco carichi,
+# a mano, dispositivo tornato off). Non agisce con auto_manuale alzato ne'
+# con distacco_auto attivo.
 # Con l'auto spenta la previsione simula l'auto accesa per i primi 15 minuti
 # (potenza nominale), quindi "raggiungibile" o "pieno" vuol dire che
 # riaccendendola ora R1 non scatterebbe. Isteresi:
 #   - stato favorevole da almeno 10 minuti (lo stacco richiede 5 minuti)
-#   - almeno 20 minuti dall'ultimo stacco
+#   - contattore spento da almeno 20 minuti (v10, prima: flag di stacco
+#     alzato da 20 minuti)
 # v8: nessuna condizione sul sole. Di notte la previsione non e' mai
 # "raggiungibile" o "pieno", quindi il contattore resta spento con il flag
 # alzato e l'auto riparte appena le condizioni tornano vere.
@@ -220,8 +229,9 @@
 - id: ricarica_auto_riaccensione_condizioni_ok
   alias: "Ricarica auto - Riaccensione quando il condensatore puo' riempirsi"
   description: >
-    Riaccende il contattore auto staccato dalla previsione quando la previsione
-    torna raggiungibile o pieno da 10 minuti, ad almeno 20 minuti dallo stacco.
+    Riaccende il contattore auto spento da almeno 20 minuti quando le
+    condizioni di ricarica sono soddisfatte (SoC o FV sufficiente, previsione
+    raggiungibile o pieno da 10 minuti), salvo gestione manuale o distacco.
   mode: single
   max_exceeded: silent
   triggers:
@@ -229,19 +239,17 @@
       minutes: "/5"
   conditions:
     - condition: state
-      entity_id: input_boolean.auto_staccata_da_previsione
-      state: "on"
-      for: "00:20:00"
-    - condition: state
       entity_id: input_boolean.auto_manuale
       state: "off"
     # v9: auto staccata dal distacco carichi
     - condition: state
       entity_id: input_boolean.distacco_auto
       state: "off"
+    # v10: spento da almeno 20 minuti, per qualunque motivo.
     - condition: state
       entity_id: switch.solo_auto_contattore_interruttore
       state: "off"
+      for: "00:20:00"
     # v6: SC con carica sufficiente, oppure FV che basta da solo per auto e casa.
     - condition: or
       conditions:

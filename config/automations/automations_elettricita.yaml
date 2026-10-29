@@ -1,4 +1,7 @@
-# automations_elettricita_3.yaml
+# automations_elettricita_4.yaml
+# v4 (29/10/2026): dopo il rilascio del distacco il contattore auto viene
+#   riacceso da automations_ricarica_auto (R3) quando le condizioni di
+#   ricarica lo permettono. Aggiornati commento e testi delle notifiche.
 # v3 (23/10/2026): audit clima A9. Il distacco carichi non alza piu' i flag
 #   manuali (auto_manuale, pdc_manuale, deumidificatori): usa gli stati
 #   separati input_boolean.distacco_auto / _pompa / _deum_cantina /
@@ -105,8 +108,8 @@
                 title: "Distacco carichi - Auto"
                 message: >
                   Prelievo da rete {{ prelievo }} W oltre 5900 W per 30 s.
-                  Staccato il contattore auto (circa 3600 W). Nessuna automazione
-                  lo riaccende: va riacceso a mano dalla plancia.
+                  Staccato il contattore auto (circa 3600 W). Si riaccende da
+                  solo dopo il rilascio, quando le condizioni di ricarica lo permettono.
                 data:
                   tag: distacco_carichi
                   priority: high
@@ -200,9 +203,8 @@
 #   auto 3600 W -> sotto 1800 W    pompa 2000 W -> sotto 3400 W
 #   deumidificatori 200 W -> sotto 5200 W
 # cosi' la riaccensione del carico non riporta subito il prelievo oltre
-# soglia. Dopo il rilascio pompa e deumidificatori ripartono dalle loro
-# automazioni; il contattore auto resta spento finche' non lo riaccendi tu
-# (come prima). L'utente puo' anche spegnere lo stato a mano dalla plancia.
+# soglia. Dopo il rilascio tutti i carichi ripartono dalle loro automazioni
+# (v4: anche il contattore auto, da automations_ricarica_auto R3). L'utente puo' anche spegnere lo stato a mano dalla plancia.
 # Sensore del prelievo non disponibile: nessun rilascio (stato fermo).
 #==================================================================================
 - id: carichi_distacco_rilascio
@@ -251,9 +253,7 @@
         message: >
           {{ state_attr(trigger.id, 'friendly_name') }}: prelievo sceso a
           {{ states('sensor.inverter_uflex_external_ct1_power') | float(0) | round(0) }} W da 10 minuti.
-          {{ "Il contattore auto resta spento: riaccendilo dalla plancia quando vuoi."
-             if trigger.id == 'input_boolean.distacco_auto'
-             else "Il carico torna alle sue automazioni." }}
+          Il carico torna alle sue automazioni.
         data:
           tag: distacco_carichi
 

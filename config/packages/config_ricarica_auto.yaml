@@ -1,4 +1,6 @@
-# config_ricarica_auto_7.yaml
+# config_ricarica_auto_8.yaml
+# v8 (29/10/2026): auto_staccata_da_previsione non decide piu' la
+#   riaccensione (automations_ricarica_auto v10): resta come informazione.
 # v7 (22/10/2026): il 22/10 l'auto e' stata riaccesa alle 09:10 con il SC al
 #   26 % e il FV a 1,7 kW: il SC e' sceso al 15 % e alle 10:00 la casa ha
 #   prelevato 3,1 kW dalla rete. Aggiunti (usati da automations_ricarica_auto v6):
@@ -226,10 +228,9 @@ input_number:
     icon: mdi:weather-sunset-up
 
 input_boolean:
-  # v6: alzato SOLO dall'automazione di stacco per previsione. Abbassato quando
-  # il contattore torna acceso (riaccensione automatica o manuale). La
-  # riaccensione automatica avviene solo con questo flag alzato: uno
-  # spegnimento fatto a mano o dal distacco carichi non viene mai annullato.
+  # Alzato dagli stacchi R1/R1b, abbassato quando il contattore torna acceso.
+  # v8: solo informativo (plancia Auto). La riaccensione automatica non lo
+  # richiede piu': R3 riaccende dopo qualunque spegnimento.
   auto_staccata_da_previsione:
     name: "Auto - Staccata dalla previsione"
     icon: mdi:car-clock

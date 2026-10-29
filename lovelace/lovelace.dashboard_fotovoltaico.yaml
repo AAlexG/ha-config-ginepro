@@ -354,7 +354,7 @@ config:
         series:
         - color: '#D55E00'
           entity: sensor.inverter_uflex_battery_current
-          name: carica
+          name: max carica
           statistics:
             period: hour
             type: min
@@ -363,7 +363,7 @@ config:
           yaxis_id: amp
         - color: '#0072B2'
           entity: sensor.inverter_uflex_battery_current
-          name: scarica
+          name: max scarica
           statistics:
             period: hour
             type: max
@@ -374,7 +374,7 @@ config:
         yaxis:
         - apex_config:
             title:
-              text: A
+              text: corrente max,A
           decimals: 0
           id: amp
       - graph_span: 30d
@@ -391,8 +391,9 @@ config:
           statistics:
             period: day
             type: max
-          type: column
-          yaxis_id: A
+          stroke_width: 1
+          type: line
+          yaxis_id: corrente max scarica, A
         - color: '#0072B2'
           entity: sensor.condensatore_corrente_scarica_max_oggi
           name: limite
@@ -410,7 +411,7 @@ config:
         yaxis:
         - apex_config:
             title:
-              text: A
+              text: corrente max carica,A
           decimals: 2
           id: A
           min: 0
@@ -450,7 +451,7 @@ config:
               text: carica kWh
           decimals: 2
           id: kwh
-          max: 8
+          max: 7.6
           min: 0
       - graph_span: 60d
         grid_options:
@@ -472,7 +473,7 @@ config:
         yaxis:
         - apex_config:
             title:
-              text: episodi/giorno
+              text: nn.episodi/giorno
           decimals: 0
           id: conteggio
           min: 0
@@ -534,14 +535,14 @@ config:
         yaxis:
         - apex_config:
             title:
-              text: produzione, kWh
+              text: produzione, W
           decimals: 0
           id: kwh
           opposite: true
         - apex_config:
             title:
               text: SOC %
-          decimals: 2
+          decimals: 1
           id: perc
       - graph_span: 3d
         grid_options:

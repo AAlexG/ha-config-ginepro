@@ -1,4 +1,4 @@
-# config_fotovoltaico_14.yaml
+# config_fotovoltaico_16.yaml
 # v14 (09/10/2026): aggiunto Condensatore Corrente Scarica Max Oggi, massimo
 #   giornaliero della corrente di scarica con ora, tensione e carica massima.
 # v13 (09/10/2026): input_boolean Condensatore Staccato (gestito da
@@ -607,6 +607,9 @@ template:
   # Nei giorni senza pieno il valore e' l'energia accumulata fino a sera e
   # l'attributo ora_pieno resta vuoto: nel grafico appaiono come colonne basse,
   # da leggere insieme alla tensione massima del giorno.
+  # Se tensione o contatori non hanno un valore valido (unavailable/unknown) il
+  # sensore tiene stato e attributi: il 17/10/2026 il contatore di scarica
+  # letto come 0 per un attimo aveva portato il valore a 9,7 kWh (+ d0).
   #
   # Riferimento misurato a posteriori: 01-08/10/2026 fra 5,04 e 5,84 kWh,
   # contro 7,6 kWh di targa.
@@ -642,9 +645,10 @@ template:
           {%- set v = states('sensor.condensatore_tensione_collegato') | float(0) -%}
           {%- set c = states('sensor.inverter_uflex_today_battery_charge') | float(0) -%}
           {%- set d = states('sensor.inverter_uflex_today_battery_discharge') | float(0) -%}
+          {%- set ok = (has_value('sensor.condensatore_tensione_collegato') and has_value('sensor.inverter_uflex_today_battery_charge') and has_value('sensor.inverter_uflex_today_battery_discharge')) -%}
           {%- if trigger.id == 'azzera' -%}
             0
-          {%- elif a.get('ora_pieno') -%}
+          {%- elif a.get('ora_pieno') or not ok -%}
             {{ this.state }}
           {%- elif a.get('v_min') is none or (v > 0 and v < a.get('v_min') | float(999)) -%}
             0
@@ -657,25 +661,25 @@ template:
             {%- set a = this.attributes -%}
             {%- set v = states('sensor.condensatore_tensione_collegato') | float(0) -%}
             {%- if trigger.id == 'azzera' -%}{{ none }}
-            {%- elif not a.get('ora_pieno') and v > 0 and v < a.get('v_min') | float(999) -%}{{ v }}
+            {%- elif not a.get('ora_pieno') and (has_value('sensor.condensatore_tensione_collegato') and has_value('sensor.inverter_uflex_today_battery_charge') and has_value('sensor.inverter_uflex_today_battery_discharge')) and v > 0 and v < a.get('v_min') | float(999) -%}{{ v }}
             {%- else -%}{{ a.get('v_min') }}{%- endif -%}
           ora_min: >-
             {%- set a = this.attributes -%}
             {%- set v = states('sensor.condensatore_tensione_collegato') | float(0) -%}
             {%- if trigger.id == 'azzera' -%}{{ none }}
-            {%- elif not a.get('ora_pieno') and v > 0 and v < a.get('v_min') | float(999) -%}{{ now().strftime('%H:%M') }}
+            {%- elif not a.get('ora_pieno') and (has_value('sensor.condensatore_tensione_collegato') and has_value('sensor.inverter_uflex_today_battery_charge') and has_value('sensor.inverter_uflex_today_battery_discharge')) and v > 0 and v < a.get('v_min') | float(999) -%}{{ now().strftime('%H:%M') }}
             {%- else -%}{{ a.get('ora_min') }}{%- endif -%}
           c0: >-
             {%- set a = this.attributes -%}
             {%- set v = states('sensor.condensatore_tensione_collegato') | float(0) -%}
             {%- if trigger.id == 'azzera' -%}{{ none }}
-            {%- elif not a.get('ora_pieno') and v > 0 and v < a.get('v_min') | float(999) -%}{{ states('sensor.inverter_uflex_today_battery_charge') | float(0) }}
+            {%- elif not a.get('ora_pieno') and (has_value('sensor.condensatore_tensione_collegato') and has_value('sensor.inverter_uflex_today_battery_charge') and has_value('sensor.inverter_uflex_today_battery_discharge')) and v > 0 and v < a.get('v_min') | float(999) -%}{{ states('sensor.inverter_uflex_today_battery_charge') | float(0) }}
             {%- else -%}{{ a.get('c0') }}{%- endif -%}
           d0: >-
             {%- set a = this.attributes -%}
             {%- set v = states('sensor.condensatore_tensione_collegato') | float(0) -%}
             {%- if trigger.id == 'azzera' -%}{{ none }}
-            {%- elif not a.get('ora_pieno') and v > 0 and v < a.get('v_min') | float(999) -%}{{ states('sensor.inverter_uflex_today_battery_discharge') | float(0) }}
+            {%- elif not a.get('ora_pieno') and (has_value('sensor.condensatore_tensione_collegato') and has_value('sensor.inverter_uflex_today_battery_charge') and has_value('sensor.inverter_uflex_today_battery_discharge')) and v > 0 and v < a.get('v_min') | float(999) -%}{{ states('sensor.inverter_uflex_today_battery_discharge') | float(0) }}
             {%- else -%}{{ a.get('d0') }}{%- endif -%}
           # Istante del pieno: solo il primo della giornata.
           ora_pieno: >-
