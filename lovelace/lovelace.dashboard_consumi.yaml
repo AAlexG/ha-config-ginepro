@@ -1,5 +1,5 @@
 config:
-  title: consumi v.58
+  title: consumi v.59
   views:
   - cards: []
     header: {}
@@ -416,6 +416,8 @@ config:
 
           style="padding:4px 6px;border:1px solid #444">Totale Consumi</th> <th
 
+          style="padding:4px 6px;border:1px solid #444">% Da rete</th> <th
+
           style="padding:4px 6px;border:1px solid #444">A rete</th> <th
 
           style="padding:4px 6px;border:1px solid #444">Bat Carica</th> <th
@@ -447,6 +449,11 @@ config:
           6px;border:1px solid #333;text-align:right">{{ r.consumo_tot
 
           }}</td> <td style="padding:3px 6px;border:1px solid
+
+          #333;text-align:right">{{ ((r.import / r.consumo_tot * 100) |
+
+          round(1)) if r.consumo_tot > 0 else 0.0 }}%</td> <td style="padding:3px
+          6px;border:1px solid
 
           #333;text-align:right">{{ r.export }}</td> <td style="padding:3px
 
@@ -484,6 +491,42 @@ config:
             message: command_launch_app
           perform_action: notify.mobile_app_cph2653
         type: button
+      - heading: '% da rete sul consumo, ultimi 12 mesi'
+        heading_style: subtitle
+        type: heading
+      - graph_span: 12month
+        grid_options:
+          columns: full
+          rows: auto
+        header:
+          show: false
+        series:
+        - color: '#0072B2'
+          data_generator: 'const m = entity.attributes.mesi || [];
+
+            return m.filter(r => r.mese !== ''TOTALE'' && r.consumo_tot > 0)
+
+            .map(r => { const [mm, yy] = r.mese.split(''/'');
+
+            const t = new Date(2000 + Number(yy), Number(mm) - 1, 15).getTime();
+
+            return [t, Math.round(r.import / r.consumo_tot * 1000) / 10]; });
+
+            '
+          entity: sensor.pv_tabella_mensile
+          float_precision: 1
+          name: '% da rete'
+          type: column
+        span:
+          end: month
+        type: custom:apexcharts-card
+        yaxis:
+        - apex_config:
+            title:
+              text: '%'
+          decimals: 0
+          max: 100
+          min: 0
       - heading: TOTALI MENSILI x TIPO APPARECCHI
         heading_style: subtitle
         type: heading

@@ -432,7 +432,7 @@ config:
           yaxis_id: kwh
         - color: '#D55E00'
           entity: sensor.condensatore_energia_al_pieno
-          name: targa 7,6 kWh
+          name: target
           show:
             in_legend: false
           statistics:
@@ -541,7 +541,7 @@ config:
         - apex_config:
             title:
               text: SOC %
-          decimals: 1
+          decimals: 2
           id: perc
       - graph_span: 3d
         grid_options:
@@ -576,7 +576,7 @@ config:
           id: kwh
           opposite: true
         - apex_config: null
-          decimals: 0
+          decimals: 1
           id: perc
       - graph_span: 3d
         grid_options:
@@ -611,7 +611,7 @@ config:
           id: kwh
           opposite: true
         - apex_config: null
-          decimals: 0
+          decimals: 1
           id: perc
       - graph_span: 12months
         grid_options:
