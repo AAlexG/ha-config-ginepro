@@ -273,10 +273,11 @@ config:
         - apex_config:
             title:
               text: "\u0394 cella, mV"
+          decimals: 0
           id: volt
           opposite: true
         - apex_config: null
-          decimals: 1
+          decimals: 0
           id: soc
       type: grid
     - cards:

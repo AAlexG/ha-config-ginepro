@@ -506,7 +506,7 @@ config:
           decimals: 2
           id: C
           min: 20
-      - graph_span: 1d
+      - graph_span: 24h
         grid_options:
           columns: 12
           rows: auto
@@ -976,7 +976,7 @@ config:
           rows: auto
         header:
           show: true
-          title: Max production durante giorno 30gg, kWh
+          title: Max produz.durante giorno 30gg,W
         series:
         - entity: sensor.inverter_uflex_pv_power
           name: max production
@@ -989,7 +989,7 @@ config:
         yaxis:
         - apex_config:
             title:
-              text: max production, kWh
+              text: max production,W
           decimals: 0
           id: W
           min: 0
