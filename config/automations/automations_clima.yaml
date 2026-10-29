@@ -1,4 +1,8 @@
-# automations_clima_84.yaml
+# automations_clima_85.yaml
+#
+# v85 (29/10/2026): tenda giardino in gestione manuale
+#   (input_boolean.tenda_manuale, config_tende_5): aggiunta al promemoria dei
+#   flag manuali; l'inizio vacanza chiude la tenda solo con il flag abbassato.
 #
 # v84 (23/10/2026): minimo diurno delle camere (config_clima_18).
 #   clima_inizializzazione lotto 5: mintemp_giorno_inverno_letto e
@@ -353,7 +357,7 @@
   alias: "Flag manuali – Promemoria (10:00 / 22:00)"
   description: >
     Segnala quali gestioni manuali (fancoil, deumidificatori, portone, cancello,
-    pompa di calore, caldaia, auto, pergola, ResMed) sono alzate da oltre un'ora e ancora attive, per
+    pompa di calore, caldaia, auto, pergola, tenda giardino, ResMed) sono alzate da oltre un'ora e ancora attive, per
     poterle abbassare se non servono piu'.
   mode: single
   triggers:
@@ -379,6 +383,8 @@
       - input_boolean.pergola_blocco_manuale
       # v79: ResMed Tania
       - input_boolean.resmed_manuale
+      # v85: tenda giardino
+      - input_boolean.tenda_manuale
     flag_attivi: >
       {% set ns = namespace(elenco=[]) %}
       {% for f in flag_elenco %}
@@ -1377,10 +1383,16 @@
     - action: input_boolean.turn_off
       target:
         entity_id: input_boolean.pergola_meteo_chiusura
-    # Chiusura tenda giardino; pergola solo se non in gestione manuale.
-    - action: cover.close_cover
-      target:
-        entity_id: cover.all_house_tenda_giardino_new
+    # Chiusura tenda giardino e pergola solo se non in gestione manuale
+    # (v85: anche la tenda).
+    - if:
+        - condition: state
+          entity_id: input_boolean.tenda_manuale
+          state: "off"
+      then:
+        - action: cover.close_cover
+          target:
+            entity_id: cover.all_house_tenda_giardino_new
     - if:
         - condition: state
           entity_id: input_boolean.pergola_blocco_manuale

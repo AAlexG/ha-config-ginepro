@@ -1,5 +1,5 @@
 config:
-  title: Tende v.12
+  title: Tende v.13
   views:
   - cards: []
     max_columns: 2
@@ -63,6 +63,18 @@ config:
           perform_action: cover.stop_cover
           target:
             entity_id: cover.all_house_tenda_giardino_new
+        type: tile
+        vertical: false
+      - entity: input_boolean.tenda_manuale
+        features_position: bottom
+        grid_options:
+          columns: 12
+          rows: auto
+        icon_tap_action:
+          action: toggle
+        name: Tenda in gestione manuale
+        tap_action:
+          action: toggle
         type: tile
         vertical: false
       - entity: input_boolean.tenda_notifica_vento_oggi

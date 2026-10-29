@@ -1,4 +1,10 @@
-# automations_tende_9.yaml
+# automations_tende_10.yaml
+# v10 (29/10/2026): nuovo flag input_boolean.tenda_manuale (config_tende_5),
+#   stessa regola degli altri flag manuali: lo alza e lo abbassa solo
+#   l'utente. Con il flag alzato nessuna automazione apre o chiude la tenda
+#   giardino: sole e pioggia non partono, il vento manda solo la notifica
+#   (come la sicurezza meteo della pergola). Il 29/10 la tenda chiusa a mano
+#   e' stata riaperta da tenda_gestione_sole alle 14:17 (23,9 C, 376 W/m2).
 # v9 (29/10/2026): tenda_gestione_sole non apre per il sole con temperatura
 #   esterna sotto 23 C (sensor.hp1000se_pro_pro_v1_6_4_outdoor_temperature);
 #   con sensore non disponibile non apre. Nuovo trigger: temperatura sopra
@@ -489,6 +495,26 @@
   actions:
     - variables:
         raffica: "{{ states('sensor.hp1000se_pro_pro_v1_6_4_wind_gust') | float(0) }}"
+    # v10: tenda in gestione manuale: nessun movimento, solo avviso. I
+    # trigger numeric_state scattano solo al superamento di 40 e di 50 km/h,
+    # quindi al massimo due avvisi per raffica.
+    - if:
+        - condition: state
+          entity_id: input_boolean.tenda_manuale
+          state: "on"
+      then:
+        - action: notify.mobile_app_cph2653
+          data:
+            title: "💨 Vento: tenda giardino in gestione manuale"
+            message: >-
+              Raffica di {{ raffica | round(1) }} km/h. La tenda e' al
+              {{ state_attr('cover.all_house_tenda_giardino_new', 'current_position') }}%
+              e non viene mossa perche' e' in gestione manuale
+              ({{ 'si chiuderebbe' if raffica > 50 else 'andrebbe al 65%' }}).
+            data:
+              priority: high
+              ttl: 0
+        - stop: "Tenda in gestione manuale"
     - choose:
         - conditions:
             - condition: template
@@ -611,6 +637,10 @@
     - condition: state
       entity_id: input_boolean.vacanza
       state: "off"
+    # v10: gestione manuale tenda (nessuna automazione la muove).
+    - condition: state
+      entity_id: input_boolean.tenda_manuale
+      state: "off"
     # v8: fino a 50 km/h; fra 40 e 50 il bersaglio scende al 65%.
     - condition: numeric_state
       entity_id: sensor.hp1000se_pro_pro_v1_6_4_wind_gust
@@ -710,6 +740,7 @@
 #     cosi' non contrasta tenda_apertura_pioggia. Il ramo di apertura non e'
 #     in conflitto (porta anche lui all'85%).
 #   - flag vacanza: blocca tutto.
+#   - flag tenda_manuale (v10): blocca tutto.
 #
 # Nessuna notifica, come richiesto.
 #==================================================================================
@@ -737,6 +768,10 @@
   conditions:
     - condition: state
       entity_id: input_boolean.vacanza
+      state: "off"
+    # v10: gestione manuale tenda (nessuna automazione la muove).
+    - condition: state
+      entity_id: input_boolean.tenda_manuale
       state: "off"
     - condition: numeric_state
       entity_id: sensor.hp1000se_pro_pro_v1_6_4_wind_gust

@@ -1,4 +1,6 @@
-# config_tende_4.yaml
+# config_tende_5.yaml
+# v5 (29/10/2026): nuovo input_boolean.tenda_manuale (gestione manuale
+#   della tenda giardino, automations_tende v10).
 # v4 (19/10/2026): nuovo sensor.pioggia_ultima_vaschetta (ora dell'ultimo
 #   scatto del pluviometro), usato dal rilascio della pergola.
 # v3 (08/10/2026): nuovo input_boolean.pergola_meteo_avviso_manuale (stato
@@ -22,6 +24,16 @@ input_boolean:
   # Nessuna chiave initial: al riavvio HA ripristina lo stato salvato.
   pergola_blocco_manuale:
     name: "Pergola - Gestione Manuale"
+    icon: mdi:hand-back-left
+
+  # --- GESTIONE MANUALE TENDA GIARDINO (v5) ---
+  # Stessa regola: lo alza e lo abbassa SOLO l'utente dal tile in plancia
+  # Tende. Con il flag alzato nessuna automazione apre o chiude la tenda
+  # (sole, pioggia, vento, chiusura alla partenza per vacanza); il vento
+  # manda solo la notifica. Promemoria alle 10:00 e alle 22:00 se resta
+  # alzato da oltre un'ora (flag_manuali_promemoria). Nessuna chiave initial.
+  tenda_manuale:
+    name: "Tenda Giardino - Gestione Manuale"
     icon: mdi:hand-back-left
 
   # Si attiva quando l'automazione pergola_meteo_chiusura chiude per vento/pioggia/scarsa radiazione.
