@@ -1,4 +1,13 @@
-# config_pompa_calore_8.yaml
+# config_pompa_calore_9.yaml
+# v9 (30/10/2026): risparmio della gestione HA rispetto al vecchio modo
+#   (caldaia a 55 C 24 ore su 24, inverni 2022/23 - 2025/26).
+#   Modello dalle bollette gas: 1,294 Smc per grado giorno, base 17 C
+#   (R2 0,945 su 41 mesi, temperature Open-Meteo di Cogoleto).
+#   Nuovo sensor.meteo_temperatura_media_ieri (REST Open-Meteo, stessa
+#   fonte del modello), nuovo accumulatore input_number.pdc_risparmio_gestione_euro
+#   aggiornato ogni notte da pdc_risparmio_gestione_giorno
+#   (automations_pompa_calore). sensor.pdc_risparmio_totale somma anche la
+#   gestione, quindi la % di recupero investimento la comprende.
 # v8 (29/10/2026): una sola coppia di temperature "fredda" e "mite" per
 #   tutto il clima. sensor.panasonic_cop_stimato usa ora
 #   panasonic_heat_base_text_fredda/_mite, le stesse della mandata base;
@@ -247,6 +256,7 @@ template:
         state: >-
           {{ (states('input_number.pdc_risparmio_estate_euro') | float(0)
               + states('input_number.pdc_risparmio_inverno_euro') | float(0)
+              + states('input_number.pdc_risparmio_gestione_euro') | float(0)
               + states('input_number.pdc_risparmio_storico_euro') | float(0))
              | round(2) }}
 
@@ -498,6 +508,19 @@ input_number:
     mode: box
     icon: mdi:fire
 
+  # v9: risparmio della gestione HA rispetto al vecchio modo (caldaia a
+  # 55 C 24 ore su 24). Aggiornato una volta al giorno da
+  # pdc_risparmio_gestione_giorno. Puo' diventare negativo se in un giorno
+  # la casa consuma piu' calore di quanto ne avrebbe consumato il vecchio modo.
+  pdc_risparmio_gestione_euro:
+    name: "PdC – Risparmio gestione HA (€)"
+    min: -99999
+    max: 99999
+    step: 0.0001
+    unit_of_measurement: "€"
+    mode: box
+    icon: mdi:home-thermometer
+
   # Risparmio del periodo prima di questi accumulatori (installazione PdC →
   # creazione degli accumulatori qui sopra), ricalcolato una tantum dalle
   # statistiche orarie.
@@ -588,3 +611,22 @@ input_boolean:
   antigelo_avviso_sensore:
     name: "Antigelo – Avviso sensore inviato"
     icon: mdi:bell-check
+
+# v9: temperatura media di ieri a Cogoleto da Open-Meteo, la stessa fonte
+# usata per il modello gradi giorno (archivio ERA5). Qui l'API forecast con
+# past_days=1: indice 0 = ieri, indice 1 = oggi. L'attributo time dice a che
+# giorno si riferisce il valore; l'automazione lo controlla prima di usarlo.
+rest:
+  - resource: >-
+      https://api.open-meteo.com/v1/forecast?latitude=44.389&longitude=8.646&daily=temperature_2m_mean&past_days=1&forecast_days=1&timezone=Europe%2FRome
+    scan_interval: 3600
+    sensor:
+      - name: "Meteo Temperatura Media Ieri"
+        unique_id: meteo_temperatura_media_ieri
+        unit_of_measurement: "°C"
+        device_class: temperature
+        icon: mdi:thermometer
+        value_template: "{{ value_json.daily.temperature_2m_mean[0] }}"
+        json_attributes_path: "$.daily"
+        json_attributes:
+          - time

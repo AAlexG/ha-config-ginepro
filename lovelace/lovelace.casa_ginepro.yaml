@@ -1,5 +1,5 @@
 config:
-  title: Casa Ginepro v.60
+  title: Casa Ginepro v.61
   views:
   - cards: []
     max_columns: 2
@@ -792,6 +792,16 @@ config:
           rows: 1
         icon: mdi:fire
         name: InvernoVsGas
+        type: tile
+        vertical: false
+      - color: '#009E73'
+        entity: input_number.pdc_risparmio_gestione_euro
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        icon: mdi:home-thermometer
+        name: GestioneHA
         type: tile
         vertical: false
       type: grid

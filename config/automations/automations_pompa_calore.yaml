@@ -1,4 +1,11 @@
-# automations_pompa_calore_13.yaml
+# automations_pompa_calore_14.yaml
+#
+# v14 (30/10/2026): nuova pdc_risparmio_gestione_giorno. Ogni notte confronta
+#   il gas che il vecchio modo (caldaia a 55 C 24 ore su 24) avrebbe bruciato
+#   ieri con il calore realmente usato (caldaia + pompa) e accumula la
+#   differenza, a prezzo gas, in input_number.pdc_risparmio_gestione_euro.
+#   Insieme a pdc_risparmio_inverno_euro da' il risparmio totale rispetto al
+#   vecchio modo.
 #
 # v13 (23/10/2026): la v12 non bastava. Home Assistant lascia come testo
 #   anche i numeri a decimali fissi ("0.00001234"), quindi gli errori
@@ -235,6 +242,64 @@
                   {% set eer = states('sensor.pdc_eer_vecchio_refrigeratore') | float(3) %}
                   {{ (states('input_number.pdc_risparmio_estate_euro') | float(0)
                       + ((kwh_th | float(0)) / eer - (kwh_el | float(0))) * p1) | round(4) }}
+
+#==================================================================================
+# PDC - RISPARMIO GESTIONE HA (v14)
+# Vecchio modo: caldaia a 55 C 24 ore su 24. Modello dalle bollette gas
+# 2022/23 - 2025/26: gas riscaldamento = 1,294 Smc x gradi giorno base 17 C
+# (temperatura media giornaliera Open-Meteo). La quota fissa mensile
+# (cucina e altro, circa 1,4 Smc/mese) resta fuori: non dipende dal freddo.
+# Calore reale di ieri, in Smc equivalenti:
+#   gas caldaia (gas_caldaia_giornaliero, last_period)
+#   + calore pompa / (11,0078 kWh/Smc x caldaia_rendimento)
+# Risparmio gestione = (gas vecchio modo - calore reale) x prezzo gas.
+# La parte del calore pompa e' la stessa che pdc_risparmio_accumulo valuta a
+# prezzo gas: la somma gestione + inverno e' quindi
+#   costo gas vecchio modo - gas caldaia reale - luce pompa,
+# e non dipende dal rendimento caldaia (che sposta solo la divisione fra
+# le due voci).
+# Conta solo i giorni di riscaldamento: pompa in Heat, oppure caldaia o
+# pompa che hanno prodotto calore ieri.
+#==================================================================================
+- id: pdc_risparmio_gestione_giorno
+  alias: "PdC – Risparmio Gestione HA Giornaliero"
+  description: "Accumula ogni notte il risparmio della gestione HA rispetto alla caldaia a 55 C 24 ore su 24"
+  mode: single
+  triggers:
+    - trigger: time
+      at: "00:10:00"
+  actions:
+    # Dato meteo fresco: alle 00:10 l'ultimo aggiornamento puo' essere di ieri
+    # sera, quando "ieri" era l'altro ieri.
+    - action: homeassistant.update_entity
+      target:
+        entity_id: sensor.meteo_temperatura_media_ieri
+    - delay: "00:00:15"
+    - variables:
+        ieri: "{{ (now() - timedelta(days=1)).strftime('%Y-%m-%d') }}"
+        giorno_meteo: "{{ (state_attr('sensor.meteo_temperatura_media_ieri', 'time') or ['-'])[0] }}"
+        t_ieri: "{{ states('sensor.meteo_temperatura_media_ieri') }}"
+        gas_ieri: "{{ state_attr('sensor.gas_caldaia_giornaliero', 'last_period') | float(0) }}"
+        th_ieri: "{{ state_attr('sensor.panasonic_prodotta_oggi', 'last_period') | float(0) }}"
+        heat: "{{ 'Heat' in states('select.panasonic_heat_pump_main_operating_mode_state') }}"
+    - condition: template
+      value_template: >-
+        {{ giorno_meteo == ieri and is_number(t_ieri)
+           and states('input_number.gas_prezzo_mc') | float(0) > 0
+           and states('input_number.caldaia_rendimento') | float(0) > 0
+           and (heat or gas_ieri | float(0) > 0.05 or th_ieri | float(0) > 0.1) }}
+    - action: input_number.set_value
+      target:
+        entity_id: input_number.pdc_risparmio_gestione_euro
+      data:
+        value: >-
+          {% set gg = [17 - t_ieri | float(17), 0] | max %}
+          {% set vecchio = 1.294 * gg %}
+          {% set eta = states('input_number.caldaia_rendimento') | float(0.95) %}
+          {% set reale = gas_ieri | float(0) + th_ieri | float(0) / (11.0078 * eta) %}
+          {% set prezzo = states('input_number.gas_prezzo_mc') | float(0) %}
+          {{ (states('input_number.pdc_risparmio_gestione_euro') | float(0)
+              + (vecchio - reale) * prezzo) | round(4) }}
 
 #==================================================================================
 # PANSONIC - PID – RAFFRESCAMENTO COMPLETO (PID con D)
