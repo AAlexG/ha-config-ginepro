@@ -1,4 +1,6 @@
-# automations_clima_85.yaml
+# automations_clima_86.yaml
+# v86 (29/10/2026): lotto 4 senza panasonic_cop_text_fredda/_mite (tolti in
+#   config_pompa_calore_8: il COP stimato usa le temperature del lotto 3).
 #
 # v85 (29/10/2026): tenda giardino in gestione manuale
 #   (input_boolean.tenda_manuale, config_tende_5): aggiunta al promemoria dei
@@ -169,9 +171,7 @@
           - [3, input_number.panasonic_heat_base_mandata_mite, 30]
           # --- Lotto 4: retta COP stimato (v83). COP 3,0 ai due estremi =
           # stesso valore del COP di riserva finche' non vengono tarati.
-          - [4, input_number.panasonic_cop_text_fredda, 0]
           - [4, input_number.panasonic_cop_fredda, 3.0]
-          - [4, input_number.panasonic_cop_text_mite, 15]
           - [4, input_number.panasonic_cop_mite, 3.0]
           # --- Lotto 5: minimi diurni invernali delle camere (v84) ---
           - [5, input_number.mintemp_giorno_inverno_letto, 20]

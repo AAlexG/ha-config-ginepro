@@ -277,7 +277,7 @@ config:
           id: volt
           opposite: true
         - apex_config: null
-          decimals: 0
+          decimals: 1
           id: soc
       type: grid
     - cards:

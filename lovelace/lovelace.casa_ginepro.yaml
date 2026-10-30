@@ -410,7 +410,7 @@ config:
         name: Ora
         type: tile
         vertical: false
-      - entity: sensor.scafale_fotovoltaico_system_181233_production_today
+      - entity: sensor.inverter_uflex_today_production
         features_position: bottom
         grid_options:
           columns: 6

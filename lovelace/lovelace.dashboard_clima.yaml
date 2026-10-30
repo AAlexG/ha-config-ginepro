@@ -1,6 +1,6 @@
 config:
   path: clima
-  title: Clima v.29
+  title: Clima v.30
   views:
   - cards: []
     max_columns: 2
@@ -581,7 +581,7 @@ config:
         grid_options:
           columns: full
           rows: auto
-        name: Temp esterna fredda
+        name: T. esterna considerata fredda <=
         type: tile
         vertical: false
       - entity: input_number.panasonic_heat_base_mandata_fredda
@@ -589,7 +589,7 @@ config:
         grid_options:
           columns: full
           rows: auto
-        name: Mandata al freddo
+        name: "T. Mandata quando \xE8 freddo"
         type: tile
         vertical: false
       - entity: input_number.panasonic_heat_base_text_mite
@@ -597,7 +597,7 @@ config:
         grid_options:
           columns: full
           rows: auto
-        name: Temp esterna mite
+        name: T.esterna considerata mite >=
         type: tile
         vertical: false
       - entity: input_number.panasonic_heat_base_mandata_mite
@@ -605,7 +605,18 @@ config:
         grid_options:
           columns: full
           rows: auto
-        name: Mandata col mite
+        name: "T. Mandata quando \xE8 mite"
+        type: tile
+        vertical: false
+      - heading: Coefficienti PID (Cool e Heat)
+        heading_style: subtitle
+        type: heading
+      - entity: sensor.hp1000se_pro_pro_v1_6_4_outdoor_temperature
+        features_position: bottom
+        grid_options:
+          columns: full
+          rows: auto
+        name: T. Esterna adesso
         type: tile
         vertical: false
       - entity: sensor.panasonic_pid_heat_base
@@ -616,9 +627,6 @@ config:
         name: Base mandata adesso
         type: tile
         vertical: false
-      - heading: Coefficienti PID (Cool e Heat)
-        heading_style: subtitle
-        type: heading
       - entity: input_number.panasonic_pid_kp
         features_position: bottom
         grid_options:
@@ -807,31 +815,18 @@ config:
         name: 'PdC: COP stimato adesso'
         type: tile
         vertical: false
-      - heading: "COP stimato se COP 6h non \xE8 disponibile"
+      - heading: "COP stimato se COP 6h non \xE8 disponibile "
         heading_style: subtitle
         type: heading
-      - entity: input_number.panasonic_cop_text_fredda
-        features_position: bottom
-        grid_options:
-          columns: full
-          rows: auto
-        name: T esterna da considerare come fredda
-        type: tile
-        vertical: false
+      - heading: (T.fredda e T.mite sono in mandata base)
+        heading_style: subtitle
+        type: heading
       - entity: input_number.panasonic_cop_fredda
         features_position: bottom
         grid_options:
           columns: full
           rows: auto
         name: "COP quando \xE8 freddo"
-        type: tile
-        vertical: false
-      - entity: input_number.panasonic_cop_text_mite
-        features_position: bottom
-        grid_options:
-          columns: full
-          rows: auto
-        name: T esterna da considerare come mite
         type: tile
         vertical: false
       - entity: input_number.panasonic_cop_mite
