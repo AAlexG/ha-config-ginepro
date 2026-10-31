@@ -421,38 +421,39 @@ config:
           rows: auto
         header:
           show: true
-          title: "Energia vuoto\u2192pieno 30gg"
+          title: MaxSOC Vs.Max carica SC, 30gg
         series:
-        - color: '#009E73'
-          entity: sensor.condensatore_energia_al_pieno
+        - entity: sensor.condensatore_energia_al_pieno
           name: energia
           statistics:
             period: day
             type: max
           type: column
           yaxis_id: kwh
-        - color: '#D55E00'
-          entity: sensor.condensatore_energia_al_pieno
-          name: target
-          show:
-            in_legend: false
+        - entity: sensor.inverter_uflex_battery
+          name: max Soc%
           statistics:
             period: day
             type: max
-          stroke_dash: 6
+          stroke_dash: 4
           stroke_width: 2
-          transform: return 7.6;
           type: line
-          yaxis_id: kwh
+          yaxis_id: perc
         type: custom:apexcharts-card
         yaxis:
         - apex_config:
             title:
               text: carica kWh
-          decimals: 2
+          decimals: 1
           id: kwh
           max: 7.6
           min: 0
+          opposite: true
+        - apex_config:
+            title:
+              text: SOC %
+          decimals: 0
+          id: perc
       - graph_span: 60d
         grid_options:
           columns: 12
@@ -535,15 +536,15 @@ config:
         yaxis:
         - apex_config:
             title:
+              text: SOC %
+          decimals: 1
+          id: perc
+        - apex_config:
+            title:
               text: produzione, W
           decimals: 0
           id: kwh
           opposite: true
-        - apex_config:
-            title:
-              text: SOC %
-          decimals: 1
-          id: perc
       - graph_span: 3d
         grid_options:
           columns: 12

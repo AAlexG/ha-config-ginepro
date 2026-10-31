@@ -1,4 +1,10 @@
-# config_fotovoltaico_16.yaml
+# config_fotovoltaico_17.yaml
+# v17 (31/10/2026): Condensatore Energia al Pieno, base c0/d0 riportata a 0
+#   quando il contatore giornaliero dell'inverter si azzera dopo la lettura
+#   della base (30/10: d0 7,5 letto a mezzanotte prima dell'azzeramento della
+#   scarica, valore 7,5 fino alle 07:14; 31/10: d0 6,9 mai ribasato, 10,6 kWh).
+# v16 (29/10/2026): Energia al Pieno tiene stato e attributi se tensione o
+#   contatori non hanno un valore valido (picco 9,7 kWh del 17/10).
 # v14 (09/10/2026): aggiunto Condensatore Corrente Scarica Max Oggi, massimo
 #   giornaliero della corrente di scarica con ora, tensione e carica massima.
 # v13 (09/10/2026): input_boolean Condensatore Staccato (gestito da
@@ -610,6 +616,11 @@ template:
   # Se tensione o contatori non hanno un valore valido (unavailable/unknown) il
   # sensore tiene stato e attributi: il 17/10/2026 il contatore di scarica
   # letto come 0 per un attimo aveva portato il valore a 9,7 kWh (+ d0).
+  # I contatori giornalieri dell'inverter si azzerano dopo la mezzanotte e non
+  # nello stesso istante (carica e scarica in due aggiornamenti separati): la
+  # base letta subito dopo le 23:59:59 puo' contenere ancora il totale del
+  # giorno prima. Se un contatore valido scende sotto la sua base, la base
+  # torna a 0 (il contatore e' ripartito da zero dopo la lettura).
   #
   # Riferimento misurato a posteriori: 01-08/10/2026 fra 5,04 e 5,84 kWh,
   # contro 7,6 kWh di targa.
@@ -653,7 +664,11 @@ template:
           {%- elif a.get('v_min') is none or (v > 0 and v < a.get('v_min') | float(999)) -%}
             0
           {%- else -%}
-            {{ [(c - a.get('c0') | float(c)) - (d - a.get('d0') | float(d)), 0] | max | round(2) }}
+            {%- set c0 = a.get('c0') | float(c) -%}
+            {%- set d0 = a.get('d0') | float(d) -%}
+            {%- set c0 = 0 if c < c0 else c0 -%}
+            {%- set d0 = 0 if d < d0 else d0 -%}
+            {{ [(c - c0) - (d - d0), 0] | max | round(2) }}
           {%- endif -%}
         attributes:
           # Minimo di tensione del giorno prima del pieno e contatori in quel momento.
@@ -674,12 +689,14 @@ template:
             {%- set v = states('sensor.condensatore_tensione_collegato') | float(0) -%}
             {%- if trigger.id == 'azzera' -%}{{ none }}
             {%- elif not a.get('ora_pieno') and (has_value('sensor.condensatore_tensione_collegato') and has_value('sensor.inverter_uflex_today_battery_charge') and has_value('sensor.inverter_uflex_today_battery_discharge')) and v > 0 and v < a.get('v_min') | float(999) -%}{{ states('sensor.inverter_uflex_today_battery_charge') | float(0) }}
+            {%- elif (has_value('sensor.condensatore_tensione_collegato') and has_value('sensor.inverter_uflex_today_battery_charge') and has_value('sensor.inverter_uflex_today_battery_discharge')) and a.get('c0') is not none and states('sensor.inverter_uflex_today_battery_charge') | float(0) < a.get('c0') | float(0) -%}0.0
             {%- else -%}{{ a.get('c0') }}{%- endif -%}
           d0: >-
             {%- set a = this.attributes -%}
             {%- set v = states('sensor.condensatore_tensione_collegato') | float(0) -%}
             {%- if trigger.id == 'azzera' -%}{{ none }}
             {%- elif not a.get('ora_pieno') and (has_value('sensor.condensatore_tensione_collegato') and has_value('sensor.inverter_uflex_today_battery_charge') and has_value('sensor.inverter_uflex_today_battery_discharge')) and v > 0 and v < a.get('v_min') | float(999) -%}{{ states('sensor.inverter_uflex_today_battery_discharge') | float(0) }}
+            {%- elif (has_value('sensor.condensatore_tensione_collegato') and has_value('sensor.inverter_uflex_today_battery_charge') and has_value('sensor.inverter_uflex_today_battery_discharge')) and a.get('d0') is not none and states('sensor.inverter_uflex_today_battery_discharge') | float(0) < a.get('d0') | float(0) -%}0.0
             {%- else -%}{{ a.get('d0') }}{%- endif -%}
           # Istante del pieno: solo il primo della giornata.
           ora_pieno: >-

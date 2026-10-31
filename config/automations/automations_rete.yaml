@@ -1,6 +1,7 @@
-# automations_rete_1.yaml
+# automations_rete_4.yaml
 #
-# Rete: nuovi dispositivi e dispositivi collegati alla rete, uscita/rientro Tania.
+# Rete: nuovi dispositivi e dispositivi collegati alla rete, uscita/rientro Tania,
+# avviso RE650 bloccato.
 # File creato il 30/09/2026 dalla riorganizzazione "un argomento = automations_X + config_X".
 # Automazioni spostate da: automations_presenza. Id e alias invariati.
 
@@ -185,3 +186,62 @@
       data:
         title: "Presenza"
         message: "Tania è rientrata a casa"
+
+
+#==================================================================================
+# AVVISO - RE650 fuori casa o almeno 2 dei 3 device dietro di lui giu'
+#==================================================================================
+# 30-31/10/2026: RE650 bloccato con cadute a intermittenza dalle 18:19 alle 11:00.
+# Dietro il RE650: OTGW, HeishaMon, Sonoff irrigazione.
+# Segnali:
+#   RE650   device_tracker.018_repeater_tp_re650 = not_home
+#   OTGW    binary_sensor ..._otgw_otgw_connected diverso da on
+#   HeishaMon binary_sensor.panasonic_heat_pump_lwt diverso da on (LWT)
+#   Sonoff  switch canale 1 unavailable/unknown
+# Scatta dopo 2 minuti (le cadute di stanotte duravano in media ~5 min).
+# Un solo avviso per episodio: il ripristino si notifica quando RE650 e' home
+# e tutti e tre i device sono su senza interruzioni per 30 minuti.
+- id: avviso_re650_bloccato
+  alias: "Rete - RE650 fuori casa o device dietro il RE650 giu'"
+  mode: single
+  max_exceeded: silent
+  triggers:
+    - trigger: state
+      entity_id: device_tracker.018_repeater_tp_re650
+      to: "not_home"
+      for: "00:02:00"
+    - trigger: template
+      value_template: >-
+        {{ ([states('binary_sensor.giardino_sopra_opentherm_gateway_otgw_otgw_connected') != 'on', states('binary_sensor.panasonic_heat_pump_lwt') != 'on', states('switch.irrigazione_sonoff_switch_4chpror3_sonoff_10028b1d36_1') in ['unavailable', 'unknown']] | select | list | count) >= 2 }}
+      for: "00:02:00"
+  actions:
+    - action: notify.mobile_app_cph2653
+      data:
+        title: "Rete - RE650 bloccato?"
+        message: >-
+          {% set giu = [] %}
+          {% if not is_state('device_tracker.018_repeater_tp_re650', 'home') %}{% set giu = giu + ['RE650 fuori casa'] %}{% endif %}
+          {% if not is_state('binary_sensor.giardino_sopra_opentherm_gateway_otgw_otgw_connected', 'on') %}{% set giu = giu + ['OTGW'] %}{% endif %}
+          {% if not is_state('binary_sensor.panasonic_heat_pump_lwt', 'on') %}{% set giu = giu + ['HeishaMon'] %}{% endif %}
+          {% if states('switch.irrigazione_sonoff_switch_4chpror3_sonoff_10028b1d36_1') in ['unavailable', 'unknown'] %}{% set giu = giu + ['Sonoff irrigazione'] %}{% endif %}
+          Giu': {{ giu | join(', ') }}.
+          Se 192.168.1.18 non risponde, staccare la corrente al RE650.
+    - repeat:
+        sequence:
+          - wait_template: >-
+              {{ is_state('device_tracker.018_repeater_tp_re650', 'home')
+                 and ([states('binary_sensor.giardino_sopra_opentherm_gateway_otgw_otgw_connected') != 'on', states('binary_sensor.panasonic_heat_pump_lwt') != 'on', states('switch.irrigazione_sonoff_switch_4chpror3_sonoff_10028b1d36_1') in ['unavailable', 'unknown']] | select | list | count) == 0 }}
+          - wait_for_trigger:
+              - trigger: template
+                value_template: >-
+                  {{ not is_state('device_tracker.018_repeater_tp_re650', 'home')
+                     or ([states('binary_sensor.giardino_sopra_opentherm_gateway_otgw_otgw_connected') != 'on', states('binary_sensor.panasonic_heat_pump_lwt') != 'on', states('switch.irrigazione_sonoff_switch_4chpror3_sonoff_10028b1d36_1') in ['unavailable', 'unknown']] | select | list | count) > 0 }}
+            timeout: "00:30:00"
+            continue_on_timeout: true
+        until:
+          - condition: template
+            value_template: "{{ wait.trigger is none }}"
+    - action: notify.mobile_app_cph2653
+      data:
+        title: "Rete - RE650 ripristinato"
+        message: "RE650, OTGW, HeishaMon e Sonoff irrigazione su da 30 minuti."
