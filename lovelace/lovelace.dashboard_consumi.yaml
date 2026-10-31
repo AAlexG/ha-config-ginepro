@@ -384,6 +384,16 @@ config:
         name: InvernoVsGas
         type: tile
         vertical: false
+      - color: '#009E73'
+        entity: input_number.pdc_risparmio_gestione_euro
+        features_position: bottom
+        grid_options:
+          columns: full
+          rows: auto
+        icon: mdi:home-thermometer
+        name: Da non riscaldamento a 55 gradi x HA
+        type: tile
+        vertical: false
       - heading: TOTALI MENSILI
         heading_style: subtitle
         type: heading

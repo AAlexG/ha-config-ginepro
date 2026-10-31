@@ -1,4 +1,14 @@
-# automations_pompa_calore_14.yaml
+# automations_pompa_calore_15.yaml
+#
+# v15 (30/10/2026): nuovo modello del vecchio modo in
+#   pdc_risparmio_gestione_giorno. Il modello v14 (1,294 Smc x gradi giorno,
+#   fittato anche sui mesi estivi) dava zero gas nei giorni miti, mentre la
+#   caldaia a 55 C 24 ore su 24 bruciava gas anche allora. Nuovo modello
+#   fittato solo sui mesi novembre-marzo (caldaia sempre accesa):
+#   1,10 Smc al giorno fissi + 1,151 Smc x gradi giorno base 17 C.
+#   Giorno di riscaldamento = pompa in Heat oppure caldaia con piu' di
+#   0,5 m3 ieri (fuori stagione la caldaia brucia 0-0,3 m3 al giorno e
+#   prima contava come riscaldamento).
 #
 # v14 (30/10/2026): nuova pdc_risparmio_gestione_giorno. Ogni notte confronta
 #   il gas che il vecchio modo (caldaia a 55 C 24 ore su 24) avrebbe bruciato
@@ -244,11 +254,13 @@
                       + ((kwh_th | float(0)) / eer - (kwh_el | float(0))) * p1) | round(4) }}
 
 #==================================================================================
-# PDC - RISPARMIO GESTIONE HA (v14)
+# PDC - RISPARMIO GESTIONE HA (v15)
 # Vecchio modo: caldaia a 55 C 24 ore su 24. Modello dalle bollette gas
-# 2022/23 - 2025/26: gas riscaldamento = 1,294 Smc x gradi giorno base 17 C
-# (temperatura media giornaliera Open-Meteo). La quota fissa mensile
-# (cucina e altro, circa 1,4 Smc/mese) resta fuori: non dipende dal freddo.
+# 2022/23 - 2025/26, solo mesi novembre-marzo, 2 Smc/mese tolti per cucina
+# e altro: gas riscaldamento al giorno = 1,10 Smc fissi (impianto tenuto a
+# 55 C) + 1,151 Smc x gradi giorno base 17 C (temperatura media giornaliera
+# Open-Meteo). R2 0,70 sui 20 mesi. La quota fissa e la base non sono ben
+# separabili con i soli mesi invernali: nei giorni miti la stima e' incerta.
 # Calore reale di ieri, in Smc equivalenti:
 #   gas caldaia (gas_caldaia_giornaliero, last_period)
 #   + calore pompa / (11,0078 kWh/Smc x caldaia_rendimento)
@@ -258,8 +270,8 @@
 #   costo gas vecchio modo - gas caldaia reale - luce pompa,
 # e non dipende dal rendimento caldaia (che sposta solo la divisione fra
 # le due voci).
-# Conta solo i giorni di riscaldamento: pompa in Heat, oppure caldaia o
-# pompa che hanno prodotto calore ieri.
+# Conta solo i giorni di riscaldamento: pompa in Heat, oppure caldaia con
+# piu' di 0,5 m3 ieri.
 #==================================================================================
 - id: pdc_risparmio_gestione_giorno
   alias: "PdC – Risparmio Gestione HA Giornaliero"
@@ -287,14 +299,14 @@
         {{ giorno_meteo == ieri and is_number(t_ieri)
            and states('input_number.gas_prezzo_mc') | float(0) > 0
            and states('input_number.caldaia_rendimento') | float(0) > 0
-           and (heat or gas_ieri | float(0) > 0.05 or th_ieri | float(0) > 0.1) }}
+           and (heat or gas_ieri | float(0) > 0.5) }}
     - action: input_number.set_value
       target:
         entity_id: input_number.pdc_risparmio_gestione_euro
       data:
         value: >-
           {% set gg = [17 - t_ieri | float(17), 0] | max %}
-          {% set vecchio = 1.294 * gg %}
+          {% set vecchio = 1.10 + 1.151 * gg %}
           {% set eta = states('input_number.caldaia_rendimento') | float(0.95) %}
           {% set reale = gas_ieri | float(0) + th_ieri | float(0) / (11.0078 * eta) %}
           {% set prezzo = states('input_number.gas_prezzo_mc') | float(0) %}

@@ -395,6 +395,16 @@
    "potenza_w": 225,
    "temperatura": 40,
    "acqua_l": 46.0
+  },
+  {
+   "ts": 1793350385.965204,
+   "data": "2026-10-30 09:53:05",
+   "programma": "sportswear",
+   "energia_kwh": 0.4,
+   "durata_min": 70,
+   "potenza_w": 343,
+   "temperatura": 40,
+   "acqua_l": 34.0
   }
  ]
 }

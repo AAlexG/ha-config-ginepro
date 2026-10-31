@@ -695,7 +695,7 @@ config:
         show_entity_picture: false
         tap_action:
           action: navigate
-          navigation_path: /dashboard-fancoil
+          navigation_path: /dashboard-devices/devices
         type: tile
         vertical: false
       - heading: Risparmio Fotovoltaico
@@ -746,8 +746,8 @@ config:
         entity: sensor.fv_alberi_equivalenti
         features_position: bottom
         grid_options:
-          columns: 6
-          rows: 1
+          columns: full
+          rows: auto
         icon: mdi:forest
         name: Alberi equivalenti
         type: tile
@@ -798,10 +798,10 @@ config:
         entity: input_number.pdc_risparmio_gestione_euro
         features_position: bottom
         grid_options:
-          columns: 6
-          rows: 1
+          columns: full
+          rows: auto
         icon: mdi:home-thermometer
-        name: GestioneHA
+        name: Da non riscaldamento a 55 gradi x HA
         type: tile
         vertical: false
       type: grid

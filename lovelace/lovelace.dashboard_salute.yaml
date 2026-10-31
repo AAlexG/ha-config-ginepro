@@ -145,6 +145,20 @@ config:
         name: Vigorose
         type: tile
         vertical: false
+      - chart_type: bar
+        days_to_show: 30
+        entities:
+        - entity: sensor.garmin_connect_wellness_active_calories
+          name: Wellness Active calories
+        - entity: sensor.garmin_connect_wellness_calories
+          name: Wellness calories
+        grid_options:
+          columns: full
+          rows: auto
+        period: day
+        stat_types:
+        - state
+        type: statistics-graph
       type: grid
     title: Salute
     type: sections

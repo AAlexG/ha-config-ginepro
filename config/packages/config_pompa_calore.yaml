@@ -1,8 +1,11 @@
-# config_pompa_calore_9.yaml
+# config_pompa_calore_10.yaml
+# v10 (30/10/2026): solo commenti. Il modello del vecchio modo e' cambiato
+#   (vedi automations_pompa_calore v15): 1,10 Smc al giorno fissi +
+#   1,151 Smc x gradi giorno base 17 C, fittato sui mesi novembre-marzo.
 # v9 (30/10/2026): risparmio della gestione HA rispetto al vecchio modo
 #   (caldaia a 55 C 24 ore su 24, inverni 2022/23 - 2025/26).
-#   Modello dalle bollette gas: 1,294 Smc per grado giorno, base 17 C
-#   (R2 0,945 su 41 mesi, temperature Open-Meteo di Cogoleto).
+#   Modello dalle bollette gas (prima versione, sostituita in v10):
+#   1,294 Smc per grado giorno, base 17 C, temperature Open-Meteo.
 #   Nuovo sensor.meteo_temperatura_media_ieri (REST Open-Meteo, stessa
 #   fonte del modello), nuovo accumulatore input_number.pdc_risparmio_gestione_euro
 #   aggiornato ogni notte da pdc_risparmio_gestione_giorno

@@ -1,4 +1,13 @@
-# automations_tende_10.yaml
+# automations_tende_11.yaml
+# v11 (30/10/2026): pergola_inseguimento_solare, stessa regola della tenda
+#   giardino (v9): con temperatura esterna sotto 23 C
+#   (sensor.hp1000se_pro_pro_v1_6_4_outdoor_temperature) la pergola resta
+#   chiusa (0%) in tutti gli slot, minimo del mattino e 80% delle 15:00
+#   compresi; con sensore non disponibile resta chiusa. Nuovo trigger:
+#   temperatura sopra 23 C per 15 minuti, cosi' la pergola si porta subito
+#   alla posizione dello slot corrente senza aspettare il successivo. Se la
+#   temperatura scende sotto 23 C a pergola aperta, si chiude allo slot
+#   successivo (come la tenda, nessuna chiusura immediata).
 # v10 (29/10/2026): nuovo flag input_boolean.tenda_manuale (config_tende_5),
 #   stessa regola degli altri flag manuali: lo alza e lo abbassa solo
 #   l'utente. Con il flag alzato nessuna automazione apre o chiude la tenda
@@ -105,6 +114,8 @@
 # resterebbe chiusa fino allo slot successivo.
 # Le posizioni NON vengono piu' ripristinate ogni 10 minuti: uno spostamento
 # manuale resta valido fino allo slot successivo.
+# v11 (tende): con T esterna sotto 23 C (o sensore non disponibile) ogni slot
+# porta la pergola a 0%. Trigger extra: T sopra 23 C per 15 minuti.
 # Rispetta il flag vacanza, il blocco manuale e la chiusura di sicurezza meteo.
 #==================================================================================
 - id: pergola_inseguimento_solare
@@ -131,6 +142,11 @@
       entity_id: input_boolean.pergola_meteo_chiusura
       from: "on"
       to: "off"
+    # v11: la temperatura sale sopra 23 C dopo lo slot.
+    - trigger: numeric_state
+      entity_id: sensor.hp1000se_pro_pro_v1_6_4_outdoor_temperature
+      above: 23
+      for: "00:15:00"
   conditions:
     - condition: state
       entity_id: input_boolean.vacanza
@@ -155,8 +171,12 @@
         pct_grezzo: "{{ (((atan(tan(el * pi / 180) / c) * 180 / pi) - margin) / travel) * 100 if c > 0.01 else 0 }}"
         pct: "{{ [[pct_grezzo, 0] | max, 100] | min }}"
         ora: "{{ now().strftime('%H:%M') }}"
+        # v11: sotto 23 C (o sensore non disponibile) la pergola resta chiusa.
+        caldo: >-
+          {{ has_value('sensor.hp1000se_pro_pro_v1_6_4_outdoor_temperature')
+             and states('sensor.hp1000se_pro_pro_v1_6_4_outdoor_temperature') | float(0) >= 23 }}
         target: >-
-          {% if '08:30' <= ora < '15:00' %}{% if az < 145 %}{{ [[pct + 5, min_mattino] | max, 100] | min | round | int }}{% else %}97{% endif %}{% elif '15:00' <= ora < '23:00' %}80{% else %}0{% endif %}
+          {% if not caldo %}0{% elif '08:30' <= ora < '15:00' %}{% if az < 145 %}{{ [[pct + 5, min_mattino] | max, 100] | min | round | int }}{% else %}97{% endif %}{% elif '15:00' <= ora < '23:00' %}80{% else %}0{% endif %}
     - action: cover.set_cover_tilt_position
       target:
         entity_id: cover.terrazzo_pergola_terrazza
